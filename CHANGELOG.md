@@ -2,6 +2,42 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-15 · Música del valle por capas
+
+**Qué hay nuevo**
+
+- **`tools/music_synth.py`**: compone y sintetiza la música del valle ("Valle del Cristal") con Python (numpy + scipy),
+  de forma determinista. Teoría aplicada (detalle en el propio script):
+  - **La mayor**, la tonalidad del "tink" del cristal y de su escala pentatónica de racha: los golpes armonizan con la música.
+  - **Color mágico**: II mayor lidio (B/A, con el D#) y iv menor prestado (Dm6) para un momento agridulce.
+  - **Forma**: 16 compases a 84 BPM (45,7 s). Pregunta de 8 compases con semicadencia (Esus4 → E) y respuesta más aguda
+    que termina en dominante y resuelve en el compás 1, así el bucle se siente como una vuelta.
+  - Melodía escrita a mano sobre la pentatónica; sólo 4 notas fuera del acorde, todas cortas y en tiempo débil (de paso).
+  - Pad y contramelodía con **conducción de voces automática** (mínimo movimiento entre acordes, notas guía 3.ª y 7.ª).
+  - Bucle sin costura: las colas de reverb se suman al principio.
+- **5 capas** en `game/audio/music/` (OGG estéreo, bucle activado), una por rango del mago:
+  1 Aprendiz (pad, bajo y caja de música), 2 Iniciado (arpa en corcheas), 3 Hechicero (percusión suave),
+  4 Magus (contramelodía de flauta), 5 Archimago (destellos de celesta y coro).
+- **`AudioDirector.play_music(capas, activas)`** y **`set_music_layers(n, fundido)`**: usan `AudioStreamSynchronized`
+  (integrado en Godot) para que todas las capas vayan en sincronía exacta y entren o salgan con fundido.
+- `main.gd` arranca la música en Aprendiz (1 capa). En debug, la tecla **M** suma una capa (1 → 5 → 1) y
+  `-- --music-layers=N` arranca con N capas.
+- Escucha rápida: `docs/audio/musica_valle_capas_preview.ogg` (3 min; entra una capa nueva cada media vuelta).
+
+**Cómo se probó**
+
+- Análisis automático: notas de la melodía frente a cada acorde, nivel de cada capa, salto en la costura del bucle
+  (del orden del salto medio entre muestras: sin clic) y espectrograma de la mezcla.
+- `tests/smoke/music_layers_smoke.gd` (nuevo): bucle activado, misma duración en las 5 capas y fundidos de volumen. OK.
+- El juego arranca en headless con `--music-layers=5` sin errores. `gdlint` limpio en los archivos tocados.
+- Nadie lo ha escuchado todavía con oídos humanos: es lo primero que hay que validar.
+
+**Pendiente**
+
+- Conectar las capas al sistema de rangos cuando exista (ahora se queda en Aprendiz salvo con la tecla M).
+- Opción de volumen de música en `Settings` (el bus `Music` ya existe).
+- Variantes para el Santuario y la Gran Convergencia (misma herramienta, otra progresión).
+
 ## 2026-11-15 · Hechizos por capas: el Orbe Arcano
 
 Primer paso hacia hechizos con la calidad de la referencia (`docs/referencias/estilo_referencia.png`):

@@ -239,7 +239,10 @@ godot --path game --write-movie /tmp/captura/f.png --fixed-fps 60 --quit-after 1
 
 - Buses: `Master`, `Music`, `SFX`, `UI`, `Ambience`. Volumen de cada uno en Opciones.
 - Variaciones con `AudioStreamRandomizer` (tono y sample) para golpes, fragmentos y entregas.
-- La música añade capas con cada rango de mago (Aprendiz -> Leyenda).
+- La música añade capas con cada rango de mago (Aprendiz -> Leyenda): `AudioDirector.set_music_layers(n)`.
+  Las capas se generan con `tools/music_synth.py`; todas deben durar exactamente lo mismo y tener `loop=true` en su
+  importación (lo comprueba `tests/smoke/music_layers_smoke.gd`). Toda música nueva, en La mayor o compatible con la
+  pentatónica de La, para que el "tink" del cristal no desafine.
 - El "tink" del cristal es la firma del juego: cada capa del cristal tiene su propio timbre.
 
 ## 8. Diseño de juego en el código

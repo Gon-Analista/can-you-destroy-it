@@ -4,6 +4,14 @@ extends Node3D
 
 const SUN_DIR := Vector3(0.55, -0.65, -0.52)
 const AMBIENCE: AudioStream = preload("res://audio/sfx/amb_valley_loop.ogg")
+## Música del valle por capas (tools/music_synth.py): 1 Aprendiz ... 5 Archimago.
+const MUSIC_LAYERS: Array[AudioStream] = [
+	preload("res://audio/music/music_valley_1_aprendiz.ogg"),
+	preload("res://audio/music/music_valley_2_iniciado.ogg"),
+	preload("res://audio/music/music_valley_3_hechicero.ogg"),
+	preload("res://audio/music/music_valley_4_magus.ogg"),
+	preload("res://audio/music/music_valley_5_archimago.ogg"),
+]
 
 @onready var _sun: DirectionalLight3D = $Sun
 @onready var _player: Player = $Player
@@ -14,6 +22,8 @@ func _ready() -> void:
 	_sun.look_at_from_position(Vector3.ZERO, SUN_DIR.normalized(), Vector3.UP)
 	_hud.bind(_player.get_camera(), _player.get_caster())
 	AudioDirector.play_ambience(AMBIENCE, -10.0)
+	# Hasta que exista el sistema de rangos, se empieza en Aprendiz (1 capa).
+	AudioDirector.play_music(MUSIC_LAYERS, _arg_int("--music-layers=", 1))
 	GameState.emit_all()
 	if OS.is_debug_build():
 		_setup_autoplay()
@@ -85,5 +95,21 @@ func _unhandled_input(event: InputEvent) -> void:
 	):
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		get_viewport().set_input_as_handled()
+	elif (
+		OS.is_debug_build()
+		and event is InputEventKey
+		and (event as InputEventKey).pressed
+		and not (event as InputEventKey).echo
+		and (event as InputEventKey).keycode == KEY_M
+	):
+		# Debug: M sube una capa de música (1 -> 5 -> 1) para oír cómo crece con el rango.
+		AudioDirector.set_music_layers(AudioDirector.get_music_layers() % MUSIC_LAYERS.size() + 1)
 	elif event.is_action_pressed(&"ui_cancel"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+func _arg_int(prefix: String, fallback: int) -> int:
+	for a: String in OS.get_cmdline_user_args():
+		if a.begins_with(prefix):
+			return int(a.trim_prefix(prefix))
+	return fallback

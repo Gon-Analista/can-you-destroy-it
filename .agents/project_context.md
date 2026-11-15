@@ -92,6 +92,7 @@ Todos estos números viven en recursos de datos (`.tres`), nunca hardcodeados (v
 | `Can_You_Destroy_It_GDD.pdf` | GDD v0.3 (fuente del diseño). |
 | `CHANGELOG.md` | Registro de cada push a `main`. |
 | `CREDITS.md` | Licencias de fuentes y recursos de terceros. |
+| `tools/music_synth.py` | Compone y sintetiza la música por capas (`python3 tools/music_synth.py [--preview RUTA]`, requiere numpy, scipy y ffmpeg). |
 | `tools/sfx_synth.py` | Sintetiza todos los SFX del prototipo (`python3 tools/sfx_synth.py`, requiere numpy, scipy y ffmpeg). |
 | `tools/godot/make_spark_element.gd` | Volcado inicial de `data/elements/spark.tres`. |
 | `docs/capturas/` | Capturas y GIF del prototipo. |
@@ -117,6 +118,8 @@ Todos estos números viven en recursos de datos (`.tres`), nunca hardcodeados (v
   esquirlas, anillo y luz en pool), `HitStop`.
 - **HUD** (`ui/`): Esencia con número rodante, mira con anillo de carga y marcador de impacto, racha, avisos,
   números flotantes, Pilón, FPS y ayuda de debug. Fuentes Silkscreen (texto pequeño) y Pixelify Sans (números).
+- **Música** (`audio/music/`): tema del valle en La mayor, 84 BPM, en 5 capas sincronizadas (una por rango) con
+  `AudioDirector.play_music` / `set_music_layers`. En debug, la tecla M suma capas.
 - **Audio** (`audio/sfx/`): 20 OGG sintetizados (tink ×4, fragmentos, chispa, campanitas, acorde resonante,
   ambiente del valle y zumbido del cristal en bucle).
 - **Debug** (sólo builds de desarrollo): teclas 1-5 cambian el nivel de la chispa; modo demo para grabar:
@@ -156,6 +159,7 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-15 | Fuentes: Silkscreen 8 px (texto pequeño) y Pixelify Sans (números), ambas OFL, sin antialiasing. | Nítidas a 640x360. |
 | 2026-11-15 | Números flotantes activados por defecto (antes: ocultos). Racha con escala pentatónica y golpe resonante del 7 %. | Más dopamina en el golpe, pedido explícito. |
 | 2026-11-15 | Flujo de git: commit y push a `main`, cada push documentado en `CHANGELOG.md`. | Pedido del equipo. |
+| 2026-11-15 | Música generada con `tools/music_synth.py`, en La mayor y en 5 capas (`AudioStreamSynchronized`). | Armoniza con el "tink" pentatónico; las capas cumplen "la música crece con el rango"; reproducible hasta tener compositor. |
 | 2026-11-15 | Hechizos como pila de capas (`SpellOrb`) descrita por datos (`SpellVisualDef`). | Cada elemento, combinación y nivel es un `.tres`; misma calidad para todos. |
 | 2026-11-15 | Magia con píxeles sólidos (`blend_mix` + tramado) en vez de aditiva; HDR sólo en el centro. | Lo aditivo se lavaba a blanco sobre el cristal y el cielo claros. |
 | 2026-11-15 | Animación de VFX escalonada a 12 fps (`anim_fps`). | Lo procedural se lee como pixel art animado a mano. |
