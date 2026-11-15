@@ -2,6 +2,14 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-15 · Hotfix: el tiempo se quedaba congelado tras un golpe fuerte
+
+- **Bug**: tras un hit-stop (golpe resonante o daño 5+), a veces el juego no volvía a la velocidad normal.
+  Causa: si el temporizador terminaba 1 ms antes de lo previsto (redondeo), la escala de tiempo no se restauraba nunca.
+- **Arreglo** (`game/fx/hit_stop.gd`): si el temporizador llega antes, se reprograma por lo que falte; tope de 0,5 s por congelado;
+  y red de seguridad en `main.gd` que restaura la escala si no hay hit-stop activo.
+- **Test de regresión**: `tests/smoke/hit_stop_smoke.gd` (OK). Autoplay a nivel 5 durante 15 s: escala de tiempo 1.0 al final.
+
 ## 2026-11-15 · Prototipo M1a "El golpe": arte base, la chispa y la reacción del cristal
 
 **Qué hay nuevo**

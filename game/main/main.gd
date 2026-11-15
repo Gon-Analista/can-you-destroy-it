@@ -48,7 +48,7 @@ func _setup_autoplay() -> void:
 	)
 	add_child(timer)
 	if args.has("--report"):
-		get_tree().create_timer(4.0).timeout.connect(_print_report)
+		get_tree().create_timer(4.0, true, false, true).timeout.connect(_print_report)
 
 
 func _print_report() -> void:
@@ -58,16 +58,23 @@ func _print_report() -> void:
 			shards += 1
 	print(
 		(
-			"REPORT draw_calls=%d objects=%d primitives=%d physics_active=%d shards_moving=%d"
+			"REPORT draw_calls=%d objects=%d primitives=%d physics_active=%d shards_moving=%d time_scale=%.2f"
 			% [
 				Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
 				Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME),
 				Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME),
 				Performance.get_monitor(Performance.PHYSICS_3D_ACTIVE_OBJECTS),
 				shards,
+				Engine.time_scale,
 			]
 		)
 	)
+
+
+func _process(_delta: float) -> void:
+	# Red de seguridad: el tiempo nunca se queda ralentizado fuera de un hit-stop.
+	if Engine.time_scale != 1.0 and not HitStop.is_active():
+		Engine.time_scale = 1.0
 
 
 func _unhandled_input(event: InputEvent) -> void:

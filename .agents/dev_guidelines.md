@@ -261,7 +261,8 @@ godot --path game --write-movie /tmp/captura/f.png --fixed-fps 60 --quit-after 1
 godot --headless --path game --script res://tests/smoke/progression_smoke.gd
 ```
 
-- `tests/smoke/progression_smoke.gd` cubre `Progression` y `StreakTracker`.
+- `tests/smoke/progression_smoke.gd` cubre `Progression` y `StreakTracker`; `tests/smoke/hit_stop_smoke.gd`, que el tiempo
+  siempre vuelve a la normalidad tras un hit-stop.
 - Toda regla de juego nueva llega con su test.
 - Antes de cada commit, como mínimo: el proyecto abre sin errores en headless, `gdlint` limpio y tests en verde.
 
