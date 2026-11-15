@@ -33,6 +33,13 @@ func _init() -> void:
 	restored.load_dict(p.to_dict())
 	_check(restored.to_dict() == p.to_dict(), "guardar y cargar conserva el estado")
 
+	var streak := StreakTracker.new(2.0)
+	_check(streak.register_hit(0.0) == 1, "primer golpe: racha 1")
+	_check(streak.register_hit(1.5) == 2, "golpe dentro de la ventana suma racha")
+	_check(not streak.expire(3.0), "la racha sigue viva dentro de la ventana")
+	_check(streak.expire(3.6) and streak.streak == 0, "la racha caduca fuera de la ventana")
+	_check(streak.register_hit(10.0) == 1, "tras caducar se empieza de nuevo")
+
 	print("progression_smoke: %s" % ("OK" if _failures == 0 else "%d fallos" % _failures))
 	quit(1 if _failures > 0 else 0)
 

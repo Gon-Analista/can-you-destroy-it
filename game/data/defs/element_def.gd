@@ -8,3 +8,5 @@ extends Resource
 @export var base_damage: float = 1.0
 @export var cooldown_sec: float = 1.5
 @export var unlock_pylon_ratio: float = 0.0
+## Niveles de poder del elemento (el índice 0 es el inicial).
+@export var tiers: Array[SpellTier] = []

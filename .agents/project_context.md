@@ -73,7 +73,10 @@ Todos estos números viven en recursos de datos (`.tres`), nunca hardcodeados (v
 
 - Mundo **3D renderizado a baja resolución** (640x360 propuesta) escalado por enteros, filtro nearest, shading
   por bandas, contorno por post-proceso. Fondo lejano (cielo, montañas, castillo, aldea) en **capas 2D con parallax**.
-- **Manos y hechizos** como sprites 2D animados a mano sobre una capa de canvas, misma escala de píxel.
+- **Manos**: en el prototipo, mallas low-poly con shader toon (mangas violeta, brazaletes dorados, palmas hacia
+  arriba) a la misma escala de píxel. Sprites 2D dibujados a mano sólo si el arte final lo pide.
+- **Todo es reactivo**: cada impacto dispara la lista completa de respuestas del GDD 10.3 (manos, proyectil,
+  cristal, fragmentos, partículas, luz, cámara, sonido y HUD). Racha y golpe resonante: GDD 10.4.
 - **Cristal Madre:** racimo de cristales de hielo azul (luz arriba a la izquierda, sombras azul profundo,
   corazón violeta oscuro en la base). Ver `docs/referencias/cristal_referencia.png`.
 - **Paleta base** (orientativa, sacada de las referencias):
@@ -86,31 +89,48 @@ Todos estos números viven en recursos de datos (`.tres`), nunca hardcodeados (v
 
 | Ruta | Qué es |
 |---|---|
-| `Can_You_Destroy_It_GDD.pdf` | GDD v0.2 (fuente del diseño). |
+| `Can_You_Destroy_It_GDD.pdf` | GDD v0.3 (fuente del diseño). |
+| `CHANGELOG.md` | Registro de cada push a `main`. |
+| `CREDITS.md` | Licencias de fuentes y recursos de terceros. |
+| `tools/sfx_synth.py` | Sintetiza todos los SFX del prototipo (`python3 tools/sfx_synth.py`, requiere numpy, scipy y ffmpeg). |
+| `tools/godot/make_spark_element.gd` | Volcado inicial de `data/elements/spark.tres`. |
+| `docs/capturas/` | Capturas y GIF del prototipo. |
 | `tools/make_gdd.py` | Genera el PDF del GDD (`python3 tools/make_gdd.py Can_You_Destroy_It_GDD.pdf`). Requiere `reportlab` y `Pillow`. |
 | `docs/referencias/` | Imágenes de referencia de cristal y estilo. **No son arte final.** |
 | `AGENTS.md`, `.agents/` | Instrucciones para agentes. |
 | `game/` | Proyecto Godot 4.7 (abrir `game/project.godot`). |
 | `.mcp.json` | Servidor MCP de Godot para agentes (ver dev guidelines, sección 14). |
 
-**Proyecto Godot creado (esqueleto).** Lo que ya existe en `game/`:
+**Prototipo M1a "El golpe" jugable** (`game/main/main.tscn`):
 
-- `project.godot`: 640x360 con escalado entero, filtro nearest, Forward+, Jolt, avisos de tipado, mapa de entrada
-  (clic izq./der. lanzar, WASD, Q/E cambiar elemento, F interactuar, Tab Grimorio), buses de audio.
-- Autoloads: `Events`, `Settings`, `GameState`, `SaveSystem`, `AudioDirector`.
-- `core/progression.gd`: reglas puras (esencia, Pilón, maná, compra de mejoras, guardar y cargar).
-- `data/defs/`: clases de recursos `BalanceConfig`, `ElementDef`, `SpellRecipe`, `UpgradeNode`, `CrystalLayerDef`;
-  `data/balance/default_balance.tres` con los números de arranque.
-- `main/main.tscn`: escena provisional (cielo, suelo, cristal hexagonal de marcador, HUD del Pilón y FPS).
-- `tests/smoke/progression_smoke.gd`: test rápido de `Progression` (pasa).
+- **Valle** procedural (`world/valley.gd`): suelo ondulado con colisión, ~900 pinos en `MultiMesh`, montañas
+  nevadas, colina con castillo de tejados azules y aldea de tejados rojos; cielo pixel art con tramado y nubes
+  (`world/sky.gdshader`); niebla de profundidad para la perspectiva atmosférica.
+- **Cristal Madre** (`crystal/`): racimo de 15 prismas según la referencia, shader con bandas de paleta, corazón
+  violeta, brillo que recorre las facetas, grietas persistentes (voronoi 3D) y destellos/ondas de impacto.
+  `ShardPool` con 64 fragmentos físicos reciclados que se congelan al quedarse quietos.
+- **Mago** (`player/`): primera persona (ratón + WASD), manos low-poly animadas por código, `SpellCaster` con
+  enfriamiento, buffer, golpe resonante y pool de 12 chispas; `CameraRig` con sacudida por trauma y golpe de FOV.
+- **Chispa** (`spells/`, `data/elements/spark.tres`): 5 niveles de poder (`SpellTier`) que cambian daño, cadencia,
+  velocidad, tamaño, color, fragmentos, partículas, luz, grietas y sacudida.
+- **Efectos** (`fx/`): shader toon, contorno de post-proceso (profundidad + normales), `ImpactFx` (estrellas,
+  esquirlas, anillo y luz en pool), `HitStop`.
+- **HUD** (`ui/`): Esencia con número rodante, mira con anillo de carga y marcador de impacto, racha, avisos,
+  números flotantes, Pilón, FPS y ayuda de debug. Fuentes Silkscreen (texto pequeño) y Pixelify Sans (números).
+- **Audio** (`audio/sfx/`): 20 OGG sintetizados (tink ×4, fragmentos, chispa, campanitas, acorde resonante,
+  ambiente del valle y zumbido del cristal en bucle).
+- **Debug** (sólo builds de desarrollo): teclas 1-5 cambian el nivel de la chispa; modo demo para grabar:
+  `godot --path game -- --autoplay --tier=N` (añadir `--report` para imprimir draw calls y física).
+- `tests/smoke/progression_smoke.gd`: reglas de `Progression` y `StreakTracker` (pasa).
 
-Aún **no** hay jugabilidad: el siguiente paso es el prototipo M1.
+**Aún no hay**: recoger ni entregar fragmentos, Pilón físico, Santuario ni mejoras compradas. Es lo siguiente (M1b).
 
 ## 8. Hitos
 
 | Hito | Contenido | Criterio de éxito |
 |---|---|---|
-| **M1 Prototipo** | Proyecto Godot 4.7, pipeline pixel art, cristal con facetas, chispa, fragmentos, entrega manual, Pilón, 5 mejoras. | Los primeros 5 minutos ya son divertidos. 60 fps estables. |
+| **M1a El golpe** ✅ | Arte base del valle y del cristal, una chispa con 5 niveles y la reacción completa del cristal (GDD 10.3 y 10.4). | Golpear el cristal ya da gusto sin nada más. |
+| **M1b Prototipo** | Recoger y entregar fragmentos, Pilón, 5 mejoras. | Los primeros 5 minutos ya son divertidos. 60 fps estables. |
 | **M2 Vertical slice** | Santuario básico, 2 elementos, 1 combinación, telequinesis, capa Corteza completa. | 30 minutos sin baches. |
 | **M3 Contenido** | 5 elementos, todas las combinaciones, 7 ramas, familiares, todas las capas. | Se puede terminar de principio a fin. |
 | **M4 Final y pulido** | Gran Convergencia, balance, audio, logros de Steam. | 2 a 3 h; el final emociona. |
@@ -127,10 +147,17 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-15 | Esencia total = 1.000.000; Pilón y maná separados. | Recurso finito y visible; gastar no quita progreso. |
 | 2026-11-15 | Proyecto en `game/`; render a 640x360 con stretch `viewport` + escalado `integer` para todo (mundo y UI). | Lo más simple que da pixel art nítido; revisar si la UI necesita más resolución. |
 | 2026-11-15 | godot-mcp 0.1.1 como herramienta de agentes (`.mcp.json`). | Permite ejecutar el proyecto y leer errores para verificar cambios. |
+| 2026-11-15 | Arte del prototipo generado por código: mallas low-poly (`core/mesh_kit.gd`) + shader toon + contorno de post-proceso a 640x360. | Calidad pixel art coherente sin artista todavía; todo se puede retocar o sustituir. |
+| 2026-11-15 | Manos en 3D low-poly en vez de sprites 2D (de momento). | Se integran con la luz y el contorno; los sprites 2D quedan como opción para el arte final. |
+| 2026-11-15 | SFX sintetizados con `tools/sfx_synth.py` (OGG). | Sonido reactivo desde el día 1; reproducibles; se sustituirán por diseño de sonido profesional. |
+| 2026-11-15 | Fuentes: Silkscreen 8 px (texto pequeño) y Pixelify Sans (números), ambas OFL, sin antialiasing. | Nítidas a 640x360. |
+| 2026-11-15 | Números flotantes activados por defecto (antes: ocultos). Racha con escala pentatónica y golpe resonante del 7 %. | Más dopamina en el golpe, pedido explícito. |
+| 2026-11-15 | Flujo de git: commit y push a `main`, cada push documentado en `CHANGELOG.md`. | Pedido del equipo. |
 
 ## 10. Preguntas abiertas
 
-- Confirmar 3D a baja resolución frente a 2D puro tras el prototipo M1.
+- Confirmar 3D a baja resolución frente a 2D puro tras jugar el prototipo M1a.
+- Arte final: ¿artista pixel art, arte procedural pulido o mezcla? (de momento todo es procedural).
 - Resolución interna final (640x360 propuesta) tras probarla en 1440p y Steam Deck.
 - ¿Modo infinito o New Game+ tras el final?
 - Precio y fecha objetivo en Steam.

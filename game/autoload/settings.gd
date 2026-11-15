@@ -6,7 +6,9 @@ const PATH: String = "user://settings.cfg"
 var screen_shake: float = 1.0
 var reduce_flashes: bool = false
 var hold_to_charge: bool = true
-var bus_volumes: Dictionary[String, float] = {"Master": 1.0, "Music": 0.8, "SFX": 1.0, "UI": 1.0, "Ambience": 0.8}
+var bus_volumes: Dictionary[String, float] = {
+	"Master": 1.0, "Music": 0.8, "SFX": 1.0, "UI": 1.0, "Ambience": 0.8
+}
 
 
 func _ready() -> void:

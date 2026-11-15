@@ -107,7 +107,7 @@ def cover(c, doc):
     c.setFillColor(colors.white); c.setFont("Serif-Bold", 34)
     c.drawCentredString(W / 2, 58 * mm, "Can you destroy it?")
     c.setFillColor(GLOW); c.setFont("Sans", 12)
-    c.drawCentredString(W / 2, 47 * mm, "Game Design Document  \u00b7  v0.2")
+    c.drawCentredString(W / 2, 47 * mm, "Game Design Document  \u00b7  v0.3")
     c.setFillColor(colors.HexColor("#c9c6e4")); c.setFont("Sans", 9.5)
     c.drawCentredString(W / 2, 39 * mm, "Incremental en primera persona  \u00b7  Pixel art  \u00b7  Godot 4.7  \u00b7  Noviembre 2026")
     c.setFont("Sans", 7); c.setFillColor(colors.HexColor("#8f8cb0"))
@@ -119,7 +119,7 @@ def page(c, doc):
     c.saveState()
     c.setStrokeColor(LINE); c.setLineWidth(0.5); c.line(18 * mm, H - 14 * mm, W - 18 * mm, H - 14 * mm)
     c.setFont("Sans", 7.5); c.setFillColor(GREY)
-    c.drawString(18 * mm, H - 12 * mm, "Can you destroy it?  —  GDD v0.2")
+    c.drawString(18 * mm, H - 12 * mm, "Can you destroy it?  —  GDD v0.3")
     c.drawRightString(W - 18 * mm, 11 * mm, str(doc.page))
     c.restoreState()
 
@@ -323,6 +323,9 @@ T([["Parámetro", "Valor inicial", "Notas"],
    ["Distancia cristal -> Pilón", "≈ 10 m", "Unos 4 s de caminata."],
    ["Capacidad de manos", "1 fragmento", "La primera mejora (5 maná) sube a 5."],
    ["Primera mejora", "5 maná", "Debe llegar en menos de 30 s."],
+   ["Ventana de racha", "2,6 s", "Tiempo máximo entre golpes para mantener la racha."],
+   ["Golpe resonante", "7 % de probabilidad, daño x3", "Base sin mejoras; la rama Resonancia lo sube."],
+   ["Buffer de lanzamiento", "0,3 s", "Un clic un poco antes de tiempo no se pierde."],
    ["Coste por nivel", "base x 1,15 a 1,25", "Curva por rama; hitos con salto mayor."]],
   [48, 44, 82])
 P("Regla de diseño: <b>siempre debe haber algo comprable en menos de 60 segundos</b> durante la primera hora, "
@@ -360,8 +363,31 @@ T([["Acción", "Tecla"],
 H2("10.2 HUD")
 B(["Arriba: barra del Pilón en %, con las marcas de desbloqueo.",
    "Abajo a la derecha: maná disponible y fragmentos en la bolsa.",
-   "Sin números flotantes de daño al principio; se desbloquean como opción para quien los quiera.",
+   "Números flotantes pequeños (-1) en cada impacto, activados por defecto y desactivables en Opciones; el golpe resonante muestra un número grande dorado.",
+   "Centro: mira pixel art con anillo de 12 puntos que se llena mientras el hechizo recarga y marcador de impacto al acertar.",
+   "Arriba al centro: Esencia del Cristal con número grande que baja rodando y da un golpe de escala y color en cada impacto.",
    "Las manos y los propios hechizos son el indicador principal de poder."])
+
+H2("10.3 Reacción al golpe (especificación)")
+P("Regla: <b>todo es reactivo</b>. Cada impacto contra el Cristal Madre dispara, a la vez, todas estas respuestas. "
+  "Si alguna falta, el golpe no está terminado. Es la referencia para cualquier hechizo nuevo.")
+T([["Capa", "Respuesta", "Escala con el poder"],
+   ["Manos", "Empujón hacia delante con retroceso elástico; el orbe de la palma se gasta y se vuelve a cargar; destello y campanita al estar listo.", "Orbe más grande y brillante."],
+   ["Proyectil", "Rombo brillante con rayos, estela de chispitas y luz cálida. A nivel 1 vuela torpe, con bamboleo.", "Más rápido, más grande, menos bamboleo; el color pasa de naranja a rosa mágico."],
+   ["Cristal", "Destello en la faceta + onda que se expande por la superficie; grieta persistente; temblor de centímetros; pulso del corazón violeta.", "Grietas y ondas más grandes."],
+   ["Fragmentos", "Saltan con física, giran, rebotan con tintineo y brillan periódicamente en el suelo.", "Más fragmentos y más grandes."],
+   ["Partículas y luz", "Estrellas pixel, esquirlas con gravedad, anillo que se expande y flash de luz.", "Más partículas y luz más intensa."],
+   ["Cámara", "Sacudida por trauma (respeta la opción de accesibilidad) y pequeño golpe de FOV al lanzar.", "Más sacudida; hit-stop desde daño 5."],
+   ["Sonido", "'Tink' de cristal + crujido de esquirlas en 3D; el tono sube por una escala pentatónica con la racha.", "Más capas de sonido."],
+   ["HUD", "Número flotante, la Esencia baja rodando con golpe de escala, marcador de impacto, contador de racha.", "Números más grandes."]],
+  [24, 98, 52])
+H2("10.4 Racha y golpe resonante (dopamina)")
+B(["<b>Racha</b>: golpes seguidos con menos de 2,6 s entre ellos. Cada golpe sube una nota del 'tink' (escala pentatónica) "
+   "y el contador 'x5' salta y cambia de color (cian, violeta, rosa, oro). Al cortarse, el contador se desvanece.",
+   "<b>Hitos de racha</b> (5, 10, 25, 50, 100): campanilla ascendente y aviso grande '¡RACHA x10!'.",
+   "<b>Golpe resonante</b> (7 %): daño x3, el doble de fragmentos, destello dorado en todo el cristal, hit-stop de 90 ms, "
+   "acorde mágico, sacudida fuerte y aviso '¡GOLPE RESONANTE!'.",
+   "<b>Buffer</b>: un clic hasta 0,3 s antes de que termine la recarga se guarda y sale solo; nunca se siente que el juego 'se comió' un clic."])
 
 # 11
 story.append(PageBreak())
@@ -419,7 +445,8 @@ B(["Mundo en <b>3D</b> renderizado a <b>baja resolución interna</b> (640x360) y
    "Texturas pintadas en pixel art con filtro nearest y densidad de texel constante; iluminación por bandas con shader toon, "
    "contorno por post-proceso y paleta limitada.",
    "Fondo (cielo, montañas, castillo, aldea lejana) como capas 2D pintadas con parallax: así el horizonte es idéntico a la referencia.",
-   "Manos y hechizos en primer plano como sprites 2D animados a mano sobre una capa de canvas, a la misma escala de píxel.",
+   "Manos en primer plano: en el prototipo son mallas low-poly con shader toon y la paleta de la referencia (mangas violeta, brazaletes dorados), renderizadas a la misma escala de píxel. Se sustituirán por sprites 2D dibujados a mano si el arte final lo pide.",
+   "Contorno por post-proceso (profundidad + normales) a 1 píxel y luces/sombras por bandas: así el 3D se lee como pixel art.",
    "Alternativa si el prototipo M1 no convence: 2D puro en vista frontal fija, rotando entre tres pantallas (Cristal, Pilón, Santuario)."])
 H2("11.4 Audio")
 B(["<b>Música</b>: orquesta pequeña de fantasía (arpa, flauta, cuerdas, coro suave) con capas que se suman con cada rango de mago.",

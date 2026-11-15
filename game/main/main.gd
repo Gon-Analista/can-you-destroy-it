@@ -1,21 +1,82 @@
 extends Node3D
-## Escena raíz provisional: valida el pipeline pixel art (640x360, escalado entero)
-## y el cableado del estado. Se reemplaza en M1 por el valle real.
+## Escena del prototipo "El golpe": el valle, el Cristal Madre, el mago y el HUD.
+## Captura el ratón al hacer clic y lo suelta con Esc.
 
-@onready var _pylon_label: Label = %PylonLabel
-@onready var _fps_label: Label = %FpsLabel
+const SUN_DIR := Vector3(0.55, -0.65, -0.52)
+const AMBIENCE: AudioStream = preload("res://audio/sfx/amb_valley_loop.ogg")
+
+@onready var _sun: DirectionalLight3D = $Sun
+@onready var _player: Player = $Player
+@onready var _hud: Hud = $HUDLayer/Hud
 
 
 func _ready() -> void:
-	Events.pylon_changed.connect(_on_pylon_changed)
-	_fps_label.visible = OS.is_debug_build()
+	_sun.look_at_from_position(Vector3.ZERO, SUN_DIR.normalized(), Vector3.UP)
+	_hud.bind(_player.get_camera(), _player.get_caster())
+	AudioDirector.play_ambience(AMBIENCE, -10.0)
 	GameState.emit_all()
+	if OS.is_debug_build():
+		_setup_autoplay()
 
 
-func _process(_delta: float) -> void:
-	if _fps_label.visible:
-		_fps_label.text = "%d fps" % Engine.get_frames_per_second()
+## Modo demo para grabar capturas sin ratón (sólo debug):
+## godot --path game -- --autoplay [--tier=N] [--yaw=grados] [--pitch=grados]
+func _setup_autoplay() -> void:
+	var args: PackedStringArray = OS.get_cmdline_user_args()
+	if not args.has("--autoplay"):
+		return
+	var tier: int = 0
+	for a: String in args:
+		if a.begins_with("--tier="):
+			tier = int(a.get_slice("=", 1)) - 1
+		elif a.begins_with("--yaw="):
+			_player.rotation.y = deg_to_rad(float(a.get_slice("=", 1)))
+		elif a.begins_with("--pitch="):
+			(_player.get_node(^"Head") as Node3D).rotation.x = deg_to_rad(
+				float(a.get_slice("=", 1))
+			)
+	_player.get_caster().set_tier(tier)
+	_hud.force_captured_look = true
+	var timer := Timer.new()
+	timer.wait_time = 0.05
+	timer.autostart = true
+	var side: Array[int] = [0]
+	timer.timeout.connect(
+		func() -> void:
+			_player.get_caster().try_cast(side[0])
+			side[0] = 1 - side[0]
+	)
+	add_child(timer)
+	if args.has("--report"):
+		get_tree().create_timer(4.0).timeout.connect(_print_report)
 
 
-func _on_pylon_changed(_progress: int, ratio: float) -> void:
-	_pylon_label.text = tr("Pilón de Maná: %.2f %%") % (ratio * 100.0)
+func _print_report() -> void:
+	var shards: int = 0
+	for body: Node in get_tree().get_nodes_in_group(&"shards"):
+		if not (body as RigidBody3D).freeze:
+			shards += 1
+	print(
+		(
+			"REPORT draw_calls=%d objects=%d primitives=%d physics_active=%d shards_moving=%d"
+			% [
+				Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
+				Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME),
+				Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME),
+				Performance.get_monitor(Performance.PHYSICS_3D_ACTIVE_OBJECTS),
+				shards,
+			]
+		)
+	)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if (
+		event is InputEventMouseButton
+		and event.is_pressed()
+		and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED
+	):
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed(&"ui_cancel"):
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE

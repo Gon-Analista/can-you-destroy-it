@@ -24,7 +24,9 @@ func _notification(what: int) -> void:
 
 
 func save_game() -> bool:
-	var payload: Dictionary = {"version": SAVE_VERSION, "progression": GameState.progression.to_dict()}
+	var payload: Dictionary = {
+		"version": SAVE_VERSION, "progression": GameState.progression.to_dict()
+	}
 	var file: FileAccess = FileAccess.open(TMP_PATH, FileAccess.WRITE)
 	if file == null:
 		push_error("No se pudo escribir el guardado: %s" % FileAccess.get_open_error())

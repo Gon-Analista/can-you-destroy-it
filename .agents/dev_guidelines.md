@@ -45,6 +45,10 @@ Tecnologías ya previstas (validar la versión al integrarlas):
 | Lint y formato | gdtoolkit (`gdlint`, `gdformat`) | Ejecutar antes de cada commit. |
 | Steam (logros, nube) | GodotSteam (GDExtension) | Sólo a partir de M4. |
 | Arte pixel | Aseprite (fuentes `.aseprite`) + exportación PNG | Importar con filtro nearest. |
+| Mallas del prototipo | `core/mesh_kit.gd` (prismas, conos, cajas con normales planas y color por vértice) | Corrige el orden de vértices solo. |
+| Contorno pixel art | `fx/outline.gdshader`: post-proceso de profundidad + normales | Técnica estándar de "3D pixel art" en Godot 4. |
+| SFX del prototipo | `tools/sfx_synth.py` (numpy + scipy + ffmpeg) | Reproducible con semillas fijas. |
+| Fuentes | Silkscreen (8 px) y Pixelify Sans, OFL | Importadas sin antialiasing, hinting ni subpíxel. |
 
 ## 3. Proyecto Godot
 
@@ -156,11 +160,38 @@ Toda acción visible debe tener, como mínimo:
 - [ ] **Escala con el poder**: el mismo efecto a nivel 1 y a nivel 50 debe verse distinto.
 - [ ] Sacudida de cámara **sólo** si el golpe la merece y respetando la opción de accesibilidad.
 
-### 5.3 Definición de "terminado" para algo visual
+### 5.3 Todo es reactivo
+
+Regla del proyecto: **ningún cambio de estado sin respuesta visual y sonora**. Cada hechizo, impacto, recogida,
+compra o hito debe cumplir la especificación del GDD 10.3 (manos, proyectil, objetivo, partículas y luz, cámara,
+sonido y HUD) y la de racha y golpe resonante (GDD 10.4). Si falta una capa, no está terminado.
+
+- La reacción escala con el poder: definir los valores visuales en recursos (`SpellTier`), no en el código.
+- La dopamina viene de la **variación** (tono que sube con la racha, golpes resonantes aleatorios, hitos) y de
+  la **respuesta inmediata** (buffer de entrada, hit-stop, números que ruedan).
+- Respeta la accesibilidad: la sacudida de cámara pasa siempre por `Settings.screen_shake`.
+
+### 5.4 Trampas conocidas del pipeline
+
+- **Colores por vértice en sRGB.** En shaders propios, `COLOR` llega en sRGB: convertirlo a lineal (ver
+  `fx/toon.gdshader`) o todo sale lavado.
+- **Partículas y contorno.** El quad de contorno usa `render_priority = -100` para dibujarse antes que el resto de
+  transparentes; si no, taparía las partículas.
+- **Fuentes pixel.** Importar sin antialiasing, hinting ni subpíxel y usarlas sólo a su tamaño nativo o múltiplos.
+- **Bucle de audio.** Activarlo en la importación del OGG (`loop=true`), no duplicando el recurso en código.
+- **Aviso al salir en headless.** Un `AudioStreamPlayer` con un OGG en bucle deja avisos de "leaked instances" al
+  cerrar con `--quit-after`; es del motor y también ocurre en un proyecto vacío. Ignorarlo.
+
+### 5.5 Definición de "terminado" para algo visual
 
 - Probado a la resolución interna y escalado x2, x3 y x4, y en 1280x800 (Steam Deck).
 - Sin mixels, sin texturas borrosas, sin parpadeos.
-- Captura o GIF adjunto en el PR.
+- Captura o GIF en `docs/capturas/` y enlazado en el `CHANGELOG.md`. Para grabar sin ratón:
+
+```bash
+godot --path game --write-movie /tmp/captura/f.png --fixed-fps 60 --quit-after 180 -- --autoplay --tier=1
+```
+
 - Comparado lado a lado con la referencia de estilo.
 
 ## 6. Rendimiento
@@ -230,6 +261,7 @@ Toda acción visible debe tener, como mínimo:
 godot --headless --path game --script res://tests/smoke/progression_smoke.gd
 ```
 
+- `tests/smoke/progression_smoke.gd` cubre `Progression` y `StreakTracker`.
 - Toda regla de juego nueva llega con su test.
 - Antes de cada commit, como mínimo: el proyecto abre sin errores en headless, `gdlint` limpio y tests en verde.
 
@@ -251,9 +283,13 @@ gdlint game && gdformat --check game
 
 ## 12. Git y flujo de trabajo
 
-- Una rama por tarea; commits pequeños con mensaje en español en imperativo ("Añade pool de fragmentos").
+- Al terminar una tarea: **commit y push a `main`** (decisión del equipo). Commits pequeños con mensaje en
+  español en imperativo ("Añade pool de fragmentos"); se puede usar una rama de trabajo local, pero el resultado
+  se integra en `main` y se sube.
+- **Cada push se documenta en `CHANGELOG.md`** (raíz del repo), en el mismo push: fecha, título, qué cambia,
+  cómo se probó, capturas o GIF si es visual, pendientes y problemas conocidos. La entrada más reciente va arriba.
+- Al terminar, comentar el push al equipo con un resumen (el mismo de la entrada del changelog).
 - No subir `game/.godot/` ni builds (`.gitignore`).
-- Un PR por funcionalidad, con: qué cambia, cómo se probó, capturas o GIF si es visual, resultado de la escena de estrés si afecta al rendimiento.
 - Mantener al día `project_context.md` (estado del repo, registro de decisiones) en el mismo commit que el cambio.
 
 ## 13. Addons en uso
@@ -261,6 +297,8 @@ gdlint game && gdformat --check game
 | Addon | Versión | Licencia | Para qué |
 |---|---|---|---|
 | *(ninguno todavía)* | | | |
+
+Recursos de terceros (fuentes) en `CREDITS.md`.
 
 ## 14. Herramientas para agentes: Godot MCP
 
