@@ -2,9 +2,19 @@
   "mcpServers": {
     "godot": {
       "command": "npx",
-      "args": ["-y", "@coding-solo/godot-mcp@0.1.1"],
+      "args": [
+        "-y",
+        "@coding-solo/godot-mcp@0.1.1"
+      ],
       "env": {
         "DEBUG": "false"
+      }
+    },
+    "sprite-ai": {
+      "type": "http",
+      "url": "https://www.sprite-ai.art/api/mcp",
+      "headers": {
+        "Authorization": "Bearer ${SPRITE_AI_API_KEY}"
       }
     }
   }

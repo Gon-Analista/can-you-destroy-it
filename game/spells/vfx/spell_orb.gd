@@ -53,6 +53,9 @@ func _ready() -> void:
 func appear() -> void:
 	_release_t = -1.0
 	visible = true
+	# Si el estallido se corta antes de terminar, el núcleo y las cintas siguen ocultos.
+	_core.visible = true
+	_ribbon_pivot.visible = true
 	_sparkles.emitting = true
 	_ribbon_pivot.scale = Vector3.ONE
 	_core_mat.set_shader_parameter("burst", 0.0)

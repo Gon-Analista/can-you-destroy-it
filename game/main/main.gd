@@ -57,6 +57,20 @@ func _setup_autoplay() -> void:
 			side[0] = 1 - side[0]
 	)
 	add_child(timer)
+	if args.has("--collect"):
+		# Tras unos golpes: camina hacia el cristal y mantiene F para recoger.
+		var t1: SceneTreeTimer = get_tree().create_timer(3.0)
+		t1.timeout.connect(
+			func() -> void:
+				timer.stop()
+				Input.action_press(&"move_forward")
+		)
+		var t2: SceneTreeTimer = get_tree().create_timer(5.2)
+		t2.timeout.connect(
+			func() -> void:
+				Input.action_release(&"move_forward")
+				Input.action_press(&"interact")
+		)
 	if args.has("--report"):
 		get_tree().create_timer(4.0, true, false, true).timeout.connect(_print_report)
 
@@ -68,7 +82,10 @@ func _print_report() -> void:
 			shards += 1
 	print(
 		(
-			"REPORT draw_calls=%d objects=%d primitives=%d physics_active=%d shards_moving=%d time_scale=%.2f"
+			(
+				"REPORT draw_calls=%d objects=%d primitives=%d physics_active=%d"
+				+ " shards_moving=%d time_scale=%.2f"
+			)
 			% [
 				Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
 				Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME),

@@ -57,15 +57,17 @@ func build(scale: float, seed_value: int) -> void:
 	mesh = MeshKit.commit(st)
 
 
-## Malla de un fragmento suelto: prisma pentagonal irregular con punta.
-static func build_shard_mesh(seed_value: int) -> ArrayMesh:
+## Malla de un fragmento suelto del tipo `type`: prisma irregular con punta.
+## La astilla es una aguja fina; el fragmento grande, un trozo grueso de 6 caras.
+static func build_shard_mesh(type: ShardType, seed_value: int) -> ArrayMesh:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	var st: SurfaceTool = MeshKit.begin()
-	var r: float = rng.randf_range(0.22, 0.32)
-	var h: float = rng.randf_range(0.35, 0.55)
+	var r: float = type.radius * rng.randf_range(0.85, 1.15)
+	var h: float = type.height * rng.randf_range(0.85, 1.2)
+	var tip: float = type.tip * rng.randf_range(0.85, 1.2)
 	var axis := Vector3(rng.randf_range(-0.2, 0.2), 1.0, rng.randf_range(-0.2, 0.2)).normalized()
 	MeshKit.add_prism(
-		st, Vector3.ZERO, axis, r, h * 0.5, h * 0.6, 5, Color.WHITE, Color.WHITE, rng, 0.2, 0.9
+		st, -axis * h * 0.4, axis, r, h, tip, type.sides, Color.WHITE, Color.WHITE, rng, 0.2, 0.85
 	)
 	return MeshKit.commit(st)

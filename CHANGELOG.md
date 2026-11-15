@@ -38,6 +38,94 @@ Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev
 - Opción de volumen de música en `Settings` (el bus `Music` ya existe).
 - Variantes para el Santuario y la Gran Convergencia (misma herramienta, otra progresión).
 
+## 2026-11-15 · Manos verticales que se juntan sobre el hechizo
+
+**Qué hay nuevo**
+
+- **Manos en vertical** (Sprite AI, cuenta 3): el antebrazo sube desde abajo y la mano está en alto, con los dedos
+  hacia el centro. Sustituyen a las manos horizontales desde los lados del push anterior.
+- **Se juntan dinámicamente desde donde estaban**: tras lanzar quedan abajo y separadas, con la palma abierta;
+  mientras recarga suben y se juntan, y los dedos se curvan frame a frame (6 frames) hasta acunar el hechizo.
+  Al lanzar dan un empujón hacia arriba y vuelven abajo con rebote.
+- **El Orbe Arcano flota sobre las palmas** y crece con la carga; estalla al lanzar y se vuelve a formar.
+- **Arreglo en `SpellOrb.appear()`** (código del otro agente): si se llamaba antes de que acabara el estallido,
+  el núcleo y las cintas se quedaban ocultos y el orbe no volvía a verse. Ahora `appear()` los restaura.
+
+**Capturas**: `docs/capturas/manos_verticales_orbe.gif`, `docs/capturas/manos_verticales_orbe.png`.
+
+**Cómo se probó**
+
+- Godot 4.7 headless sin errores de script; `progression_smoke` y `hit_stop_smoke`: OK; `gdlint` limpio.
+- Render Forward+ en modo demo (nivel 1, 280 frames): el orbe aparece en todos los ciclos y las manos suben y se
+  juntan desde abajo. Traza de estado del orbe frame a frame para localizar el fallo de `appear()`.
+
+**Pendiente**
+
+- Cuenta 3 de Sprite AI: 0 tokens.
+- Las manos siguen teniendo la palma algo hacia la cámara; con más tokens, una variante vista más desde el lado del pulgar.
+
+## 2026-11-15 · Las manos se juntan para el hechizo + integración del Orbe Arcano
+
+Integra en `main` el trabajo del otro agente (rama `claude/keen-lovelace-7haa9v`: hechizos por capas, `SpellOrb`,
+Orbe Arcano y galería de VFX, ver su entrada más abajo) y lo usa en el juego.
+
+**Qué hay nuevo**
+
+- **Manos nuevas que se juntan** (Sprite AI, cuenta 2): las 4 poses anteriores tenían la palma hacia la cámara y se
+  veían en diagonal hacia fuera. Ahora una animación de 7 frames de la mano izquierda (la derecha es su reflejo)
+  pasa de abierta a ahuecada: los antebrazos entran desde los lados y las palmas se miran, como en la referencia.
+- **La carga lo gobierna todo**: mientras recarga, las manos se acercan al centro y se van cerrando frame a frame;
+  al estar listas sujetan el hechizo a tope y laten; al lanzar se abren hacia fuera con rebote.
+- **Orbe Arcano entre las palmas**: el `SpellOrb` del otro agente crece con la carga, estalla (`release`) al lanzar y
+  vuelve a formarse; la chispa sale de su centro.
+- Sprites procesados: manga alargada hasta el borde de la pantalla y huecos internos rellenados (se veía el orbe
+  3D a través de las palmas). Detalles y registro en `docs/sprite_ai.md`.
+- La galería de VFX se adapta a las manos nuevas (oculta el orbe de las manos para mostrar el suyo).
+
+**Capturas**: `docs/capturas/manos_juntas_orbe.png`.
+
+**Cómo se probó**
+
+- Godot 4.7 headless: juego y galería sin errores de script; `progression_smoke` y `hit_stop_smoke`: OK; `gdlint` limpio.
+- Render Forward+ en modo demo (nivel 2): ciclo cargar, lanzar, estallar y volver a formar revisado frame a frame.
+
+**Pendiente**
+
+- Las mangas alargadas repiten la tela (bandas horizontales); con otra cuenta de Sprite AI se puede generar un
+  antebrazo más largo.
+- El color del orbe no cambia todavía con el nivel de la chispa (el `SpellVisualDef` es fijo).
+- Cuenta 2 de Sprite AI: 0 tokens.
+
+## 2026-11-15 · Manos pixel art en primera persona (Sprite AI), 3 tamaños de fragmento y recogida
+
+**Qué hay nuevo**
+
+- **Manos del mago nuevas**: sprites pixel art 2D en primera persona generados con Sprite AI, en 4 poses
+  (abierta, carga con el orbe entre los dedos, lanzar, reposo). La izquierda es el sprite original (pulgar hacia
+  fuera) y la derecha su reflejo. Animación por código a píxel entero: respiración, paso al caminar, empujón con
+  rebote al lanzar, cambio de pose según la recarga y tirón al recoger. La chispa sale de la palma que se ve.
+- **Orbe mágico** de Sprite AI flotando sobre la palma mientras se carga; brilla al estar listo.
+- **3 tamaños de fragmento** según el daño del golpe: **astilla** (aguja fina, daño 1-2), **fragmento** (el de
+  antes, daño 3-9) y **fragmento grande** (daño 10+). Un golpe resonante sube un tamaño. Datos en `game/data/shards/`.
+- **Recoger fragmentos con F**: el que apuntas (o el más cercano delante) se resalta y aparece "[F] RECOGER
+  ASTILLA"; al recogerlo vuela a la mano encogiéndose, suena un "bloop" (más grave cuanto más grande), sale "+1"
+  y la **bolsa** (abajo a la derecha) cuenta por tipo. Mantener F recoge en cadena. Todavía no se entregan.
+- **Sprite AI integrado**: `.mcp.json` con el servidor `sprite-ai` (clave por variable `SPRITE_AI_API_KEY`, nunca en
+  el repo), cliente `tools/sprite_ai/sai.py`, guía y registro de sprites en `docs/sprite_ai.md`, sección 15 de las guías.
+- **Documentación**: GDD v0.4 (tamaños de fragmento, control F, manos 2D), contexto y guías actualizados, créditos.
+
+**Capturas**: `docs/capturas/manos_2d_golpe.png`, `docs/capturas/manos_2d_recoger.png`.
+
+**Cómo se probó**
+
+- Godot 4.7 headless sin errores de script; `progression_smoke` (con la bolsa) y `hit_stop_smoke`: OK; `gdlint` limpio.
+- Render Forward+ con el modo demo nuevo `--collect` (camina al cristal y mantiene F): recoge y la bolsa cuenta.
+
+**Pendiente y problemas conocidos**
+
+- Los 15 tokens de la cuenta 1 de Sprite AI están gastados; más poses o efectos necesitan otra cuenta.
+- La bolsa no tiene límite de capacidad todavía (el GDD pide empezar con 1) ni se entrega al Pilón (M1b).
+- Confirmar los términos de uso comercial de Sprite AI.
 ## 2026-11-15 · Hechizos por capas: el Orbe Arcano
 
 Primer paso hacia hechizos con la calidad de la referencia (`docs/referencias/estilo_referencia.png`):

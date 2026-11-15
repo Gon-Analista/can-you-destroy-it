@@ -12,7 +12,6 @@ extends Node3D
 
 const MAIN_SCENE: PackedScene = preload("res://main/main.tscn")
 const DEFAULT_DEF: String = "res://data/spells/vfx_arcane_orb.tres"
-const SPARK_SHADER: Shader = preload("res://spells/spark.gdshader")
 ## Posición del orbe en espacio de cámara: entre las palmas.
 const ORB_POS := Vector3(0.0, -0.15, -0.5)
 const CHARGE_TIME: float = 1.6
@@ -47,7 +46,8 @@ func _ready() -> void:
 		elif a == "--report":
 			get_tree().create_timer(3.0).timeout.connect(_print_report)
 	(main.get_node(^"HUDLayer") as CanvasLayer).visible = show_hud
-	_hide_palm_sparks(player.get_node(^"Head/Camera/Hands"))
+	# Las manos traen su propio orbe: se oculta para ver sólo el de la galería.
+	(player.get_node(^"Hands") as WizardHands).orb_enabled = false
 	_orb = SpellOrb.new()
 	_orb.name = "SpellOrb"
 	_orb.def = load(def_path) as SpellVisualDef
@@ -94,17 +94,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		_orb.charge = _fixed_charge
 	elif key.keycode == KEY_0:
 		_fixed_charge = -1.0
-
-
-## Oculta los orbes de chispa de las palmas (sólo en la galería) para ver el hechizo limpio.
-func _hide_palm_sparks(node: Node) -> void:
-	for child: Node in node.get_children():
-		var mi := child as MeshInstance3D
-		if mi != null:
-			var mat := mi.material_override as ShaderMaterial
-			if mat != null and mat.shader == SPARK_SHADER:
-				mi.visible = false
-		_hide_palm_sparks(child)
 
 
 func _print_report() -> void:

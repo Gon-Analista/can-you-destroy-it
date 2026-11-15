@@ -23,6 +23,11 @@ func deliver(value: int) -> void:
 	Events.pylon_changed.emit(progression.pylon_progress, progression.pylon_ratio())
 
 
+func collect_shard(type: ShardType, at: Vector3) -> void:
+	var count: int = progression.collect_shard(type.id)
+	Events.shard_collected.emit(type, count, at)
+
+
 func buy_upgrade(node: UpgradeNode) -> bool:
 	if not progression.buy_upgrade(node):
 		return false

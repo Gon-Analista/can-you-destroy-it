@@ -7,6 +7,8 @@ render_mode unshaded, cull_back;
 
 instance uniform float glint_seed = 0.0;
 instance uniform float spawn_flash = 0.0;
+// 1 cuando el jugador apunta al fragmento y puede recogerlo.
+instance uniform float highlight = 0.0;
 uniform vec4 col_glint : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 
 varying vec3 world_nrm;
@@ -29,5 +31,10 @@ void fragment() {
 	float cycle = fract(TIME * 0.35 + glint_seed);
 	float glint = step(cycle, 0.035) * step(0.5, level);
 	c = mix(c, col_glint.rgb, max(glint, spawn_flash));
+	if (highlight > 0.0) {
+		// Resaltado: una banda más clara y destello que late.
+		float pulse = 0.5 + 0.5 * sin(TIME * 10.0);
+		c = mix(c, col_highlight.rgb, 0.35 + 0.25 * pulse);
+	}
 	ALBEDO = c;
 }

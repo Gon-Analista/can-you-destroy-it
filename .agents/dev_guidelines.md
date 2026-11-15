@@ -49,6 +49,7 @@ Tecnologías ya previstas (validar la versión al integrarlas):
 | Contorno pixel art | `fx/outline.gdshader`: post-proceso de profundidad + normales | Técnica estándar de "3D pixel art" en Godot 4. |
 | SFX del prototipo | `tools/sfx_synth.py` (numpy + scipy + ffmpeg) | Reproducible con semillas fijas. |
 | Fuentes | Silkscreen (8 px) y Pixelify Sans, OFL | Importadas sin antialiasing, hinting ni subpíxel. |
+| Sprites pixel art (manos, efectos) | **Sprite AI** (MCP `sprite-ai` en `.mcp.json`, o `tools/sprite_ai/sai.py`) | No hay artista: es la fuente de arte 2D. Ver sección 15 y `docs/sprite_ai.md`. |
 | VFX de hechizos | `spells/vfx/spell_orb.gd` + un `SpellVisualDef` (`.tres`) | Núcleo, cintas, destellos y luz; píxeles sólidos y animación a `anim_fps`. Probar en `tests/vfx_gallery/`. |
 
 ## 3. Proyecto Godot
@@ -308,6 +309,24 @@ gdlint game && gdformat --check game
 | *(ninguno todavía)* | | | |
 
 Recursos de terceros (fuentes) en `CREDITS.md`.
+
+## 15. Arte 2D con Sprite AI
+
+No hay artista: el arte 2D a mano (manos del mago, efectos, iconos) se genera con **Sprite AI**. Guía completa,
+costes y registro de todo lo generado en `docs/sprite_ai.md`. Lo esencial:
+
+- **La clave nunca va al repo.** En local, variable de entorno `SPRITE_AI_API_KEY` (la lee `.mcp.json`). En la
+  nube, secreto de red del entorno `can-you-destroy-it` para `www.sprite-ai.art`, que el proxy inyecta solo.
+- **Cuentas**: el plan gratis trae 15 tokens por cuenta y el equipo puede crear más. Al cambiar de cuenta se
+  actualiza la variable o el secreto (en la nube, pedírselo al agente: abre un formulario seguro). Antes de
+  generar, consultar el saldo con `sprite_get_balance` (gratis).
+- **Ahorro**: imagen base (`sprite_generate`, 1 token) + poses con `sprite_restyle` modo `pose` (2 tokens) y la
+  animación entre poses por código en Godot. `sprite_generate_animation` (14-20 tokens) sólo si de verdad hace falta.
+- **Primera persona**: pedirlo explícitamente y con `camera_perspective: top_down`; revisar la lateralidad
+  (mano izquierda con la palma hacia la cámara = pulgar a la izquierda) antes de integrar.
+- **Coherencia**: todas las poses salen del mismo sprite base (restyle), no de generates sueltos.
+- Cada sprite nuevo se anota en la tabla de `docs/sprite_ai.md` (archivo, qué es, id, coste).
+- Los sprites se usan a tamaño 1:1 (sin escalar ni rotar) con filtro nearest, como el resto del pixel art.
 
 ## 14. Herramientas para agentes: Godot MCP
 

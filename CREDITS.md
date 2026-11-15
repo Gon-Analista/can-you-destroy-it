@@ -9,9 +9,15 @@
 
 Ambas se obtuvieron de los paquetes de Fontsource (`@fontsource/pixelify-sans`, `@fontsource/silkscreen`).
 
-## Arte y sonido
+## Arte generado con Sprite AI
 
-Todo el arte y el sonido del prototipo son propios, generados por código en este repo
+Las manos del mago (`game/player/hands/`) y el orbe mágico (`game/fx/textures/magic_orb.png`) se generaron con
+Sprite AI (https://www.sprite-ai.art) desde la cuenta del equipo. Registro y ids en `docs/sprite_ai.md`.
+Pendiente: confirmar los términos de uso comercial de Sprite AI antes de publicar.
+
+## Arte y sonido propios
+
+El resto del arte y todo el sonido del prototipo son propios, generados por código en este repo
 (`game/core/mesh_kit.gd`, `game/world/`, `game/crystal/`, `tools/sfx_synth.py`).
 
 `docs/referencias/` contiene imágenes de referencia, no se usan como recursos del juego.

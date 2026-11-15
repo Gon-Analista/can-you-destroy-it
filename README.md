@@ -16,12 +16,13 @@ Abre `game/project.godot` con Godot 4.7 y pulsa F5.
 | Empezar / capturar ratón | Clic |
 | Mirar / moverse | Ratón / WASD |
 | Lanzar chispa (mano izq. / der.) | Clic izquierdo / derecho |
+| Recoger fragmento (mantener: en cadena) | F |
 | Soltar el ratón | Esc |
 | Nivel de chispa (sólo debug) | 1 a 5 |
 
 Historial de cambios en [`CHANGELOG.md`](CHANGELOG.md).
 
-![Prototipo](docs/capturas/prototipo_golpe.png)
+![Prototipo](docs/capturas/manos_verticales_orbe.png)
 
 ## Regenerar el GDD
 

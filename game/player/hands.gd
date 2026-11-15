@@ -1,179 +1,177 @@
 class_name WizardHands
-extends Node3D
-## Manos del mago en primera persona (low-poly + toon, misma paleta que la referencia:
-## mangas violeta, brazaletes dorados, piel cálida). Animación procedural: balanceo, paso,
-## empuje al lanzar con retroceso elástico y un orbe de chispa que se carga en cada palma.
+extends CanvasLayer
+## Manos del mago en primera persona que se juntan para formar el hechizo.
+## Sprites pixel art 2D de Sprite AI (ver docs/sprite_ai.md): una tira de 6 frames de la mano
+## IZQUIERDA en vertical (antebrazo desde abajo) pasando de abierta a ahuecada; la derecha es su
+## reflejo. Sobre las palmas vive el hechizo de verdad: un `SpellOrb` 3D
+## (núcleo, cintas, destellos y luz).
+##
+## La carga lo gobierna todo, siempre a píxel entero (sin rotar ni escalar los sprites):
+##   recién lanzado -> manos abajo y separadas, abiertas
+##   recargando     -> suben y se juntan desde donde estaban mientras los dedos se curvan;
+##                     el orbe crece
+##   lista          -> palmas ahuecadas sosteniendo el orbe desde abajo (latido al completarse)
+##   lanzar         -> empujón hacia arriba, el orbe estalla (`release`) y las manos vuelven abajo
 
-const C_SLEEVE := Color("#654fae")
-const C_SLEEVE_DARK := Color("#4c3a8f")
-const C_GOLD := Color("#d8a23a")
-const C_GOLD_LIGHT := Color("#f0c65a")
-const C_SKIN := Color("#e9a97f")
-const C_SKIN_SHADE := Color("#d18c66")
-const SPARK_SHADER: Shader = preload("res://spells/spark.gdshader")
-
-## Pose de reposo de la mano derecha en espacio de cámara; la izquierda es su espejo.
-## Muñeca, hacia dónde apuntan los dedos y hacia dónde mira la palma.
-const REST_WRIST := Vector3(0.17, -0.25, -0.5)
-const REST_FINGERS := Vector3(-0.5, 0.12, -0.85)
-const REST_PALM := Vector3(-0.3, 0.95, 0.25)
-const HAND_SCALE: float = 0.72
+const STRIP: Texture2D = preload("res://player/hands/hand_l_vertical_strip.png")
+const FRAMES: int = 6
+const FRAME_SIZE := Vector2(192, 192)
+const ORB_DEF: SpellVisualDef = preload("res://data/spells/vfx_arcane_orb.tres")
+## Esquina superior izquierda de la mano izquierda (pantalla de 640x360): en reposo (abajo y
+## separadas) y juntas sosteniendo el hechizo.
+const REST_POS := Vector2(70, 228)
+const JOINED_POS := Vector2(158, 180)
+## El hechizo flota sobre las palmas ahuecadas: altura respecto a la parte de arriba del sprite.
+const ORB_ABOVE_SPRITE_TOP: float = 22.0
+const ORB_DEPTH: float = 0.85
+## Empujón al lanzar: las manos suben y se cierran hacia el centro.
+const CAST_PUSH := Vector2(10, -22)
 
 var charge_ratio: float = 1.0
 var move_speed: float = 0.0
+## Si es false no se muestra el orbe propio (la galería de VFX pone el suyo).
+var orb_enabled: bool = true:
+	set(value):
+		orb_enabled = value
+		if _orb:
+			_orb.visible = value
 
-var _hands: Array[Node3D] = []
-var _orbs: Array[MeshInstance3D] = []
-var _orb_mats: Array[ShaderMaterial] = []
-var _kick: PackedFloat32Array = [0.0, 0.0]
-var _kick_vel: PackedFloat32Array = [0.0, 0.0]
+var _sprites: Array[Sprite2D] = []
+var _orb: SpellOrb
+var _camera: Camera3D
+var _kick: float = 0.0
+var _kick_vel: float = 0.0
+var _grab: float = 0.0
+var _grab_vel: float = 0.0
 var _ready_pop: float = 0.0
 var _t: float = 0.0
 var _walk_phase: float = 0.0
-var _rest_basis: Array[Basis] = []
+var _orb_spent: bool = false
 
 
 func _ready() -> void:
-	var toon := ShaderMaterial.new()
-	toon.shader = preload("res://fx/toon.gdshader")
-	toon.set_shader_parameter("rim", 0.35)
+	layer = 0
 	for side: int in 2:
-		var mirror := Vector3(-1.0 if side == 0 else 1.0, 1.0, 1.0)
-		var f: Vector3 = (REST_FINGERS * mirror).normalized()
-		var z: Vector3 = -f
-		var y: Vector3 = REST_PALM * mirror
-		y = (y - z * y.dot(z)).normalized()
-		_rest_basis.append(Basis(y.cross(z), y, z).scaled(Vector3.ONE * HAND_SCALE))
-		var root := Node3D.new()
-		root.name = "HandL" if side == 0 else "HandR"
-		add_child(root)
-		var mi := MeshInstance3D.new()
-		mi.mesh = _build_hand_mesh(-1.0 if side == 0 else 1.0)
-		mi.material_override = toon
-		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		root.add_child(mi)
-		var orb := MeshInstance3D.new()
-		var q := QuadMesh.new()
-		q.size = Vector2.ONE
-		orb.mesh = q
-		var om := ShaderMaterial.new()
-		om.shader = SPARK_SHADER
-		om.render_priority = 4
-		om.set_shader_parameter("flicker_seed", float(side) * 3.7)
-		orb.material_override = om
-		orb.position = Vector3(0.0, 0.075, -0.045)
-		orb.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		root.add_child(orb)
-		_hands.append(root)
-		_orbs.append(orb)
-		_orb_mats.append(om)
+		var s := Sprite2D.new()
+		s.name = "HandL" if side == 0 else "HandR"
+		s.texture = STRIP
+		s.hframes = FRAMES
+		s.centered = false
+		s.flip_h = side == 1
+		add_child(s)
+		_sprites.append(s)
 
 
-## La mano `side` (0 izquierda, 1 derecha) lanza: empujón hacia delante + retroceso.
-func play_cast(side: int) -> void:
-	_kick_vel[side] = 22.0
+## La cámara a la que se ancla el orbe del hechizo (lo llama el jugador).
+func attach_camera(camera: Camera3D) -> void:
+	_camera = camera
+	_orb = SpellOrb.new()
+	_orb.name = "HandsSpellOrb"
+	_orb.def = ORB_DEF
+	_orb.charge = charge_ratio
+	_orb.visible = orb_enabled
+	camera.add_child(_orb)
+	_place_orb()
+
+
+## Lanzar (cualquier mano): el orbe estalla y las manos se abren.
+func play_cast(_side: int) -> void:
+	_kick_vel = 15.0
+	if _orb and not _orb.is_releasing():
+		_orb.release()
+		_orb_spent = true
+
+
+## Al recoger un fragmento: tirón hacia abajo (lo atrapa).
+func play_grab() -> void:
+	_grab_vel = 10.0
 
 
 func play_ready() -> void:
 	_ready_pop = 1.0
 
 
-func set_orb_colors(core: Color, glow: Color) -> void:
-	for m: ShaderMaterial in _orb_mats:
-		m.set_shader_parameter("color_core", core)
-		m.set_shader_parameter("color_glow", glow)
+## Compatibilidad con el lanzador: los colores del hechizo vienen de su SpellVisualDef.
+func set_orb_colors(_core: Color, _glow: Color) -> void:
+	pass
+
+
+## Punto de la pantalla desde el que sale el hechizo: sobre las palmas, entre las dos manos.
+func palm_screen_position(_side: int) -> Vector2:
+	var screen_w: float = (
+		640.0 if not is_inside_tree() else get_viewport().get_visible_rect().size.x
+	)
+	return Vector2(screen_w * 0.5, _left_pos().y + ORB_ABOVE_SPRITE_TOP)
+
+
+## Posición de la mano izquierda según la carga (y los empujones), antes de redondear.
+func _left_pos() -> Vector2:
+	var closed: float = _ease(charge_ratio)
+	var pos: Vector2 = REST_POS.lerp(JOINED_POS, closed)
+	pos += CAST_PUSH * _kick + Vector2(0, 6.0 * _grab) + _bob()
+	return pos
 
 
 func _process(delta: float) -> void:
 	_t += delta
-	_walk_phase += delta * move_speed * 1.6
+	_walk_phase += delta * move_speed * 1.7
 	_ready_pop = maxf(0.0, _ready_pop - delta * 3.0)
+	_kick = _spring(_kick, delta, true)
+	_grab = _spring(_grab, delta, false)
+	var closed: float = _ease(charge_ratio)
+	var frame: int = clampi(int(round(closed * (FRAMES - 1))), 0, FRAMES - 1)
+	var screen_w: float = get_viewport().get_visible_rect().size.x
+	var left: Vector2 = _left_pos()
 	for side: int in 2:
-		# Muelle amortiguado: el empujón vuelve solo con un pequeño rebote.
-		var acc: float = -_kick[side] * 260.0 - _kick_vel[side] * 22.0
-		_kick_vel[side] += acc * delta
-		_kick[side] += _kick_vel[side] * delta
-		var k: float = _kick[side]
-		var sgn: float = -1.0 if side == 0 else 1.0
-		var rest: Vector3 = REST_WRIST * Vector3(sgn, 1.0, 1.0)
-		var sway := Vector3(sin(_t * 1.3 + side) * 0.004, sin(_t * 1.7 + side * 2.0) * 0.005, 0.0)
-		var bob := (
-			Vector3(
-				cos(_walk_phase + side * PI) * 0.012,
-				absf(sin(_walk_phase + side * PI)) * 0.016,
-				0.0
-			)
-			* minf(move_speed / 4.0, 1.0)
-		)
-		var push := Vector3(-sgn * 0.04, 0.05, -0.12) * k
-		_hands[side].position = rest + sway + bob + push
-		_hands[side].basis = _rest_basis[side] * Basis(Vector3.RIGHT, 0.6 * k)
-		var spent: float = clampf(1.0 - absf(k) * 3.0, 0.0, 1.0)
-		var orb_size: float = lerpf(0.035, 0.11, charge_ratio) * spent * (1.0 + _ready_pop * 0.8)
-		orb_size *= 1.0 + sin(_t * 9.0 + side) * 0.06
-		_orbs[side].scale = Vector3.ONE * maxf(orb_size, 0.001)
-		_orb_mats[side].set_shader_parameter(
-			"intensity", lerpf(0.8, 1.5, charge_ratio) + _ready_pop
-		)
+		var sprite: Sprite2D = _sprites[side]
+		sprite.frame = frame
+		var pos: Vector2 = left
+		# Latido al completar la carga: las manos se aprietan un poco hacia el centro.
+		pos.x += _ready_pop * 3.0
+		if side == 1:
+			pos.x = screen_w - FRAME_SIZE.x - pos.x
+		sprite.position = pos.round()
+	_update_orb()
 
 
-## Antebrazo con manga y brazalete + mano abierta con la palma hacia arriba.
-## Espacio local: muñeca en el origen, antebrazo hacia +Z, dedos hacia -Z.
-func _build_hand_mesh(side: float) -> ArrayMesh:
-	var st: SurfaceTool = MeshKit.begin()
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 5
-	# Manga (cono truncado de 8 lados), más ancha hacia el codo.
-	MeshKit.add_prism(
-		st,
-		Vector3(0, 0, 0.6),
-		Vector3(0, 0, -1),
-		0.125,
-		0.47,
-		0.0,
-		8,
-		C_SLEEVE,
-		C_SLEEVE_DARK,
-		rng,
-		0.0,
-		0.78
+func _bob() -> Vector2:
+	var breathe := Vector2(0, sin(_t * 1.6) * 1.5)
+	var walk := (
+		Vector2(cos(_walk_phase) * 2.0, absf(sin(_walk_phase)) * 4.0) * minf(move_speed / 4.0, 1.0)
 	)
-	# Brazalete dorado con borde claro.
-	MeshKit.add_prism(
-		st, Vector3(0, 0, 0.15), Vector3(0, 0, -1), 0.1, 0.06, 0.0, 8, C_GOLD, C_GOLD_LIGHT, rng
-	)
-	MeshKit.add_prism(
-		st, Vector3(0, 0, 0.098), Vector3(0, 0, -1), 0.094, 0.022, 0.0, 8, C_GOLD_LIGHT, C_GOLD, rng
-	)
-	# Muñeca y palma (la palma mira hacia arriba: +Y).
-	MeshKit.add_prism(
-		st, Vector3(0, 0, 0.09), Vector3(0, 0, -1), 0.052, 0.06, 0.0, 6, C_SKIN_SHADE, C_SKIN, rng
-	)
-	MeshKit.add_box(st, Vector3(0, 0, -0.035), Vector3(0.11, 0.04, 0.11), C_SKIN_SHADE, C_SKIN)
-	# Dedos: abiertos y curvados hacia arriba, ofreciendo la magia.
-	var fingers: Array[Vector3] = [
-		Vector3(-0.04, 0.005, -0.09),
-		Vector3(-0.013, 0.005, -0.095),
-		Vector3(0.014, 0.005, -0.093),
-		Vector3(0.04, 0.005, -0.086)
-	]
-	var lengths: PackedFloat32Array = [0.075, 0.092, 0.087, 0.068]
-	for i: int in fingers.size():
-		var base: Vector3 = fingers[i]
-		var spread: float = (float(i) - 1.5) * 0.14
-		var dir := Vector3(spread, 0.45, -1.0).normalized()
-		MeshKit.add_prism(st, base, dir, 0.0145, lengths[i], 0.01, 5, C_SKIN, C_SKIN_SHADE, rng)
-	# Pulgar hacia el centro de la pantalla.
-	MeshKit.add_prism(
-		st,
-		Vector3(-0.058 * side, 0.005, -0.005),
-		Vector3(-0.9 * side, 0.5, -0.55).normalized(),
-		0.017,
-		0.065,
-		0.012,
-		5,
-		C_SKIN,
-		C_SKIN_SHADE,
-		rng
-	)
-	return MeshKit.commit(st)
+	return breathe + walk
+
+
+## La mano se cierra deprisa al principio y se asienta al final.
+static func _ease(x: float) -> float:
+	return 1.0 - pow(1.0 - clampf(x, 0.0, 1.0), 2.0)
+
+
+## Muelle amortiguado. `is_kick` elige el estado del empujón o el del tirón de recoger.
+func _spring(value: float, delta: float, is_kick: bool) -> float:
+	var vel: float = _kick_vel if is_kick else _grab_vel
+	vel += (-value * 240.0 - vel * 20.0) * delta
+	value += vel * delta
+	if is_kick:
+		_kick_vel = vel
+	else:
+		_grab_vel = vel
+	return value
+
+
+func _update_orb() -> void:
+	if _orb == null:
+		return
+	_place_orb()
+	# El estallido (núcleo + lluvia de destellos) puede durar más que la recarga: el orbe
+	# nuevo empieza a formarse en cuanto la recarga pasa del 20 %, haya acabado o no.
+	if _orb_spent and charge_ratio > 0.2:
+		_orb_spent = false
+		_orb.appear()
+	if not _orb.is_releasing():
+		_orb.charge = maxf(charge_ratio, 0.05)
+
+
+func _place_orb() -> void:
+	var world: Vector3 = _camera.project_position(palm_screen_position(0), ORB_DEPTH)
+	_orb.position = _camera.to_local(world)

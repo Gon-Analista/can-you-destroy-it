@@ -158,7 +158,8 @@ func receive_hit(hit: SpellHit) -> void:
 	if hit.resonant:
 		_global_flash = 0.55
 	var count: int = _rng.randi_range(tier.shards_min, tier.shards_max) * (2 if hit.resonant else 1)
-	_shards.spawn(hit.position, hit.normal, count, tier.shard_scale, 1.25 if hit.resonant else 1.0)
+	var shard_type: ShardType = ShardPool.type_for_hit(hit.damage, hit.resonant)
+	_shards.spawn(hit.position, hit.normal, shard_type, count, 1.25 if hit.resonant else 1.0)
 	_fx.play(hit.position, hit.normal, tier, hit.resonant)
 	_play_tink(hit)
 	if hit.resonant:

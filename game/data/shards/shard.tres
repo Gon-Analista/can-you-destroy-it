@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ShardType" format=3]
+
+[ext_resource type="Script" path="res://data/defs/shard_type.gd" id="1_nmw23"]
+
+[resource]
+script = ExtResource("1_nmw23")
+id = &"shard"
+display_name = "Fragmento"
+display_name_plural = "fragmentos"
+min_damage = 3
+value = 5
+radius = 0.26

@@ -29,6 +29,11 @@ func _init() -> void:
 	_check(p.buy_upgrade(node) and p.get_level(&"spark_power") == 1, "comprar mejora")
 	_check(not p.buy_upgrade(node), "sin maná no se compra")
 
+	p.collect_shard(&"splinter")
+	_check(
+		p.collect_shard(&"splinter") == 2 and p.bag[&"splinter"] == 2, "la bolsa cuenta por tipo"
+	)
+
 	var restored := Progression.new(1000)
 	restored.load_dict(p.to_dict())
 	_check(restored.to_dict() == p.to_dict(), "guardar y cargar conserva el estado")

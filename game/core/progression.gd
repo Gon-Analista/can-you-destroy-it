@@ -11,6 +11,8 @@ var essence: int
 var pylon_progress: int = 0
 var mana: int = 0
 var upgrade_levels: Dictionary[StringName, int] = {}
+## Fragmentos recogidos y aún no entregados, por tipo (id de ShardType).
+var bag: Dictionary[StringName, int] = {}
 
 
 func _init(p_total_essence: int) -> void:
@@ -30,6 +32,12 @@ func deliver(value: int) -> void:
 	var accepted: int = clampi(value, 0, total_essence - pylon_progress)
 	pylon_progress += accepted
 	mana += accepted
+
+
+## Guarda en la bolsa un fragmento recogido del suelo.
+func collect_shard(type_id: StringName) -> int:
+	bag[type_id] = bag.get(type_id, 0) + 1
+	return bag[type_id]
 
 
 func can_afford(cost: int) -> bool:
@@ -74,6 +82,7 @@ func to_dict() -> Dictionary:
 		"pylon_progress": pylon_progress,
 		"mana": mana,
 		"upgrade_levels": upgrade_levels.duplicate(),
+		"bag": bag.duplicate(),
 	}
 
 
@@ -85,3 +94,7 @@ func load_dict(data: Dictionary) -> void:
 	var levels: Dictionary = data.get("upgrade_levels", {})
 	for key: Variant in levels:
 		upgrade_levels[StringName(str(key))] = int(levels[key])
+	bag.clear()
+	var saved_bag: Dictionary = data.get("bag", {})
+	for key: Variant in saved_bag:
+		bag[StringName(str(key))] = maxi(int(saved_bag[key]), 0)
