@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://x3n0oo707wnl"
-path="res://.godot/imported/hand_l_rest.png-48f3a006e71c0c39a2d2b403c2f48c14.ctex"
+uid="uid://fdmm5brce2w1"
+path="res://.godot/imported/hand_l_cup_strip.png-660cccc6d8d9cbc711227e00093ce7dc.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://player/hands/hand_l_rest.png"
-dest_files=["res://.godot/imported/hand_l_rest.png-48f3a006e71c0c39a2d2b403c2f48c14.ctex"]
+source_file="res://player/hands/hand_l_cup_strip.png"
+dest_files=["res://.godot/imported/hand_l_cup_strip.png-660cccc6d8d9cbc711227e00093ce7dc.ctex"]
 
 [params]
 

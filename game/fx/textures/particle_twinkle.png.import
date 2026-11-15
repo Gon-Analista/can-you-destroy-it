@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://e65gk0x3b7w6"
-path="res://.godot/imported/magic_orb.png-696168596740be1a381ebbc6fd2caaf6.ctex"
+uid="uid://4xg6s5lsbk1s"
+path="res://.godot/imported/particle_twinkle.png-8d677918a6fd5cee9b1c2cfa71b81189.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://fx/textures/magic_orb.png"
-dest_files=["res://.godot/imported/magic_orb.png-696168596740be1a381ebbc6fd2caaf6.ctex"]
+source_file="res://fx/textures/particle_twinkle.png"
+dest_files=["res://.godot/imported/particle_twinkle.png-8d677918a6fd5cee9b1c2cfa71b81189.ctex"]
 
 [params]
 

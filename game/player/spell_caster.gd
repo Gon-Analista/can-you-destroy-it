@@ -148,7 +148,7 @@ func _cast(side: int) -> void:
 		+ camera.global_basis * Vector3(0.28 if side == 1 else -0.28, -0.17, -0.6)
 	)
 	if hands:
-		origin = camera.project_position(hands.palm_screen_position(side) + Vector2(0, -26), 0.7)
+		origin = camera.project_position(hands.palm_screen_position(side), 0.85)
 	projectile.launch(origin, target, hit, collider)
 	if hands:
 		hands.play_cast(side)

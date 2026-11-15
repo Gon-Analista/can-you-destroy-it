@@ -2,6 +2,38 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-15 · Las manos se juntan para el hechizo + integración del Orbe Arcano
+
+Integra en `main` el trabajo del otro agente (rama `claude/keen-lovelace-7haa9v`: hechizos por capas, `SpellOrb`,
+Orbe Arcano y galería de VFX, ver su entrada más abajo) y lo usa en el juego.
+
+**Qué hay nuevo**
+
+- **Manos nuevas que se juntan** (Sprite AI, cuenta 2): las 4 poses anteriores tenían la palma hacia la cámara y se
+  veían en diagonal hacia fuera. Ahora una animación de 7 frames de la mano izquierda (la derecha es su reflejo)
+  pasa de abierta a ahuecada: los antebrazos entran desde los lados y las palmas se miran, como en la referencia.
+- **La carga lo gobierna todo**: mientras recarga, las manos se acercan al centro y se van cerrando frame a frame;
+  al estar listas sujetan el hechizo a tope y laten; al lanzar se abren hacia fuera con rebote.
+- **Orbe Arcano entre las palmas**: el `SpellOrb` del otro agente crece con la carga, estalla (`release`) al lanzar y
+  vuelve a formarse; la chispa sale de su centro.
+- Sprites procesados: manga alargada hasta el borde de la pantalla y huecos internos rellenados (se veía el orbe
+  3D a través de las palmas). Detalles y registro en `docs/sprite_ai.md`.
+- La galería de VFX se adapta a las manos nuevas (oculta el orbe de las manos para mostrar el suyo).
+
+**Capturas**: `docs/capturas/manos_juntas_orbe.gif`, `docs/capturas/manos_juntas_orbe.png`.
+
+**Cómo se probó**
+
+- Godot 4.7 headless: juego y galería sin errores de script; `progression_smoke` y `hit_stop_smoke`: OK; `gdlint` limpio.
+- Render Forward+ en modo demo (nivel 2): ciclo cargar, lanzar, estallar y volver a formar revisado frame a frame.
+
+**Pendiente**
+
+- Las mangas alargadas repiten la tela (bandas horizontales); con otra cuenta de Sprite AI se puede generar un
+  antebrazo más largo.
+- El color del orbe no cambia todavía con el nivel de la chispa (el `SpellVisualDef` es fijo).
+- Cuenta 2 de Sprite AI: 0 tokens.
+
 ## 2026-11-15 · Manos pixel art en primera persona (Sprite AI), 3 tamaños de fragmento y recogida
 
 **Qué hay nuevo**
@@ -32,6 +64,57 @@ Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev
 - Los 15 tokens de la cuenta 1 de Sprite AI están gastados; más poses o efectos necesitan otra cuenta.
 - La bolsa no tiene límite de capacidad todavía (el GDD pide empezar con 1) ni se entrega al Pilón (M1b).
 - Confirmar los términos de uso comercial de Sprite AI.
+## 2026-11-15 · Hechizos por capas: el Orbe Arcano
+
+Primer paso hacia hechizos con la calidad de la referencia (`docs/referencias/estilo_referencia.png`):
+la magia girando entre las manos en espirales rosa, violeta y cian con destellos blancos.
+
+**Qué hay nuevo**
+
+- **`SpellVisualDef`** (`game/data/defs/spell_visual_def.gd`): el aspecto de un hechizo como pila de capas,
+  todo en datos. Cada elemento, combinación y nivel será un `.tres`, no código nuevo.
+- **`SpellOrb`** (`game/spells/vfx/`): nodo reutilizable con 4 capas:
+  1. **Núcleo** (`spell_core.gdshader`): galaxia de brazos en espiral leída de una rampa de color con
+     interpolación constante (bandas duras), centro blanco HDR que activa el glow, destello en cruz y halo tramado (Bayer 4x4).
+  2. **Cintas** (`spell_ribbon.gdshader`): órbitas inclinadas con cometas (cabeza blanca, cuerpo de color, cola tramada).
+     Se dibujan en dos pasadas (mitad trasera antes del núcleo y delantera después), así rodean el núcleo de verdad
+     y se ocultan detrás de las manos por profundidad.
+  3. **Destellos**: estrellas pixel con flipbook de parpadeo (`fx/textures/particle_twinkle.png`, 7 frames de 9x9) a 1 texel = 1 píxel.
+  4. **Luz**: tiñe las palmas del color del hechizo (el shader toon la pone en bandas).
+  - API: `charge` (0..1: tamaño, velocidad de giro, destellos y luz), `release()` (estallido: las órbitas se abren,
+    el núcleo se disuelve tramando y salta una lluvia de destellos; emite `released`) y `appear()`.
+- **Orbe Arcano** (`game/data/spells/vfx_arcane_orb.tres`): primer hechizo configurado con la paleta del GDD.
+- **Galería de VFX** (`game/tests/vfx_gallery/`): carga el juego real (valle, cristal, manos y contorno) y pone el orbe
+  entre las manos con un ciclo cargar → mantener → soltar. Opciones `--def=`, `--charge=`, `--yaw=`, `--pitch=`, `--hud`, `--report`;
+  teclas Espacio (soltar), 1-5 (carga) y 0 (ciclo).
+
+**Decisiones de estilo** (ver registro de decisiones)
+
+- Magia con **píxeles sólidos** (`blend_mix`) en vez de mezcla aditiva: sobre el cristal y el cielo claros, lo aditivo lo lavaba todo a blanco.
+  Sólo el centro y las cabezas de los cometas son HDR para el glow.
+- **Animación escalonada a 12 fps** (shaders, órbitas y partículas): lo procedural se lee como pixel art animado a mano.
+
+**Capturas**: `docs/capturas/hechizo_orbe_arcano.gif` (ciclo completo, recorte x3) y `docs/capturas/hechizo_orbe_arcano.png`.
+
+```bash
+godot --path game res://tests/vfx_gallery/vfx_gallery.tscn --write-movie /tmp/orbe/f.png --fixed-fps 60 --quit-after 300
+```
+
+**Cómo se probó**
+
+- Godot 4.7, Forward+ con Vulkan por software (llvmpipe): galería grabada frame a frame y revisada junto a la referencia en varias iteraciones.
+- `tests/smoke/progression_smoke.gd` y `hit_stop_smoke.gd`: OK. Galería en headless sin errores de script.
+- `gdlint` y `gdformat` limpios en los archivos nuevos.
+- Coste: 1 quad de núcleo, 6 cintas de 144 triángulos (2 pasadas), 2 sistemas de partículas GPU y 1 luz omni sin sombras.
+  La escena con el orbe da 40 draw calls (`--report`). Falta medir fps en un Steam Deck real.
+
+**Pendiente**
+
+- Integrarlo en el juego: lo hará quien trabaja en las manos (pose de combinar con las palmas enfrentadas). Basta con
+  añadir un `SpellOrb` como hijo de la cámara o de las manos, asignar `def` y mover `charge` mientras se carga.
+- Llevar el mismo sistema a la Chispa (proyectil) y crear las defs de Escarcha, Rayo, Tierra y las combinaciones.
+- Capa 5 (distorsión de pantalla) para hechizos grandes como la Gran Convergencia: aún sin hacer y con su coste por medir.
+- La galería oculta los orbes de chispa de las palmas (`hands.gd`) para ver el hechizo limpio; en el juego siguen igual.
 
 ## 2026-11-15 · Hotfix: el tiempo se quedaba congelado tras un golpe fuerte
 

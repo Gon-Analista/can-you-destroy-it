@@ -31,6 +31,7 @@ var _grab_point: Marker3D
 func _ready() -> void:
 	_head.rotation.x = deg_to_rad(start_pitch_deg)
 	_caster.camera = _camera
+	_hands.attach_camera(_camera)
 	_caster.hands = _hands
 	_caster.set_tier(0)
 	_add_outline()

@@ -74,8 +74,9 @@ Todos estos números viven en recursos de datos (`.tres`), nunca hardcodeados (v
 
 - Mundo **3D renderizado a baja resolución** (640x360 propuesta) escalado por enteros, filtro nearest, shading
   por bandas, contorno por post-proceso. Fondo lejano (cielo, montañas, castillo, aldea) en **capas 2D con parallax**.
-- **Manos**: sprites pixel art 2D en primera persona generados con **Sprite AI** (4 poses: abierta, carga,
-  lanzar, reposo; mano izquierda reflejada para la derecha), animados por código a píxel entero.
+- **Manos**: sprites pixel art 2D generados con **Sprite AI**: animación de 7 frames de la mano izquierda que se
+  ahueca (la derecha es su reflejo). Las manos entran desde los lados y se juntan con la carga; entre las palmas
+  vive el hechizo (`SpellOrb`, Orbe Arcano), que estalla al lanzar. Como en la referencia.
   No hay artista: el arte 2D sale de Sprite AI (`docs/sprite_ai.md`).
 - **Todo es reactivo**: cada impacto dispara la lista completa de respuestas del GDD 10.3 (manos, proyectil,
   cristal, fragmentos, partículas, luz, cámara, sonido y HUD). Racha y golpe resonante: GDD 10.4.
@@ -115,7 +116,8 @@ Todos estos números viven en recursos de datos (`.tres`), nunca hardcodeados (v
   violeta, brillo que recorre las facetas, grietas persistentes (voronoi 3D) y destellos/ondas de impacto.
   `ShardPool` con 64 fragmentos físicos reciclados en 3 tamaños según el daño (astilla, fragmento, fragmento
   grande), que se congelan al quedarse quietos, se resaltan al apuntarlos y vuelan a la mano al recogerlos.
-- **Mago** (`player/`): primera persona (ratón + WASD), manos 2D de Sprite AI con 4 poses y orbe mágico,
+- **Mago** (`player/`): primera persona (ratón + WASD), manos 2D de Sprite AI que se juntan con la carga
+  sujetando el `SpellOrb` (Orbe Arcano) del sistema de hechizos por capas,
   recogida de fragmentos con F (apuntando o el más cercano delante), `SpellCaster` con
   enfriamiento, buffer, golpe resonante y pool de 12 chispas; `CameraRig` con sacudida por trauma y golpe de FOV.
 - **Chispa** (`spells/`, `data/elements/spark.tres`): 5 niveles de poder (`SpellTier`) que cambian daño, cadencia,
@@ -129,6 +131,9 @@ Todos estos números viven en recursos de datos (`.tres`), nunca hardcodeados (v
 - **Debug** (sólo builds de desarrollo): teclas 1-5 cambian el nivel de la chispa; modo demo para grabar:
   `godot --path game -- --autoplay --tier=N` (añadir `--report` para imprimir draw calls y física).
 - `tests/smoke/progression_smoke.gd`: reglas de `Progression` y `StreakTracker` (pasa).
+- **Hechizos por capas** (`spells/vfx/`): `SpellOrb` + `SpellVisualDef` (núcleo en espiral, cintas orbitales,
+  destellos y luz; `charge`, `release()`, `appear()`). Primer hechizo: Orbe Arcano (`data/spells/vfx_arcane_orb.tres`).
+  Galería para verlo y grabarlo: `godot --path game res://tests/vfx_gallery/vfx_gallery.tscn` (ver `CHANGELOG.md`).
 
 **Aún no hay**: entregar fragmentos, Pilón físico, Santuario ni mejoras compradas (M1b). Los fragmentos recogidos
 van a la bolsa (sin límite de capacidad por ahora; el GDD pide empezar con 1).
@@ -165,6 +170,10 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-15 | Números flotantes activados (confirmado). | Pedido del equipo. |
 | 2026-11-15 | 3 tamaños de fragmento según el daño (astilla < 3, fragmento 3-9, grande 10+; resonante sube uno) y recogida con F. | Pedido del equipo; el tamaño comunica la fuerza del golpe. |
 | 2026-11-15 | Hit-stop con liberación garantizada y red de seguridad en `main.gd`. | Bug: el tiempo se quedaba congelado. |
+| 2026-11-15 | Hechizos como pila de capas (`SpellOrb`) descrita por datos (`SpellVisualDef`). | Cada elemento, combinación y nivel es un `.tres`; misma calidad para todos. |
+| 2026-11-15 | Magia con píxeles sólidos (`blend_mix` + tramado) en vez de aditiva; HDR sólo en el centro. | Lo aditivo se lavaba a blanco sobre el cristal y el cielo claros. |
+| 2026-11-15 | Animación de VFX escalonada a 12 fps (`anim_fps`). | Lo procedural se lee como pixel art animado a mano. |
+| 2026-11-15 | Manos que se juntan (animación de Sprite AI guiada por la carga) con el `SpellOrb` entre las palmas; la chispa sale del orbe. Sustituye a las 4 poses con la palma hacia la cámara. | Las anteriores se veían en diagonal hacia fuera; así coincide con la referencia. |
 
 ## 10. Preguntas abiertas
 

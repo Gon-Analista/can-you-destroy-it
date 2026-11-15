@@ -22,7 +22,7 @@ Abre `game/project.godot` con Godot 4.7 y pulsa F5.
 
 Historial de cambios en [`CHANGELOG.md`](CHANGELOG.md).
 
-![Prototipo](docs/capturas/manos_2d_golpe.png)
+![Prototipo](docs/capturas/manos_juntas_orbe.png)
 
 ## Regenerar el GDD
 

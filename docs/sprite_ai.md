@@ -71,4 +71,19 @@ Los ids sirven para seguir trabajando sobre el mismo sprite (más poses, normal 
 | `game/fx/textures/magic_orb.png` | Orbe mágico 48x48 | `aaad1030-c887-4f38-a0bd-06519b38dfb8` | 1 |
 | `art_source/sprite_ai/side_*.png` | Primer intento de perfil (descartado para primera persona) | `60fcf7d9-…` y restyles | 7 |
 
-Cuenta 1: 15 de 15 tokens gastados.
+Cuenta 1: 15 de 15 tokens gastados. Las 4 poses con la palma hacia la cámara quedaron descartadas
+(`art_source/sprite_ai/hands_v1/`): parecían "manos arriba" y no sujetaban el hechizo como en la referencia.
+
+### Cuenta 2: manos que se juntan para el hechizo (en uso)
+
+| Archivo | Qué es | Id (cuenta 2) | Coste |
+|---|---|---|---|
+| `art_source/sprite_ai/hand_cup_base.png` | Mano izquierda desde el lado del pulgar, palma hacia el centro | `355d1a73-40d3-46eb-bab6-165cf124cdab` | 1 |
+| `art_source/sprite_ai/hand_cup_anim_sheet.png` | Animación Custom de 8 frames: la mano se ahueca para sujetar el hechizo | `ac05defa-19ad-4d93-ba81-8d3402a5ca7d` | 14 |
+| `game/player/hands/hand_l_cup_strip.png` | Frames 0-6 de esa animación procesados: manga alargada 130 px hacia el borde (repitiendo la tela) y huecos internos rellenados | derivado | 0 |
+
+Cuenta 2: 15 de 15 tokens gastados.
+
+Procesado: `sprite_generate_animation` devuelve frames donde la mano puede tener huecos transparentes (se ve el
+fondo a través); hay que rellenar los huecos internos antes de usarlos sobre 3D. El último frame dibujó una bola
+beige (el orbe lo pone `SpellOrb`), por eso se usan sólo los 7 primeros.
