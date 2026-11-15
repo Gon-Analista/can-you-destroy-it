@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ShardType" format=3]
+
+[ext_resource type="Script" path="res://data/defs/shard_type.gd" id="1_5c4od"]
+
+[resource]
+script = ExtResource("1_5c4od")
+id = &"chunk"
+display_name = "Fragmento grande"
+display_name_plural = "fragmentos grandes"
+min_damage = 10
+value = 25
+radius = 0.55
+height = 0.8
+tip = 0.45
+sides = 6
+pickup_pitch = 0.72
+launch_speed = 0.8

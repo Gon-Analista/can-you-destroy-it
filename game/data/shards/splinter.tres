@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ShardType" format=3]
+
+[ext_resource type="Script" path="res://data/defs/shard_type.gd" id="1_4olgj"]
+
+[resource]
+script = ExtResource("1_4olgj")
+id = &"splinter"
+display_name = "Astilla"
+display_name_plural = "astillas"
+radius = 0.06
+height = 0.34
+tip = 0.16
+sides = 4
+pickup_pitch = 1.45
+launch_speed = 1.15

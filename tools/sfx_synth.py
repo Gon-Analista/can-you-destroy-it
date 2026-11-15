@@ -176,6 +176,20 @@ def spark_ready(seed: int) -> np.ndarray:
     return normalize(fade(reverb(x, rng, 0.6, 0.25), 0.002, 0.1), -10)
 
 
+def shard_pickup(seed: int) -> np.ndarray:
+    """Recoger un fragmento: 'bloop' que sube + dos notas brillantes. Recompensa inmediata."""
+    rng = np.random.default_rng(seed)
+    t = t_axis(0.55)
+    f = 600 + 900 * (1 - np.exp(-t / 0.05))
+    bloop = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t / 0.07) * 0.6
+    x = bloop.copy()
+    for k, n in enumerate([12, 19]):
+        start = int((0.04 + k * 0.05) * SR)
+        tt = t[: len(t) - start]
+        x[start:] += bell(tt, note(n), [1.0, 2.0, 3.0], [1.0, 0.3, 0.1], [0.18, 0.1, 0.05], rng) * 0.5
+    return normalize(fade(reverb(x, rng, 0.5, 0.2), 0.001, 0.06), -3)
+
+
 def loopable(x: np.ndarray, xfade: float = 0.5) -> np.ndarray:
     """Hace el final empalmar con el principio (crossfade)."""
     n = int(xfade * SR)
@@ -247,6 +261,8 @@ def main() -> None:
         write(out, f"sfx_shard_break_{i + 1:02d}", shard_break(300 + i))
         write(out, f"sfx_spark_cast_{i + 1:02d}", spark_cast(400 + i))
     write(out, "sfx_spark_fizzle_01", spark_fizzle(500))
+    write(out, "sfx_shard_pickup_01", shard_pickup(1100))
+    write(out, "sfx_shard_pickup_02", shard_pickup(1101))
     write(out, "sfx_spark_ready_01", spark_ready(600))
     # A mayor pentatónica, en semitonos desde A5
     write(out, "sfx_resonant_hit_01", arpeggio([0, 4, 7, 12, 16], 0.035, 1.6, 700, 0.6))

@@ -107,7 +107,7 @@ def cover(c, doc):
     c.setFillColor(colors.white); c.setFont("Serif-Bold", 34)
     c.drawCentredString(W / 2, 58 * mm, "Can you destroy it?")
     c.setFillColor(GLOW); c.setFont("Sans", 12)
-    c.drawCentredString(W / 2, 47 * mm, "Game Design Document  \u00b7  v0.3")
+    c.drawCentredString(W / 2, 47 * mm, "Game Design Document  \u00b7  v0.4")
     c.setFillColor(colors.HexColor("#c9c6e4")); c.setFont("Sans", 9.5)
     c.drawCentredString(W / 2, 39 * mm, "Incremental en primera persona  \u00b7  Pixel art  \u00b7  Godot 4.7  \u00b7  Noviembre 2026")
     c.setFont("Sans", 7); c.setFillColor(colors.HexColor("#8f8cb0"))
@@ -119,7 +119,7 @@ def page(c, doc):
     c.saveState()
     c.setStrokeColor(LINE); c.setLineWidth(0.5); c.line(18 * mm, H - 14 * mm, W - 18 * mm, H - 14 * mm)
     c.setFont("Sans", 7.5); c.setFillColor(GREY)
-    c.drawString(18 * mm, H - 12 * mm, "Can you destroy it?  —  GDD v0.3")
+    c.drawString(18 * mm, H - 12 * mm, "Can you destroy it?  —  GDD v0.4")
     c.drawRightString(W - 18 * mm, 11 * mm, str(doc.page))
     c.restoreState()
 
@@ -283,9 +283,12 @@ T([["Capa", "Esencia", "Aspecto", "Particularidad"],
    ["Núcleo", "último 1 %", "Corazón violeta oscuro de la base", "Inmune a todo salvo la Gran Convergencia."]],
   [32, 22, 42, 78])
 H2("6.1 Tipos de fragmento")
+P("El tamaño del fragmento comunica la fuerza del golpe. Se elige por el daño de cada impacto; un golpe "
+  "resonante sube un tamaño. Al apuntar a uno se resalta y se recoge con F: vuela a la mano con un destello.")
 T([["Fragmento", "Valor", "Origen"],
-   ["Astilla", "1", "Golpe normal."],
-   ["Fragmento", "10", "Golpe fuerte o carga."],
+   ["Astilla (pequeña, como una aguja)", "1", "Golpe de daño 1-2 (la chispita inicial)."],
+   ["Fragmento (mediano)", "5", "Golpe de daño 3-9."],
+   ["Fragmento grande", "25", "Golpe de daño 10 o más."],
    ["Geoda", "100+", "Romper una geoda."],
    ["Fragmento Resonante", "x5 + bonus", "Golpear una vena con su elemento débil."],
    ["Lágrima del Núcleo", "especial", "Sólo en el Corazón; desbloquea nodos finales."]],
@@ -357,7 +360,7 @@ T([["Acción", "Tecla"],
    ["Lanzar mano izquierda / derecha", "Clic izquierdo / clic derecho"],
    ["Combinar", "Ambos clics a la vez (mantener para cargar)"],
    ["Cambiar elemento de una mano", "Q / E"],
-   ["Recoger / entregar / interactuar", "F"],
+   ["Recoger (mantener para recoger en cadena) / entregar / interactuar", "F"],
    ["Abrir Grimorio rápido", "Tab"]],
   [80, 94])
 H2("10.2 HUD")
@@ -445,7 +448,7 @@ B(["Mundo en <b>3D</b> renderizado a <b>baja resolución interna</b> (640x360) y
    "Texturas pintadas en pixel art con filtro nearest y densidad de texel constante; iluminación por bandas con shader toon, "
    "contorno por post-proceso y paleta limitada.",
    "Fondo (cielo, montañas, castillo, aldea lejana) como capas 2D pintadas con parallax: así el horizonte es idéntico a la referencia.",
-   "Manos en primer plano: en el prototipo son mallas low-poly con shader toon y la paleta de la referencia (mangas violeta, brazaletes dorados), renderizadas a la misma escala de píxel. Se sustituirán por sprites 2D dibujados a mano si el arte final lo pide.",
+   "Manos en primer plano: sprites pixel art 2D generados con Sprite AI (no hay artista), en 4 poses (abierta, carga con el orbe, lanzar, reposo), a escala 1:1 sobre la imagen de 640x360 y animados por código a píxel entero.",
    "Contorno por post-proceso (profundidad + normales) a 1 píxel y luces/sombras por bandas: así el 3D se lee como pixel art.",
    "Alternativa si el prototipo M1 no convence: 2D puro en vista frontal fija, rotando entre tres pantallas (Cristal, Pilón, Santuario)."])
 H2("11.4 Audio")

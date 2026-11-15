@@ -35,7 +35,8 @@
 | Faceta | Pieza física del cristal que se desprende (≈ 4.000). | `CrystalFacet` |
 | Capa | Corteza, Manto Geódico, Venas Resonantes, Corazón Cristalino, Núcleo. | `CrystalLayer` |
 | Esencia | Vida restante del cristal. Sólo baja. | `essence` |
-| Fragmento | Pedazo que cae al golpear: Astilla, Fragmento, Geoda, Resonante, Lágrima del Núcleo. | `Shard`, `ShardType` |
+| Fragmento | Pedazo que cae al golpear. Por tamaño según el daño: **Astilla** (pequeña, `splinter`), **Fragmento** (mediano, `shard`), **Fragmento grande** (`chunk`). Especiales futuros: Geoda, Resonante, Lágrima del Núcleo. | `Shard`, `ShardType` (`data/shards/`) |
+| Bolsa | Fragmentos recogidos y aún no entregados, por tipo. | `Progression.bag` |
 | Pilón de Maná | Columna que se llena al entregar. Es la barra de victoria. Nunca baja. | `ManaPylon`, `pylon_progress` |
 | Maná | Moneda gastable para mejoras. | `mana` |
 | Santuario | Torre del mago: lugar físico donde se compran mejoras. Crece visualmente. | `Sanctum` |
@@ -73,8 +74,9 @@ Todos estos números viven en recursos de datos (`.tres`), nunca hardcodeados (v
 
 - Mundo **3D renderizado a baja resolución** (640x360 propuesta) escalado por enteros, filtro nearest, shading
   por bandas, contorno por post-proceso. Fondo lejano (cielo, montañas, castillo, aldea) en **capas 2D con parallax**.
-- **Manos**: en el prototipo, mallas low-poly con shader toon (mangas violeta, brazaletes dorados, palmas hacia
-  arriba) a la misma escala de píxel. Sprites 2D dibujados a mano sólo si el arte final lo pide.
+- **Manos**: sprites pixel art 2D en primera persona generados con **Sprite AI** (4 poses: abierta, carga,
+  lanzar, reposo; mano izquierda reflejada para la derecha), animados por código a píxel entero.
+  No hay artista: el arte 2D sale de Sprite AI (`docs/sprite_ai.md`).
 - **Todo es reactivo**: cada impacto dispara la lista completa de respuestas del GDD 10.3 (manos, proyectil,
   cristal, fragmentos, partículas, luz, cámara, sonido y HUD). Racha y golpe resonante: GDD 10.4.
 - **Cristal Madre:** racimo de cristales de hielo azul (luz arriba a la izquierda, sombras azul profundo,
@@ -95,6 +97,9 @@ Todos estos números viven en recursos de datos (`.tres`), nunca hardcodeados (v
 | `tools/sfx_synth.py` | Sintetiza todos los SFX del prototipo (`python3 tools/sfx_synth.py`, requiere numpy, scipy y ffmpeg). |
 | `tools/godot/make_spark_element.gd` | Volcado inicial de `data/elements/spark.tres`. |
 | `docs/capturas/` | Capturas y GIF del prototipo. |
+| `docs/sprite_ai.md` | Cómo usar Sprite AI, costes y registro de sprites generados. |
+| `tools/sprite_ai/sai.py` | Cliente mínimo del MCP de Sprite AI. |
+| `art_source/sprite_ai/` | Sprites descartados o fuentes de Sprite AI. |
 | `tools/make_gdd.py` | Genera el PDF del GDD (`python3 tools/make_gdd.py Can_You_Destroy_It_GDD.pdf`). Requiere `reportlab` y `Pillow`. |
 | `docs/referencias/` | Imágenes de referencia de cristal y estilo. **No son arte final.** |
 | `AGENTS.md`, `.agents/` | Instrucciones para agentes. |
@@ -108,8 +113,10 @@ Todos estos números viven en recursos de datos (`.tres`), nunca hardcodeados (v
   (`world/sky.gdshader`); niebla de profundidad para la perspectiva atmosférica.
 - **Cristal Madre** (`crystal/`): racimo de 15 prismas según la referencia, shader con bandas de paleta, corazón
   violeta, brillo que recorre las facetas, grietas persistentes (voronoi 3D) y destellos/ondas de impacto.
-  `ShardPool` con 64 fragmentos físicos reciclados que se congelan al quedarse quietos.
-- **Mago** (`player/`): primera persona (ratón + WASD), manos low-poly animadas por código, `SpellCaster` con
+  `ShardPool` con 64 fragmentos físicos reciclados en 3 tamaños según el daño (astilla, fragmento, fragmento
+  grande), que se congelan al quedarse quietos, se resaltan al apuntarlos y vuelan a la mano al recogerlos.
+- **Mago** (`player/`): primera persona (ratón + WASD), manos 2D de Sprite AI con 4 poses y orbe mágico,
+  recogida de fragmentos con F (apuntando o el más cercano delante), `SpellCaster` con
   enfriamiento, buffer, golpe resonante y pool de 12 chispas; `CameraRig` con sacudida por trauma y golpe de FOV.
 - **Chispa** (`spells/`, `data/elements/spark.tres`): 5 niveles de poder (`SpellTier`) que cambian daño, cadencia,
   velocidad, tamaño, color, fragmentos, partículas, luz, grietas y sacudida.
@@ -123,7 +130,8 @@ Todos estos números viven en recursos de datos (`.tres`), nunca hardcodeados (v
   `godot --path game -- --autoplay --tier=N` (añadir `--report` para imprimir draw calls y física).
 - `tests/smoke/progression_smoke.gd`: reglas de `Progression` y `StreakTracker` (pasa).
 
-**Aún no hay**: recoger ni entregar fragmentos, Pilón físico, Santuario ni mejoras compradas. Es lo siguiente (M1b).
+**Aún no hay**: entregar fragmentos, Pilón físico, Santuario ni mejoras compradas (M1b). Los fragmentos recogidos
+van a la bolsa (sin límite de capacidad por ahora; el GDD pide empezar con 1).
 
 ## 8. Hitos
 
@@ -153,11 +161,15 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-15 | Fuentes: Silkscreen 8 px (texto pequeño) y Pixelify Sans (números), ambas OFL, sin antialiasing. | Nítidas a 640x360. |
 | 2026-11-15 | Números flotantes activados por defecto (antes: ocultos). Racha con escala pentatónica y golpe resonante del 7 %. | Más dopamina en el golpe, pedido explícito. |
 | 2026-11-15 | Flujo de git: commit y push a `main`, cada push documentado en `CHANGELOG.md`. | Pedido del equipo. |
+| 2026-11-15 | Manos 2D generadas con Sprite AI (reemplazan a las low-poly). Sin artista: Sprite AI es la fuente de arte 2D; la clave va en variable de entorno o secreto del entorno, nunca en el repo. | Calidad pixel art de la referencia; el equipo puede crear más cuentas gratis. |
+| 2026-11-15 | Números flotantes activados (confirmado). | Pedido del equipo. |
+| 2026-11-15 | 3 tamaños de fragmento según el daño (astilla < 3, fragmento 3-9, grande 10+; resonante sube uno) y recogida con F. | Pedido del equipo; el tamaño comunica la fuerza del golpe. |
+| 2026-11-15 | Hit-stop con liberación garantizada y red de seguridad en `main.gd`. | Bug: el tiempo se quedaba congelado. |
 
 ## 10. Preguntas abiertas
 
 - Confirmar 3D a baja resolución frente a 2D puro tras jugar el prototipo M1a.
-- Arte final: ¿artista pixel art, arte procedural pulido o mezcla? (de momento todo es procedural).
+- Arte 3D (valle, cristal): seguir procedural y pulir; el arte 2D sale de Sprite AI.
 - Resolución interna final (640x360 propuesta) tras probarla en 1440p y Steam Deck.
 - ¿Modo infinito o New Game+ tras el final?
 - Precio y fecha objetivo en Steam.

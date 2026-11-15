@@ -27,6 +27,9 @@ var _essence: Label
 var _streak: Label
 var _banner: Label
 var _pylon: Label
+var _bag: Label
+var _pickup_prompt: Label
+var _bag_punch: float = 0.0
 var _fps: Label
 var _debug: Label
 var _prompt: Label
@@ -54,6 +57,12 @@ func _ready() -> void:
 	_essence.pivot_offset = Vector2(100, 13)
 	_pylon = _label("", 8, C_CYAN, HORIZONTAL_ALIGNMENT_LEFT)
 	_place(_pylon, Control.PRESET_TOP_LEFT, Rect2(8, 6, 160, 10))
+	_bag = _label("", 8, C_TEXT, HORIZONTAL_ALIGNMENT_RIGHT)
+	_place(_bag, Control.PRESET_BOTTOM_RIGHT, Rect2(-308, -18, 300, 10))
+	_bag.pivot_offset = Vector2(300, 5)
+	_pickup_prompt = _label("", 8, C_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	_place(_pickup_prompt, Control.PRESET_CENTER, Rect2(-120, 20, 240, 10))
+	_pickup_prompt.visible = false
 	_fps = _label("", 8, C_CYAN, HORIZONTAL_ALIGNMENT_RIGHT)
 	_place(_fps, Control.PRESET_TOP_RIGHT, Rect2(-70, 6, 62, 10))
 	_fps.visible = OS.is_debug_build()
@@ -71,7 +80,7 @@ func _ready() -> void:
 	_banner.pivot_offset = Vector2(150, 10)
 	_banner.visible = false
 	_prompt = _label(
-		"CLIC PARA EMPEZAR  ·  WASD MOVERSE  ·  CLIC IZQ./DER. LANZAR",
+		"CLIC PARA EMPEZAR  ·  WASD MOVERSE  ·  CLIC LANZAR  ·  F RECOGER",
 		8,
 		C_TEXT,
 		HORIZONTAL_ALIGNMENT_CENTER
@@ -90,10 +99,13 @@ func _ready() -> void:
 	Events.streak_changed.connect(_on_streak_changed)
 	Events.streak_milestone.connect(_on_streak_milestone)
 	Events.streak_broken.connect(_on_streak_broken)
+	Events.shard_collected.connect(_on_shard_collected)
+	Events.shard_targeted.connect(_on_shard_targeted)
 	_target_essence = GameState.progression.essence
 	_shown_essence = _target_essence
 	_essence.text = _format_int(_target_essence)
 	_on_pylon_changed(GameState.progression.pylon_progress, GameState.progression.pylon_ratio())
+	_refresh_bag()
 
 
 func bind(camera: Camera3D, caster: SpellCaster) -> void:
@@ -148,6 +160,37 @@ static func _format_int(v: int) -> String:
 func _on_essence_changed(essence: int, _total: int) -> void:
 	_target_essence = essence
 	_essence_punch = 1.0
+
+
+func _on_shard_targeted(type: ShardType) -> void:
+	_pickup_prompt.visible = type != null
+	if type:
+		_pickup_prompt.text = tr("[F] RECOGER %s") % tr(type.display_name).to_upper()
+
+
+func _on_shard_collected(type: ShardType, _count: int, at: Vector3) -> void:
+	_bag_punch = 1.0
+	_refresh_bag()
+	var i: int = _floater_next
+	_floater_next = (_floater_next + 1) % FLOATERS
+	var f: Label = _floaters[i]
+	f.text = "+1 " + tr(type.display_name).to_upper()
+	f.add_theme_color_override(&"font_color", C_CYAN)
+	f.add_theme_font_size_override(&"font_size", 8)
+	_floater_pos[i] = at + Vector3.UP * 0.3
+	_floater_age[i] = 0.0
+	f.visible = true
+
+
+## "BOLSA  3 ASTILLAS · 1 FRAGMENTO", en el orden de tamaño.
+func _refresh_bag() -> void:
+	var parts: PackedStringArray = []
+	for type: ShardType in ShardPool.TYPES:
+		var n: int = GameState.progression.bag.get(type.id, 0)
+		if n > 0:
+			var name_key: String = type.display_name if n == 1 else type.display_name_plural
+			parts.append("%d %s" % [n, tr(name_key).to_upper()])
+	_bag.text = (tr("BOLSA  ") + "  ·  ".join(parts)) if not parts.is_empty() else ""
 
 
 func _on_pylon_changed(_progress: int, ratio: float) -> void:
@@ -212,6 +255,9 @@ func _process(delta: float) -> void:
 	_essence_punch = maxf(0.0, _essence_punch - delta * 6.0)
 	_essence.scale = Vector2.ONE * (1.0 + _essence_punch * 0.18)
 	_essence.add_theme_color_override(&"font_color", C_TEXT.lerp(C_CYAN, _essence_punch))
+	_bag_punch = maxf(0.0, _bag_punch - delta * 6.0)
+	_bag.scale = Vector2.ONE * (1.0 + _bag_punch * 0.25)
+	_bag.add_theme_color_override(&"font_color", C_TEXT.lerp(C_CYAN, _bag_punch))
 	# Racha.
 	_streak_punch = maxf(0.0, _streak_punch - delta * 7.0)
 	_streak.scale = Vector2.ONE * (1.0 + _streak_punch * 0.45)
