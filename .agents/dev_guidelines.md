@@ -52,7 +52,8 @@ Tecnologías ya previstas (validar la versión al integrarlas):
 - **Renderer:** Forward+ (PC y Steam Deck). Evaluar Mobile sólo si el rendimiento en Deck lo exige.
 - **Física:** Jolt, tick de física a 60 Hz.
 - **Proyecto en la carpeta `game/`** (`game/project.godot`), para que docs y herramientas queden fuera del árbol del motor.
-- El `index.html` y `src/` de la raíz son un esqueleto obsoleto: se borran cuando se cree el proyecto Godot.
+- Configuración ya aplicada en `game/project.godot`: viewport 640x360, stretch `viewport` con escalado `integer`,
+  filtro nearest por defecto, Jolt, avisos de tipado como error y mapa de entrada base. No cambiarla sin anotarlo.
 
 ### 3.1 Estructura de carpetas (por funcionalidad, no por tipo)
 
@@ -128,9 +129,11 @@ El listón es la referencia `docs/referencias/estilo_referencia.png`. Si algo se
 ### 5.1 Reglas de pixel art
 
 - **Resolución interna fija** (640x360 propuesta) y escalado sólo por **enteros** con filtro **nearest**.
-  El mundo 3D y las manos se dibujan en un `SubViewport` a esa resolución; la UI de texto puede ir a resolución
-  nativa pero con fuentes pixel escaladas por enteros.
-- **Filtro nearest en todas las texturas** del proyecto (configuración por defecto del proyecto y de los materiales).
+  Hoy todo el juego (mundo, manos y UI) se dibuja a 640x360 mediante el stretch del proyecto. Si la UI de texto
+  necesita más resolución, mover el mundo a un `SubViewport` y dejar la UI a resolución nativa con fuentes pixel
+  escaladas por enteros (anotarlo en el registro de decisiones).
+- **Filtro nearest en todas las texturas**: en 2D ya es el valor por defecto del proyecto; en 3D hay que ponerlo en
+  cada material (`texture_filter = Nearest`).
   Sin mipmaps en sprites.
 - **Densidad de texel constante**: 1 píxel de textura = 1 píxel de pantalla a la distancia de juego habitual.
   Nada de "mixels" (píxeles de tamaños distintos en pantalla).
@@ -221,6 +224,12 @@ Toda acción visible debe tener, como mínimo:
 ## 10. Tests
 
 - **gdUnit4** para la lógica pura: cálculo de daño, costes de mejoras, combinaciones, guardado y carga, progreso del Pilón.
+  Mientras no esté integrado, existe un test rápido sin addons:
+
+```bash
+godot --headless --path game --script res://tests/smoke/progression_smoke.gd
+```
+
 - Toda regla de juego nueva llega con su test.
 - Antes de cada commit, como mínimo: el proyecto abre sin errores en headless, `gdlint` limpio y tests en verde.
 
@@ -252,3 +261,16 @@ gdlint game && gdformat --check game
 | Addon | Versión | Licencia | Para qué |
 |---|---|---|---|
 | *(ninguno todavía)* | | | |
+
+## 14. Herramientas para agentes: Godot MCP
+
+El repo incluye `.mcp.json` con el servidor **godot-mcp** (`@coding-solo/godot-mcp@0.1.1`, MIT). Permite a los
+agentes abrir el editor, ejecutar el proyecto, leer la salida de depuración, crear escenas, añadir nodos y
+consultar UIDs.
+
+- Requisitos: Node.js 18 o superior y Godot 4.7 instalado. Si no lo encuentra solo, definir la variable de entorno
+  `GODOT_PATH` con la ruta al ejecutable de Godot.
+- La ruta de proyecto que hay que pasarle es la carpeta `game/`.
+- Úsalo para **verificar** cada cambio: ejecutar el proyecto y revisar errores y avisos antes de dar algo por terminado.
+- Las escenas que cree deben cumplir igualmente estas guías (tipado, estructura de carpetas, filtro nearest).
+- Versión fijada a propósito: actualizarla sólo tras revisar sus cambios.

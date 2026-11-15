@@ -1,0 +1,87 @@
+class_name Progression
+extends RefCounted
+## Reglas puras del progreso. Sin nodos ni escenas: se puede testear de forma aislada.
+##
+## - essence: lo que le queda al Cristal Madre. Sólo baja.
+## - pylon_progress: total entregado al Pilón. Sólo sube. Es la barra de victoria.
+## - mana: moneda gastable. Entregar suma a pylon_progress Y a mana.
+
+var total_essence: int
+var essence: int
+var pylon_progress: int = 0
+var mana: int = 0
+var upgrade_levels: Dictionary[StringName, int] = {}
+
+
+func _init(p_total_essence: int) -> void:
+	total_essence = p_total_essence
+	essence = p_total_essence
+
+
+## Aplica daño al cristal. Devuelve la esencia realmente arrancada (nunca más de la que queda).
+func damage_crystal(amount: int) -> int:
+	var removed: int = clampi(amount, 0, essence)
+	essence -= removed
+	return removed
+
+
+## Entrega fragmentos al Pilón. El progreso del Pilón nunca supera la esencia total.
+func deliver(value: int) -> void:
+	var accepted: int = clampi(value, 0, total_essence - pylon_progress)
+	pylon_progress += accepted
+	mana += accepted
+
+
+func can_afford(cost: int) -> bool:
+	return mana >= cost
+
+
+func spend(cost: int) -> bool:
+	if cost < 0 or not can_afford(cost):
+		return false
+	mana -= cost
+	return true
+
+
+func get_level(upgrade_id: StringName) -> int:
+	return upgrade_levels.get(upgrade_id, 0)
+
+
+func buy_upgrade(node: UpgradeNode) -> bool:
+	var level: int = get_level(node.id)
+	if level >= node.max_level:
+		return false
+	for req: StringName in node.prerequisites:
+		if get_level(req) == 0:
+			return false
+	if not spend(node.cost_for_level(level)):
+		return false
+	upgrade_levels[node.id] = level + 1
+	return true
+
+
+func pylon_ratio() -> float:
+	return float(pylon_progress) / float(total_essence)
+
+
+func is_crystal_destroyed() -> bool:
+	return essence <= 0
+
+
+func to_dict() -> Dictionary:
+	return {
+		"essence": essence,
+		"pylon_progress": pylon_progress,
+		"mana": mana,
+		"upgrade_levels": upgrade_levels.duplicate(),
+	}
+
+
+func load_dict(data: Dictionary) -> void:
+	essence = clampi(int(data.get("essence", total_essence)), 0, total_essence)
+	pylon_progress = clampi(int(data.get("pylon_progress", 0)), 0, total_essence)
+	mana = maxi(int(data.get("mana", 0)), 0)
+	upgrade_levels.clear()
+	var levels: Dictionary = data.get("upgrade_levels", {})
+	for key: Variant in levels:
+		upgrade_levels[StringName(str(key))] = int(levels[key])

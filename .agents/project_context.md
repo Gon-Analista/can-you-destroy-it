@@ -90,9 +90,21 @@ Todos estos números viven en recursos de datos (`.tres`), nunca hardcodeados (v
 | `tools/make_gdd.py` | Genera el PDF del GDD (`python3 tools/make_gdd.py Can_You_Destroy_It_GDD.pdf`). Requiere `reportlab` y `Pillow`. |
 | `docs/referencias/` | Imágenes de referencia de cristal y estilo. **No son arte final.** |
 | `AGENTS.md`, `.agents/` | Instrucciones para agentes. |
-| `index.html`, `src/` | Esqueleto web inicial, **obsoleto**: se elimina al crear el proyecto Godot. |
+| `game/` | Proyecto Godot 4.7 (abrir `game/project.godot`). |
+| `.mcp.json` | Servidor MCP de Godot para agentes (ver dev guidelines, sección 14). |
 
-**Aún no existe el proyecto Godot.** La primera tarea técnica es crearlo con la estructura de `dev_guidelines.md`.
+**Proyecto Godot creado (esqueleto).** Lo que ya existe en `game/`:
+
+- `project.godot`: 640x360 con escalado entero, filtro nearest, Forward+, Jolt, avisos de tipado, mapa de entrada
+  (clic izq./der. lanzar, WASD, Q/E cambiar elemento, F interactuar, Tab Grimorio), buses de audio.
+- Autoloads: `Events`, `Settings`, `GameState`, `SaveSystem`, `AudioDirector`.
+- `core/progression.gd`: reglas puras (esencia, Pilón, maná, compra de mejoras, guardar y cargar).
+- `data/defs/`: clases de recursos `BalanceConfig`, `ElementDef`, `SpellRecipe`, `UpgradeNode`, `CrystalLayerDef`;
+  `data/balance/default_balance.tres` con los números de arranque.
+- `main/main.tscn`: escena provisional (cielo, suelo, cristal hexagonal de marcador, HUD del Pilón y FPS).
+- `tests/smoke/progression_smoke.gd`: test rápido de `Progression` (pasa).
+
+Aún **no** hay jugabilidad: el siguiente paso es el prototipo M1.
 
 ## 8. Hitos
 
@@ -113,6 +125,8 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-15 | Estilo pixel art según `docs/referencias/`. | Elección del equipo. |
 | 2026-11-15 | Primera persona, 3D a baja resolución + manos 2D (propuesta, a validar en M1). | Permite caminar entre estaciones como One Million Coins manteniendo el look pixel art. |
 | 2026-11-15 | Esencia total = 1.000.000; Pilón y maná separados. | Recurso finito y visible; gastar no quita progreso. |
+| 2026-11-15 | Proyecto en `game/`; render a 640x360 con stretch `viewport` + escalado `integer` para todo (mundo y UI). | Lo más simple que da pixel art nítido; revisar si la UI necesita más resolución. |
+| 2026-11-15 | godot-mcp 0.1.1 como herramienta de agentes (`.mcp.json`). | Permite ejecutar el proyecto y leer errores para verificar cambios. |
 
 ## 10. Preguntas abiertas
 
