@@ -74,16 +74,29 @@ Los ids sirven para seguir trabajando sobre el mismo sprite (más poses, normal 
 Cuenta 1: 15 de 15 tokens gastados. Las 4 poses con la palma hacia la cámara quedaron descartadas
 (`art_source/sprite_ai/hands_v1/`): parecían "manos arriba" y no sujetaban el hechizo como en la referencia.
 
-### Cuenta 2: manos que se juntan para el hechizo (en uso)
+### Cuenta 2: manos horizontales que se juntan (descartadas)
 
 | Archivo | Qué es | Id (cuenta 2) | Coste |
 |---|---|---|---|
 | `art_source/sprite_ai/hand_cup_base.png` | Mano izquierda desde el lado del pulgar, palma hacia el centro | `355d1a73-40d3-46eb-bab6-165cf124cdab` | 1 |
 | `art_source/sprite_ai/hand_cup_anim_sheet.png` | Animación Custom de 8 frames: la mano se ahueca para sujetar el hechizo | `ac05defa-19ad-4d93-ba81-8d3402a5ca7d` | 14 |
-| `game/player/hands/hand_l_cup_strip.png` | Frames 0-6 de esa animación procesados: manga alargada 130 px hacia el borde (repitiendo la tela) y huecos internos rellenados | derivado | 0 |
+| `art_source/sprite_ai/hands_v2/hand_l_cup_strip.png` | Frames 0-6 procesados (manga alargada, huecos rellenados). Descartadas: los antebrazos en horizontal desde los lados no convencían | derivado | 0 |
 
 Cuenta 2: 15 de 15 tokens gastados.
 
 Procesado: `sprite_generate_animation` devuelve frames donde la mano puede tener huecos transparentes (se ve el
 fondo a través); hay que rellenar los huecos internos antes de usarlos sobre 3D. El último frame dibujó una bola
 beige (el orbe lo pone `SpellOrb`), por eso se usan sólo los 7 primeros.
+
+### Cuenta 3: manos verticales que se juntan sobre el hechizo (en uso)
+
+| Archivo | Qué es | Id (cuenta 3) | Coste |
+|---|---|---|---|
+| `art_source/sprite_ai/hand_vertical_base.png` | Mano izquierda en vertical (antebrazo desde abajo), dedos inclinados hacia el centro | `9bd396f4-c966-4964-a100-82a36703a0fe` | 1 |
+| `art_source/sprite_ai/hand_vertical_anim_sheet.png` | Animación Custom de 8 frames: los dedos se curvan para acunar el hechizo | `ab94cbab-e861-49d6-a128-77492aa311b6` | 14 |
+| `game/player/hands/hand_l_vertical_strip.png` | Frames 0-5 de esa animación (los 6-7 dibujan una bola) | derivado | 0 |
+
+Cuenta 3: 15 de 15 tokens gastados.
+
+En el juego, la carga mueve las manos desde abajo y separadas (recién lanzado) hasta juntas y ahuecadas
+(listas), avanzando los frames a la vez; el `SpellOrb` flota sobre las palmas.

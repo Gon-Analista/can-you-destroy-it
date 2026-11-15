@@ -1,28 +1,31 @@
 class_name WizardHands
 extends CanvasLayer
 ## Manos del mago en primera persona que se juntan para formar el hechizo.
-## Sprites pixel art 2D de Sprite AI (ver docs/sprite_ai.md): una tira de 7 frames de la mano
-## IZQUIERDA pasando de abierta a ahuecada; la derecha es su reflejo. Entre las palmas vive el
-## hechizo de verdad: un `SpellOrb` 3D (capas de núcleo, cintas, destellos y luz).
+## Sprites pixel art 2D de Sprite AI (ver docs/sprite_ai.md): una tira de 6 frames de la mano
+## IZQUIERDA en vertical (antebrazo desde abajo) pasando de abierta a ahuecada; la derecha es su
+## reflejo. Sobre las palmas vive el hechizo de verdad: un `SpellOrb` 3D
+## (núcleo, cintas, destellos y luz).
 ##
 ## La carga lo gobierna todo, siempre a píxel entero (sin rotar ni escalar los sprites):
-##   recargando  -> las manos se acercan al centro y se van cerrando; el orbe crece
-##   lista       -> manos ahuecadas sujetando el orbe a tope (latido al completarse)
-##   lanzar      -> el orbe estalla (`release`) y las manos se abren hacia fuera con rebote
+##   recién lanzado -> manos abajo y separadas, abiertas
+##   recargando     -> suben y se juntan desde donde estaban mientras los dedos se curvan;
+##                     el orbe crece
+##   lista          -> palmas ahuecadas sosteniendo el orbe desde abajo (latido al completarse)
+##   lanzar         -> empujón hacia arriba, el orbe estalla (`release`) y las manos vuelven abajo
 
-const STRIP: Texture2D = preload("res://player/hands/hand_l_cup_strip.png")
-const FRAMES: int = 7
-const FRAME_SIZE := Vector2(322, 192)
+const STRIP: Texture2D = preload("res://player/hands/hand_l_vertical_strip.png")
+const FRAMES: int = 6
+const FRAME_SIZE := Vector2(192, 192)
 const ORB_DEF: SpellVisualDef = preload("res://data/spells/vfx_arcane_orb.tres")
-## Esquina superior izquierda de la mano izquierda con las manos juntas (pantalla de 640x360).
-const JOINED_POS := Vector2(0, 176)
-## Cuánto se separan las manos cuando están abiertas (recién lanzado).
-const OPEN_SPREAD: float = 44.0
-## Centro del hueco entre las palmas, donde se forma el hechizo.
-const ORB_SCREEN := Vector2(320, 258)
+## Esquina superior izquierda de la mano izquierda (pantalla de 640x360): en reposo (abajo y
+## separadas) y juntas sosteniendo el hechizo.
+const REST_POS := Vector2(70, 228)
+const JOINED_POS := Vector2(158, 180)
+## El hechizo flota sobre las palmas ahuecadas: altura respecto a la parte de arriba del sprite.
+const ORB_ABOVE_SPRITE_TOP: float = 22.0
 const ORB_DEPTH: float = 0.85
-## Retroceso al lanzar: hacia fuera y un poco hacia arriba.
-const CAST_PUSH := Vector2(-26, -8)
+## Empujón al lanzar: las manos suben y se cierran hacia el centro.
+const CAST_PUSH := Vector2(10, -22)
 
 var charge_ratio: float = 1.0
 var move_speed: float = 0.0
@@ -93,9 +96,20 @@ func set_orb_colors(_core: Color, _glow: Color) -> void:
 	pass
 
 
-## Punto de la pantalla desde el que sale el hechizo: el centro entre las palmas.
+## Punto de la pantalla desde el que sale el hechizo: sobre las palmas, entre las dos manos.
 func palm_screen_position(_side: int) -> Vector2:
-	return ORB_SCREEN + Vector2(0, _bob().y)
+	var screen_w: float = (
+		640.0 if not is_inside_tree() else get_viewport().get_visible_rect().size.x
+	)
+	return Vector2(screen_w * 0.5, _left_pos().y + ORB_ABOVE_SPRITE_TOP)
+
+
+## Posición de la mano izquierda según la carga (y los empujones), antes de redondear.
+func _left_pos() -> Vector2:
+	var closed: float = _ease(charge_ratio)
+	var pos: Vector2 = REST_POS.lerp(JOINED_POS, closed)
+	pos += CAST_PUSH * _kick + Vector2(0, 6.0 * _grab) + _bob()
+	return pos
 
 
 func _process(delta: float) -> void:
@@ -106,19 +120,16 @@ func _process(delta: float) -> void:
 	_grab = _spring(_grab, delta, false)
 	var closed: float = _ease(charge_ratio)
 	var frame: int = clampi(int(round(closed * (FRAMES - 1))), 0, FRAMES - 1)
-	var spread: float = (1.0 - closed) * OPEN_SPREAD
 	var screen_w: float = get_viewport().get_visible_rect().size.x
-	var bob: Vector2 = _bob()
+	var left: Vector2 = _left_pos()
 	for side: int in 2:
 		var sprite: Sprite2D = _sprites[side]
 		sprite.frame = frame
-		var sgn: float = -1.0 if side == 0 else 1.0
-		var x: float = JOINED_POS.x - spread + CAST_PUSH.x * _kick
-		var pos := Vector2(x, JOINED_POS.y + CAST_PUSH.y * _kick + 6.0 * _grab) + bob
+		var pos: Vector2 = left
+		# Latido al completar la carga: las manos se aprietan un poco hacia el centro.
+		pos.x += _ready_pop * 3.0
 		if side == 1:
-			pos.x = screen_w - FRAME_SIZE.x - x
-		# Latido al completar la carga: las palmas se cierran un píxel más.
-		pos.x -= sgn * _ready_pop * 2.0
+			pos.x = screen_w - FRAME_SIZE.x - pos.x
 		sprite.position = pos.round()
 	_update_orb()
 
@@ -152,7 +163,9 @@ func _update_orb() -> void:
 	if _orb == null:
 		return
 	_place_orb()
-	if _orb_spent and not _orb.is_releasing() and charge_ratio > 0.02:
+	# El estallido (núcleo + lluvia de destellos) puede durar más que la recarga: el orbe
+	# nuevo empieza a formarse en cuanto la recarga pasa del 20 %, haya acabado o no.
+	if _orb_spent and charge_ratio > 0.2:
 		_orb_spent = false
 		_orb.appear()
 	if not _orb.is_releasing():

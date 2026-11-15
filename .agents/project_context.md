@@ -74,9 +74,9 @@ Todos estos números viven en recursos de datos (`.tres`), nunca hardcodeados (v
 
 - Mundo **3D renderizado a baja resolución** (640x360 propuesta) escalado por enteros, filtro nearest, shading
   por bandas, contorno por post-proceso. Fondo lejano (cielo, montañas, castillo, aldea) en **capas 2D con parallax**.
-- **Manos**: sprites pixel art 2D generados con **Sprite AI**: animación de 7 frames de la mano izquierda que se
-  ahueca (la derecha es su reflejo). Las manos entran desde los lados y se juntan con la carga; entre las palmas
-  vive el hechizo (`SpellOrb`, Orbe Arcano), que estalla al lanzar. Como en la referencia.
+- **Manos**: sprites pixel art 2D generados con **Sprite AI**: animación de 6 frames de la mano izquierda en
+  vertical (antebrazo desde abajo) que se ahueca; la derecha es su reflejo. Con la carga suben desde abajo y
+  separadas hasta juntarse; sobre las palmas vive el hechizo (`SpellOrb`, Orbe Arcano), que estalla al lanzar.
   No hay artista: el arte 2D sale de Sprite AI (`docs/sprite_ai.md`).
 - **Todo es reactivo**: cada impacto dispara la lista completa de respuestas del GDD 10.3 (manos, proyectil,
   cristal, fragmentos, partículas, luz, cámara, sonido y HUD). Racha y golpe resonante: GDD 10.4.
@@ -174,6 +174,7 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-15 | Magia con píxeles sólidos (`blend_mix` + tramado) en vez de aditiva; HDR sólo en el centro. | Lo aditivo se lavaba a blanco sobre el cristal y el cielo claros. |
 | 2026-11-15 | Animación de VFX escalonada a 12 fps (`anim_fps`). | Lo procedural se lee como pixel art animado a mano. |
 | 2026-11-15 | Manos que se juntan (animación de Sprite AI guiada por la carga) con el `SpellOrb` entre las palmas; la chispa sale del orbe. Sustituye a las 4 poses con la palma hacia la cámara. | Las anteriores se veían en diagonal hacia fuera; así coincide con la referencia. |
+| 2026-11-15 | Manos en vertical que suben y se juntan desde su posición de reposo (no en horizontal desde los lados). | Pedido del equipo: juntar el hechizo verticalmente. |
 
 ## 10. Preguntas abiertas
 

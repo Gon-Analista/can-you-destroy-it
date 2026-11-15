@@ -2,6 +2,32 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-15 · Manos verticales que se juntan sobre el hechizo
+
+**Qué hay nuevo**
+
+- **Manos en vertical** (Sprite AI, cuenta 3): el antebrazo sube desde abajo y la mano está en alto, con los dedos
+  hacia el centro. Sustituyen a las manos horizontales desde los lados del push anterior.
+- **Se juntan dinámicamente desde donde estaban**: tras lanzar quedan abajo y separadas, con la palma abierta;
+  mientras recarga suben y se juntan, y los dedos se curvan frame a frame (6 frames) hasta acunar el hechizo.
+  Al lanzar dan un empujón hacia arriba y vuelven abajo con rebote.
+- **El Orbe Arcano flota sobre las palmas** y crece con la carga; estalla al lanzar y se vuelve a formar.
+- **Arreglo en `SpellOrb.appear()`** (código del otro agente): si se llamaba antes de que acabara el estallido,
+  el núcleo y las cintas se quedaban ocultos y el orbe no volvía a verse. Ahora `appear()` los restaura.
+
+**Capturas**: `docs/capturas/manos_verticales_orbe.gif`, `docs/capturas/manos_verticales_orbe.png`.
+
+**Cómo se probó**
+
+- Godot 4.7 headless sin errores de script; `progression_smoke` y `hit_stop_smoke`: OK; `gdlint` limpio.
+- Render Forward+ en modo demo (nivel 1, 280 frames): el orbe aparece en todos los ciclos y las manos suben y se
+  juntan desde abajo. Traza de estado del orbe frame a frame para localizar el fallo de `appear()`.
+
+**Pendiente**
+
+- Cuenta 3 de Sprite AI: 0 tokens.
+- Las manos siguen teniendo la palma algo hacia la cámara; con más tokens, una variante vista más desde el lado del pulgar.
+
 ## 2026-11-15 · Las manos se juntan para el hechizo + integración del Orbe Arcano
 
 Integra en `main` el trabajo del otro agente (rama `claude/keen-lovelace-7haa9v`: hechizos por capas, `SpellOrb`,
@@ -20,7 +46,7 @@ Orbe Arcano y galería de VFX, ver su entrada más abajo) y lo usa en el juego.
   3D a través de las palmas). Detalles y registro en `docs/sprite_ai.md`.
 - La galería de VFX se adapta a las manos nuevas (oculta el orbe de las manos para mostrar el suyo).
 
-**Capturas**: `docs/capturas/manos_juntas_orbe.gif`, `docs/capturas/manos_juntas_orbe.png`.
+**Capturas**: `docs/capturas/manos_juntas_orbe.png`.
 
 **Cómo se probó**
 
