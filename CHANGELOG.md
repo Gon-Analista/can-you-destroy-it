@@ -2,6 +2,27 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-15 · Sonidos de la Bola de Fuego
+
+**Qué hay nuevo** (sólo audio; la integración en el juego la hace la sesión de las manos)
+
+- **`tools/sfx_fireball.py`**: sintetiza los sonidos de la Bola de Fuego y de descubrir una combinación, reutilizando
+  `sfx_synth.py`. Deterministas. En `game/audio/sfx/`:
+  - `sfx_spell_combine_01`: las manos se juntan; dos tonos a una 5.ª (E5 y A4) se deslizan al unísono en La y suena una campanita.
+  - `sfx_fireball_charge_loop` (bucle de 2 s, `loop=true` ya en la importación): rugido de fuego con chisporroteo.
+    Pensado para subir `pitch_scale` de 0,85 a 1,25 y el volumen con la carga.
+  - `sfx_fireball_cast_01..03`: golpe grave + llamarada con barrido de filtro.
+  - `sfx_fireball_impact_01..03`: explosión (sub con caída de tono, estallido, brasas) + lluvia de esquirlas afinadas en
+    La mayor (A, C#, E), para casar con la música y el "tink".
+  - `sfx_combo_discovered_01`: fanfarria corta del GDD 10 (IV - V - I en La mayor, metal sintético + arpegio de campanas + timbal).
+- Demo de la secuencia completa: `docs/audio/bola_de_fuego_preview.ogg` (juntar → cargar → lanzar → impacto → fanfarria).
+
+**Cómo se probó**
+
+- Duraciones y niveles medidos (picos entre -1 y -4 dB); costura del bucle de carga por debajo del salto medio entre
+  muestras (sin clic); espectrograma del impacto revisado. Los SFX existentes no cambian (`git status` limpio en ellos).
+- Pendiente de escucha humana.
+
 ## 2026-11-15 · Integración en main: música del valle por capas
 
 - Entra en `main` la música de la sesión de hechizos/música (rama `claude/keen-lovelace-7haa9v`, ver la entrada siguiente):

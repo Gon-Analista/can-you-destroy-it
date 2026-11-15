@@ -96,6 +96,7 @@ Todos estos números viven en recursos de datos (`.tres`), nunca hardcodeados (v
 | `CHANGELOG.md` | Registro de cada push a `main`. |
 | `CREDITS.md` | Licencias de fuentes y recursos de terceros. |
 | `tools/music_synth.py` | Compone y sintetiza la música por capas (`python3 tools/music_synth.py [--preview RUTA]`, requiere numpy, scipy y ffmpeg). |
+| `tools/sfx_fireball.py` | Sonidos de la Bola de Fuego y de descubrir una combinación (`python3 tools/sfx_fireball.py`). |
 | `tools/sfx_synth.py` | Sintetiza todos los SFX del prototipo (`python3 tools/sfx_synth.py`, requiere numpy, scipy y ffmpeg). |
 | `tools/godot/make_spark_element.gd` | Volcado inicial de `data/elements/spark.tres`. |
 | `docs/capturas/` | Capturas y GIF del prototipo. |
