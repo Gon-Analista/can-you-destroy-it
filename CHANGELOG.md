@@ -2,6 +2,14 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-15 · Integración en main: música del valle por capas
+
+- Entra en `main` la música de la sesión de hechizos/música (rama `claude/keen-lovelace-7haa9v`, ver la entrada siguiente):
+  5 capas por rango de mago en bucle, sincronizadas con `AudioStreamSynchronized`; en debug, tecla **M** para sumar capas.
+- Verificado tras integrar: importación sin errores, `progression_smoke`, `hit_stop_smoke` y `music_layers_smoke` OK,
+  juego en modo demo con `--music-layers=5` y galería de VFX sin errores de script, `gdlint` limpio.
+- Pendiente: que alguien la escuche y la valide; opción de volumen de música en Opciones.
+
 ## 2026-11-15 · Música del valle por capas
 
 **Qué hay nuevo**
