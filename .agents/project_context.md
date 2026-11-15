@@ -122,6 +122,9 @@ Todos estos números viven en recursos de datos (`.tres`), nunca hardcodeados (v
 - **Debug** (sólo builds de desarrollo): teclas 1-5 cambian el nivel de la chispa; modo demo para grabar:
   `godot --path game -- --autoplay --tier=N` (añadir `--report` para imprimir draw calls y física).
 - `tests/smoke/progression_smoke.gd`: reglas de `Progression` y `StreakTracker` (pasa).
+- **Hechizos por capas** (`spells/vfx/`): `SpellOrb` + `SpellVisualDef` (núcleo en espiral, cintas orbitales,
+  destellos y luz; `charge`, `release()`, `appear()`). Primer hechizo: Orbe Arcano (`data/spells/vfx_arcane_orb.tres`).
+  Galería para verlo y grabarlo: `godot --path game res://tests/vfx_gallery/vfx_gallery.tscn` (ver `CHANGELOG.md`).
 
 **Aún no hay**: recoger ni entregar fragmentos, Pilón físico, Santuario ni mejoras compradas. Es lo siguiente (M1b).
 
@@ -153,6 +156,9 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-15 | Fuentes: Silkscreen 8 px (texto pequeño) y Pixelify Sans (números), ambas OFL, sin antialiasing. | Nítidas a 640x360. |
 | 2026-11-15 | Números flotantes activados por defecto (antes: ocultos). Racha con escala pentatónica y golpe resonante del 7 %. | Más dopamina en el golpe, pedido explícito. |
 | 2026-11-15 | Flujo de git: commit y push a `main`, cada push documentado en `CHANGELOG.md`. | Pedido del equipo. |
+| 2026-11-15 | Hechizos como pila de capas (`SpellOrb`) descrita por datos (`SpellVisualDef`). | Cada elemento, combinación y nivel es un `.tres`; misma calidad para todos. |
+| 2026-11-15 | Magia con píxeles sólidos (`blend_mix` + tramado) en vez de aditiva; HDR sólo en el centro. | Lo aditivo se lavaba a blanco sobre el cristal y el cielo claros. |
+| 2026-11-15 | Animación de VFX escalonada a 12 fps (`anim_fps`). | Lo procedural se lee como pixel art animado a mano. |
 
 ## 10. Preguntas abiertas
 

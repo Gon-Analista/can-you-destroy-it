@@ -49,6 +49,7 @@ Tecnologías ya previstas (validar la versión al integrarlas):
 | Contorno pixel art | `fx/outline.gdshader`: post-proceso de profundidad + normales | Técnica estándar de "3D pixel art" en Godot 4. |
 | SFX del prototipo | `tools/sfx_synth.py` (numpy + scipy + ffmpeg) | Reproducible con semillas fijas. |
 | Fuentes | Silkscreen (8 px) y Pixelify Sans, OFL | Importadas sin antialiasing, hinting ni subpíxel. |
+| VFX de hechizos | `spells/vfx/spell_orb.gd` + un `SpellVisualDef` (`.tres`) | Núcleo, cintas, destellos y luz; píxeles sólidos y animación a `anim_fps`. Probar en `tests/vfx_gallery/`. |
 
 ## 3. Proyecto Godot
 
@@ -178,6 +179,10 @@ sonido y HUD) y la de racha y golpe resonante (GDD 10.4). Si falta una capa, no 
 - **Partículas y contorno.** El quad de contorno usa `render_priority = -100` para dibujarse antes que el resto de
   transparentes; si no, taparía las partículas.
 - **Fuentes pixel.** Importar sin antialiasing, hinting ni subpíxel y usarlas sólo a su tamaño nativo o múltiplos.
+- **Magia aditiva sobre fondos claros.** `blend_add` sobre el cristal o el cielo satura a blanco y se pierde el
+  color. Para magia, píxeles sólidos (`blend_mix`, alfa 0 o 1 con tramado) y HDR > 1 sólo donde deba brillar.
+- **Render sin GPU (agentes).** Para capturas en contenedores: instalar `mesa-vulkan-drivers` y ejecutar con
+  `xvfb-run`; sin Vulkan, Godot cae a OpenGL y el contorno (Forward+) no compila.
 - **Bucle de audio.** Activarlo en la importación del OGG (`loop=true`), no duplicando el recurso en código.
 - **Aviso al salir en headless.** Un `AudioStreamPlayer` con un OGG en bucle deja avisos de "leaked instances" al
   cerrar con `--quit-after`; es del motor y también ocurre en un proyecto vacío. Ignorarlo.
