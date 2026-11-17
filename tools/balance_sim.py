@@ -26,6 +26,7 @@ optimista. Las reglas de ritmo del GDD (sección 8) se comprueban al final:
 """
 import argparse
 import csv
+import json
 import math
 import re
 from dataclasses import dataclass, field
@@ -48,6 +49,8 @@ FEED_START, FEED_MIN, FEED_RAMP = 0.4, 0.09, 2.4
 LEVER_SEC = 1.0
 NEW_SHARDS = True  # regla nueva: el maná de un golpe es más o menos su daño (ver hit_yield)
 MAX_PIECES, MAX_EXTRA = 10, 3  # ShardPool
+VEIN_FOCUS = 0.6  # parte de los golpes que el jugador da en la vena de su elemento (capa de venas)
+VEIN_BONUS = 0.5  # CrystalLayerDef.vein_bonus
 DIRECT_SEND_LEVER_EVERY = 90.0  # con Envío directo, se va a tirar de la palanca cada tanto
 MOVEMENT_UPGRADES = {"double_jump", "levitation", "crystal_impulse"}
 
@@ -259,12 +262,29 @@ TUNING = None  # módulo con una propuesta de números (--tuning), para probar a
 
 
 def apply_tuning(t, elements, recipes, upgrades, balance) -> None:
-    """Sobrescribe en memoria los datos con los de la propuesta."""
+    """Sobrescribe en memoria los datos con los de la propuesta (módulo Python con estos nombres,
+    todos opcionales):
+    - ELEMENTS = {"spark": {"tiers": [(daño, enfriamiento), ...], "growth": 1.38, "cd_growth": 0.92}}
+      (los niveles escritos a mano, como en el .tres; el resto los completa ensure_levels).
+    - RECIPES = {"fireball": {"mult": 2.7, "cooldown": 2.0, "charge": 0.7}}
+    - UPGRADES = {"bag": {"costs": [...], "values": [...]}} (un id nuevo necesita "stat").
+    - BALANCE = {"pylon_bolt_damage_max": 600, ...}  (BalanceConfig)
+    - FAMILIARS = {"collector": {"carry": 3}, "caster": {"damage_mult": 0.6}}  (FamiliarDef)
+    - CONSTANTS = {"VEIN_BONUS": 0.5}  (constantes de este simulador que copian datos del juego)
+    """
     for eid, spec in getattr(t, "ELEMENTS", {}).items():
         el = elements[eid]
-        echoes = [x.echoes for x in el.tiers]
-        base = [Tier(*row, echoes[min(i, len(echoes) - 1)]) for i, row in enumerate(spec["tiers"])]
-        el.tiers = ensure_levels(base, growth=spec.get("growth", 1.38))
+        old = list(el.tiers)
+        base = []
+        for i, row in enumerate(spec["tiers"]):
+            ref = old[min(i, len(old) - 1)]
+            if len(row) == 2:
+                base.append(Tier(int(row[0]), float(row[1]), ref.shards_min, ref.shards_max, ref.echoes))
+            else:
+                base.append(Tier(*row, ref.echoes) if len(row) == 4 else Tier(*row))
+        el.tiers = ensure_levels(
+            base, growth=spec.get("growth", 1.38), cd_growth=spec.get("cd_growth", 0.92)
+        )
     for rid, spec in getattr(t, "RECIPES", {}).items():
         for k, v in spec.items():
             setattr(recipes[rid], k, v)
@@ -275,6 +295,10 @@ def apply_tuning(t, elements, recipes, upgrades, balance) -> None:
         for k, v in spec.items():
             setattr(u, k, v)
     balance.update(getattr(t, "BALANCE", {}))
+    for fid, spec in getattr(t, "FAMILIARS", {}).items():
+        balance.setdefault("_familiars", {}).setdefault(fid, {}).update(spec)
+    for k, v in getattr(t, "CONSTANTS", {}).items():
+        globals()[k] = v
 
 
 # --------------------------------------------------------------------------------------------
@@ -492,6 +516,19 @@ class Game:
             ce, cm, cn = e * k, m * k, n * k
         return carry_rate, ce, cm, cn
 
+    def pylon_bolt_rates(self, s: State) -> tuple[float, float, float]:
+        """Resonancia del Pilón: un rayo cada `pylon_bolt_sec` s con daño de 25 a 600 según lo lleno
+        que se vea el Pilón (raíz del progreso, ManaPylon.display_fill)."""
+        every = self.stat(s, "pylon_bolt_sec", 0.0)
+        if every <= 0:
+            return 0.0, 0.0, 0.0
+        lo = float(self.balance.get("pylon_bolt_damage_min", 25))
+        hi = float(self.balance.get("pylon_bolt_damage_max", 600))
+        dmg = gd_round(lo + (hi - lo) * math.sqrt(s.pylon / self.total))
+        e, m, n = self.hit_yield(dmg, self.elements["bolt"].tiers[0], 1.0, 0, 0.0)
+        k = 1.0 / (every + float(self.balance.get("pylon_bolt_charge_sec", 0.9)))
+        return e * k, m * k, n * k
+
     def rates(self, s: State) -> list[tuple[float, float, str]]:
         heart = s.essence / self.total < 0.2
         out: list[tuple[float, float, str]] = []
@@ -502,13 +539,25 @@ class Game:
         gears = self.stat(s, "crusher_speed", 1.0)
         direct = self.stat(s, "direct_send", 0.0) > 0.5
         carry_rate, fe, fm, fn = self.familiar_rates(s)
+        be, bm, bn = self.pylon_bolt_rates(s)
+        fe, fm, fn = fe + be, fm + bm, fn + bn
+        done = 1.0 - s.essence / self.total
+        veins = 0.45 <= done < 0.8
+        purity = self.stat(s, "purity_mult", 1.0)
         for name, e, m, n, combo in self.attacks(s):
             if heart and not combo:
                 continue
             if n <= 0 or m <= 0:
                 continue
-            # Los hechiceros suman lo suyo mientras el mago ataca.
+            if veins:
+                # CrystalVeins: VEIN_FOCUS de los golpes caen en su vena débil: x2 de daño y
+                # Fragmentos Resonantes por la mitad de ese daño (vein_bonus).
+                e, m = e * (1 + VEIN_FOCUS), m * (1 + VEIN_FOCUS) + e * 2 * VEIN_FOCUS * VEIN_BONUS
+                n = n * (1 + VEIN_FOCUS) + e * VEIN_FOCUS * VEIN_BONUS / 125.0
+            # Los hechiceros y el rayo del Pilón suman lo suyo mientras el mago ataca.
             e, m, n = e + fe, m + fm, n + fn
+            # La Pureza sube el maná (no el Pilón: ver simulate).
+            m *= purity
             # Segundos de logística del mago por cada fragmento que le toca a él.
             if direct:
                 # Vuelan solos a la tolva: recogerlos y, de vez en cuando, ir a la palanca (si no
@@ -567,7 +616,7 @@ def simulate(game: Game, verbose: bool = False, max_hours: float = 6.0):
         # El Pilón no pasa de la esencia total; el maná sí se sigue ganando (Progression.deliver).
         gain = rate * step
         s.mana += gain
-        s.pylon = min(game.total, s.pylon + gain)
+        s.pylon = min(game.total, s.pylon + gain / game.stat(s, "purity_mult", 1.0))
         s.essence = max(0.0, s.essence - ess_rate * step)
         s.t += step
         if s.t >= next_sample:
@@ -620,6 +669,36 @@ def objective(s: State, log) -> float:
 
 
 GOAL_SEC = 150 * 60
+
+
+def summary(game: Game, s: State, log, timeline, name: str) -> dict:
+    """Resumen comparable de una partida (para --json)."""
+    times = [0.0] + [e[0] for e in log]
+    gaps = [(b - a, a) for a, b in zip(times, times[1:])]
+    hour = [g for g, at in gaps if at < 3600]
+    income = {}
+    for t, _m, _e, _p, a in timeline:
+        for mark in (5, 15, 30, 45, 60, 90, 120, 150):
+            if abs(t - mark * 60) < 16:
+                income[str(mark)] = round(float(a.split()[-1][:-2]), 1)
+    return {
+        "perfil": name,
+        "minutos": round(s.t / 60, 1),
+        "compras": len(log),
+        "primera_mejora_s": round(log[0][0]) if log else None,
+        "hueco_max_1h_s": round(max(hour, default=0)),
+        "hueco_max_s": round(max((g for g, _ in gaps), default=0)),
+        "huecos_largos": sum(1 for g, at in gaps if g > (60 if at < 3600 else 180)),
+        "mana_sin_gastar": round(s.mana),
+        "pilon_final_pct": round(s.pylon / game.total * 100, 1),
+        "nota": round(objective(s, log)),
+        "maná_por_s": income,
+        "sin_comprar": sorted(
+            f"{u.id} {s.levels.get(u.id, 0)}/{len(u.costs)}"
+            for u in game.upgrades.values()
+            if s.levels.get(u.id, 0) < len(u.costs)
+        ),
+    }
 
 
 def fmt(t: float) -> str:
@@ -687,6 +766,7 @@ def main() -> None:
     ap.add_argument("--log", action="store_true", help="lista todas las compras")
     ap.add_argument("--csv", help="escribe la línea de tiempo (cada 30 s)")
     ap.add_argument("--perfil", choices=list(PROFILES), help="sólo un jugador")
+    ap.add_argument("--json", action="store_true", help="sólo un resumen en JSON por jugador")
     ap.add_argument("--old-shards", action="store_true", help="regla antigua de fragmentos")
     ap.add_argument("--tuning", help="archivo .py con una propuesta de números (ver apply_tuning)")
     args = ap.parse_args()
@@ -702,8 +782,11 @@ def main() -> None:
     for name in [args.perfil] if args.perfil else list(PROFILES):
         P.clear()
         P.update(PROFILES[name])
-        print(f"===== Jugador {name} =====")
         s, log, timeline = simulate(game)
+        if args.json:
+            print(json.dumps(summary(game, s, log, timeline, name), ensure_ascii=False))
+            continue
+        print(f"===== Jugador {name} =====")
         report(game, s, log, timeline, args.log)
         print()
     if args.csv:
