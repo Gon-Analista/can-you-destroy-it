@@ -11,6 +11,8 @@ extends Node3D
 const ORB_SCALE: float = 5.5
 const CIRCLE_SIZE: float = 2.0
 const GROUND_CIRCLE_SIZE: float = 2.4
+## Destello de los sellos al cerrarse (los de los ecos, 0,9).
+const SEAL_FLASH: float = 0.3
 
 var active: bool = false
 ## Fragmentos que se ha tragado el último pozo.
@@ -90,10 +92,13 @@ func open(center: Vector3, facing: Vector3, recipe: SpellRecipe, circles: MagicC
 	var hot: Color = recipe.circle_hot
 	var col: Color = recipe.circle_color
 	var life: float = _sec + 0.35
-	_circles.stamp(center - facing * 0.4, -facing, CIRCLE_SIZE, col, hot, life, 2.2)
-	_circles.stamp(center - facing * 0.2, -facing, CIRCLE_SIZE * 0.62, hot, col, life, -3.6)
+	# Destello suave: los tres sellos se solapan delante de la cámara.
+	_circles.stamp(center - facing * 0.4, -facing, CIRCLE_SIZE, col, hot, life, 2.2, SEAL_FLASH)
+	_circles.stamp(
+		center - facing * 0.2, -facing, CIRCLE_SIZE * 0.62, hot, col, life, -3.6, SEAL_FLASH
+	)
 	var ground := Vector3(center.x, center.y - 1.9, center.z)
-	_circles.stamp(ground, Vector3.DOWN, GROUND_CIRCLE_SIZE, col, hot, life, 1.2)
+	_circles.stamp(ground, Vector3.DOWN, GROUND_CIRCLE_SIZE, col, hot, life, 1.2, SEAL_FLASH)
 	_shards = get_tree().get_first_node_in_group(&"shard_pool") as ShardPool
 	if _shards:
 		if not _shards.swallowed.is_connected(_on_swallowed):

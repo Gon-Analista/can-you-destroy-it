@@ -47,6 +47,9 @@ hacia las 2 a 3 horas del GDD.
     bolsa si caben y, si no, a la tolva.
   - **Resonancia Arcana** (Arcano + Arcano): el cristal entero vibra y durante 5 s todo golpe es resonante.
 - El HUD junta las recogidas seguidas en un solo número. Textos en español e inglés.
+- Revisión: la Resonancia Arcana y los saltos del Rayo sólo sueltan fragmentos donde el cristal cede (antes
+  salían del Núcleo sin excavar nada), los ecos resonantes ya no destellan toda la pantalla y los sellos del
+  pozo de Gravedad ya no forman un disco blanco al abrirse. Captura: `docs/capturas/gravedad.png`.
 
 **Pruebas**: nueva `tests/smoke/arcane_smoke.gd`; `combos_smoke` cubre ya los 5 elementos y las 15 parejas.
 

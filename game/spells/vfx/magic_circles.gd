@@ -26,8 +26,9 @@ var _age: PackedFloat32Array = []
 var _spin_speed: PackedFloat32Array = []
 var _spin: PackedFloat32Array = []
 var _base_scale: PackedFloat32Array = []
-## Duración de cada sello (estado 4).
+## Duración de cada sello (estado 4) y cuánto destella al cerrarse.
 var _life: PackedFloat32Array = []
+var _flash_peak: PackedFloat32Array = []
 var _charge_ids: Array[int] = []
 var _charge_count: int = 0
 var _origin := Vector3.ZERO
@@ -60,6 +61,7 @@ func _ready() -> void:
 		_spin.append(0.0)
 		_base_scale.append(1.0)
 		_life.append(1.0)
+		_flash_peak.append(0.9)
 
 
 ## Mientras se carga un hechizo combinado: `count` círculos (1..5) que aparecen con la carga `k`,
@@ -185,8 +187,9 @@ func muzzle(origin: Vector3, aim: Vector3, count: int, col: Color, hot: Color) -
 
 
 ## Sello suelto (ecos del Arcano, pozo de Gravedad): un círculo de `size` m en `pos`, de cara a
-## lo largo de `dir`, que se dibuja barriendo, destella, gira a `spin_speed` y dura `life` s.
-## Devuelve su índice (o -1 si no queda ninguno libre).
+## lo largo de `dir`, que se dibuja barriendo, destella (hasta `flash`), gira a `spin_speed` y
+## dura `life` s. Los sellos grandes y cerca de la cámara destellan menos (con el resplandor HDR
+## se vuelven un disco blanco). Devuelve su índice (o -1 si no queda ninguno libre).
 func stamp(
 	pos: Vector3,
 	dir: Vector3,
@@ -194,7 +197,8 @@ func stamp(
 	col: Color,
 	hot: Color,
 	life: float = 0.7,
-	spin_speed: float = 3.0
+	spin_speed: float = 3.0,
+	flash: float = 0.9
 ) -> int:
 	var i: int = _free()
 	if i < 0:
@@ -202,6 +206,7 @@ func stamp(
 	_state[i] = 4
 	_age[i] = 0.0
 	_life[i] = life
+	_flash_peak[i] = flash
 	_spin[i] = randf() * TAU
 	_spin_speed[i] = spin_speed
 	_base_scale[i] = size
@@ -257,7 +262,8 @@ func _animate_stamp(i: int) -> void:
 	var t: float = _age[i] / maxf(_life[i], 0.05)
 	var a: float = clampf(_age[i] / 0.14, 0.0, 1.0)
 	_mats[i].set_shader_parameter("appear", a)
-	_mats[i].set_shader_parameter("flash", maxf(0.0, 0.9 - absf(_age[i] - 0.16) * 6.0))
+	var flash: float = maxf(0.0, 1.0 - absf(_age[i] - 0.16) * 6.67) * _flash_peak[i]
+	_mats[i].set_shader_parameter("flash", flash)
 	_mats[i].set_shader_parameter("fade", clampf((1.0 - t) / 0.3, 0.0, 1.0))
 	_dir = _quads[i].get_meta(&"dir")
 	var pos: Vector3 = _quads[i].get_meta(&"pos")

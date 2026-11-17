@@ -113,8 +113,8 @@ func chain(hit: SpellHit, count: int) -> void:
 		var p: Vector3 = r["position"]
 		_arcs.bolt_between(hit.position + n * 0.2, p, 0.12, col, 0.4)
 		var worth: float = maxf(1.0, float(hit.damage) * 0.2)
-		_crystal.dig(p, r["normal"], worth, hit.recipe != null)
-		_shards.spawn_worth(p, r["normal"], worth, 1.0, _crystal.hit_layer())
+		if _crystal.dig(p, r["normal"], worth, hit.recipe != null) > 0.0:
+			_shards.spawn_worth(p, r["normal"], worth, 1.0, _crystal.hit_layer())
 		_fx.play(p, r["normal"], hit.tier, false, 0.7)
 
 
@@ -164,9 +164,10 @@ func resonance_pulse(hit: SpellHit) -> void:
 		get_tree().create_timer(0.1 + radius * 0.035).timeout.connect(
 			func() -> void:
 				_arcs.bolt_between(center, p, 0.22, col, 0.45)
+				# Sólo suelta fragmentos donde el cristal cede (el Núcleo no da nada gratis).
 				var worth: float = maxf(1.0, float(hit.damage) * 0.1)
-				_crystal.dig(p, n, worth, true)
-				_shards.spawn_worth(p, n, worth, 1.2, _crystal.hit_layer())
+				if _crystal.dig(p, n, worth, true) > 0.0:
+					_shards.spawn_worth(p, n, worth, 1.2, _crystal.hit_layer())
 				_hd_fx.play(p, n, hit.tier, true, false, 0.7)
 		)
 	var cam: Camera3D = get_viewport().get_camera_3d()
