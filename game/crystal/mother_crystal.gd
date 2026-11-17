@@ -45,6 +45,10 @@ const ARC_COLORS: Array[Color] = [
 	Color(0.25, 0.75, 2.0), Color(1.2, 0.3, 1.9), Color(0.4, 0.5, 2.0)
 ]
 ## Daño acumulado para el primer "resquebrajo"; cada siguiente pide un 60 % más.
+const GEODE_SFX: AudioStream = preload("res://audio/sfx/sfx_crystal_surge_01.ogg")
+const MAX_GEODES: int = 4
+## Segundos hasta que aparece otra geoda tras reventar una.
+const GEODE_RESPAWN_SEC: float = 14.0
 const FIRST_SURGE: float = 15.0
 const SURGE_GROWTH: float = 1.6
 
@@ -59,6 +63,12 @@ var _hd_fx: HdImpact
 var _arcs: CrystalArcs
 var _arc_player: AudioStreamPlayer3D
 var _surge_acc: float = 0.0
+var _layer: int = 0
+## Paleta mostrada (se funde hacia la de la capa nueva) y de qué capa venimos.
+var _palette_from: CrystalLayerDef
+var _palette_t: float = 1.0
+var _geodes: Array[Geode] = []
+var _geode_timer: float = -1.0
 var _next_surge: float = FIRST_SURGE
 var _burn_fire: CrystalBurn
 var _burns: PackedVector4Array = []
@@ -138,6 +148,16 @@ func _ready() -> void:
 		global_position + Vector3(0.0, 9.0 * crystal_scale, 0.0),
 		Vector3(9.0, 18.0, 9.0) * crystal_scale
 	)
+	for i: int in MAX_GEODES:
+		var g := Geode.new()
+		g.name = "Geode%d" % i
+		add_child(g)
+		_geodes.append(g)
+	_layer = GameState.layer_index()
+	_palette_from = GameState.LAYERS[_layer]
+	_apply_palette(GameState.LAYERS[_layer], GameState.LAYERS[_layer], 1.0)
+	Events.essence_changed.connect(_on_essence_changed)
+	_spawn_geodes.call_deferred()
 	_burn_fire = CrystalBurn.new()
 	_burn_fire.name = "Burn"
 	_burn_fire.burned.connect(_on_burn_tick)
@@ -231,6 +251,7 @@ func receive_hit(hit: SpellHit) -> void:
 	var balance: BalanceConfig = GameState.BALANCE
 	hit.streak = _streak.register_hit(_now)
 	_apply_weakness(hit)
+	_check_geodes(hit)
 	GameState.hit_crystal(hit.damage, hit.position)
 	var tier: SpellTier = hit.tier
 
@@ -311,6 +332,29 @@ func _area_blast(hit: SpellHit) -> void:
 
 ## Pantalla de carga: dispara una vez cada efecto de impacto y de fuego en `at` (sin daño ni
 ## fragmentos que recoger) para compilar shaders y partículas antes de jugar.
+func _unhandled_input(event: InputEvent) -> void:
+	if (
+		OS.is_debug_build()
+		and event is InputEventKey
+		and (event as InputEventKey).pressed
+		and not (event as InputEventKey).echo
+		and (event as InputEventKey).physical_keycode == KEY_L
+	):
+		# Debug: L salta a la capa siguiente.
+		jump_to_layer(_layer + 1)
+
+
+## Debug y demo: destruye lo justo para entrar en la capa `idx`.
+func jump_to_layer(idx: int) -> void:
+	if idx >= GameState.LAYERS.size():
+		return
+	var prog: Progression = GameState.progression
+	var target: int = int(float(prog.total_essence) * (1.0 - GameState.LAYERS[idx].from_ratio)) - 1
+	var dmg: int = prog.essence - target
+	if dmg > 0:
+		GameState.hit_crystal(dmg, global_position)
+
+
 func warm_up(at: Vector3, normal: Vector3, tier: SpellTier, big_tier: SpellTier) -> void:
 	_fx.play(at, normal, tier, true)
 	_arcs.strike(at, normal, 1.0, ARC_COLORS[0])
@@ -459,6 +503,121 @@ func _play_spell_impact(hit: SpellHit) -> void:
 	_spell_player.play()
 
 
+## Capas (GDD 6): al destruir lo bastante, el cristal pasa a la capa siguiente.
+func _on_essence_changed(_essence: int, _total: int) -> void:
+	var idx: int = GameState.layer_index()
+	if idx != _layer:
+		_enter_layer(idx)
+
+
+## Capa nueva: la paleta se funde a la de dentro, tormenta de rayos, retumbe y aviso.
+func _enter_layer(idx: int) -> void:
+	_palette_from = GameState.LAYERS[_layer]
+	_layer = idx
+	_palette_t = 0.0
+	var layer: CrystalLayerDef = GameState.LAYERS[idx]
+	_arcs.storm(
+		global_position,
+		30.0 * crystal_scale / 2.3 * 2.0,
+		WorldLayout.CRYSTAL_FOOTPRINT,
+		ARC_COLORS[1]
+	)
+	_global_flash = 1.0
+	_core_pulse = 1.0
+	_shudder = 1.0
+	_accent_player.stream = SURGE_SFX
+	_accent_player.volume_db = 0.0
+	_accent_player.pitch_scale = 0.8
+	_accent_player.play()
+	var cam: Camera3D = get_viewport().get_camera_3d()
+	if cam is CameraRig:
+		(cam as CameraRig).add_trauma(0.6)
+	Events.hint.emit(
+		tr("NUEVA CAPA: %s") % tr(layer.display_name).to_upper(), layer.col_light.lightened(0.3)
+	)
+	Events.crystal_layer_changed.emit(layer, idx)
+	for g: Geode in _geodes:
+		g.break_open()
+	_spawn_geodes()
+	set_process(true)
+
+
+func _apply_palette(a: CrystalLayerDef, b: CrystalLayerDef, k: float) -> void:
+	for key: String in ["col_highlight", "col_light", "col_mid", "col_dark", "col_core"]:
+		var c: Color = (a.get(key) as Color).lerp(b.get(key) as Color, k)
+		_material.set_shader_parameter(key, c)
+		_shards.set_palette_color(key, c)
+
+
+## Pone las geodas de la capa en la superficie del cristal, por el lado del claro.
+func _spawn_geodes() -> void:
+	await get_tree().physics_frame
+	var layer: CrystalLayerDef = GameState.LAYERS[_layer]
+	var wanted: int = mini(layer.geode_count, MAX_GEODES)
+	var active: int = 0
+	for g: Geode in _geodes:
+		if g.active:
+			active += 1
+	for g: Geode in _geodes:
+		if active >= wanted:
+			break
+		if g.active:
+			continue
+		var hit: Dictionary = _find_surface_spot()
+		if hit.is_empty():
+			continue
+		g.place(hit["position"], hit["normal"])
+		active += 1
+
+
+## Un punto de la superficie del cristal: rayo desde fuera hacia el eje, a una altura al azar.
+func _find_surface_spot() -> Dictionary:
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	for attempt: int in 8:
+		var a: float = _rng.randf_range(-1.2, 1.2) + PI * 0.5
+		var y: float = _rng.randf_range(1.0, 14.0)
+		var from: Vector3 = global_position + Vector3(cos(a), 0.0, sin(a)) * 40.0 + Vector3.UP * y
+		var to: Vector3 = global_position + Vector3.UP * y
+		var q := PhysicsRayQueryParameters3D.create(from, to, 1 << 1)
+		var r: Dictionary = space.intersect_ray(q)
+		if not r.is_empty():
+			return r
+	return {}
+
+
+## Un golpe cerca de una geoda la revienta.
+func _check_geodes(hit: SpellHit) -> void:
+	var reach: float = 1.5 + hit.tier.crack_radius * 0.5
+	for g: Geode in _geodes:
+		if g.active and g.global_position.distance_to(hit.position) <= reach:
+			_break_geode(g, hit)
+			return
+
+
+func _break_geode(g: Geode, hit: SpellHit) -> void:
+	var at: Vector3 = g.global_position
+	var n: Vector3 = g.global_basis.y
+	g.break_open()
+	var layer: CrystalLayerDef = GameState.LAYERS[_layer]
+	var chunk: ShardType = ShardPool.TYPES[ShardPool.TYPES.size() - 1]
+	_shards.spawn(at, n, chunk, layer.geode_shards, 1.5)
+	_hd_fx.play(at, n, hit.tier, true, true)
+	_arcs.strike(at, n, 1.6, Color(1.6, 0.5, 2.0))
+	_accent_player.stream = GEODE_SFX
+	_accent_player.pitch_scale = 1.5
+	_accent_player.volume_db = -2.0
+	_accent_player.play()
+	_global_flash = maxf(_global_flash, 0.5)
+	var cam: Camera3D = get_viewport().get_camera_3d()
+	if cam is CameraRig:
+		(cam as CameraRig).add_trauma(0.3)
+	HitStop.trigger(get_tree(), 0.07)
+	Events.hint.emit(tr("¡GEODA! +%d FRAGMENTOS GRANDES") % layer.geode_shards, Color("#e9a5ff"))
+	Events.geode_broken.emit(at)
+	_geode_timer = GEODE_RESPAWN_SEC
+	set_process(true)
+
+
 ## El cristal reacciona con energía propia: rayos que recorren la superficie desde el impacto
 ## (más cuanto más fuerte el golpe y más larga la racha) y destellos en estrella. Cada cierto
 ## daño acumulado, se resquebraja entero (`_surge`).
@@ -498,6 +657,7 @@ func _surge(hit: SpellHit) -> void:
 	_hd_fx.play(hit.position, hit.normal, hit.tier, true, true)
 	_accent_player.stream = SURGE_SFX
 	_accent_player.volume_db = -2.0
+	_accent_player.pitch_scale = 1.0
 	_accent_player.play()
 	_cracks[_crack_index] = Vector4(hit.position.x, hit.position.y, hit.position.z, 3.5)
 	_crack_index = (_crack_index + 1) % MAX_CRACKS
@@ -515,7 +675,11 @@ func _play_tink(hit: SpellHit) -> void:
 	var p: AudioStreamPlayer3D = _tink_players[_tink_next]
 	_tink_next = (_tink_next + 1) % _tink_players.size()
 	p.global_position = hit.position
-	p.pitch_scale = pow(2.0, float(step) / 12.0) * _rng.randf_range(0.99, 1.01)
+	p.pitch_scale = (
+		pow(2.0, float(step) / 12.0)
+		* _rng.randf_range(0.99, 1.01)
+		* GameState.LAYERS[_layer].hit_pitch
+	)
 	p.volume_db = -3.0 if hit.resonant else -8.0
 	p.play()
 	_break_player.global_position = hit.position
@@ -524,6 +688,13 @@ func _play_tink(hit: SpellHit) -> void:
 
 func _process(delta: float) -> void:
 	_now += delta
+	if _palette_t < 1.0:
+		_palette_t = minf(1.0, _palette_t + delta / 2.5)
+		_apply_palette(_palette_from, GameState.LAYERS[_layer], _palette_t)
+	if _geode_timer > 0.0:
+		_geode_timer -= delta
+		if _geode_timer <= 0.0:
+			_spawn_geodes()
 	_material.set_shader_parameter("now", _now)
 	if _streak.expire(_now):
 		Events.streak_broken.emit(_streak.streak)

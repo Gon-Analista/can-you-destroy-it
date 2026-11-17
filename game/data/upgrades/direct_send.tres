@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"direct_send"
+display_name = "Envío directo"
+description = "Tu telequinesis llega lejos: lo que recoges vuela solo a la tolva de la trituradora, sin pasar por la bolsa."
+branch = 3
+element = &""
+star_pos = Vector2i(48, 214)
+costs = PackedInt32Array(400)
+prerequisites = Array[StringName]([&"telekinesis"])
+stat = &"direct_send"
+values = PackedFloat32Array(0, 1)
+value_format = "%s"
+level_names = PackedStringArray("A la bolsa", "Directo a la tolva")

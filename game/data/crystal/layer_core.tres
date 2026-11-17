@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CrystalLayerDef" format=3]
+
+[ext_resource type="Script" path="res://data/defs/crystal_layer_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"core"
+display_name = "Núcleo"
+from_ratio = 0.99
+to_ratio = 1.0
+col_highlight = Color(0.92, 0.72, 1.0, 1)
+col_light = Color(0.66, 0.46, 0.92, 1)
+col_mid = Color(0.42, 0.26, 0.72, 1)
+col_dark = Color(0.22, 0.11, 0.42, 1)
+col_core = Color(0.32, 0.1, 0.52, 1)
+hit_pitch = 0.75
+geode_count = 0

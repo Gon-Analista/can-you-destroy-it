@@ -51,11 +51,19 @@ var _pickup_player: AudioStreamPlayer
 var _highlighted: int = -1
 var _collect_target: Node3D
 var _time: float = 0.0
+var _material: ShaderMaterial
+
+
+## Los fragmentos llevan el color de la capa de la que salen.
+func set_palette_color(key: String, c: Color) -> void:
+	if _material:
+		_material.set_shader_parameter(key, c)
 
 
 func _ready() -> void:
 	add_to_group(&"shard_pool")
 	var material := ShaderMaterial.new()
+	_material = material
 	material.shader = SHARD_MATERIAL_SHADER
 	for t: int in TYPES.size():
 		var meshes: Array[ArrayMesh] = []
@@ -233,6 +241,14 @@ func collect(index: int, target: Node3D) -> ShardType:
 	var body: RigidBody3D = _shards[index]
 	if index == _highlighted:
 		set_highlight(-1)
+	if target == null:
+		# Sin destino (envío directo): desaparece ya; otra cosa dibuja su vuelo.
+		var t: ShardType = _types[index]
+		_deactivate(body)
+		_spawn_time[index] = -1.0
+		_pickup_player.pitch_scale = t.pickup_pitch * 1.2
+		_pickup_player.play()
+		return t
 	body.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
 	body.freeze = true
 	body.collision_layer = 0

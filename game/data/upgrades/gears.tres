@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"gears"
+display_name = "Engranajes"
+description = "Engrasas y afilas la trituradora: los cristales salen antes de tus manos y los rodillos trituran más deprisa."
+branch = 3
+element = &""
+star_pos = Vector2i(188, 168)
+costs = PackedInt32Array(25, 120, 500)
+prerequisites = Array[StringName]([])
+stat = &"crusher_speed"
+values = PackedFloat32Array(1, 1.6, 2.4, 3.5)
+value_format = "velocidad x%.1f"
+level_names = PackedStringArray()

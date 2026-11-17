@@ -147,13 +147,23 @@ func warm_up() -> void:
 
 ## Un cristal sale de la mano y vuela en arco hasta `to`; al llegar se lo da a `target` (la
 ## tolva). Con `warm` (pantalla de carga) sólo salpica.
-func launch_mote(type: ShardType, to: Vector3, target: CrystalCrusher, warm: bool = false) -> void:
+func launch_mote(
+	type: ShardType,
+	to: Vector3,
+	target: CrystalCrusher,
+	warm: bool = false,
+	from_override: Variant = null
+) -> void:
 	for i: int in MOTES:
 		if _mote_t[i] < 0.0:
 			var cam: Camera3D = get_viewport().get_camera_3d()
+			if _player == null:
+				_player = get_tree().get_first_node_in_group(&"player") as Node3D
 			var from: Vector3 = _player.global_position + Vector3.UP * 1.1
 			if cam:
 				from = cam.global_position + cam.global_basis * Vector3(0.0, -0.45, -1.1)
+			if from_override is Vector3:
+				from = from_override
 			_mote_from[i] = from
 			_mote_t[i] = 0.0
 			_mote_type[i] = type

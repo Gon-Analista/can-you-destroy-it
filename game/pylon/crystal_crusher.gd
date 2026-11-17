@@ -170,6 +170,15 @@ func marker_position() -> Vector3:
 	return global_position + Vector3.UP * (HOPPER_TOP + 0.9)
 
 
+## Envío directo: un fragmento recogido vuela desde `from` hasta la tolva.
+func receive_direct(type: ShardType, from: Vector3) -> void:
+	if pylon == null:
+		add_to_hopper(type)
+		return
+	_incoming += 1
+	pylon.launch_mote(type, hopper_mouth(), self, false, from)
+
+
 ## Llega un cristal a la tolva (lo llama el Pilón al terminar su vuelo).
 func add_to_hopper(type: ShardType) -> void:
 	_incoming = maxi(0, _incoming - 1)
@@ -232,7 +241,10 @@ func _update_input(delta: float) -> void:
 			_feed_timer -= delta
 			if _feed_timer <= 0.0:
 				var k: float = smoothstep(0.0, feed_ramp_sec, _hold_t)
-				_feed_timer = lerpf(feed_interval_start, feed_interval_min, k)
+				_feed_timer = (
+					lerpf(feed_interval_start, feed_interval_min, k)
+					/ GameState.stat(&"crusher_speed", 1.0)
+				)
 				var type: ShardType = GameState.take_for_delivery()
 				if type and pylon:
 					_incoming += 1

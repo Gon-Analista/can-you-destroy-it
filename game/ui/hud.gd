@@ -57,7 +57,7 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	theme = _make_theme()
 	_essence_title = _label("ESENCIA DEL CRISTAL", 8, C_CYAN, HORIZONTAL_ALIGNMENT_CENTER)
-	_place(_essence_title, Control.PRESET_CENTER_TOP, Rect2(-80, 6, 160, 10))
+	_place(_essence_title, Control.PRESET_CENTER_TOP, Rect2(-150, 6, 300, 10))
 	_essence = _label("1.000.000", 24, C_TEXT, HORIZONTAL_ALIGNMENT_CENTER, true)
 	_place(_essence, Control.PRESET_CENTER_TOP, Rect2(-100, 15, 200, 26))
 	_essence.pivot_offset = Vector2(100, 13)
@@ -118,6 +118,10 @@ func _ready() -> void:
 	Events.recipe_discovered.connect(_on_recipe_discovered)
 	Events.shard_delivered.connect(_on_shard_delivered)
 	Events.crystal_burned.connect(_on_burned)
+	Events.crystal_layer_changed.connect(
+		func(layer: CrystalLayerDef, _i: int) -> void: _set_layer_title(layer)
+	)
+	_set_layer_title(GameState.current_layer())
 	# El Grimorio, por encima de todo el HUD.
 	_grimoire = Grimoire.new()
 	_grimoire.name = "Grimoire"
@@ -131,6 +135,12 @@ func bind(camera: Camera3D, caster: SpellCaster) -> void:
 	_camera = camera
 	_caster = caster
 	_loop.bind(camera)
+
+
+## "CORTEZA · ESENCIA DEL CRISTAL": la capa en la que se está golpeando.
+func _set_layer_title(layer: CrystalLayerDef) -> void:
+	_essence_title.text = tr("%s  ·  ESENCIA DEL CRISTAL") % tr(layer.display_name).to_upper()
+	_essence_title.add_theme_color_override(&"font_color", layer.col_light.lightened(0.25))
 
 
 ## "-1" naranja de la quemadura, que sube desde el fuego.

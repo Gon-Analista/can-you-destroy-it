@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CrystalLayerDef" format=3]
+
+[ext_resource type="Script" path="res://data/defs/crystal_layer_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"geode_mantle"
+display_name = "Manto Geódico"
+from_ratio = 0.1
+to_ratio = 0.45
+col_highlight = Color(0.86, 0.9, 1.0, 1)
+col_light = Color(0.56, 0.68, 0.96, 1)
+col_mid = Color(0.32, 0.4, 0.82, 1)
+col_dark = Color(0.2, 0.18, 0.52, 1)
+col_core = Color(0.42, 0.15, 0.58, 1)
+hit_pitch = 0.94
+geode_count = 4

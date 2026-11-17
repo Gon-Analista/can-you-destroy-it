@@ -8,6 +8,9 @@ signal mana_changed(mana: int)
 signal pylon_changed(progress: int, ratio: float)
 signal upgrade_bought(upgrade_id: StringName, level: int)
 signal crystal_destroyed
+## Se ha abierto una capa nueva del cristal (Corteza -> Manto Geódico -> ...).
+signal crystal_layer_changed(layer: CrystalLayerDef, index: int)
+signal geode_broken(position: Vector3)
 
 # --- Sensación del golpe (prototipo de la chispa) ---
 signal spell_cast(tier: SpellTier, hand_side: int)

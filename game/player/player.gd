@@ -204,7 +204,7 @@ func _update_pickup(delta: float) -> void:
 		and Input.is_action_pressed(&"interact")
 	):
 		_pickup_cooldown = pickup_repeat_sec
-		if GameState.is_bag_full():
+		if GameState.is_bag_full() and not GameState.has_direct_send():
 			# No cabe: el fragmento se queda en el suelo y el HUD avisa.
 			Events.bag_full.emit()
 			_pickup_cooldown = 0.4
@@ -215,6 +215,14 @@ func _update_pickup(delta: float) -> void:
 
 func _collect(index: int) -> void:
 	var pos: Vector3 = _shards.position_of(index)
+	if GameState.has_direct_send():
+		# Envío directo: el fragmento desaparece del suelo y vuela solo a la tolva.
+		var t: ShardType = _shards.collect(index, null)
+		GameState.send_direct(t, pos)
+		if index == _target_shard:
+			_target_shard = -1
+			Events.shard_targeted.emit(null)
+		return
 	var type: ShardType = _shards.collect(index, _grab_point)
 	GameState.collect_shard(type, pos)
 	_hands.play_grab()
@@ -226,7 +234,7 @@ func _collect(index: int) -> void:
 ## Telequinesis (mejora): los fragmentos cercanos vuelan solos a la mano mientras quepan.
 func _update_telekinesis(delta: float) -> void:
 	var radius: float = GameState.stat(&"telekinesis_radius", 0.0)
-	if radius <= 0.0 or _locked or GameState.is_bag_full():
+	if radius <= 0.0 or _locked or (GameState.is_bag_full() and not GameState.has_direct_send()):
 		return
 	_telekinesis_timer = maxf(0.0, _telekinesis_timer - delta)
 	if _telekinesis_timer > 0.0:

@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="CrystalLayerDef" format=3]
+
+[ext_resource type="Script" path="res://data/defs/crystal_layer_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"resonant_veins"
+display_name = "Venas Resonantes"
+from_ratio = 0.45
+to_ratio = 0.8
+col_highlight = Color(0.9, 1.0, 0.96, 1)
+col_light = Color(0.5, 0.86, 0.86, 1)
+col_mid = Color(0.24, 0.55, 0.66, 1)
+col_dark = Color(0.14, 0.26, 0.46, 1)
+col_core = Color(0.55, 0.2, 0.52, 1)
+hit_pitch = 0.89
+geode_count = 2

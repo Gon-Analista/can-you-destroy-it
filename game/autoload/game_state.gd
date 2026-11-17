@@ -12,9 +12,38 @@ const UPGRADES: Array[UpgradeNode] = [
 	preload("res://data/upgrades/fireball_power.tres"),
 	preload("res://data/upgrades/awaken_frost.tres"),
 	preload("res://data/upgrades/frost_power.tres"),
+	preload("res://data/upgrades/gears.tres"),
+	preload("res://data/upgrades/direct_send.tres"),
+]
+
+## Capas del Cristal Madre, de fuera a dentro (GDD 6).
+const LAYERS: Array[CrystalLayerDef] = [
+	preload("res://data/crystal/layer_crust.tres"),
+	preload("res://data/crystal/layer_geode_mantle.tres"),
+	preload("res://data/crystal/layer_resonant_veins.tres"),
+	preload("res://data/crystal/layer_crystal_heart.tres"),
+	preload("res://data/crystal/layer_core.tres"),
 ]
 
 var progression: Progression = Progression.new(BALANCE.total_essence)
+
+
+## Fracción del cristal ya destruida (0..1).
+func destroyed_ratio() -> float:
+	return 1.0 - float(progression.essence) / float(progression.total_essence)
+
+
+## Índice de la capa en la que se está golpeando.
+func layer_index() -> int:
+	var r: float = destroyed_ratio()
+	for i: int in range(LAYERS.size() - 1, -1, -1):
+		if r >= LAYERS[i].from_ratio:
+			return i
+	return 0
+
+
+func current_layer() -> CrystalLayerDef:
+	return LAYERS[layer_index()]
 
 
 func hit_crystal(damage: int, at: Vector3) -> int:
@@ -52,6 +81,23 @@ func collect_shard(type: ShardType, at: Vector3) -> bool:
 	Events.shard_collected.emit(type, count, at)
 	Events.bag_changed.emit(progression.bag_count(), bag_capacity())
 	return true
+
+
+## Envío directo (mejora): el fragmento recogido vuela solo a la tolva de la trituradora en vez
+## de a la bolsa. Devuelve false si no hay trituradora.
+func send_direct(type: ShardType, at: Vector3) -> bool:
+	var crusher: CrystalCrusher = (
+		get_tree().get_first_node_in_group(&"crystal_crusher") as CrystalCrusher
+	)
+	if crusher == null:
+		return false
+	crusher.receive_direct(type, at)
+	Events.shard_collected.emit(type, 0, at)
+	return true
+
+
+func has_direct_send() -> bool:
+	return stat(&"direct_send", 0.0) > 0.5
 
 
 ## Saca de la bolsa el fragmento de más valor para entregarlo (el Pilón lo suma al llegar).

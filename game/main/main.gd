@@ -86,6 +86,10 @@ func _setup_autoplay() -> void:
 			caster.hand_element[0] = int(hs[0])
 			caster.hand_element[1] = int(hs[1])
 			caster.set_tier(caster.tier_index)
+		elif a.begins_with("--layer="):
+			# --layer=N: empieza en esa capa del cristal (1 = Manto Geódico...).
+			var crystal: MotherCrystal = _world.get_node(^"MotherCrystal")
+			crystal.jump_to_layer(int(a.get_slice("=", 1)))
 		elif a.begins_with("--time="):
 			_day_night.time_of_day = float(a.get_slice("=", 1))
 		elif a.begins_with("--warp="):
