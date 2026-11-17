@@ -37,11 +37,13 @@ func damage_crystal(amount: int) -> int:
 	return removed
 
 
-## Entrega fragmentos al Pilón. El progreso del Pilón nunca supera la esencia total; el maná sí.
-func deliver(value: int) -> void:
+## Entrega fragmentos al Pilón: `value` de maná y `pylon_value` de progreso del Pilón (-1 = el
+## mismo). El Pilón nunca pasa de la esencia total; el maná sí (los bonus de valor pueden
+## adelantar un poco el Pilón al cristal y no hay que dejar al jugador sin comprar).
+func deliver(value: int, pylon_value: int = -1) -> void:
 	var v: int = maxi(value, 0)
-	pylon_progress = mini(pylon_progress + v, total_essence)
-	# El maná no se corta con el Pilón lleno (los bonus de valor pueden adelantarlo un poco).
+	var pv: int = v if pylon_value < 0 else maxi(pylon_value, 0)
+	pylon_progress = mini(pylon_progress + pv, total_essence)
 	mana += v
 
 

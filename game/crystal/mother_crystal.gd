@@ -48,8 +48,6 @@ const ARC_SFX: Array[AudioStream] = [
 const ARC_COLORS: Array[Color] = [
 	Color(0.25, 0.75, 2.0), Color(1.2, 0.3, 1.9), Color(0.4, 0.5, 2.0)
 ]
-## La geoda suena como el resquebrajo, más aguda (ver _break_geode).
-const GEODE_SFX: AudioStream = SURGE_SFX
 ## Partida guardada del volumen excavado (ver SaveSystem).
 const STATE_PATH: String = "user://crystal_volume.bin"
 ## Colores de las Venas Resonantes por elemento (Chispa, Escarcha, Rayo, Tierra, Arcano).
@@ -79,9 +77,11 @@ var _volume_dirty: bool = false
 ## Capa del último golpe (la que se ve en el HUD).
 var _hit_layer: int = 0
 var _hard_hint_at: float = -10.0
-var _geode_nodes: Dictionary[int, Geode] = {}
 ## Efectos de las combinaciones (lanzas, rayos que saltan, reacciones, Trueno, Magnetismo).
 var _combos: CrystalCombos
+## Venas Resonantes: golpes con el elemento débil de cada vena (ver CrystalVeins).
+var _veins: CrystalVeins
+var _geodes: CrystalGeodes
 var _shards: ShardPool
 var _fx: ImpactFx
 var _hd_fx: HdImpact
@@ -169,6 +169,10 @@ func _ready() -> void:
 	_combos.name = "Combos"
 	add_child(_combos)
 	_combos.setup(self, _arcs, _shards, _hd_fx, _fx)
+	_veins = CrystalVeins.new()
+	_veins.name = "Veins"
+	add_child(_veins)
+	_veins.setup(self, _arcs, _shards)
 	_arcs.setup_ambient(
 		global_position + Vector3(0.0, volume.top * 0.4, 0.0),
 		Vector3(
@@ -179,9 +183,10 @@ func _ready() -> void:
 	)
 	_layer = GameState.layer_index()
 	_hit_layer = 0
-	for i: int in volume.geodes.size():
-		if GameState.progression.geodes.get(i, 0) == 1:
-			_reveal_geode(i, false)
+	_geodes = CrystalGeodes.new()
+	_geodes.name = "Geodes"
+	add_child(_geodes)
+	_geodes.setup(self, _arcs, _shards, _hd_fx)
 	_burn_fire = CrystalBurn.new()
 	_burn_fire.name = "Burn"
 	_burn_fire.burned.connect(_on_burn_tick)
@@ -333,11 +338,11 @@ func receive_hit(hit: SpellHit) -> void:
 		_fizzle(hit)
 		return
 	var balance: BalanceConfig = GameState.BALANCE
-	# Los golpes de los familiares no cuentan para la racha del mago.
-	hit.streak = 1 if hit.familiar else _streak.register_hit(_now)
+	hit.streak = _streak.register_hit(_now) if hit.by_player else 0
 	_apply_weakness(hit)
 	_combos.check_temper(hit)
-	_check_geodes(hit)
+	_geodes.check_hit(hit)
+	_veins.apply(hit)
 	var removed: float = _dig(
 		hit.position, hit.normal, float(hit.damage), hit.recipe != null, hit.size
 	)
@@ -398,6 +403,7 @@ func receive_hit(hit: SpellHit) -> void:
 		)
 	_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.size)
 	_crystal_reacts(hit)
+	_veins.react(hit)
 	if hit.resonant or hit.recipe != null or _now - _last_hd >= 0.12:
 		_last_hd = _now
 		_hd_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.recipe != null, hit.size)
@@ -409,7 +415,7 @@ func receive_hit(hit: SpellHit) -> void:
 	_play_tink(hit)
 	if hit.recipe and (not hit.minor or _rng.randf() < 0.3):
 		_play_spell_impact(hit)
-	if hit.minor:
+	if hit.minor or not hit.by_player:
 		pass
 	elif hit.resonant:
 		HitStop.trigger(get_tree(), 0.09)
@@ -421,12 +427,12 @@ func receive_hit(hit: SpellHit) -> void:
 		_global_flash = maxf(_global_flash, 0.3)
 	elif tier.damage >= 5:
 		HitStop.trigger(get_tree(), 0.025)
-	if not hit.familiar and balance.streak_milestones.has(hit.streak):
+	if hit.by_player and balance.streak_milestones.has(hit.streak):
 		_accent_player.stream = STREAK_SFX
 		_accent_player.volume_db = -5.0
 		_accent_player.play()
 		Events.streak_milestone.emit(hit.streak)
-	if not hit.familiar:
+	if hit.by_player:
 		Events.streak_changed.emit(hit.streak)
 	Events.spell_impacted.emit(hit)
 	set_process(true)
@@ -565,7 +571,7 @@ func apply_carve(r: Dictionary, p: Vector3, radius: float, credit: float = -1.0)
 			GameState.progression.deepest_layer = li
 			_enter_layer(li)
 			break
-	_check_pockets(p, radius)
+	_geodes.check_pockets(p, radius)
 	return removed
 
 
@@ -612,10 +618,23 @@ func add_crack(at: Vector3, radius: float) -> void:
 	_material.set_shader_parameter("cracks", _cracks)
 
 
+## Para CrystalGeodes: un sonido de acento del cristal.
+func play_accent(stream: AudioStream, pitch: float, db: float) -> void:
+	_accent_player.stream = stream
+	_accent_player.pitch_scale = pitch
+	_accent_player.volume_db = db
+	_accent_player.play()
+
+
 ## Para CrystalCombos: destello de todo el cristal (0..1).
 func flash(amount: float) -> void:
 	_global_flash = maxf(_global_flash, amount)
 	set_process(true)
+
+
+## Para CrystalVeins: un parámetro del shader del cristal (las venas que se encienden).
+func set_crystal_param(param: StringName, value: Variant) -> void:
+	_material.set_shader_parameter(param, value)
 
 
 ## Capa del último golpe (para el color de los fragmentos).
@@ -666,7 +685,7 @@ func _too_hard(hit: SpellHit) -> void:
 	p.volume_db = -8.0
 	p.play()
 	_shudder = minf(1.0, _shudder + 0.2)
-	if _now - _hard_hint_at > 5.0:
+	if hit.by_player and _now - _hard_hint_at > 5.0:
 		_hard_hint_at = _now
 		Events.hint.emit(
 			tr(layer.too_hard_hint) if layer.too_hard_hint != "" else tr("¡DEMASIADO DURO!"),
@@ -836,73 +855,6 @@ func _enter_layer(idx: int) -> void:
 		tr("NUEVA CAPA: %s") % tr(layer.display_name).to_upper(), layer.col_light.lightened(0.3)
 	)
 	Events.crystal_layer_changed.emit(layer, idx)
-	set_process(true)
-
-
-## Una excavación que llega a una bolsa de geoda la abre: se ve la amatista y la geoda dentro.
-func _check_pockets(p: Vector3, radius: float) -> void:
-	for i: int in volume.geodes.size():
-		if GameState.progression.geodes.has(i):
-			continue
-		var g: Dictionary = volume.geodes[i]
-		if (g["center"] as Vector3).distance_to(p) < float(g["radius"]) + radius * 0.6:
-			GameState.progression.geodes[i] = 1
-			_reveal_geode(i, true)
-
-
-func _reveal_geode(i: int, announce: bool) -> void:
-	var g: Dictionary = volume.geodes[i]
-	var r: float = g["radius"]
-	var node := Geode.new()
-	node.name = "Geode%d" % i
-	add_child(node)
-	node.place(to_global((g["center"] as Vector3) - Vector3(0.0, r * 0.7, 0.0)), Vector3.UP)
-	node.scale = Vector3.ONE * r * 1.4
-	_geode_nodes[i] = node
-	if not announce:
-		return
-	_accent_player.stream = STREAK_SFX
-	_accent_player.pitch_scale = 1.25
-	_accent_player.volume_db = -4.0
-	_accent_player.play()
-	_global_flash = maxf(_global_flash, 0.3)
-	Events.hint.emit(tr("¡UNA GEODA! REVIÉNTALA"), Color("#e9a5ff"))
-
-
-## Un golpe cerca de una geoda abierta la revienta.
-func _check_geodes(hit: SpellHit) -> void:
-	var reach: float = 2.0 + hit.tier.crack_radius * 0.5 * hit.size
-	for i: int in _geode_nodes:
-		var g: Geode = _geode_nodes[i]
-		if g.active and g.global_position.distance_to(hit.position) <= reach + g.scale.x * 0.4:
-			_break_geode(i, hit)
-			return
-
-
-func _break_geode(i: int, hit: SpellHit) -> void:
-	var g: Geode = _geode_nodes[i]
-	var at: Vector3 = g.global_position
-	var n: Vector3 = g.global_basis.y.normalized()
-	g.break_open()
-	_geode_nodes.erase(i)
-	g.queue_free.call_deferred()
-	GameState.progression.geodes[i] = 2
-	var layer: CrystalLayerDef = GameState.LAYERS[1]
-	var chunk: ShardType = ShardPool.TYPES[ShardPool.TYPES.size() - 1]
-	_shards.spawn(at + n * 0.5, n, chunk, layer.geode_shards, 1.5, 1)
-	_hd_fx.play(at, n, hit.tier, true, true)
-	_arcs.strike(at, n, 1.6, Color(1.6, 0.5, 2.0))
-	_accent_player.stream = GEODE_SFX
-	_accent_player.pitch_scale = 1.5
-	_accent_player.volume_db = -2.0
-	_accent_player.play()
-	_global_flash = maxf(_global_flash, 0.5)
-	var cam: Camera3D = get_viewport().get_camera_3d()
-	if cam is CameraRig:
-		(cam as CameraRig).add_trauma(0.3)
-	HitStop.trigger(get_tree(), 0.07)
-	Events.hint.emit(tr("¡GEODA! +%d FRAGMENTOS GRANDES") % layer.geode_shards, Color("#e9a5ff"))
-	Events.geode_broken.emit(at)
 	set_process(true)
 
 

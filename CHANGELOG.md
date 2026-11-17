@@ -2,6 +2,31 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-17 · Venas Resonantes, la rama del Pilón y un valle que celebra
+
+**Qué hay nuevo** (GDD 6, 6.1, 4.2 y 7; oleada 1 del GDD)
+
+- **Venas Resonantes**: en la capa de las venas cada lado del cristal es débil a un elemento (el mismo que pinta
+  su color). Golpearlo con ese elemento, o con una combinación que lo lleve, hace **x2 de daño**, enciende la veta
+  con chispas, rayos y una campana propia y suelta **Fragmentos Resonantes** (valen 125, como 5 grandes, y
+  brillan con el color de su vena). Si fallas el elemento, te dice a cuál es débil.
+- **Rama del Pilón**:
+  - **Pureza**: cada fragmento entregado da x1,25 de maná por nivel.
+  - **Resonancia del Pilón**: el Pilón se carga y dispara un rayo al cristal, más fuerte cuanto más lleno.
+- **Hitos del Pilón** (10, 25, 50, 75 y 100 %): columna de luz, coro y campanas, una vez cada uno, y el valle
+  cambia: auroras de maná de noche, faroles en la aldea, banderas en el castillo y campanarios que brillan.
+- Ajustes al juntarlo con el balance nuevo:
+  - Los Resonantes de una vena valen **la mitad del daño del golpe**. Si no llega a uno entero, sale uno con esa
+    probabilidad. Antes eran siempre 2: una chispa de 20 de daño daba 250 de maná.
+  - La Pureza sube **sólo el maná**. El Pilón suma el valor real de lo entregado, así que sigue yendo con el
+    cristal.
+  - Los golpes de los familiares y del rayo del Pilón no cuentan como del jugador (racha, cámara, mirilla,
+    levitación, avisos).
+  - Una geoda vuelve a soltar fragmentos grandes (con los tamaños nuevos iba a soltar 8 pedruscos de 500).
+  - Las geodas pasan a `crystal/crystal_geodes.gd`.
+
+**Pruebas**: nueva `tests/smoke/veins_pylon_smoke.gd` (venas, Pureza, hitos y rayo del Pilón). Todas en verde.
+
 ## 2026-11-17 · Familiares: buhitos que recogen, trituran y lanzan chispas
 
 **Qué hay nuevo** (GDD 2.2, 4.3 y 7: "familiares que recogen, entregan o lanzan"; oleada 1 del GDD)

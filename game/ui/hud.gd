@@ -293,8 +293,9 @@ func _on_shard_collected(type: ShardType, _count: int, at: Vector3) -> void:
 
 
 func _on_impact(hit: SpellHit) -> void:
-	# El título dice en qué capa del cristal se está golpeando (se llega a ellas excavando).
-	if hit.layer != _shown_layer:
+	# El título dice en qué capa del cristal se está golpeando (se llega a ellas excavando). Los
+	# golpes que no son del jugador (rayo del Pilón) sólo enseñan su número.
+	if hit.by_player and hit.layer != _shown_layer:
 		_shown_layer = hit.layer
 		_set_layer_title(GameState.LAYERS[hit.layer])
 	var i: int = _floater_next
@@ -306,6 +307,8 @@ func _on_impact(hit: SpellHit) -> void:
 	_floater_pos[i] = hit.position + hit.normal * 0.6
 	_floater_age[i] = 0.0
 	f.visible = true
+	if not hit.by_player:
+		return
 	if hit.resonant:
 		_show_banner(tr("¡GOLPE RESONANTE!"), C_GOLD)
 	elif hit.weakened:

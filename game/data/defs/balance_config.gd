@@ -23,3 +23,10 @@ extends Resource
 ## Probabilidad de golpe resonante (crítico) sin mejoras.
 @export_range(0.0, 1.0) var resonant_chance: float = 0.07
 @export var resonant_damage_mult: int = 3
+
+@export_group("Resonancia del Pilón")
+## Daño del rayo del Pilón con el Pilón casi vacío y lleno (crece con su nivel visible).
+@export var pylon_bolt_damage_min: int = 25
+@export var pylon_bolt_damage_max: int = 600
+## Tiempo que el Pilón carga el rayo (brilla y zumba) antes de dispararlo.
+@export var pylon_bolt_charge_sec: float = 0.9

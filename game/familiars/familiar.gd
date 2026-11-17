@@ -561,6 +561,7 @@ func _cast() -> void:
 	var hit := SpellHit.new()
 	hit.tier = tier
 	hit.familiar = true
+	hit.by_player = false
 	hit.minor = true
 	hit.damage = maxi(1, roundi(float(tier.damage) * def.damage_mult))
 	hit.element = SPARK.id

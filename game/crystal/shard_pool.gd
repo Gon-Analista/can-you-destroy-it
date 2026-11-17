@@ -1,8 +1,9 @@
 class_name ShardPool
 extends Node3D
 ## Pool de fragmentos físicos en cinco tamaños (Astilla, Fragmento, Fragmento grande, Bloque
-## de cristal y Pedrusco de maná; ver data/shards/). Un golpe suelta fragmentos por valor de su
-## daño (`pieces_for`): el maná que da el cristal es la esencia que pierde, y el Pilón va con él.
+## de cristal y Pedrusco de maná; ver data/shards/) y los Fragmentos Resonantes de las venas, que
+## brillan con el color de su vena. Un golpe suelta fragmentos por valor de su daño (`pieces_for`):
+## el maná que da el cristal es la esencia que pierde, y el Pilón va con él.
 ## Nada se instancia durante el juego: se reciclan (el más antiguo primero) y tras unos segundos
 ## quietos se congelan para no gastar física.
 ## Recoger: el fragmento se vuelve intangible y vuela hacia la mano encogiéndose.
@@ -13,13 +14,17 @@ extends Node3D
 signal swallowed(index: int)
 
 const SHARD_MATERIAL_SHADER: Shader = preload("res://crystal/shard.gdshader")
-const TYPES: Array[ShardType] = [
-	preload("res://data/shards/splinter.tres"),
-	preload("res://data/shards/shard.tres"),
-	preload("res://data/shards/chunk.tres"),
-	preload("res://data/shards/block.tres"),
-	preload("res://data/shards/boulder.tres"),
-]
+const SPLINTER: ShardType = preload("res://data/shards/splinter.tres")
+const SHARD: ShardType = preload("res://data/shards/shard.tres")
+const CHUNK: ShardType = preload("res://data/shards/chunk.tres")
+const BLOCK: ShardType = preload("res://data/shards/block.tres")
+const BOULDER: ShardType = preload("res://data/shards/boulder.tres")
+## Fragmento Resonante (GDD 6.1): sale de golpear una vena con su elemento débil. No entra en
+## TYPES (que va por daño); ALL_TYPES los tiene todos, de menos a más valor.
+const RESONANT: ShardType = preload("res://data/shards/resonant.tres")
+const TYPES: Array[ShardType] = [SPLINTER, SHARD, CHUNK, BLOCK, BOULDER]
+const ALL_TYPES: Array[ShardType] = [SPLINTER, SHARD, CHUNK, BLOCK, RESONANT, BOULDER]
+const GLOW_SHADER: Shader = preload("res://fx/hd/hd_glow.gdshader")
 ## Piezas grandes por golpe como mucho (si no caben, un tamaño más; del mayor, hasta el doble) y
 ## trocitos para el resto.
 const MAX_PIECES: int = 10
@@ -74,6 +79,9 @@ var _orbit_dur: PackedFloat32Array = []
 var _orbit_from: Array[Vector3] = []
 var _orbit_turns: PackedFloat32Array = []
 var _well := Vector3.ZERO
+## Halo HD de cada fragmento (sólo se ve en los resonantes) y sus materiales por color.
+var _halos: Array[MeshInstance3D] = []
+var _halo_mats: Dictionary[Color, ShaderMaterial] = {}
 
 
 ## Los fragmentos llevan el color de la capa de la que salen.
@@ -97,11 +105,11 @@ func _ready() -> void:
 	var material := ShaderMaterial.new()
 	_material = material
 	material.shader = SHARD_MATERIAL_SHADER
-	for t: int in TYPES.size():
+	for t: int in ALL_TYPES.size():
 		var meshes: Array[ArrayMesh] = []
 		var shapes: Array[ConvexPolygonShape3D] = []
 		for v: int in MESH_VARIANTS:
-			var m: ArrayMesh = CrystalClusterBuilder.build_shard_mesh(TYPES[t], 40 + t * 10 + v)
+			var m: ArrayMesh = CrystalClusterBuilder.build_shard_mesh(ALL_TYPES[t], 40 + t * 10 + v)
 			meshes.append(m)
 			shapes.append(m.create_convex_shape(true, true) as ConvexPolygonShape3D)
 		_type_meshes.append(meshes)
@@ -126,6 +134,10 @@ func _ready() -> void:
 		mi.material_override = material
 		mi.set_instance_shader_parameter("glint_seed", randf())
 		body.add_child(mi)
+		var halo: MeshInstance3D = HdFx.quad(GLOW_SHADER, 1.4, 3)
+		halo.visible = false
+		mi.add_child(halo)
+		_halos.append(halo)
 		body.body_entered.connect(_on_shard_contact.bind(i))
 		_deactivate(body)
 		add_child(body)
@@ -216,11 +228,18 @@ static func type_for_hit(damage: int, resonant: bool) -> ShardType:
 	return TYPES[idx]
 
 
-## Lanza `count` fragmentos de tipo `type` desde `origin`, saliendo según `normal`.
+## Lanza `count` fragmentos de tipo `type` desde `origin`, saliendo según `normal`. Con `glow`
+## (alfa > 0) brillan de ese color con un halo HD (Fragmentos Resonantes).
 func spawn(
-	origin: Vector3, normal: Vector3, type: ShardType, count: int, power: float, layer: int = -1
+	origin: Vector3,
+	normal: Vector3,
+	type: ShardType,
+	count: int,
+	power: float,
+	layer: int = -1,
+	glow: Color = Color(0, 0, 0, 0)
 ) -> void:
-	var t_index: int = TYPES.find(type)
+	var t_index: int = ALL_TYPES.find(type)
 	var mat: ShaderMaterial = _material
 	if layer >= 0 and layer < _layer_materials.size():
 		mat = _layer_materials[layer]
@@ -252,14 +271,39 @@ func spawn(
 		_spawn_time[i] = _time
 		_flash[i] = 1.0
 		_meshes[i].set_instance_shader_parameter("spawn_flash", 1.0)
+		_meshes[i].set_instance_shader_parameter("vein_glow", glow)
+		_halos[i].visible = glow.a > 0.0
+		if glow.a > 0.0:
+			_halos[i].material_override = _halo_material(glow)
 	set_physics_process(true)
+
+
+## Fragmentos de un tipo que hay ahora en el suelo (o volando), para los tests y la demo.
+func count_of(type: ShardType) -> int:
+	var n: int = 0
+	for i: int in pool_size:
+		if _shards[i].visible and _types[i] == type and _collect_t[i] <= 0.0:
+			n += 1
+	return n
+
+
+func _halo_material(c: Color) -> ShaderMaterial:
+	if not _halo_mats.has(c):
+		var m: ShaderMaterial = _halos[0].material_override.duplicate()
+		m.set_shader_parameter("color", Color(c.r, c.g, c.b))
+		m.set_shader_parameter("intensity", 0.45)
+		m.set_shader_parameter("falloff", 3.0)
+		m.set_shader_parameter("rays", 0.3)
+		m.set_shader_parameter("ray_count", 4.0)
+		_halo_mats[c] = m
+	return _halo_mats[c]
 
 
 ## Pantalla de carga: enseña un fragmento de cada tamaño quieto un momento (no se pueden
 ## recoger) para compilar su material antes de jugar.
 func warm_up(at: Vector3) -> void:
 	var used: Array[int] = []
-	for t: int in TYPES.size():
+	for t: int in ALL_TYPES.size():
 		var i: int = pool_size - 1 - t
 		var body: RigidBody3D = _shards[i]
 		_meshes[i].mesh = _type_meshes[t][0]
@@ -267,6 +311,10 @@ func warm_up(at: Vector3) -> void:
 		body.global_position = at + Vector3(float(t) - 1.0, 0.0, 0.0)
 		body.visible = true
 		_meshes[i].set_instance_shader_parameter("spawn_flash", 1.0)
+		_meshes[i].set_instance_shader_parameter(
+			"vein_glow", Color(1, 0.5, 0.2, 1) if ALL_TYPES[t] == RESONANT else Color(0, 0, 0, 0)
+		)
+		_halos[i].visible = ALL_TYPES[t] == RESONANT
 		used.append(i)
 	await get_tree().create_timer(0.4).timeout
 	for i: int in used:
@@ -496,6 +544,9 @@ func _update_orbit(i: int, delta: float) -> void:
 
 
 func _deactivate(body: RigidBody3D) -> void:
+	var idx: int = body.get_meta(&"shard_index", -1)
+	if idx >= 0 and idx < _halos.size():
+		_halos[idx].visible = false
 	body.freeze_mode = RigidBody3D.FREEZE_MODE_STATIC
 	body.freeze = true
 	body.visible = false

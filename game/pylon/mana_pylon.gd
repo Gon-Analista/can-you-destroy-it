@@ -74,6 +74,8 @@ var _mote_rng := RandomNumberGenerator.new()
 var _drop_gap: float = 0.0
 var _mote_target: Array[CrystalCrusher] = []
 var _mote_meshes: Dictionary[ShardType, ArrayMesh] = {}
+## Rama del Pilón: rayos al cristal (Resonancia del Pilón) y celebración de los hitos.
+var _resonance: PylonResonance
 
 
 func _ready() -> void:
@@ -88,8 +90,12 @@ func _ready() -> void:
 	_crusher.pylon = self
 	_crusher.position = Vector3(2.8, 0.0, 0.0)
 	add_child(_crusher)
-	for type: ShardType in ShardPool.TYPES:
+	for type: ShardType in ShardPool.ALL_TYPES:
 		_mesh_for(type)
+	_resonance = PylonResonance.new()
+	_resonance.name = "Resonance"
+	_resonance.pylon = self
+	add_child(_resonance)
 	_build_fx()
 	_build_audio()
 	Events.pylon_changed.connect(_on_pylon_changed)
@@ -107,6 +113,36 @@ func set_night(k: float) -> void:
 ## mínimo para que el Pilón nunca se vea vacío del todo.
 static func display_fill(ratio: float) -> float:
 	return lerpf(0.02, 1.0, sqrt(clampf(ratio, 0.0, 1.0)))
+
+
+## Si un progreso real (0..1) ya llega a la marca `i` (con margen para el redondeo).
+static func mark_reached(ratio: float, i: int) -> bool:
+	return ratio + 1e-6 >= MARKS[i]
+
+
+## Marcas ya alcanzadas (0..5) con un progreso real: lo que ha cambiado en el valle.
+static func marks_reached(ratio: float) -> int:
+	var n: int = 0
+	for i: int in MARKS.size():
+		if mark_reached(ratio, i):
+			n += 1
+	return n
+
+
+## El cristal flotante de la cima (de donde sale el rayo de la Resonancia del Pilón).
+func crown_position() -> Vector3:
+	return _crown_crystal.global_position
+
+
+## Rama del Pilón (rayos e hitos).
+func resonance() -> PylonResonance:
+	return _resonance
+
+
+## Late y brilla (al cargar o disparar el rayo, en los hitos).
+func pulse(amount: float) -> void:
+	_pulse = maxf(_pulse, amount)
+	_wave = minf(1.0, _wave + amount * 0.1)
 
 
 ## Punto por el que entran los fragmentos (la boca, sobre el vidrio).
@@ -148,7 +184,7 @@ func crusher() -> CrystalCrusher:
 func warm_up() -> void:
 	if _player == null:
 		_player = get_tree().get_first_node_in_group(&"player") as Node3D
-	for type: ShardType in ShardPool.TYPES:
+	for type: ShardType in ShardPool.ALL_TYPES:
 		_mesh_for(type)
 		launch_mote(type, _crusher.hopper_mouth(), null, true)
 
@@ -248,7 +284,9 @@ func _update_motes(delta: float) -> void:
 
 ## Entra en el Pilón el maná de un cristal triturado.
 func receive_mana(type: ShardType) -> void:
-	GameState.deliver(type.value)
+	# El maná (con la Pureza) se calcula en un solo sitio: GameState.shard_value. El Pilón suma
+	# el valor del fragmento sin Pureza (la esencia que perdió el cristal).
+	GameState.deliver(GameState.shard_value(type), type.value)
 	_wave = minf(1.0, _wave + 0.35)
 	_pulse = 1.0
 	_splash.restart()
@@ -262,12 +300,13 @@ func receive_mana(type: ShardType) -> void:
 		_drop_player.play()
 
 
+## Las marcas se celebran en PylonResonance (Events.pylon_milestone); aquí suena la campana y se
+## enciende el anillo tallado.
 func _on_pylon_changed(_progress: int, ratio: float) -> void:
-	for m: float in MARKS:
-		if _last_ratio < m and ratio >= m:
+	for i: int in MARKS.size():
+		if not mark_reached(_last_ratio, i) and mark_reached(ratio, i):
 			_accent.stream = MILESTONE_SFX
 			_accent.play()
-			Events.hint.emit(tr("¡EL PILÓN LLEGA AL %d %%!") % roundi(m * 100.0), Color("#ffd27a"))
 	_last_ratio = ratio
 	_update_marks(ratio)
 
@@ -280,7 +319,7 @@ func _apply_fill() -> void:
 
 func _update_marks(ratio: float) -> void:
 	for i: int in MARKS.size():
-		if ratio >= MARKS[i]:
+		if mark_reached(ratio, i):
 			_mark_rings[i].material_override = _mark_lit_mat
 
 

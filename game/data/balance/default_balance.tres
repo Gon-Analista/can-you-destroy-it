@@ -15,3 +15,6 @@ resonant_damage_mult = 3
 hand_capacity = 3
 first_upgrade_cost = 5
 autosave_interval_sec = 30.0
+pylon_bolt_damage_min = 25
+pylon_bolt_damage_max = 600
+pylon_bolt_charge_sec = 0.9

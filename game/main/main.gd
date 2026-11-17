@@ -49,6 +49,10 @@ func _ready() -> void:
 	_world.add_child(_day_night)
 	var env: Environment = (_world.get_node(^"WorldEnvironment") as WorldEnvironment).environment
 	_day_night.setup(_sun, env)
+	# El valle cambia con los hitos del Pilón (faroles, estandartes; las auroras van en el cielo).
+	var milestones := ValleyMilestones.new()
+	milestones.name = "ValleyMilestones"
+	_world.add_child(milestones)
 	_hud.bind(_player.get_camera(), _player.get_caster())
 	# Hasta que exista el sistema de rangos, se empieza en Aprendiz (1 capa).
 	AudioDirector.play_music(MUSIC_LAYERS, _arg_int("--music-layers=", 1))
@@ -137,6 +141,10 @@ func _setup_autoplay() -> void:
 			(_player.get_node(^"Head") as Node3D).rotation.x = atan2(
 				to_geode.y, Vector2(to_geode.x, to_geode.z).length()
 			)
+		elif a.begins_with("--vein="):
+			# --vein=N: túnel hasta la Vena Resonante N (0 Chispa, 1 Escarcha, 2 Rayo, 3 Tierra,
+			# 4 Arcano), el jugador en la boca mirando al fondo y las manos con ese elemento.
+			_demo_vein(int(a.get_slice("=", 1)))
 		elif a.begins_with("--open-door="):
 			# --open-door=s (con --hut): abre la puerta a los s segundos.
 			get_tree().create_timer(float(a.get_slice("=", 1))).timeout.connect(_hut.open_door)
@@ -183,6 +191,18 @@ func _setup_autoplay() -> void:
 					GameState.progression.upgrade_levels[&"familiar"] = lv
 					Events.upgrade_bought.emit(&"familiar", lv)
 			)
+		elif a.begins_with("--pylon="):
+			# --pylon=0.6: el Pilón ya lleno a ese punto (hitos del valle incluidos, sin fiesta).
+			_demo_pylon(float(a.get_slice("=", 1)))
+		elif a.begins_with("--pylon-bolt="):
+			# --pylon-bolt=s: a los s segundos el Pilón dispara su rayo (y luego cada 3 s).
+			var pylon: ManaPylon = _world.get_node(^"ManaPylon")
+			var t0: float = float(a.get_slice("=", 1))
+			for k: int in 4:
+				get_tree().create_timer(t0 + 3.0 * k).timeout.connect(pylon.resonance().fire)
+		elif a.begins_with("--milestone="):
+			# --milestone=s: a los s segundos se entrega justo lo que falta para la siguiente marca.
+			get_tree().create_timer(float(a.get_slice("=", 1))).timeout.connect(_demo_next_mark)
 		elif a.begins_with("--time="):
 			_day_night.time_of_day = float(a.get_slice("=", 1))
 		elif a.begins_with("--warp="):
@@ -454,6 +474,51 @@ func _demo_scatter(n: int) -> void:
 		var p := Vector3(rng.randf_range(-32.0, -16.0), 0.0, rng.randf_range(44.0, 58.0))
 		p.y = Valley.ground_height(p.x, p.z) + 0.6
 		pool.spawn(p, Vector3.UP, ShardPool.TYPES[i % 2], 1, 0.25)
+
+
+func _demo_vein(sector: int) -> void:
+	var mc: MotherCrystal = _world.get_node(^"MotherCrystal")
+	var spots: Array[Vector3] = CrystalDemo.tunnel_to_vein(mc, sector)
+	var stand: Vector3 = spots[0]
+	_player.global_position = Vector3(
+		stand.x, Valley.ground_height(stand.x, stand.z) + 0.2, stand.z
+	)
+	var to_end: Vector3 = spots[2] - (_player.global_position + Vector3.UP * 1.6)
+	_player.rotation.y = atan2(-to_end.x, -to_end.z)
+	(_player.get_node(^"Head") as Node3D).rotation.x = atan2(
+		to_end.y, Vector2(to_end.x, to_end.z).length()
+	)
+	if OS.get_cmdline_user_args().has("--vein-close"):
+		# --vein-close: dentro del túnel, a unos metros del fondo (cuando ya tiene colisión).
+		var inside: Vector3 = spots[2] + (spots[1] - spots[2]).normalized() * 7.0
+		get_tree().create_timer(1.0).timeout.connect(
+			func() -> void: _player.global_position = inside - Vector3.UP * 1.3
+		)
+	var caster: SpellCaster = _player.get_caster()
+	if sector < SpellCaster.ELEMENTS.size():
+		for id: StringName in [&"awaken_frost", &"awaken_bolt", &"awaken_earth"]:
+			GameState.progression.upgrade_levels[id] = 1
+		caster.hand_element[0] = sector
+		caster.hand_element[1] = sector
+		caster.set_tier(caster.tier_index)
+
+
+## Demo: pone el Pilón a `ratio` sin celebrar los hitos (el valle ya cambiado).
+func _demo_pylon(ratio: float) -> void:
+	var prog: Progression = GameState.progression
+	prog.pylon_progress = roundi(clampf(ratio, 0.0, 1.0) * float(prog.total_essence))
+	GameState.emit_all()
+	for node: Node in get_tree().get_nodes_in_group(&"valley_milestones"):
+		(node as ValleyMilestones).refresh()
+
+
+func _demo_next_mark() -> void:
+	var prog: Progression = GameState.progression
+	for m: float in ManaPylon.MARKS:
+		var need: int = ceili(m * float(prog.total_essence)) - prog.pylon_progress
+		if need > 0:
+			GameState.deliver(need)
+			return
 
 
 func _arg_int(prefix: String, fallback: int) -> int:

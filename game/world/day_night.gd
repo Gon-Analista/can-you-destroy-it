@@ -266,6 +266,11 @@ func _apply() -> void:
 	_sky.set_shader_parameter("sun_color", (k[5] as Color).lightened(0.3))
 	_sky.set_shader_parameter("moon_dir", moon_to)
 	_sky.set_shader_parameter("stars", k[11])
+	# Auroras de maná: sólo de noche y más fuertes cuanto más lleno el Pilón (GDD 3).
+	_sky.set_shader_parameter(
+		"aurora",
+		float(k[11]) * ValleyMilestones.aurora_strength(GameState.progression.pylon_ratio())
+	)
 	RenderingServer.global_shader_parameter_set(&"world_tint", k[10])
 	var n: float = k[12]
 	if absf(n - night) > 0.005:

@@ -53,6 +53,8 @@ uniform vec4 geodes[32];
 uniform vec4 col_amethyst : source_color = vec4(0.72, 0.36, 0.95, 1.0);
 // Venas Resonantes: cada vena brilla con el color de su elemento (por sector alrededor del eje).
 uniform vec4 vein_colors[5] : source_color;
+// 0..1: la vena de cada lado se enciende al golpearla con su elemento (ver CrystalVeins).
+uniform float vein_pulse[5];
 uniform vec4 weak_zones[8];
 uniform float weak_radius[8];
 uniform float weak_kind[8];
@@ -189,9 +191,12 @@ void fragment() {
 		// Venas Resonantes: vetas de colores (una por elemento según el lado del cristal).
 		float e = voronoi_edge(world_pos * 0.42);
 		float sector = floor((atan(world_pos.z, world_pos.x) + PI) / TAU * 5.0);
-		vec3 vc = vein_colors[int(mod(sector, 5.0))].rgb;
-		float vein = 1.0 - smoothstep(0.03, 0.09, e);
-		c = mix(c, vc * (1.0 + interior * 0.8), vein * 0.85);
+		int si = int(mod(sector, 5.0));
+		vec3 vc = vein_colors[si].rgb;
+		float pulse = vein_pulse[si];
+		float vein = 1.0 - smoothstep(0.03 + pulse * 0.05, 0.09 + pulse * 0.1, e);
+		c = mix(c, vc * (1.0 + interior * 0.8 + pulse * 1.4), vein * 0.85);
+		glow = max(glow, pulse * vein);
 	} else if (li == 3) {
 		// Corazón Cristalino: blanco azulado, casi luminoso.
 		c = mix(c, pal_highlight[li].rgb, 0.25 * interior);

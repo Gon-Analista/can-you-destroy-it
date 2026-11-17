@@ -31,3 +31,17 @@ extends Resource
 @export var geode_count: int = 0
 ## Fragmentos grandes que suelta cada geoda.
 @export var geode_shards: int = 8
+
+@export_group("Venas")
+## Venas Resonantes (GDD 6): elemento al que es débil la vena de cada lado del cristal, en el
+## orden de los sectores del shader (ver CrystalVeins). Vacío = la capa no tiene venas.
+@export var vein_elements: Array[StringName] = []
+## Nombre de cada vena (el de su elemento), para los avisos.
+@export var vein_names: PackedStringArray = PackedStringArray()
+## Daño extra de un golpe con el elemento débil de la vena.
+@export var vein_damage_mult: float = 1.0
+## Fragmentos Resonantes que suelta como mucho un golpe en la vena.
+@export var vein_shards: int = 0
+## Su valor, como parte del daño del golpe (0.5 = la mitad más en Resonantes). Si no llega a uno,
+## sale uno con esa probabilidad: de media siempre vale lo mismo.
+@export var vein_bonus: float = 0.5

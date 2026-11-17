@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ShardType" format=3]
+
+[ext_resource type="Script" path="res://data/defs/shard_type.gd" id="1_r3s0n"]
+
+[resource]
+script = ExtResource("1_r3s0n")
+id = &"resonant"
+display_name = "Fragmento Resonante"
+display_name_plural = "fragmentos resonantes"
+min_damage = 1000000
+value = 125
+radius = 0.4
+height = 0.95
+tip = 0.55
+sides = 6
+pickup_pitch = 1.25
+launch_speed = 0.9

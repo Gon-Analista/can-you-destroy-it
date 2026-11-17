@@ -33,7 +33,7 @@ func add_trauma(amount: float) -> void:
 
 
 func _on_impact(hit: SpellHit) -> void:
-	if hit.familiar:
+	if not hit.by_player:
 		return
 	add_trauma(hit.tier.shake * (3.0 if hit.resonant else 1.0))
 	if hit.resonant:

@@ -33,3 +33,10 @@ var minor: bool = false
 var echo: bool = false
 ## Lo lanza un familiar: no cuenta para la racha ni sacude la cámara del mago.
 var familiar: bool = false
+## Vena Resonante en la que cayó (sector del cristal, ver CrystalVeins) o -1 si no cayó en una.
+var vein: int = -1
+## True si dio en la vena con su elemento débil (daño extra y Fragmentos Resonantes).
+var vein_weak: bool = false
+## False si no lo lanzó el jugador (rayo del Pilón, familiares): no cuenta para la racha ni mueve
+## la mirilla, la cámara o la levitación, y no da avisos.
+var by_player: bool = true

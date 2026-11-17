@@ -318,9 +318,9 @@ func _draw_pylon_bar() -> void:
 		var sx: float = fmod(floor(_t * 12.0) * 6.0, maxf(w, 1.0))
 		draw_rect(Rect2(r.position + Vector2(sx, 2), Vector2(3, 2)), Color(1.0, 1.0, 1.0, 0.8))
 		draw_rect(Rect2(r.position + Vector2(w - 1, 0), Vector2(1, r.size.y)), Color("#c9f6ff"))
-	for m: float in ManaPylon.MARKS:
-		var x: float = r.position.x + floor(r.size.x * ManaPylon.display_fill(m))
-		var lit: bool = GameState.progression.pylon_ratio() >= m
+	for i: int in ManaPylon.MARKS.size():
+		var x: float = r.position.x + floor(r.size.x * ManaPylon.display_fill(ManaPylon.MARKS[i]))
+		var lit: bool = ManaPylon.mark_reached(GameState.progression.pylon_ratio(), i)
 		draw_rect(Rect2(x, r.position.y - 2, 1, r.size.y + 4), C_GOLD if lit else C_GOLD_DARK)
 
 

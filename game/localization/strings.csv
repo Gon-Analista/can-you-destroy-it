@@ -1,10 +1,13 @@
 keys,es,en
 LANGUAGE_NAME,ESPAÑOL,ENGLISH
 NO HAY FRAGMENTOS CERCA,NO HAY FRAGMENTOS CERCA,NO SHARDS NEARBY
-¡DEMASIADO DURO!,¡DEMASIADO DURO!,TOO HARD!
-NUEVA CAPA: %s,NUEVA CAPA: %s,NEW LAYER: %s
 ¡UNA GEODA! REVIÉNTALA,¡UNA GEODA! REVIÉNTALA,A GEODE! BURST IT
 ¡GEODA! +%d FRAGMENTOS GRANDES,¡GEODA! +%d FRAGMENTOS GRANDES,GEODE! +%d BIG SHARDS
+¡VENA DE %s! DAÑO x%d,¡VENA DE %s! DAÑO x%d,%s VEIN! DAMAGE x%d
+FRAGMENTOS RESONANTES: VALEN x5,FRAGMENTOS RESONANTES: VALEN x5,RESONANT SHARDS: WORTH x5
+ESTA VENA ES DÉBIL A: %s,ESTA VENA ES DÉBIL A: %s,THIS VEIN IS WEAK TO: %s
+¡DEMASIADO DURO!,¡DEMASIADO DURO!,TOO HARD!
+NUEVA CAPA: %s,NUEVA CAPA: %s,NEW LAYER: %s
 ¡EL CRISTAL SE RESQUEBRAJA!,¡EL CRISTAL SE RESQUEBRAJA!,THE CRYSTAL IS CRACKING!
 ¡FAMILIAR HECHICERO! LANZA CHISPAS AL CRISTAL,¡FAMILIAR HECHICERO! LANZA CHISPAS AL CRISTAL,SORCERER FAMILIAR! IT SHOOTS SPARKS AT THE CRYSTAL
 ¡TU PRIMER FAMILIAR! VIVE JUNTO AL PILÓN,¡TU PRIMER FAMILIAR! VIVE JUNTO AL PILÓN,YOUR FIRST FAMILIAR! IT LIVES BY THE PYLON
@@ -22,6 +25,7 @@ TOCA [F] PALANCA (%d),TOCA [F] PALANCA (%d),TAP [F] FOR THE LEVER (%d)
 TRAE CRISTALES PARA TRITURAR,TRAE CRISTALES PARA TRITURAR,BRING CRYSTALS TO CRUSH
 ¡%d CRISTALES TRITURADOS!,¡%d CRISTALES TRITURADOS!,%d CRYSTALS CRUSHED!
 ¡EL PILÓN LLEGA AL %d %%!,¡EL PILÓN LLEGA AL %d %%!,THE PYLON REACHES %d %%!
+¡EL PILÓN ESTÁ LLENO!,¡EL PILÓN ESTÁ LLENO!,THE PYLON IS FULL!
 NO HAY FRAGMENTOS SUELTOS EN EL VALLE,NO HAY FRAGMENTOS SUELTOS EN EL VALLE,NO LOOSE SHARDS IN THE VALLEY
 GRAVEDAD: %d FRAGMENTOS,GRAVEDAD: %d FRAGMENTOS,GRAVITY: %d SHARDS
 +%d FRAGMENTOS DEL POZO,+%d FRAGMENTOS DEL POZO,+%d SHARDS FROM THE WELL
@@ -146,6 +150,11 @@ Mantén [F] para echar y toca [F] para la palanca.,Mantén [F] para echar y toca
 Inscribe «Potencia»: tu magia hará 2 de daño.,Inscribe «Potencia»: tu magia hará 2 de daño.,"Inscribe ""Power"": your magic will deal 2 damage."
 [F] ABRIR LA PUERTA,[F] ABRIR LA PUERTA,[F] OPEN THE DOOR
 EL CRISTAL MADRE,EL CRISTAL MADRE,THE MOTHER CRYSTAL
+EL VALLE DESPIERTA: AURORAS DE MANÁ,EL VALLE DESPIERTA: AURORAS DE MANÁ,THE VALLEY AWAKENS: MANA AURORAS
+LA ALDEA ENCIENDE SUS FAROLES,LA ALDEA ENCIENDE SUS FAROLES,THE VILLAGE LIGHTS ITS LANTERNS
+NUEVAS BANDERAS EN EL CASTILLO,NUEVAS BANDERAS EN EL CASTILLO,NEW BANNERS ON THE CASTLE
+LOS CAMPANARIOS BRILLAN CON TU MANÁ,LOS CAMPANARIOS BRILLAN CON TU MANÁ,THE BELL TOWERS GLOW WITH YOUR MANA
+TODO EL VALLE CELEBRA TU MANÁ,TODO EL VALLE CELEBRA TU MANÁ,THE WHOLE VALLEY CELEBRATES YOUR MANA
 Núcleo,Núcleo,Core
 EL NÚCLEO NI SE INMUTA. AÚN NO.,EL NÚCLEO NI SE INMUTA. AÚN NO.,THE CORE DOESN'T EVEN FLINCH. NOT YET.
 Corteza,Corteza,Crust
@@ -153,11 +162,11 @@ Corazón Cristalino,Corazón Cristalino,Crystal Heart
 ¡DEMASIADO DURO! EL CORAZÓN SÓLO CEDE ANTE UNA COMBINACIÓN,¡DEMASIADO DURO! EL CORAZÓN SÓLO CEDE ANTE UNA COMBINACIÓN,TOO HARD! THE HEART ONLY YIELDS TO A COMBINATION
 Manto Geódico,Manto Geódico,Geode Mantle
 Venas Resonantes,Venas Resonantes,Resonant Veins
-Arcano,Arcano,Arcane
+Chispa,Chispa,Spark
+Escarcha,Escarcha,Frost
 Rayo,Rayo,Lightning
 Tierra,Tierra,Earth
-Escarcha,Escarcha,Frost
-Chispa,Chispa,Spark
+Arcano,Arcano,Arcane
 Familiar hechicero,Familiar hechicero,Sorcerer familiar
 Familiar recolector,Familiar recolector,Gatherer familiar
 Bloque de cristal,Bloque de cristal,Crystal block
@@ -166,6 +175,8 @@ Pedrusco de maná,Pedrusco de maná,Mana boulder
 pedruscos de maná,pedruscos de maná,mana boulders
 Fragmento grande,Fragmento grande,Big shard
 fragmentos grandes,fragmentos grandes,big shards
+Fragmento Resonante,Fragmento Resonante,Resonant shard
+fragmentos resonantes,fragmentos resonantes,resonant shards
 Fragmento,Fragmento,Shard
 fragmentos,fragmentos,shards
 Astilla,Astilla,Splinter
@@ -322,6 +333,12 @@ Levitación,Levitación,Levitation
 "Tras el doble salto, mantén ESPACIO y sube flotando mientras dure la carga. Se recarga en el suelo.","Tras el doble salto, mantén ESPACIO y sube flotando mientras dure la carga. Se recarga en el suelo.","After the double jump, hold SPACE to float upward while the charge lasts. It recharges on the ground."
 %.1f s de vuelo,%.1f s de vuelo,%.1f s of flight
 Sin levitar,Sin levitar,No levitation
+Pureza,Pureza,Purity
+Afinas el Pilón de Maná: cada fragmento que entregas te da más maná para gastar.,Afinas el Pilón de Maná: cada fragmento que entregas te da más maná para gastar.,You tune the Mana Pylon: every shard you deliver gives you more mana to spend.
+maná x%.2f,maná x%.2f,mana x%.2f
+Resonancia del Pilón,Resonancia del Pilón,Pylon Resonance
+"Hito del Pilón: el maná acumulado despierta y dispara rayos al Cristal Madre. Cuanto más lleno esté el Pilón, más fuerte golpea.","Hito del Pilón: el maná acumulado despierta y dispara rayos al Cristal Madre. Cuanto más lleno esté el Pilón, más fuerte golpea.","Pylon milestone: the stored mana awakens and fires bolts at the Mother Crystal. The fuller the Pylon, the harder it strikes."
+un rayo cada %d s,un rayo cada %d s,one bolt every %d s
 Más golpes resonantes: triple de daño y el doble de fragmentos.,Más golpes resonantes: triple de daño y el doble de fragmentos.,More resonant hits: triple damage and twice the shards.
 %d %% resonantes,%d %% resonantes,%d %% resonant
 "La chispa arde más: más daño, más rápida y fragmentos más grandes. Desde el nivel 6 sale de la mano con círculos de runas.","La chispa arde más: más daño, más rápida y fragmentos más grandes. Desde el nivel 6 sale de la mano con círculos de runas.","The spark burns hotter: more damage, faster and bigger shards. From level 6 it leaves your hand through rune circles."
