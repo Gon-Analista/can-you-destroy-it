@@ -21,6 +21,8 @@ var deepest_layer: int = 0
 var geodes: Dictionary[int, int] = {}
 ## La puerta de la casucha ya se abrió (el cristal ya se ha visto).
 var hut_door_open: bool = false
+## Paso del tutorial del principio (ver Tutorial.Step; 8 = terminado).
+var tutorial_step: int = 0
 
 
 func _init(p_total_essence: int) -> void:
@@ -149,6 +151,7 @@ func to_dict() -> Dictionary:
 		"deepest_layer": deepest_layer,
 		"geodes": geodes.duplicate(),
 		"hut_door_open": hut_door_open,
+		"tutorial_step": tutorial_step,
 	}
 
 
@@ -166,6 +169,7 @@ func load_dict(data: Dictionary) -> void:
 		bag[StringName(str(key))] = maxi(int(saved_bag[key]), 0)
 	deepest_layer = maxi(int(data.get("deepest_layer", 0)), 0)
 	hut_door_open = bool(data.get("hut_door_open", false))
+	tutorial_step = int(data.get("tutorial_step", 8 if pylon_progress > 0 else 0))
 	geodes.clear()
 	var saved_geodes: Dictionary = data.get("geodes", {})
 	for key: Variant in saved_geodes:

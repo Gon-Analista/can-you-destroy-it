@@ -71,6 +71,9 @@ func _setup_autoplay() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	if not args.has("--autoplay"):
 		return
+	# La demo no hace el tutorial (salvo --tutorial).
+	if not args.has("--tutorial"):
+		_hud.tutorial.skip()
 	# La demo empieza ya fuera, delante de la casucha y con la puerta abierta (salvo --hut).
 	if not args.has("--hut"):
 		_hut.set_open()

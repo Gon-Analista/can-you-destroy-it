@@ -96,7 +96,8 @@ func _run() -> void:
 	grimoire.call(&"try_buy")
 	_check(prog.get_level(&"bag") == 1, "junto al atril se inscribe")
 	_check(gs.call(&"bag_capacity") == 10, "la bolsa sube a 10")
-	_check(bag.cost_for_level(0) == 5, "la primera mejora cuesta 5 (GDD 8.1)")
+	var power_cost: int = power.cost_for_level(0)
+	_check(power_cost == 5, "la primera mejora (Potencia) cuesta 5 (GDD 8.1 y tutorial)")
 
 	grimoire.call(&"close")
 	# Saltar: con el jugador en el suelo, Espacio lo levanta y vuelve a caer.

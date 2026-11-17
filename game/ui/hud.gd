@@ -23,6 +23,8 @@ const DISCOVERY_SEC: float = 2.8
 
 ## Menú de título y pausa (encima de todo el HUD).
 var menu: GameMenu
+## Tutorial del principio (pasos con el ratón, recoger, triturar, primera mejora).
+var tutorial: Tutorial
 ## Muestra el HUD de juego aunque el ratón no esté capturado (modo demo).
 var force_captured_look: bool = false
 
@@ -129,6 +131,10 @@ func _ready() -> void:
 	var book := SpellBook.new()
 	book.name = "SpellBook"
 	add_child(book)
+	tutorial = Tutorial.new()
+	tutorial.name = "Tutorial"
+	add_child(tutorial)
+	move_child(tutorial, _grimoire.get_index())
 	menu = GameMenu.new()
 	menu.name = "GameMenu"
 	add_child(menu)

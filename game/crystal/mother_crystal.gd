@@ -329,6 +329,9 @@ func _setup_audio() -> void:
 
 ## Punto de entrada de los hechizos: aplica el daño y dispara toda la reacción.
 func receive_hit(hit: SpellHit) -> void:
+	if hit.damage <= 0:
+		_fizzle(hit)
+		return
 	var balance: BalanceConfig = GameState.BALANCE
 	hit.streak = _streak.register_hit(_now)
 	_apply_weakness(hit)
@@ -353,7 +356,8 @@ func receive_hit(hit: SpellHit) -> void:
 		tier.crack_radius * (1.6 if hit.resonant else 1.0) * hit.size * _rng.randf_range(0.85, 1.15)
 	)
 	_crack_index = (_crack_index + 1) % MAX_CRACKS
-	if hit.recipe and hit.recipe.area_radius > 0.0:
+	var weak: bool = hit.size < 0.6
+	if hit.recipe and hit.recipe.area_radius > 0.0 and not weak:
 		_area_blast(hit)
 	if hit.recipe and hit.recipe.pierce_depth > 0.0:
 		_combos.pierce(hit)
@@ -382,6 +386,8 @@ func receive_hit(hit: SpellHit) -> void:
 			* (1.0 + (hit.size - 1.0) * 0.6)
 		)
 	)
+	if weak:
+		count = 1
 	var shard_type: ShardType = ShardPool.type_for_hit(hit.damage, hit.resonant)
 	# Tierra y Lanza Cargada: fragmentos un tamaño más grandes.
 	var bonus: int = (
@@ -428,6 +434,19 @@ func receive_hit(hit: SpellHit) -> void:
 	Events.streak_changed.emit(hit.streak)
 	Events.spell_impacted.emit(hit)
 	set_process(true)
+
+
+## Un hechizo sin fuerza (la chispita de aprendiz): ni un rasguño. Un "clink" suave, un poco de
+## polvo y, la primera vez, la vergüenza por escrito.
+func _fizzle(hit: SpellHit) -> void:
+	_fx.play(hit.position, hit.normal, hit.tier, false, 0.25)
+	var p: AudioStreamPlayer3D = _tink_players[_tink_next]
+	_tink_next = (_tink_next + 1) % _tink_players.size()
+	p.global_position = hit.position
+	p.pitch_scale = 1.6
+	p.volume_db = -20.0
+	p.play()
+	Events.spell_fizzled.emit(hit.position)
 
 
 ## Explosión en área de un hechizo combinado: golpes secundarios alrededor del impacto, cada uno
@@ -521,16 +540,22 @@ func _dig(at: Vector3, normal: Vector3, damage: float, combo: bool, size: float 
 		if (dry >= damage * 0.8 and dry <= damage * 1.25) or attempt == 3:
 			break
 		amount *= clampf(damage / maxf(dry, damage * 0.25), 0.25, 4.0)
-	return _dig_local(center, radius, amount, allowed)
+	return _dig_local(center, radius, amount, allowed, damage)
 
 
 ## Erosiona de verdad en `p` (local), cuenta la esencia, rehace los trozos y descubre geodas.
-func _dig_local(p: Vector3, radius: float, amount: float, allowed: int) -> float:
-	return apply_carve(volume.carve(p, radius, amount, allowed), p, radius)
+## `credit` >= 0: esencia que se descuenta (el daño del golpe, para que el "-1" de la pantalla y
+## el contador cuadren); si no, la del volumen arrancado (túneles de demo).
+func _dig_local(
+	p: Vector3, radius: float, amount: float, allowed: int, credit: float = -1.0
+) -> float:
+	return apply_carve(volume.carve(p, radius, amount, allowed), p, radius, credit)
 
 
-func apply_carve(r: Dictionary, p: Vector3, radius: float) -> float:
+func apply_carve(r: Dictionary, p: Vector3, radius: float, credit: float = -1.0) -> float:
 	var removed: float = r["essence"]
+	if credit >= 0.0 and removed > 0.0:
+		removed = credit
 	_chunks.mark_dirty(r["chunks"])
 	_volume_dirty = true
 	_essence_acc += removed
@@ -741,7 +766,7 @@ func _apply_element(hit: SpellHit) -> void:
 	var big: bool = hit.recipe != null
 	var radius: float = hit.tier.crack_radius * (2.4 if big else 1.1) * hit.size
 	_add_burn(hit.position, radius)
-	if big and hit.recipe.burn_sec > 0.0:
+	if big and hit.recipe.burn_sec > 0.0 and hit.size >= 0.6:
 		_burn_fire.ignite(
 			hit.position,
 			hit.normal,

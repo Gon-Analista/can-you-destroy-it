@@ -2,6 +2,31 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-17 · Tutorial exprés: empiezas siendo una deshonra de mago
+
+**Qué hay nuevo** (pedido del equipo: "al inicio el tutorial muy rápido... que salga una chispa con un sonido muy
+suave y se apague como si fueras una deshonra de mago... junta los hechizos y al juntarlos sigue siendo terrible
+pero al menos le haces 1 punto de daño... con unos 5 ya puedes comprar la primera mejora que te hace hacer 2")
+
+- **Tutorial en un panel arriba** (`ui/tutorial.gd`), que avanza con lo que pasa de verdad en el juego y empieza al
+  abrir la puerta de la casucha. Lleva un ratón pixel art con el botón que toca parpadeando, o la tecla F:
+  1. **Clic izquierdo**: sale una chispita temblorosa, suena muy flojito y se apaga contra el cristal con un
+     "clink": 0 de daño.
+  2. **Clic derecho**: la otra mano, igual de lamentable ("...NI UN RASGUÑO.").
+  3. **Los dos clics a la vez**: la primera combinación sigue siendo terrible, pero hace **1 de daño** y suelta un
+     pedacito ("¡1 DE DAÑO! ¡CAYÓ UN PEDACITO!").
+  4. Recogerlo con F, 5. llevarlo a la trituradora, 6. juntar **5 de maná**, 7. inscribir en el Santuario la
+     primera mejora, **Potencia**, con la que la magia ya hace **2 de daño** ("¡AHORA SÍ ERES UN MAGO! (CASI)").
+- El paso del tutorial se guarda; las partidas que ya habían empezado no lo ven.
+- **Primeros números**: la Chispa de nivel 1 hace 0 de daño (las combinaciones de dos manos sin daño hacen 1); la
+  Potencia empieza en "Chispita" y cuesta 5; la primera Bolsa pasa a 12. Cada golpe da tanta esencia como daño
+  hace, así que el primer golpe de 1 siempre suelta su pedacito.
+- El panel se ajusta al ancho del texto en cada idioma; textos traducidos al inglés.
+
+**Pruebas**: nueva `tests/smoke/tutorial_smoke.gd` (todo el recorrido: chispas sin daño, combinación de 1,
+recoger, triturar, juntar 5 y comprar). `progression_smoke` y `loop_smoke` siguen los costes nuevos. Todas en
+verde.
+
 ## 2026-11-17 · Rayo, Tierra y diez combinaciones para descubrir (Meteoro, Trueno...)
 
 **Qué hay nuevo** (pedidos del equipo: "que las combinaciones sean entretenidas de descubrir", "un meteoro desde

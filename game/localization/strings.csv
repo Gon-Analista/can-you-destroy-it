@@ -112,6 +112,24 @@ LA PREGUNTA ES RETÓRICA. CREEMOS.,LA PREGUNTA ES RETÓRICA. CREEMOS.,THE QUESTI
 "VALE, VALE...","VALE, VALE...","OKAY, OKAY..."
 ¿EN SERIO? ¿AL LOGO?,¿EN SERIO? ¿AL LOGO?,REALLY? THE LOGO?
 ¡ESTÁ BIEN! ¡SÍ PUEDES!,¡ESTÁ BIEN! ¡SÍ PUEDES!,"FINE! YES, YOU CAN!"
+¡AHORA SÍ ERES UN MAGO! (CASI),¡AHORA SÍ ERES UN MAGO! (CASI),NOW YOU'RE A WIZARD! (ALMOST)
+...NI UN RASGUÑO.,...NI UN RASGUÑO.,...NOT EVEN A SCRATCH.
+...TAMPOCO. QUÉ VERGÜENZA.,...TAMPOCO. QUÉ VERGÜENZA.,...NOPE. HOW EMBARRASSING.
+¡1 DE DAÑO! ¡CAYÓ UN PEDACITO!,¡1 DE DAÑO! ¡CAYÓ UN PEDACITO!,1 DAMAGE! A TINY PIECE FELL!
+CLIC IZQUIERDO: LANZA TU MAGIA,CLIC IZQUIERDO: LANZA TU MAGIA,LEFT CLICK: CAST YOUR MAGIC
+CLIC DERECHO: TU OTRA MANO,CLIC DERECHO: TU OTRA MANO,RIGHT CLICK: YOUR OTHER HAND
+LOS DOS CLICS A LA VEZ: JUNTA TUS HECHIZOS,LOS DOS CLICS A LA VEZ: JUNTA TUS HECHIZOS,BOTH CLICKS AT ONCE: JOIN YOUR SPELLS
+MIRA EL PEDACITO Y RECÓGELO CON [F],MIRA EL PEDACITO Y RECÓGELO CON [F],LOOK AT THE PIECE AND PICK IT UP WITH [F]
+LLÉVALO A LA TRITURADORA,LLÉVALO A LA TRITURADORA,TAKE IT TO THE CRUSHER
+JUNTA %d DE MANÁ  (%d / %d),JUNTA %d DE MANÁ  (%d / %d),GATHER %d MANA  (%d / %d)
+VE AL SANTUARIO: [F] ABRE EL GRIMORIO,VE AL SANTUARIO: [F] ABRE EL GRIMORIO,GO TO THE SANCTUM: [F] OPENS THE GRIMOIRE
+Tu mano izquierda guarda una chispa. Más o menos.,Tu mano izquierda guarda una chispa. Más o menos.,Your left hand holds a spark. Sort of.
+A lo mejor ésta tiene más ganas.,A lo mejor ésta tiene más ganas.,Maybe this one is keener.
+Mantén para cargar y suelta. Juntas son menos tímidas.,Mantén para cargar y suelta. Juntas son menos tímidas.,"Hold to charge, then release. Together they're less shy."
+Todo cristal cuenta. Hasta ése.,Todo cristal cuenta. Hasta ése.,Every crystal counts. Even that one.
+Mantén [F] para echar y toca [F] para la palanca.,Mantén [F] para echar y toca [F] para la palanca.,"Hold [F] to feed it, tap [F] for the lever."
+"Junta hechizos, recoge y tritura.","Junta hechizos, recoge y tritura.","Join spells, pick up and crush."
+Inscribe «Potencia»: tu magia hará 2 de daño.,Inscribe «Potencia»: tu magia hará 2 de daño.,"Inscribe ""Power"": your magic will deal 2 damage."
 [F] ABRIR LA PUERTA,[F] ABRIR LA PUERTA,[F] OPEN THE DOOR
 EL CRISTAL MADRE,EL CRISTAL MADRE,THE MOTHER CRYSTAL
 Núcleo,Núcleo,Core
@@ -245,7 +263,7 @@ Resonancia,Resonancia,Resonance
 Más golpes resonantes: triple de daño y el doble de fragmentos.,Más golpes resonantes: triple de daño y el doble de fragmentos.,More resonant hits: triple damage and twice the shards.
 %d %% resonantes,%d %% resonantes,%d %% resonant
 "La chispa arde más: más daño, más rápida y fragmentos más grandes. Desde el nivel 6 sale de la mano con círculos de runas.","La chispa arde más: más daño, más rápida y fragmentos más grandes. Desde el nivel 6 sale de la mano con círculos de runas.","The spark burns hotter: more damage, faster and bigger shards. From level 6 it leaves your hand through rune circles."
-Chispa ardiente,Chispa ardiente,Blazing spark
+Chispita,Chispita,Tiny spark
 Llama,Llama,Flame
 Llama mágica,Llama mágica,Magic flame
 Fuego estelar,Fuego estelar,Starfire

@@ -428,7 +428,13 @@ func _cast_single(side: int) -> void:
 		hands.play_cast(side)
 	# GDD 10: el crepitar suena más grave (y más fuerte) al subir de nivel.
 	var lvl: int = el.tiers.find(tier)
-	AudioDirector.play_sfx(_cast_sounds[el], -2.0 + lvl * 0.8, el.cast_pitch * (1.0 - lvl * 0.07))
+	if tier.damage <= 0:
+		# La chispita de aprendiz: un "pff" casi inaudible (GDD 3: el primer hechizo da vergüenza).
+		AudioDirector.play_sfx(_cast_sounds[el], -17.0, el.cast_pitch * 1.35)
+	else:
+		AudioDirector.play_sfx(
+			_cast_sounds[el], -2.0 + lvl * 0.8, el.cast_pitch * (1.0 - lvl * 0.07)
+		)
 	Events.spell_cast.emit(tier, side)
 
 
@@ -515,6 +521,12 @@ func _launch_combine() -> void:
 		damage = roundi(float(damage) * GameState.stat(recipe.power_stat, 1.0))
 	hit.size = GameState.stat(recipe.size_stat, 1.0) if recipe.size_stat != &"" else 1.0
 	damage = _sized_damage(damage, hit.size)
+	if tier_for(0).damage <= 0 and tier_for(1).damage <= 0:
+		# Dos chispitas de aprendiz: la combinación sigue siendo lamentable (se encoge en el aire,
+		# 1 de daño y un pedacito), pero ya araña el cristal.
+		hit.size = 0.45
+		hit.resonant = false
+		damage = 1
 	hit.damage = damage * (GameState.BALANCE.resonant_damage_mult if hit.resonant else 1)
 	_deliver(recipe, hit, charge)
 	_circles.release()

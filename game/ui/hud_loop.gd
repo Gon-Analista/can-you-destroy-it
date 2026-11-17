@@ -89,8 +89,9 @@ func _ready() -> void:
 	Events.bag_full.connect(_on_bag_full)
 	Events.hint.connect(_push_hint)
 	Events.locale_changed.connect(func() -> void: _pylon_title.text = tr("PILÓN DE MANÁ"))
-	# Primera partida: avisos que enseñan el bucle paso a paso (GDD 8: los 5 primeros minutos).
-	if GameState.progression.pylon_progress == 0:
+	# El bucle lo enseña el Tutorial (ui/tutorial.gd); estos avisos quedan para partidas que lo
+	# saltaron (demo) y aún no han entregado nada.
+	if GameState.progression.pylon_progress == 0 and GameState.progression.tutorial_step >= 8:
 		Events.spell_impacted.connect(_on_first_impact, CONNECT_ONE_SHOT)
 		Events.shard_collected.connect(_on_first_collect, CONNECT_ONE_SHOT)
 	_shown_mana = GameState.progression.mana

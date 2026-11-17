@@ -213,6 +213,8 @@ sonido y HUD) y la de racha y golpe resonante (GDD 10.4). Si falta una capa, no 
 godot --path game --write-movie /tmp/captura/f.png --fixed-fps 60 --quit-after 180 -- --autoplay --tier=1
 ```
 
+  El modo demo se salta el tutorial; `--tutorial` lo deja activo para grabarlo.
+
 - Comparado lado a lado con la referencia de estilo.
 
 ## 6. Rendimiento
@@ -296,6 +298,7 @@ godot --headless --path game --script res://tests/smoke/progression_smoke.gd
   se descubren y dañan el cristal (carga la escena; ~1 min);
   `tests/smoke/spell_levels_smoke.gd`, los niveles 6 a 10 y los círculos mágicos;
   `tests/smoke/movement_smoke.gd`, el doble salto y la levitación (no toca la partida guardada);
+  `tests/smoke/tutorial_smoke.gd`, el tutorial del principio de punta a punta (no toca la partida guardada);
   `tests/smoke/crystal_volume_smoke.gd`, que el volumen del cristal reparte el 1.000.000, se excava, respeta el
   Núcleo, se malla y se guarda.
 - Ojo en los tests `--script`: los autoloads no existen al compilar el script, así que no se pueden nombrar
