@@ -9,12 +9,18 @@ NUEVA CAPA: %s,NUEVA CAPA: %s,NEW LAYER: %s
 MANO IZQUIERDA,MANO IZQUIERDA,LEFT HAND
 MANO DERECHA,MANO DERECHA,RIGHT HAND
 AÚN NO CONOCES OTRO ELEMENTO: DESPIÉRTALO EN EL GRIMORIO,AÚN NO CONOCES OTRO ELEMENTO: DESPIÉRTALO EN EL GRIMORIO,YOU DON'T KNOW ANOTHER ELEMENT YET: AWAKEN IT IN THE GRIMOIRE
+LA RESONANCIA SE APAGA,LA RESONANCIA SE APAGA,THE RESONANCE FADES
+EL CRISTAL AÚN VIBRA: ESPERA %d S,EL CRISTAL AÚN VIBRA: ESPERA %d S,THE CRYSTAL IS STILL HUMMING: WAIT %d S
+RESONANCIA ARCANA: ¡CADA GOLPE ES RESONANTE!,RESONANCIA ARCANA: ¡CADA GOLPE ES RESONANTE!,ARCANE RESONANCE: EVERY HIT RESONATES!
 TRITURANDO...  %d,TRITURANDO...  %d,CRUSHING...  %d
 MANTÉN [F] ECHAR (%d),MANTÉN [F] ECHAR (%d),HOLD [F] TO FEED (%d)
 TOCA [F] PALANCA (%d),TOCA [F] PALANCA (%d),TAP [F] FOR THE LEVER (%d)
 TRAE CRISTALES PARA TRITURAR,TRAE CRISTALES PARA TRITURAR,BRING CRYSTALS TO CRUSH
 ¡%d CRISTALES TRITURADOS!,¡%d CRISTALES TRITURADOS!,%d CRYSTALS CRUSHED!
 ¡EL PILÓN LLEGA AL %d %%!,¡EL PILÓN LLEGA AL %d %%!,THE PYLON REACHES %d %%!
+NO HAY FRAGMENTOS SUELTOS EN EL VALLE,NO HAY FRAGMENTOS SUELTOS EN EL VALLE,NO LOOSE SHARDS IN THE VALLEY
+GRAVEDAD: %d FRAGMENTOS,GRAVEDAD: %d FRAGMENTOS,GRAVITY: %d SHARDS
++%d FRAGMENTOS DEL POZO,+%d FRAGMENTOS DEL POZO,+%d SHARDS FROM THE WELL
 CONTINUAR,CONTINUAR,CONTINUE
 NUEVA PARTIDA,NUEVA PARTIDA,NEW GAME
 PAUSA,PAUSA,PAUSED
@@ -67,6 +73,7 @@ CLIC IZQ / DER: CADA MANO  ·  LOS DOS A LA VEZ: COMBINAR  ·  F RECOGER  ·  TA
 %s  ·  ESENCIA DEL CRISTAL,%s  ·  ESENCIA DEL CRISTAL,%s  ·  CRYSTAL ESSENCE
 +%d MANÁ,+%d MANÁ,+%d MANA
 [F] RECOGER %s,[F] RECOGER %s,[F] PICK UP %s
+FRAGMENTOS,FRAGMENTOS,SHARDS
 ¡RESONANTE!,¡RESONANTE!,RESONANT!
 ¡GOLPE RESONANTE!,¡GOLPE RESONANTE!,RESONANT HIT!
 ¡QUEBRADIZO! x%d,¡QUEBRADIZO! x%d,BRITTLE! x%d
@@ -93,6 +100,7 @@ Reacción: no se lanza. Pasa en el cristal cuando un elemento toca la huella de 
 Pide un elemento que aún duerme. Despiértalo en el Grimorio.,Pide un elemento que aún duerme. Despiértalo en el Grimorio.,It needs an element that still sleeps. Awaken it in the Grimoire.
 PISTA: %s,PISTA: %s,HINT: %s
 W/S ELEGIR  ·  B / ESC CERRAR,W/S ELEGIR  ·  B / ESC CERRAR,W/S SELECT  ·  B / ESC CLOSE
+Carga y suelta: sale el hechizo y sus ecos fantasma lo repiten.,Carga y suelta: sale el hechizo y sus ecos fantasma lo repiten.,Charge and release: the spell flies and its ghostly echoes repeat it.
 "Junta las manos, carga y suelta: sale hacia delante.","Junta las manos, carga y suelta: sale hacia delante.","Join your hands, charge and release: it flies forward."
 Carga mirando el blanco: se abren círculos en el cielo y cae desde arriba.,Carga mirando el blanco: se abren círculos en el cielo y cae desde arriba.,Charge while looking at the target: circles open in the sky and it falls from above.
 Carga mirando el blanco: llueve del cielo sobre toda la zona.,Carga mirando el blanco: llueve del cielo sobre toda la zona.,Charge while looking at the target: it rains from the sky over the whole area.
@@ -100,6 +108,8 @@ Carga y suelta: atraviesa el cristal y perfora un túnel hondo.,Carga y suelta: 
 Carga y suelta: un haz continuo que sigue tu mirilla.,Carga y suelta: un haz continuo que sigue tu mirilla.,Charge and release: a continuous beam that follows your crosshair.
 Carga y suelta: una onda corre por el suelo hasta el cristal.,Carga y suelta: una onda corre por el suelo hasta el cristal.,Charge and release: a wave runs along the ground to the crystal.
 Carga y suelta: un pulso que atrae los fragmentos.,Carga y suelta: un pulso que atrae los fragmentos.,Charge and release: a pulse that pulls in the shards.
+Carga y suelta: se abre un pozo delante de ti que se traga los fragmentos del valle.,Carga y suelta: se abre un pozo delante de ti que se traga los fragmentos del valle.,Charge and release: a well opens in front of you and swallows the shards in the valley.
+Carga mirando el cristal: lo hace vibrar entero y tus golpes resuenan unos segundos.,Carga mirando el cristal: lo hace vibrar entero y tus golpes resuenan unos segundos.,Charge while facing the crystal: it hums all over and your hits resonate for a few seconds.
 UN APRENDIZ. UNA CHISPITA. UN CRISTAL DEL TAMAÑO DE UNA MONTAÑA.,UN APRENDIZ. UNA CHISPITA. UN CRISTAL DEL TAMAÑO DE UNA MONTAÑA.,ONE APPRENTICE. ONE TINY SPARK. ONE MOUNTAIN-SIZED CRYSTAL.
 SPOILER: PROBABLEMENTE.,SPOILER: PROBABLEMENTE.,SPOILER: PROBABLY.
 TU MAESTRO DICE QUE NO. TU MAESTRO NO ESTÁ AQUÍ.,TU MAESTRO DICE QUE NO. TU MAESTRO NO ESTÁ AQUÍ.,YOUR MASTER SAYS NO. YOUR MASTER ISN'T HERE.
@@ -139,10 +149,15 @@ Corazón Cristalino,Corazón Cristalino,Crystal Heart
 ¡DEMASIADO DURO! EL CORAZÓN SÓLO CEDE ANTE UNA COMBINACIÓN,¡DEMASIADO DURO! EL CORAZÓN SÓLO CEDE ANTE UNA COMBINACIÓN,TOO HARD! THE HEART ONLY YIELDS TO A COMBINATION
 Manto Geódico,Manto Geódico,Geode Mantle
 Venas Resonantes,Venas Resonantes,Resonant Veins
+Arcano,Arcano,Arcane
 Rayo,Rayo,Lightning
 Tierra,Tierra,Earth
 Escarcha,Escarcha,Frost
 Chispa,Chispa,Spark
+Bloque de cristal,Bloque de cristal,Crystal block
+bloques de cristal,bloques de cristal,crystal blocks
+Pedrusco de maná,Pedrusco de maná,Mana boulder
+pedruscos de maná,pedruscos de maná,mana boulders
 Fragmento grande,Fragmento grande,Big shard
 fragmentos grandes,fragmentos grandes,big shards
 Fragmento,Fragmento,Shard
@@ -155,9 +170,21 @@ Lanza Cargada,Lanza Cargada,Charged Lance
 Terremoto,Terremoto,Earthquake
 Golpeas el suelo: una onda corre hasta el cristal y su base revienta desde abajo.,Golpeas el suelo: una onda corre hasta el cristal y su base revienta desde abajo.,You strike the ground: a wave runs to the crystal and its base bursts from below.
 Piedra contra piedra no vuela: hace temblar.,Piedra contra piedra no vuela: hace temblar.,Stone against stone doesn't fly: it makes things shake.
+Eco de Fuego,Eco de Fuego,Fire Echo
+"La Bola de Fuego sale y, tras ella, dos ecos fantasma brotan de círculos arcanos y vuelven a estallar donde mires.","La Bola de Fuego sale y, tras ella, dos ecos fantasma brotan de círculos arcanos y vuelven a estallar donde mires.","The Fireball flies and, behind it, two ghostly echoes spring from arcane circles and blow up again wherever you look."
+Lo arcano no crea: repite. Pídele que repita tu primer fuego.,Lo arcano no crea: repite. Pídele que repita tu primer fuego.,The arcane does not create: it repeats. Ask it to repeat your first fire.
+Eco de Hielo,Eco de Hielo,Ice Echo
+Una Lanza de Hielo y dos ecos que la siguen por el mismo túnel (o por el que mires): el cristal se congela por dentro.,Una Lanza de Hielo y dos ecos que la siguen por el mismo túnel (o por el que mires): el cristal se congela por dentro.,An Ice Lance and two echoes following it down the same tunnel (or wherever you look): the crystal freezes from within.
+"Lo que atraviesa una vez, ¿por qué no tres? Pregúntale al eco del frío.","Lo que atraviesa una vez, ¿por qué no tres? Pregúntale al eco del frío.","If it pierces once, why not three times? Ask the echo of the cold."
+Eco del Trueno,Eco del Trueno,Thunder Echo
+"Cae el Juicio del Trueno y el cielo lo repite: tres descargas fantasma más, cada una allí donde mires.","Cae el Juicio del Trueno y el cielo lo repite: tres descargas fantasma más, cada una allí donde mires.","The Thunder Judgment falls and the sky repeats it: three more ghostly strikes, each wherever you look."
+Dicen que un rayo nunca cae dos veces en el mismo sitio. Lo arcano no ha leído ese refrán.,Dicen que un rayo nunca cae dos veces en el mismo sitio. Lo arcano no ha leído ese refrán.,They say lightning never strikes the same place twice. The arcane hasn't heard that saying.
 Bola de Fuego,Bola de Fuego,Fireball
 Dos llamas fundidas en una bola que estalla en área y deja el cristal ardiendo. El primer hechizo de verdad.,Dos llamas fundidas en una bola que estalla en área y deja el cristal ardiendo. El primer hechizo de verdad.,Two flames fused into a ball that bursts over an area and leaves the crystal burning. Your first real spell.
 Una chispa sola es tímida. ¿Y si juntas dos y esperas?,Una chispa sola es tímida. ¿Y si juntas dos y esperas?,One spark alone is shy. What if you join two and wait?
+Gravedad,Gravedad,Gravity
+Utilidad: abre un pozo de gravedad delante de ti y todos los fragmentos sueltos del valle vuelan en espiral hacia él. Lo que no quepa en la bolsa va derecho a la tolva.,Utilidad: abre un pozo de gravedad delante de ti y todos los fragmentos sueltos del valle vuelan en espiral hacia él. Lo que no quepa en la bolsa va derecho a la tolva.,Utility: opens a gravity well in front of you and every loose shard in the valley spirals into it. Whatever doesn't fit in the bag goes straight to the hopper.
+"La piedra siempre cae. Con lo arcano, cae hacia ti... desde todo el valle.","La piedra siempre cae. Con lo arcano, cae hacia ti... desde todo el valle.","Stone always falls. With the arcane, it falls toward you... from the whole valley."
 Lanza de Hielo,Lanza de Hielo,Ice Lance
 Una lanza de hielo que perfora un túnel hondo en el cristal y deja sus paredes congeladas.,Una lanza de hielo que perfora un túnel hondo en el cristal y deja sus paredes congeladas.,A lance of ice that drills a deep tunnel into the crystal and leaves its walls frozen.
 El frío que se junta con el frío no rompe: atraviesa.,El frío que se junta con el frío no rompe: atraviesa.,Cold joined with cold doesn't break: it pierces.
@@ -170,6 +197,9 @@ El fuego solo vuela. Dale un cuerpo de piedra y caerá del cielo.,El fuego solo 
 Haz de Plasma,Haz de Plasma,Plasma Beam
 Un haz continuo de plasma que sigue tu mirilla durante un segundo y medio: barre el cristal.,Un haz continuo de plasma que sigue tu mirilla durante un segundo y medio: barre el cristal.,A continuous plasma beam that follows your crosshair for a second and a half: sweep the crystal.
 El fuego que no se apaga y el rayo que no se va: mantenlos y no sueltes la mirada.,El fuego que no se apaga y el rayo que no se va: mantenlos y no sueltes la mirada.,The fire that won't go out and the lightning that won't leave: hold them and keep your eyes on it.
+Resonancia Arcana,Resonancia Arcana,Arcane Resonance
+"El cristal entero vibra con tu golpe: saltan rayos resonantes por la superficie y, durante cinco segundos, cada golpe que des es resonante.","El cristal entero vibra con tu golpe: saltan rayos resonantes por la superficie y, durante cinco segundos, cada golpe que des es resonante.","The whole crystal hums with your hit: resonant sparks race across its surface and, for five seconds, every hit you land resonates."
+Lo puro con lo puro ni quema ni corta: hace cantar al cristal.,Lo puro con lo puro ni quema ni corta: hace cantar al cristal.,Pure with pure neither burns nor cuts: it makes the crystal sing.
 Lluvia de Estalactitas,Lluvia de Estalactitas,Stalactite Rain
 Un círculo en el cielo y del cielo cae una lluvia de estalactitas de hielo sobre toda la zona.,Un círculo en el cielo y del cielo cae una lluvia de estalactitas de hielo sobre toda la zona.,"A circle in the sky, and from the sky a rain of ice stalactites falls over the whole area."
 "La piedra pesa, el hielo corta. Juntos, llueven.","La piedra pesa, el hielo corta. Juntos, llueven.","Stone is heavy, ice cuts. Together, they rain."
@@ -185,10 +215,24 @@ Fuego y hielo a la vez: el cristal se resquebraja y el siguiente golpe en esa zo
 Juicio del Trueno,Juicio del Trueno,Thunder Judgment
 Abre círculos en el cielo sobre el blanco y descarga un rayo colosal que salta a su alrededor.,Abre círculos en el cielo sobre el blanco y descarga un rayo colosal que salta a su alrededor.,Opens circles in the sky above the target and unleashes a colossal bolt that jumps all around it.
 "Dos chispas del cielo, si las sostienes, llaman a su madre.","Dos chispas del cielo, si las sostienes, llaman a su madre.","Two sparks of the sky, if you hold them, call their mother."
-Despertar el Rayo,Despertar el Rayo,Awaken Lightning
-Aprendes el Rayo: casi instantáneo y salta a otro punto del cristal. Combínalo con los demás y descubre qué pasa.,Aprendes el Rayo: casi instantáneo y salta a otro punto del cristal. Combínalo con los demás y descubre qué pasa.,"You learn Lightning: almost instant, and it jumps to another spot on the crystal. Combine it with the others and see what happens."
+Potencia,Potencia,Power
+"Golpes arcanos más fuertes y más ecos (dos a nivel 3, tres a nivel 6, cuatro a nivel 9). Desde el nivel 6 salen de la mano con círculos de runas.","Golpes arcanos más fuertes y más ecos (dos a nivel 3, tres a nivel 6, cuatro a nivel 9). Desde el nivel 6 salen de la mano con círculos de runas.","Stronger arcane hits and more echoes (two at level 3, three at level 6, four at level 9). From level 6 they leave your hand through rune circles."
+Destello,Destello,Glimmer
+Eco,Eco,Echo
+Doble eco,Doble eco,Double echo
+Prisma,Prisma,Prism
+Resonancia,Resonancia,Resonance
+Arcano mayor,Arcano mayor,Greater arcane
+Paradoja,Paradoja,Paradox
+Eco infinito,Eco infinito,Endless echo
+Singularidad,Singularidad,Singularity
+Arcano primordial,Arcano primordial,Primordial arcane
+Despertar el Arcano,Despertar el Arcano,Awaken the Arcane
+Aprendes el Arcano: puro y extraño. Cada disparo deja un eco que vuelve a golpear. Júntalo con otro elemento y lo repetirá... o algo más raro.,Aprendes el Arcano: puro y extraño. Cada disparo deja un eco que vuelve a golpear. Júntalo con otro elemento y lo repetirá... o algo más raro.,You learn the Arcane: pure and strange. Every shot leaves an echo that strikes again. Join it with another element and it will repeat it... or something stranger.
 Dormido,Dormido,Dormant
 Despierto,Despierto,Awake
+Despertar el Rayo,Despertar el Rayo,Awaken Lightning
+Aprendes el Rayo: casi instantáneo y salta a otro punto del cristal. Combínalo con los demás y descubre qué pasa.,Aprendes el Rayo: casi instantáneo y salta a otro punto del cristal. Combínalo con los demás y descubre qué pasa.,"You learn Lightning: almost instant, and it jumps to another spot on the crystal. Combine it with the others and see what happens."
 Despertar la Tierra,Despertar la Tierra,Awaken Earth
 "Aprendes la Tierra: lenta y pesada, arranca fragmentos más grandes. Con fuego... mira al cielo.","Aprendes la Tierra: lenta y pesada, arranca fragmentos más grandes. Con fuego... mira al cielo.","You learn Earth: slow and heavy, it tears off bigger shards. With fire... look at the sky."
 Dormida,Dormida,Dormant
@@ -198,7 +242,6 @@ Despertar la Escarcha,Despertar la Escarcha,Awaken Frost
 Bolsa de aprendiz,Bolsa de aprendiz,Apprentice's bag
 Una bolsita encantada: llevas más fragmentos en cada viaje al Pilón.,Una bolsita encantada: llevas más fragmentos en cada viaje al Pilón.,A small enchanted bag: carry more shards on each trip to the Pylon.
 caben %d,caben %d,holds %d
-Potencia,Potencia,Power
 "El rayo golpea más fuerte, sale antes y salta más. Desde el nivel 6 sale de la mano con círculos de runas.","El rayo golpea más fuerte, sale antes y salta más. Desde el nivel 6 sale de la mano con círculos de runas.","Lightning hits harder, comes out sooner and jumps further. From level 6 it leaves your hand through rune circles."
 Chispazo,Chispazo,Zap
 Descarga,Descarga,Discharge
@@ -259,7 +302,6 @@ Levitación,Levitación,Levitation
 "Tras el doble salto, mantén ESPACIO y sube flotando mientras dure la carga. Se recarga en el suelo.","Tras el doble salto, mantén ESPACIO y sube flotando mientras dure la carga. Se recarga en el suelo.","After the double jump, hold SPACE to float upward while the charge lasts. It recharges on the ground."
 %.1f s de vuelo,%.1f s de vuelo,%.1f s of flight
 Sin levitar,Sin levitar,No levitation
-Resonancia,Resonancia,Resonance
 Más golpes resonantes: triple de daño y el doble de fragmentos.,Más golpes resonantes: triple de daño y el doble de fragmentos.,More resonant hits: triple damage and twice the shards.
 %d %% resonantes,%d %% resonantes,%d %% resonant
 "La chispa arde más: más daño, más rápida y fragmentos más grandes. Desde el nivel 6 sale de la mano con círculos de runas.","La chispa arde más: más daño, más rápida y fragmentos más grandes. Desde el nivel 6 sale de la mano con círculos de runas.","The spark burns hotter: more damage, faster and bigger shards. From level 6 it leaves your hand through rune circles."

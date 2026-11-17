@@ -148,6 +148,19 @@ func magnet_pull(radius: float) -> int:
 	return n
 
 
+## Gravedad (Arcano + Tierra): un fragmento llegó al pozo. A la bolsa si cabe (o a la tolva con
+## Envío directo); con la bolsa llena, el pozo lo lanza a la tolva igualmente.
+func gravity_collect(index: int) -> void:
+	if _shards == null:
+		return
+	if GameState.has_direct_send() or not GameState.is_bag_full():
+		_collect(index)
+		return
+	var pos: Vector3 = _shards.position_of(index)
+	var t: ShardType = _shards.collect(index, null)
+	GameState.send_direct(t, pos)
+
+
 ## Carga de levitación (0..1) para el HUD.
 func fuel_ratio() -> float:
 	return levitation_fuel / levitation_max if levitation_max > 0.0 else 0.0

@@ -2,6 +2,24 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-17 · El Arcano: el quinto elemento, sus ecos y la Gravedad
+
+**Qué hay nuevo** (GDD 5.1 y 5.2, oleada 1 del GDD)
+
+- **Arcano**, el quinto elemento: llama violeta y rosa con cometas que orbitan. Cada disparo deja **ecos
+  fantasma** que vuelven a golpear el mismo punto (1 eco; 2 a nivel 3, 3 a nivel 6, 4 a nivel 9) y suben de
+  tono, y da +6 % de golpe resonante. Se despierta en su constelación (tras la Tierra) y tiene su Potencia hasta
+  nivel 10.
+- **Cinco combinaciones nuevas**, todas en el Libro (B) con su acertijo:
+  - **Eco de Fuego**, **Eco de Hielo** y **Eco del Trueno**: sale el hechizo y, tras él, sus copias fantasma
+    brotan de círculos arcanos y vuelven a golpear donde mires.
+  - **Gravedad** (Arcano + Tierra): un pozo que se traga en espiral todos los fragmentos sueltos del valle; a la
+    bolsa si caben y, si no, a la tolva.
+  - **Resonancia Arcana** (Arcano + Arcano): el cristal entero vibra y durante 5 s todo golpe es resonante.
+- El HUD junta las recogidas seguidas en un solo número. Textos en español e inglés.
+
+**Pruebas**: nueva `tests/smoke/arcane_smoke.gd`; `combos_smoke` cubre ya los 5 elementos y las 15 parejas.
+
 ## 2026-11-17 · Tutorial exprés: empiezas siendo una deshonra de mago
 
 **Qué hay nuevo** (pedido del equipo: "al inicio el tutorial muy rápido... que salga una chispa con un sonido muy

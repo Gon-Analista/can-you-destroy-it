@@ -4,6 +4,11 @@ extends Node3D
 ## data/shards/). Nada se instancia durante el juego: se reciclan (el más antiguo primero) y
 ## tras unos segundos quietos se congelan para no gastar física.
 ## Recoger: el fragmento se vuelve intangible y vuela hacia la mano encogiéndose.
+## Gravedad (Arcano + Tierra): los fragmentos sueltos giran en espiral hasta un pozo y, al
+## llegar, avisan con `swallowed` (quien abrió el pozo decide si van a la bolsa o a la tolva).
+
+## Un fragmento ha llegado al centro del pozo de gravedad (sigue visible, quieto en el centro).
+signal swallowed(index: int)
 
 const SHARD_MATERIAL_SHADER: Shader = preload("res://crystal/shard.gdshader")
 const TYPES: Array[ShardType] = [
@@ -54,6 +59,13 @@ var _time: float = 0.0
 var _material: ShaderMaterial
 ## Un material por capa del cristal: cada fragmento lleva el color de la capa de la que sale.
 var _layer_materials: Array[ShaderMaterial] = []
+## Pozo de gravedad: segundos en el pozo (-1 = fuera), duración de su espiral, posición de
+## partida en polares respecto al centro (radio, ángulo, altura) y vueltas que da.
+var _orbit_t: PackedFloat32Array = []
+var _orbit_dur: PackedFloat32Array = []
+var _orbit_from: Array[Vector3] = []
+var _orbit_turns: PackedFloat32Array = []
+var _well := Vector3.ZERO
 
 
 ## Los fragmentos llevan el color de la capa de la que salen.
@@ -117,6 +129,10 @@ func _ready() -> void:
 		_flash.append(0.0)
 		_collect_t.append(0.0)
 		_collect_from.append(Vector3.ZERO)
+		_orbit_t.append(-1.0)
+		_orbit_dur.append(1.0)
+		_orbit_from.append(Vector3.ZERO)
+		_orbit_turns.append(1.0)
 	_setup_audio()
 
 
@@ -169,6 +185,7 @@ func spawn(
 		_next = (_next + 1) % pool_size
 		var body: RigidBody3D = _shards[i]
 		_deactivate(body)
+		_orbit_t[i] = -1.0
 		var variant: int = randi() % MESH_VARIANTS
 		_types[i] = type
 		_meshes[i].mesh = _type_meshes[t_index][variant]
@@ -217,7 +234,7 @@ func warm_up(at: Vector3) -> void:
 func index_of(collider: Object) -> int:
 	if collider is Node and (collider as Node).has_meta(&"shard_index"):
 		var i: int = (collider as Node).get_meta(&"shard_index")
-		if _collect_t[i] <= 0.0 and _shards[i].visible:
+		if _collect_t[i] <= 0.0 and _orbit_t[i] < 0.0 and _shards[i].visible:
 			return i
 	return -1
 
@@ -227,7 +244,7 @@ func nearest(point: Vector3, radius: float) -> int:
 	var best: int = -1
 	var best_d: float = radius * radius
 	for i: int in pool_size:
-		if not _shards[i].visible or _collect_t[i] > 0.0:
+		if not _shards[i].visible or _collect_t[i] > 0.0 or _orbit_t[i] >= 0.0:
 			continue
 		var d: float = _shards[i].global_position.distance_squared_to(point)
 		if d < best_d:
@@ -259,6 +276,7 @@ func collect(index: int, target: Node3D) -> ShardType:
 	var body: RigidBody3D = _shards[index]
 	if index == _highlighted:
 		set_highlight(-1)
+	_orbit_t[index] = -1.0
 	if target == null:
 		# Sin destino (envío directo): desaparece ya; otra cosa dibuja su vuelo.
 		var t: ShardType = _types[index]
@@ -281,11 +299,56 @@ func collect(index: int, target: Node3D) -> ShardType:
 	return type
 
 
+## Gravedad: todos los fragmentos sueltos (estén donde estén) giran en espiral hasta `center` en
+## `sec` s como mucho (los lejanos tardan más). Devuelve cuántos atrapa.
+func gravity_pull(center: Vector3, sec: float) -> int:
+	_well = center
+	var n: int = 0
+	for i: int in pool_size:
+		if (
+			_spawn_time[i] < 0.0
+			or not _shards[i].visible
+			or _collect_t[i] > 0.0
+			or _orbit_t[i] >= 0.0
+		):
+			continue
+		var body: RigidBody3D = _shards[i]
+		if i == _highlighted:
+			set_highlight(-1)
+		body.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
+		body.freeze = true
+		body.collision_layer = 0
+		var rel: Vector3 = body.global_position - center
+		var r0: float = Vector2(rel.x, rel.z).length()
+		_orbit_from[i] = Vector3(r0, atan2(rel.z, rel.x), rel.y)
+		_orbit_dur[i] = clampf(0.9 + r0 * 0.025, 0.9, sec) * randf_range(0.82, 1.0)
+		_orbit_turns[i] = randf_range(1.1, 1.8)
+		_orbit_t[i] = 0.0
+		_meshes[i].set_instance_shader_parameter("highlight", 1.0)
+		n += 1
+	if n > 0:
+		set_physics_process(true)
+	return n
+
+
+## Fragmentos que siguen girando hacia el pozo.
+func orbiting_count() -> int:
+	var n: int = 0
+	for i: int in pool_size:
+		if _orbit_t[i] >= 0.0:
+			n += 1
+	return n
+
+
 func _physics_process(delta: float) -> void:
 	_time += delta
 	var any_active: bool = false
 	for i: int in pool_size:
 		if _spawn_time[i] < 0.0:
+			continue
+		if _orbit_t[i] >= 0.0:
+			any_active = true
+			_update_orbit(i, delta)
 			continue
 		if _collect_t[i] > 0.0:
 			any_active = true
@@ -321,6 +384,36 @@ func _update_collect(i: int, delta: float) -> void:
 	if _collect_t[i] <= 0.0:
 		_deactivate(_shards[i])
 		_spawn_time[i] = -1.0
+
+
+## Espiral hacia el pozo: el radio se cierra, el giro se acelera (como un remolino) y el
+## fragmento sube en arco, gira sobre sí mismo y encoge al llegar.
+func _update_orbit(i: int, delta: float) -> void:
+	_orbit_t[i] += delta
+	var k: float = clampf(_orbit_t[i] / _orbit_dur[i], 0.0, 1.0)
+	var e: float = k * k * (3.0 - 2.0 * k)
+	var from: Vector3 = _orbit_from[i]
+	var r: float = from.x * pow(1.0 - e, 1.3)
+	var a: float = from.y + _orbit_turns[i] * TAU * k * k
+	var h: float = from.z * (1.0 - e) + sin(k * PI) * minf(3.0, 0.6 + from.x * 0.08)
+	var body: RigidBody3D = _shards[i]
+	var spin := Basis(Vector3(0.3, 1.0, 0.2).normalized(), delta * (4.0 + 12.0 * k))
+	body.global_transform = Transform3D(
+		spin * body.global_basis, _well + Vector3(cos(a) * r, h, sin(a) * r)
+	)
+	_meshes[i].scale = Vector3.ONE * lerpf(1.0, 0.55, k * k)
+	if k < 1.0:
+		return
+	_orbit_t[i] = -1.0
+	_meshes[i].set_instance_shader_parameter("highlight", 0.0)
+	swallowed.emit(i)
+	if _collect_t[i] <= 0.0 and _spawn_time[i] >= 0.0 and _shards[i].visible:
+		# Nadie lo ha recogido: cae del pozo como un fragmento más.
+		_meshes[i].scale = Vector3.ONE
+		body.collision_layer = SHARD_LAYER
+		body.freeze = false
+		body.linear_velocity = Vector3(randf_range(-1, 1), 2.0, randf_range(-1, 1))
+		_spawn_time[i] = _time
 
 
 func _deactivate(body: RigidBody3D) -> void:

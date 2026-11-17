@@ -594,6 +594,11 @@ func magnet_pulse(at: Vector3, pulled: int) -> void:
 	_combos.magnet_pulse(at, pulled)
 
 
+## Resonancia Arcana: todo el cristal vibra (ver CrystalCombos.resonance_pulse).
+func resonance_pulse(hit: SpellHit) -> void:
+	_combos.resonance_pulse(hit)
+
+
 ## Para CrystalCombos: arranca cristal en `at` como un golpe (ver `_dig`).
 func dig(at: Vector3, normal: Vector3, damage: float, combo: bool, size: float = 1.0) -> float:
 	return _dig(at, normal, damage, combo, size)

@@ -13,8 +13,9 @@ const TICK_SFX: AudioStream = preload("res://audio/sfx/sfx_ui_tick_01.ogg")
 const BOOK := Rect2(70, 34, 500, 292)
 const LEFT := Rect2(80, 42, 236, 276)
 const RIGHT := Rect2(324, 42, 236, 276)
-const ROW_H: float = 18.0
 const LIST_Y: float = 90.0
+## Alto de cada fila de la lista: las 17 entradas caben en la página (90 + 17 x 13 < 318).
+const ROW_H: float = 13.0
 ## Página del Grimorio (y su icono) de cada elemento.
 const ELEMENT_PAGE: Dictionary[StringName, int] = {
 	&"spark": 1, &"frost": 2, &"bolt": 3, &"earth": 4, &"arcane": 5
@@ -28,8 +29,13 @@ const HOW: PackedStringArray = [
 	"Carga y suelta: atraviesa el cristal y perfora un túnel hondo.",
 	"Carga y suelta: un haz continuo que sigue tu mirilla.",
 	"Carga y suelta: una onda corre por el suelo hasta el cristal.",
-	"Carga y suelta: un pulso que atrae los fragmentos."
+	"Carga y suelta: un pulso que atrae los fragmentos.",
+	"Carga y suelta: se abre un pozo delante de ti que se traga los fragmentos del valle.",
+	"Carga mirando el cristal: lo hace vibrar entero y tus golpes resuenan unos segundos."
 ]
+## Los Ecos repiten otra combinación.
+# i18n
+const HOW_ECHO: String = "Carga y suelta: sale el hechizo y sus ecos fantasma lo repiten."
 const C_INK := Color("#2a1d4a")
 const C_INK_SOFT := Color("#6a5a86")
 const C_PAGE := Color("#f1e8d8")
@@ -82,7 +88,12 @@ func _ready() -> void:
 		1
 	)
 	for i: int in SpellCaster.RECIPES.size():
-		var r := Rect2(LEFT.position.x + 40, LIST_Y + i * ROW_H + 4, LEFT.size.x - 48, 10)
+		var r := Rect2(
+			LEFT.position.x + 40,
+			LIST_Y + i * ROW_H + floorf((ROW_H - 10.0) * 0.5),
+			LEFT.size.x - 48,
+			10
+		)
 		_rows.append(_label("", FONT_SMALL, 8, C_CYAN, r, 0))
 	var rx: float = RIGHT.position.x + 14
 	var rw: float = RIGHT.size.x - 28
@@ -183,7 +194,8 @@ func _refresh() -> void:
 			"Reacción: no se lanza. Pasa en el cristal cuando un elemento toca la huella de otro."
 		)
 	else:
-		_how.text = tr(HOW[sel.delivery]) if s == &"found" else ""
+		var how: String = HOW_ECHO if sel.echo_of != &"" else HOW[sel.delivery]
+		_how.text = tr(how) if s == &"found" else ""
 	match s:
 		&"found":
 			_desc.text = tr(sel.description)
@@ -307,7 +319,7 @@ func _draw() -> void:
 			draw_rect(row, Color(C_GOLD, 0.25))
 			draw_rect(Rect2(row.position, Vector2(2, row.size.y)), C_GOLD_LIGHT)
 		for k: int in mini(r.elements.size(), 2):
-			var at := Vector2(row.position.x + 6 + k * 14, y + 4)
+			var at := Vector2(row.position.x + 6 + k * 14, y + floorf((ROW_H - 9.0) * 0.5))
 			var page: int = ELEMENT_PAGE.get(r.elements[k], 0)
 			var col := Color(Grimoire.PAGES[page][2] as String)
 			if st == &"found":
@@ -317,9 +329,9 @@ func _draw() -> void:
 			else:
 				_icon(Grimoire.PAGE_ICONS[page], at, Color(col, 0.35))
 		if r.is_reaction:
-			draw_rect(Rect2(row.end.x - 6, y + 6, 4, 4), C_PINK)
+			draw_rect(Rect2(row.end.x - 6, y + floorf(ROW_H * 0.5) - 2, 4, 4), C_PINK)
 	# Estrellita que late en lo descubierto (detalle del libro).
-	var sel_y: float = LIST_Y + _selected * ROW_H + 8
+	var sel_y: float = LIST_Y + _selected * ROW_H + floorf(ROW_H * 0.5)
 	var blink: float = 0.5 + 0.5 * sin(_t * 5.0)
 	draw_rect(Rect2(LEFT.end.x - 16, sel_y - 2, 4, 4), Color(C_GOLD_LIGHT, blink))
 	# Página derecha: viñeta de los dos elementos en grande si está descubierta.

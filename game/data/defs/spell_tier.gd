@@ -22,6 +22,8 @@ extends Resource
 @export var color_glow: Color = Color("#ffa53a")
 ## Color de las partículas, anillo y luz del impacto. Alfa 0 = los de siempre (cian / oro).
 @export var impact_tint: Color = Color(0, 0, 0, 0)
+## Ecos fantasma que repiten el golpe en el mismo sitio (Arcano); 0 = ninguno.
+@export var echoes: int = 0
 
 @export_group("Aspecto en vuelo")
 ## Orbe que flota en la mano y vuela como proyectil (Chispa, Llama, Llama mágica...).

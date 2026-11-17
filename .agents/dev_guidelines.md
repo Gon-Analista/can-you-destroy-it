@@ -299,6 +299,7 @@ godot --headless --path game --script res://tests/smoke/progression_smoke.gd
   `tests/smoke/spell_levels_smoke.gd`, los niveles 6 a 10 y los círculos mágicos;
   `tests/smoke/movement_smoke.gd`, el doble salto y la levitación (no toca la partida guardada);
   `tests/smoke/tutorial_smoke.gd`, el tutorial del principio de punta a punta (no toca la partida guardada);
+  `tests/smoke/arcane_smoke.gd`, el Arcano, sus ecos, la Gravedad y la Resonancia Arcana;
   `tests/smoke/crystal_volume_smoke.gd`, que el volumen del cristal reparte el 1.000.000, se excava, respeta el
   Núcleo, se malla y se guarda.
 - Ojo en los tests `--script`: los autoloads no existen al compilar el script, así que no se pueden nombrar

@@ -100,13 +100,20 @@ func _setup_autoplay() -> void:
 				GameState.progression.collect_shard(&"splinter")
 			GameState.emit_all()
 		elif a.begins_with("--hands="):
-			# --hands=0,1: elemento de cada mano (0 Chispa, 1 Escarcha); despierta la Escarcha.
+			# --hands=0,4: elemento de cada mano (índices de SpellCaster.ELEMENTS: 0 Chispa,
+			# 1 Escarcha, 2 Rayo, 3 Tierra, 4 Arcano); despierta la Escarcha y los de las manos.
 			GameState.progression.upgrade_levels[&"awaken_frost"] = 1
 			var hs: PackedStringArray = a.get_slice("=", 1).split(",")
 			var caster: SpellCaster = _player.get_caster()
-			caster.hand_element[0] = int(hs[0])
-			caster.hand_element[1] = int(hs[1])
+			for s: int in 2:
+				caster.hand_element[s] = int(hs[s])
+				var el: ElementDef = SpellCaster.ELEMENTS[int(hs[s])]
+				if el.unlock_upgrade != &"":
+					GameState.progression.upgrade_levels[el.unlock_upgrade] = 1
 			caster.set_tier(caster.tier_index)
+		elif a.begins_with("--litter="):
+			# --litter=N: N fragmentos sueltos por el suelo alrededor del mago (para la Gravedad).
+			_demo_litter.call_deferred(int(a.get_slice("=", 1)))
 		elif a.begins_with("--layer="):
 			# --layer=N: empieza en esa capa del cristal (1 = Manto Geódico...).
 			var crystal: MotherCrystal = _world.get_node(^"MotherCrystal")
@@ -252,6 +259,21 @@ func _setup_autoplay() -> void:
 		)
 	if args.has("--report"):
 		get_tree().create_timer(4.0, true, false, true).timeout.connect(_print_report)
+
+
+## Demo: `count` fragmentos repartidos por el suelo entre 6 y 30 m del mago (delante y a los
+## lados), de los tres tamaños, que caen y se quedan quietos.
+func _demo_litter(count: int) -> void:
+	var pool: ShardPool = get_tree().get_first_node_in_group(&"shard_pool") as ShardPool
+	if pool == null:
+		return
+	var base: Vector3 = _player.global_position
+	var yaw: float = _player.rotation.y
+	for i: int in count:
+		var a: float = yaw + randf_range(-2.0, 2.0)
+		var d: float = randf_range(6.0, 30.0)
+		var at: Vector3 = base + Vector3(-sin(a), 0.0, -cos(a)) * d + Vector3.UP * 3.0
+		pool.spawn(at, Vector3.UP, ShardPool.TYPES[i % ShardPool.TYPES.size()], 1, 0.3)
 
 
 func _print_report() -> void:

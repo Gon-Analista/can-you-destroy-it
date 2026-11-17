@@ -29,3 +29,5 @@ var size: float = 1.0
 var direction: Vector3 = Vector3.FORWARD
 ## Golpe menor de un hechizo múltiple (lluvia, haz): sin pausa de impacto ni destello global.
 var minor: bool = false
+## Eco fantasma del Arcano (repite otro golpe).
+var echo: bool = false

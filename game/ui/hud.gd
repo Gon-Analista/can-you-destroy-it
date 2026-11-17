@@ -56,6 +56,9 @@ var _floaters: Array[Label] = []
 var _floater_pos: Array[Vector3] = []
 var _floater_age: PackedFloat32Array = []
 var _floater_next: int = 0
+## Recogidas seguidas en el mismo sitio (Gravedad, Magnetismo) suman en un solo número.
+var _collect_floater: int = -1
+var _collect_count: int = 0
 
 
 func _ready() -> void:
@@ -263,8 +266,23 @@ func _on_shard_targeted(type: ShardType) -> void:
 
 
 func _on_shard_collected(type: ShardType, _count: int, at: Vector3) -> void:
+	var j: int = _collect_floater
+	if (
+		j >= 0
+		and _floaters[j].visible
+		and _floaters[j].text.begins_with("+")
+		and _floater_age[j] < 0.4
+		and _floater_pos[j].distance_to(at + Vector3.UP * 0.3) < 2.0
+	):
+		# Llega otro al mismo sitio enseguida: el número sube en vez de amontonar textos.
+		_collect_count += 1
+		_floaters[j].text = "+%d %s" % [_collect_count, tr("FRAGMENTOS")]
+		_floater_age[j] = 0.0
+		return
 	var i: int = _floater_next
 	_floater_next = (_floater_next + 1) % FLOATERS
+	_collect_floater = i
+	_collect_count = 1
 	var f: Label = _floaters[i]
 	f.text = "+1 " + tr(type.display_name).to_upper()
 	f.add_theme_color_override(&"font_color", C_CYAN)

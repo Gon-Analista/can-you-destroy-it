@@ -18,6 +18,7 @@ const ELEMENTS: Array[ElementDef] = [
 	preload("res://data/elements/frost.tres"),
 	preload("res://data/elements/bolt.tres"),
 	preload("res://data/elements/earth.tres"),
+	preload("res://data/elements/arcane.tres"),
 ]
 ## Todas las combinaciones (una por pareja de elementos) y las reacciones (no se lanzan; se
 ## descubren en el cristal). El Libro de Combinaciones las enseña en este orden.
@@ -32,6 +33,11 @@ const RECIPES: Array[SpellRecipe] = [
 	preload("res://data/spells/recipe_charged_lance.tres"),
 	preload("res://data/spells/recipe_earthquake.tres"),
 	preload("res://data/spells/recipe_magnetism.tres"),
+	preload("res://data/spells/recipe_echo_fire.tres"),
+	preload("res://data/spells/recipe_echo_ice.tres"),
+	preload("res://data/spells/recipe_echo_thunder.tres"),
+	preload("res://data/spells/recipe_gravity.tres"),
+	preload("res://data/spells/recipe_resonance.tres"),
 	preload("res://data/spells/recipe_steam.tres"),
 	preload("res://data/spells/recipe_temper.tres"),
 ]
@@ -45,6 +51,10 @@ const READY_SFX: AudioStream = preload("res://audio/sfx/sfx_spark_ready_01.ogg")
 const FIZZLE_SFX: AudioStream = preload("res://audio/sfx/sfx_spark_fizzle_01.ogg")
 const PROJECTILE_POOL: int = 24
 const COMBO_PROJECTILE_POOL: int = 6
+## Ecos fantasma del Arcano en vuelo a la vez (disparos sueltos y Ecos de X).
+const ECHO_PROJECTILE_POOL: int = 10
+const ARCANE_COLOR := Color(1.4, 0.7, 1.9)
+const ARCANE_HOT := Color(2.2, 1.8, 2.4)
 const PLASMA_SFX: AudioStream = preload("res://audio/sfx/amb_plasma_loop.ogg")
 ## Cada cuánto golpea el Haz de Plasma (s).
 const BEAM_TICK: float = 0.09
@@ -90,6 +100,12 @@ var _beam_hit: SpellHit
 var _beam_tick: float = 0.0
 ## Círculos mágicos de los niveles 6 a 10.
 var _circles: MagicCircles
+## Ecos del Arcano (disparos sueltos y Ecos de X) y pozo de Gravedad.
+var _echoes: SpellEchoes
+var _gravity: GravityWell
+## Resonancia Arcana: segundos en los que todo golpe es resonante y hasta poder repetirla.
+var _resonance_left: float = 0.0
+var _resonance_lock: float = 0.0
 
 
 func _ready() -> void:
@@ -103,6 +119,18 @@ func _ready() -> void:
 		_projectiles.append(_make_projectile("Spark%d" % i))
 	for i: int in COMBO_PROJECTILE_POOL:
 		_combo_projectiles.append(_make_projectile("Combo%d" % i))
+	var echo_pool: Array[SparkProjectile] = []
+	for i: int in ECHO_PROJECTILE_POOL:
+		echo_pool.append(_make_projectile("Echo%d" % i))
+	_echoes = SpellEchoes.new()
+	_echoes.name = "Echoes"
+	add_child(_echoes)
+	_echoes.setup(
+		self, _circles, echo_pool, [_aim, _hand_origin, _deliver, _deliver_sky, _resonant_chance]
+	)
+	_gravity = GravityWell.new()
+	_gravity.name = "GravityWell"
+	add_child(_gravity)
 	_cast_random = _randomizer(CAST_SFX, 1.15)
 	_combo_cast_random = _randomizer(RECIPE.cast_sfx, 1.08)
 	for el: ElementDef in ELEMENTS:
@@ -290,7 +318,7 @@ func try_begin_combine() -> bool:
 	if _combining or not (_hand_ready(0) and _hand_ready(1)) or recipe_for_hands() == null:
 		return false
 	_begin_combine()
-	return true
+	return _combining
 
 
 ## Suelta el hechizo combinado (modo demo).
@@ -363,6 +391,11 @@ func _process(delta: float) -> void:
 		_update_combine(delta)
 	if _beam_left > 0.0:
 		_update_beam(delta)
+	_resonance_lock = maxf(0.0, _resonance_lock - delta)
+	if _resonance_left > 0.0:
+		_resonance_left -= delta
+		if _resonance_left <= 0.0:
+			Events.hint.emit(tr("LA RESONANCIA SE APAGA"), Color("#a58bd0"))
 	for side: int in 2:
 		var ready_now: bool = _hand_ready(side)
 		if ready_now and not _was_ready[side] and not _combining:
@@ -387,9 +420,15 @@ func _cooldown_for(tier: SpellTier) -> float:
 	return tier.cooldown_sec * GameState.stat(&"cooldown_mult", 1.0)
 
 
-## Probabilidad de golpe resonante con la Resonancia aplicada.
-func _resonant_chance() -> float:
-	return GameState.stat(&"resonant_percent", GameState.BALANCE.resonant_chance * 100.0) / 100.0
+## Probabilidad de golpe resonante con la Resonancia aplicada (más `bonus`, el del Arcano).
+## Durante la Resonancia Arcana, todo golpe es resonante.
+func _resonant_chance(bonus: float = 0.0) -> float:
+	if _resonance_left > 0.0:
+		return 1.0
+	return (
+		GameState.stat(&"resonant_percent", GameState.BALANCE.resonant_chance * 100.0) / 100.0
+		+ bonus
+	)
 
 
 func _cast_single(side: int) -> void:
@@ -403,15 +442,18 @@ func _cast_single(side: int) -> void:
 		return
 	var hit := SpellHit.new()
 	hit.tier = tier
-	hit.resonant = _rng.randf() < _resonant_chance()
+	hit.resonant = _rng.randf() < _resonant_chance(el.resonant_bonus)
 	hit.size = GameState.stat(el.size_stat, 1.0) if el.size_stat != &"" else 1.0
-	hit.damage = (
-		_sized_damage(tier.damage, hit.size)
-		* (GameState.BALANCE.resonant_damage_mult if hit.resonant else 1)
-	)
+	var base_damage: int = _sized_damage(tier.damage, hit.size)
+	hit.damage = base_damage * (GameState.BALANCE.resonant_damage_mult if hit.resonant else 1)
 	hit.element = el.id
 	hit.element_def = el
 	_launch(projectile, hit, side)
+	if tier.echoes > 0:
+		_echoes.echo_single(side, hit, base_damage, projectile.target_collider, tier.echoes)
+	if _resonance_left > 0.0:
+		# Resonancia Arcana: cada disparo sale vibrando por un círculo arcano.
+		_circles.muzzle(_hand_origin(side), hit.position, 1, ARCANE_COLOR, ARCANE_HOT)
 	# El Rayo es casi instantáneo: se ve el rayo de la mano al blanco.
 	if el.chain_count > 0:
 		var crystal: MotherCrystal = _crystal()
@@ -441,6 +483,13 @@ func _cast_single(side: int) -> void:
 func _begin_combine() -> void:
 	_active_recipe = recipe_for_hands()
 	if _active_recipe == null:
+		return
+	if _active_recipe.delivery == SpellRecipe.Delivery.RESONANCE and _resonance_lock > 0.0:
+		# El cristal aún vibra con la última Resonancia: no se puede encadenar.
+		Events.hint.emit(
+			tr("EL CRISTAL AÚN VIBRA: ESPERA %d S") % ceili(_resonance_lock), Color("#c79bff")
+		)
+		AudioDirector.play_sfx(FIZZLE_SFX, -6.0, 1.2)
 		return
 	_combining = true
 	_combine_time = 0.0
@@ -481,11 +530,13 @@ func _update_combine(delta: float) -> void:
 		)
 		if camera is CameraRig:
 			(camera as CameraRig).add_trauma(delta * 0.25 * k)
-	elif lvl >= ElementDef.ASCENDED_LEVEL:
-		# Nivel 6+: círculos mágicos que se abren hacia donde apuntas mientras cargas.
+	elif lvl >= ElementDef.ASCENDED_LEVEL or _is_arcane_recipe(r):
+		# Nivel 6+ (y siempre los arcanos): círculos mágicos que se abren hacia donde apuntas
+		# mientras cargas; los Ecos, uno por eco.
+		var arcane_n: int = maxi(r.echo_count, 2) if _is_arcane_recipe(r) else 0
 		_circles.charging(
 			k,
-			lvl - ElementDef.ASCENDED_LEVEL + 1,
+			maxi(lvl - ElementDef.ASCENDED_LEVEL + 1, arcane_n),
 			_hand_origin(BOTH_HANDS),
 			_aim()["position"],
 			r.circle_color,
@@ -511,15 +562,24 @@ func _launch_combine() -> void:
 	if hands:
 		hands.release_combine()
 	var tier: SpellTier = recipe.tier
+	# Eco de X: sale X (con el aspecto del eco) y en el cristal hace lo que hace X.
+	var base: SpellRecipe = SpellEchoes.base_of(recipe)
+	var effect: SpellRecipe = base if base else recipe
 	var hit := SpellHit.new()
 	hit.tier = tier
-	hit.recipe = recipe
-	hit.element = recipe.elements[0] if not recipe.elements.is_empty() else ELEMENT.id
-	hit.resonant = _rng.randf() < _resonant_chance()
+	hit.recipe = effect
+	hit.element = effect.elements[0] if not effect.elements.is_empty() else ELEMENT.id
+	hit.resonant = (
+		recipe.delivery == SpellRecipe.Delivery.RESONANCE or _rng.randf() < _resonant_chance()
+	)
 	var damage: int = recipe.damage_for(tier_for(0).damage, tier_for(1).damage, charge)
-	if recipe.power_stat != &"":
-		damage = roundi(float(damage) * GameState.stat(recipe.power_stat, 1.0))
-	hit.size = GameState.stat(recipe.size_stat, 1.0) if recipe.size_stat != &"" else 1.0
+	var power_stat: StringName = (
+		recipe.power_stat if recipe.power_stat != &"" else effect.power_stat
+	)
+	if power_stat != &"":
+		damage = roundi(float(damage) * GameState.stat(power_stat, 1.0))
+	var size_stat: StringName = recipe.size_stat if recipe.size_stat != &"" else effect.size_stat
+	hit.size = GameState.stat(size_stat, 1.0) if size_stat != &"" else 1.0
 	damage = _sized_damage(damage, hit.size)
 	if tier_for(0).damage <= 0 and tier_for(1).damage <= 0:
 		# Dos chispitas de aprendiz: la combinación sigue siendo lamentable (se encoge en el aire,
@@ -528,7 +588,12 @@ func _launch_combine() -> void:
 		hit.resonant = false
 		damage = 1
 	hit.damage = damage * (GameState.BALANCE.resonant_damage_mult if hit.resonant else 1)
-	_deliver(recipe, hit, charge)
+	_deliver(effect, hit, charge)
+	if base:
+		_echoes.echo_recipe(recipe, base, hit, damage, charge)
+		AudioDirector.play_sfx(_combo_sounds[base], lerpf(-7.0, -3.0, charge))
+	if recipe.delivery == SpellRecipe.Delivery.RESONANCE:
+		_start_resonance(recipe)
 	_circles.release()
 	AudioDirector.play_sfx(_combo_sounds[recipe], lerpf(-4.0, 0.0, charge))
 	Events.spell_cast.emit(tier, BOTH_HANDS)
@@ -558,6 +623,15 @@ func _deliver(recipe: SpellRecipe, hit: SpellHit, charge: float) -> void:
 				crystal.magnet_pulse(camera.global_position - Vector3(0, 1.4, 0), n)
 		SpellRecipe.Delivery.GROUND:
 			_deliver_ground(hit, charge)
+		SpellRecipe.Delivery.GRAVITY:
+			# El pozo se abre delante del mago, algo por encima de la mirada.
+			var flat: Vector3 = -camera.global_basis.z
+			flat.y = 0.0
+			flat = flat.normalized() if flat.length() > 0.1 else Vector3.FORWARD
+			var center: Vector3 = camera.global_position + flat * 6.0 + Vector3.UP * 0.6
+			_gravity.open(center, (camera.global_position - center).normalized(), recipe, _circles)
+			if camera is CameraRig:
+				(camera as CameraRig).add_trauma(0.3)
 		_:
 			var projectile: SparkProjectile = _free_projectile(_combo_projectiles)
 			if projectile:
@@ -572,8 +646,12 @@ func _crystal() -> MotherCrystal:
 
 
 ## Meteoro, Trueno: cae desde lo alto sobre el punto que miras (en diagonal, para que se vea).
-func _deliver_sky(recipe: SpellRecipe, hit: SpellHit, charge: float) -> void:
-	var aim: Dictionary = _aim()
+## `aim` (opcional): otro blanco, como el de un eco.
+func _deliver_sky(
+	recipe: SpellRecipe, hit: SpellHit, charge: float, aim: Dictionary = {}
+) -> Vector3:
+	if aim.is_empty():
+		aim = _aim()
 	var target: Vector3 = aim["position"]
 	var origin: Vector3 = _sky_origin(recipe, target)
 	hit.position = target
@@ -585,8 +663,10 @@ func _deliver_sky(recipe: SpellRecipe, hit: SpellHit, charge: float) -> void:
 		projectile.launch(origin, target, hit, aim["collider"])
 	var crystal: MotherCrystal = _crystal()
 	if crystal and recipe.fall_sec < 0.3:
-		# El Trueno: el rayo baja ya, del cielo al blanco.
-		crystal.sky_bolt(origin, target, recipe.circle_hot)
+		# El Trueno: el rayo baja ya, del cielo al blanco (violeta si es un eco).
+		var col: Color = recipe.circle_hot if hit.tier == recipe.tier else hit.tier.color_glow * 1.8
+		crystal.sky_bolt(origin, target, col)
+	return origin
 
 
 ## De dónde cae un hechizo del cielo sobre `target`: alto y algo inclinado hacia el mago, para
@@ -655,6 +735,18 @@ func _deliver_ground(hit: SpellHit, charge: float) -> void:
 		projectile.launch(from, hit.position, hit, r["collider"])
 	if camera is CameraRig:
 		(camera as CameraRig).add_trauma(0.5)
+
+
+## Resonancia Arcana: unos segundos en los que todo golpe es resonante.
+func _start_resonance(recipe: SpellRecipe) -> void:
+	_resonance_left = recipe.buff_sec
+	_resonance_lock = recipe.buff_lockout_sec
+	Events.hint.emit(tr("RESONANCIA ARCANA: ¡CADA GOLPE ES RESONANTE!"), Color("#e7c6ff"))
+
+
+## Combinaciones del Arcano (llevan círculos al cargar siempre, no sólo desde el nivel 6).
+static func _is_arcane_recipe(r: SpellRecipe) -> bool:
+	return r.elements.has(&"arcane")
 
 
 ## Haz de Plasma: golpea cada BEAM_TICK donde apunte la mirilla mientras dure.
@@ -783,6 +875,9 @@ func _on_projectile_arrived(projectile: SparkProjectile) -> void:
 	if collider is Node and (collider as Node).has_meta(&"mother_crystal"):
 		var crystal: MotherCrystal = (collider as Node).get_meta(&"mother_crystal")
 		crystal.receive_hit(projectile.hit)
+		var r: SpellRecipe = projectile.hit.recipe
+		if r and r.delivery == SpellRecipe.Delivery.RESONANCE:
+			crystal.resonance_pulse(projectile.hit)
 	else:
 		AudioDirector.play_sfx(FIZZLE_SFX, -6.0)
 		Events.spell_fizzled.emit(projectile.hit.position)

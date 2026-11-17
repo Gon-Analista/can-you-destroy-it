@@ -1,0 +1,80 @@
+[gd_resource type="Resource" script_class="SpellRecipe" format=3]
+
+[ext_resource type="Script" path="res://data/defs/spell_recipe.gd" id="main"]
+[ext_resource type="Script" path="res://data/defs/spell_tier.gd" id="tier"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_spell_combine_01.ogg" id="combine"]
+[ext_resource type="Resource" path="res://data/spells/vfx_echo_ice.tres" id="vis"]
+[ext_resource type="AudioStream" path="res://audio/sfx/amb_arcane_charge_loop.ogg" id="loop"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_fireball_charge_loop.ogg" id="flight"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_echo_cast_01.ogg" id="sfx_echo_cast_01"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_arcane_impact_01.ogg" id="sfx_arcane_impact_01"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_arcane_echo_01.ogg" id="sfx_arcane_echo_01"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_arcane_echo_02.ogg" id="sfx_arcane_echo_02"]
+
+[sub_resource type="Gradient" id="ramp"]
+offsets = PackedFloat32Array(0, 0.2, 0.45, 0.72, 1)
+colors = PackedColorArray(2.3, 2.2, 2.8, 1, 1.3, 1.1, 2.3, 1, 0.75, 0.55, 1.8, 1, 0.38, 0.25, 1.1, 1, 0.12, 0.08, 0.5, 1)
+
+[sub_resource type="Resource" id="t"]
+script = ExtResource("tier")
+damage = 5
+speed = 70.0
+wobble = 0.0
+shards_min = 2
+shards_max = 3
+impact_particles = 40
+light_energy = 4.0
+crack_radius = 1.2
+shake = 0.18
+orb_scale = 6.0
+trail_width = 0.5
+trail_length = 0.3
+color_core = Color(0.95, 0.95, 1, 1)
+color_glow = Color(0.6, 0.55, 1, 1)
+impact_tint = Color(0.8, 0.75, 1, 1)
+size = 0.5
+cooldown_sec = 2.8
+visual = ExtResource("vis")
+trail_ramp = SubResource("ramp")
+flight_sfx = ExtResource("flight")
+
+[resource]
+script = ExtResource("main")
+id = &"echo_ice"
+display_name = "Eco de Hielo"
+elements = Array[StringName]([&"arcane", &"frost"])
+description = "Una Lanza de Hielo y dos ecos que la siguen por el mismo túnel (o por el que mires): el cristal se congela por dentro."
+riddle = "Lo que atraviesa una vez, ¿por qué no tres? Pregúntale al eco del frío."
+delivery = 3
+damage_multiplier = 2.4
+area_radius = 0.0
+area_hits = 0
+burn_sec = 0.0
+burn_damage = 2
+burn_tick_sec = 0.4
+sky_height = 40.0
+fall_sec = 1.0
+sky_circles = 3
+rain_count = 0
+rain_radius = 4.0
+pierce_depth = 0.0
+freeze_trail = false
+chain_count = 0
+beam_sec = 0.0
+shard_bonus = 0
+circle_color = Color(0.9, 0.7, 1.8, 1)
+circle_hot = Color(1.6, 1.5, 2.2, 1)
+charge_sec = 0.9
+min_power = 0.5
+cooldown_sec = 2.8
+tier = SubResource("t")
+visual = ExtResource("vis")
+combine_sfx = ExtResource("combine")
+charge_loop_sfx = ExtResource("loop")
+cast_sfx = Array[AudioStream]([ExtResource("sfx_echo_cast_01")])
+impact_sfx = Array[AudioStream]([ExtResource("sfx_arcane_impact_01")])
+echo_of = &"ice_lance"
+echo_count = 2
+echo_delay = 0.3
+echo_damage = 0.6
+echo_sfx = Array[AudioStream]([ExtResource("sfx_arcane_echo_01"), ExtResource("sfx_arcane_echo_02")])

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"arcane_power"
+display_name = "Potencia"
+description = "Golpes arcanos más fuertes y más ecos (dos a nivel 3, tres a nivel 6, cuatro a nivel 9). Desde el nivel 6 salen de la mano con círculos de runas."
+branch = 0
+element = &"arcane"
+star_pos = Vector2i(118, 196)
+costs = PackedInt32Array(400, 1200, 2800, 3800, 5000, 10000, 20000, 40000, 75000)
+prerequisites = Array[StringName]([&"awaken_arcane"])
+stat = &"arcane_tier"
+values = PackedFloat32Array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+value_format = "%s"
+level_names = PackedStringArray("Destello", "Eco", "Doble eco", "Prisma", "Resonancia", "Arcano mayor", "Paradoja", "Eco infinito", "Singularidad", "Arcano primordial")

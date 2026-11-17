@@ -41,6 +41,16 @@ const ASCENDED_LEVEL: int = 6
 ## Color de sus círculos de toque (nivel 6+).
 @export var circle_color: Color = Color(1.0, 0.6, 0.2)
 
+@export_group("Eco (Arcano)")
+## Cada disparo deja `SpellTier.echoes` copias fantasma que vuelven a golpear el mismo punto,
+## una cada `echo_delay` s y con `echo_damage` del daño (GDD 5.1: "amplifica y duplica").
+@export var echo_delay: float = 0.25
+@export_range(0.0, 1.0) var echo_damage: float = 0.5
+## Sonido de cada eco (sube un tono por eco).
+@export var echo_sfx: Array[AudioStream] = []
+## Probabilidad extra de golpe resonante de sus golpes (0.06 = +6 %).
+@export var resonant_bonus: float = 0.0
+
 
 ## Completa `tiers` hasta el nivel 10 a partir del último escrito a mano: cada nivel nuevo dobla
 ## el daño, es algo más rápido, más grande y de más área, y el color tira hacia el violeta arcano.
@@ -61,4 +71,7 @@ func ensure_levels() -> void:
 		t.shake = minf(prev.shake + 0.02, 0.3)
 		t.trail_width = prev.trail_width * 1.06
 		t.color_glow = prev.color_glow.lerp(Color(0.78, 0.45, 1.0), 0.12 + k * 0.1)
+		# Lo que deja ecos suma uno más a nivel 6 y a nivel 9.
+		if prev.echoes > 0 and (tiers.size() + 1 == 6 or tiers.size() + 1 == 9):
+			t.echoes = prev.echoes + 1
 		tiers.append(t)
