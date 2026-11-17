@@ -29,3 +29,5 @@ var size: float = 1.0
 var direction: Vector3 = Vector3.FORWARD
 ## Golpe menor de un hechizo múltiple (lluvia, haz): sin pausa de impacto ni destello global.
 var minor: bool = false
+## Lo lanza un familiar: no cuenta para la racha ni sacude la cámara del mago.
+var familiar: bool = false

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"familiar_caster"
+display_name = "Familiar hechicero"
+description = "Un familiar de fuego revolotea junto al cristal y le lanza chispas él solo, cada una con su círculo mágico."
+branch = 4
+element = &""
+star_pos = Vector2i(184, 128)
+costs = PackedInt32Array(2500, 10000)
+prerequisites = Array[StringName]([&"familiar"])
+stat = &"familiar_caster"
+values = PackedFloat32Array(0, 1, 2)
+value_format = "%d"
+level_names = PackedStringArray("Sin hechicero", "1 hechicero", "2 hechiceros")

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"familiar"
+display_name = "Familiar"
+description = "Un buhito de luz anida junto al Pilón: recoge los fragmentos del suelo, los echa a la tolva y tira de la palanca. Cada nivel, uno más."
+branch = 4
+element = &""
+star_pos = Vector2i(40, 164)
+costs = PackedInt32Array(300, 1200, 4000, 12000)
+prerequisites = Array[StringName]([&"telekinesis"])
+stat = &"familiar_count"
+values = PackedFloat32Array(0, 1, 2, 3, 4)
+value_format = "%d"
+level_names = PackedStringArray("Sin familiares", "1 familiar", "2 familiares", "3 familiares", "4 familiares")

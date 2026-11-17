@@ -14,5 +14,8 @@ const HUT := Vector3(0.0, 0.0, 78.0)
 const PLAYER_START := Vector3(0.0, 0.2, 80.2)
 const PYLON := Vector3(-46.0, 0.0, 52.0)
 const SANCTUM := Vector3(48.0, 0.0, 50.0)
+## La Jaula de Familiares (GDD 4.3): detrás del Pilón, a la vista desde el camino y sin
+## pisarlo. Aparece al comprar el primer familiar.
+const FAMILIAR_NEST := Vector3(-40.0, 0.0, 60.5)
 ## Orientación del Santuario: el lado abierto del templete mira al cristal.
 const SANCTUM_YAW_DEG: float = 47.0

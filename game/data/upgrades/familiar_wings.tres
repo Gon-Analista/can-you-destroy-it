@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"familiar_wings"
+display_name = "Alas ligeras"
+description = "Tus familiares vuelan más deprisa y cargan un fragmento más en cada viaje."
+branch = 4
+element = &""
+star_pos = Vector2i(126, 146)
+costs = PackedInt32Array(800, 3000, 9000)
+prerequisites = Array[StringName]([&"familiar"])
+stat = &"familiar_speed"
+values = PackedFloat32Array(1, 1.4, 1.9, 2.5)
+value_format = "vuelo x%.1f"
+level_names = PackedStringArray()

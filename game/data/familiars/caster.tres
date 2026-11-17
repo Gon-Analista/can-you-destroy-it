@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="FamiliarDef" format=3]
+
+[ext_resource type="Script" path="res://data/defs/familiar_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"caster"
+display_name = "Familiar hechicero"
+role = 1
+count_stat = &"familiar_caster"
+max_count = 2
+fly_speed = 8.0
+body_color = Color(1, 0.64, 0.4, 1)
+belly_color = Color(1, 0.87, 0.6, 1)
+wing_color = Color(0.95, 0.36, 0.32, 1)
+wing_tip_color = Color(1, 0.82, 0.48, 1)
+beak_color = Color(1, 0.95, 0.7, 1)
+glow_color = Color(2.2, 1.2, 0.4, 1)
+trail_core = Color(2.4, 1.8, 0.9, 1)
+trail_edge = Color(1.6, 0.5, 0.3, 1)
+size = 1.0
+orbit_out = 26.0
+orbit_height = 5.5

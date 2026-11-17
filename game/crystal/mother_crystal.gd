@@ -330,7 +330,8 @@ func _setup_audio() -> void:
 ## Punto de entrada de los hechizos: aplica el daño y dispara toda la reacción.
 func receive_hit(hit: SpellHit) -> void:
 	var balance: BalanceConfig = GameState.BALANCE
-	hit.streak = _streak.register_hit(_now)
+	# Los golpes de los familiares no cuentan para la racha del mago.
+	hit.streak = 1 if hit.familiar else _streak.register_hit(_now)
 	_apply_weakness(hit)
 	_combos.check_temper(hit)
 	_check_geodes(hit)
@@ -420,12 +421,13 @@ func receive_hit(hit: SpellHit) -> void:
 		_global_flash = maxf(_global_flash, 0.3)
 	elif tier.damage >= 5:
 		HitStop.trigger(get_tree(), 0.025)
-	if balance.streak_milestones.has(hit.streak):
+	if not hit.familiar and balance.streak_milestones.has(hit.streak):
 		_accent_player.stream = STREAK_SFX
 		_accent_player.volume_db = -5.0
 		_accent_player.play()
 		Events.streak_milestone.emit(hit.streak)
-	Events.streak_changed.emit(hit.streak)
+	if not hit.familiar:
+		Events.streak_changed.emit(hit.streak)
 	Events.spell_impacted.emit(hit)
 	set_process(true)
 

@@ -94,7 +94,9 @@ func _free(x: float, z: float, margin: float) -> bool:
 		return false
 	if Vector2(x - WorldLayout.HUT.x, z - WorldLayout.HUT.z).length() < 4.6 + margin:
 		return false
-	return not _near_path(x, z, 1.6 + margin)
+	# La Jaula de Familiares, detrás del Pilón.
+	var nest := Vector2(WorldLayout.FAMILIAR_NEST.x, WorldLayout.FAMILIAR_NEST.z)
+	return Vector2(x, z).distance_to(nest) >= 2.2 + margin and not _near_path(x, z, 1.6 + margin)
 
 
 func _build_paths() -> void:

@@ -25,6 +25,8 @@ func _ready() -> void:
 
 
 func _on_impact(hit: SpellHit) -> void:
+	if hit.familiar:
+		return
 	_hit_flash = 1.0
 	_hit_resonant = hit.resonant
 
