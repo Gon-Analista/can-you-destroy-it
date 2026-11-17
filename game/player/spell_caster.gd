@@ -208,13 +208,23 @@ func _on_hand_ready() -> void:
 	Events.spell_ready.emit()
 	if hands:
 		hands.play_ready()
-	if current_tier().cooldown_sec >= 0.6:
+	if _cooldown_for(current_tier()) >= 0.6:
 		AudioDirector.play_sfx(READY_SFX, -8.0)
+
+
+## Recarga con la Canalización aplicada.
+func _cooldown_for(tier: SpellTier) -> float:
+	return tier.cooldown_sec * GameState.stat(&"cooldown_mult", 1.0)
+
+
+## Probabilidad de golpe resonante con la Resonancia aplicada.
+func _resonant_chance() -> float:
+	return GameState.stat(&"resonant_percent", GameState.BALANCE.resonant_chance * 100.0) / 100.0
 
 
 func _cast_single(side: int) -> void:
 	var tier: SpellTier = current_tier()
-	_start_cooldown(side, tier.cooldown_sec)
+	_start_cooldown(side, _cooldown_for(tier))
 	_buffered[side] = false
 	_buffer_time[side] = 0.0
 	var projectile: SparkProjectile = _free_projectile(_projectiles)
@@ -222,7 +232,7 @@ func _cast_single(side: int) -> void:
 		return
 	var hit := SpellHit.new()
 	hit.tier = tier
-	hit.resonant = _rng.randf() < GameState.BALANCE.resonant_chance
+	hit.resonant = _rng.randf() < _resonant_chance()
 	hit.damage = tier.damage * (GameState.BALANCE.resonant_damage_mult if hit.resonant else 1)
 	_launch(projectile, hit, side)
 	if hands:
@@ -261,7 +271,9 @@ func _launch_combine() -> void:
 	var charge: float = combine_charge()
 	_combining = false
 	_charge_player.stop()
-	var cd: float = maxf(RECIPE.cooldown_sec, current_tier().cooldown_sec)
+	var cd: float = maxf(
+		RECIPE.cooldown_sec * GameState.stat(&"cooldown_mult", 1.0), _cooldown_for(current_tier())
+	)
 	_start_cooldown(0, cd)
 	_start_cooldown(1, cd)
 	if hands:
@@ -270,7 +282,7 @@ func _launch_combine() -> void:
 	var hit := SpellHit.new()
 	hit.tier = tier
 	hit.recipe = RECIPE
-	hit.resonant = _rng.randf() < GameState.BALANCE.resonant_chance
+	hit.resonant = _rng.randf() < _resonant_chance()
 	var damage: int = RECIPE.damage_for(current_tier().damage, current_tier().damage, charge)
 	hit.damage = damage * (GameState.BALANCE.resonant_damage_mult if hit.resonant else 1)
 	var projectile: SparkProjectile = _free_projectile(_combo_projectiles)

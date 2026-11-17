@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"spark_power"
+display_name = "Potencia"
+description = "La chispa arde más: más daño, más rápida y fragmentos más grandes. Cambia de forma."
+branch = 0
+costs = PackedInt32Array(15, 120, 900, 6000)
+prerequisites = Array[StringName]([])
+stat = &"spark_tier"
+values = PackedFloat32Array(0, 1, 2, 3, 4)
+value_format = "%s"
+level_names = PackedStringArray("Chispa", "Chispa ardiente", "Llama", "Llama mágica", "Fuego estelar")

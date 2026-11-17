@@ -37,6 +37,28 @@ func _init() -> void:
 	_check(p.discover_recipe(&"fireball"), "primera Bola de Fuego: descubrimiento")
 	_check(not p.discover_recipe(&"fireball"), "la segunda vez ya no es descubrimiento")
 
+	var bag := Progression.new(1000)
+	_check(bag.collect_shard(&"splinter", 1) == 1, "con capacidad 1 cabe uno")
+	_check(bag.collect_shard(&"shard", 1) == 0, "la bolsa llena no acepta más")
+	_check(bag.bag_count() == 1, "la bolsa cuenta todos los tipos")
+	_check(bag.take_from_bag(&"splinter") and bag.bag_count() == 0, "entregar saca de la bolsa")
+	_check(not bag.take_from_bag(&"splinter"), "no se saca lo que no hay")
+
+	var bag_node: UpgradeNode = load("res://data/upgrades/bag.tres")
+	_check(bag.stat_of(bag_node) == 1.0, "sin comprar, la bolsa lleva 1")
+	_check(bag.purchase_block(bag_node) == &"mana", "sin maná no se puede")
+	bag.deliver(5)
+	_check(bag.buy_upgrade(bag_node) and bag.stat_of(bag_node) == 5.0, "la bolsa sube a 5")
+	_check(bag_node.cost_for_level(1) == 40, "el coste sale del .tres")
+	var tk: UpgradeNode = load("res://data/upgrades/telekinesis.tres")
+	var fresh := Progression.new(1000)
+	fresh.deliver(100)
+	_check(fresh.purchase_block(tk) == &"locked", "la telequinesis pide la bolsa")
+	for i: int in 3:
+		bag.deliver(10000)
+		bag.buy_upgrade(bag_node)
+	_check(bag.purchase_block(bag_node) == &"max", "no se pasa del último nivel")
+
 	var restored := Progression.new(1000)
 	restored.load_dict(p.to_dict())
 	_check(restored.to_dict() == p.to_dict(), "guardar y cargar conserva el estado")

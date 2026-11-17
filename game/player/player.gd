@@ -4,6 +4,7 @@ extends CharacterBody3D
 ## lanzador de hechizos y el post-proceso de contorno.
 
 const OUTLINE_SHADER: Shader = preload("res://fx/outline.gdshader")
+const TELEKINESIS_SFX: AudioStream = preload("res://audio/sfx/sfx_telekinesis_01.ogg")
 
 @export var walk_speed: float = 4.5
 @export var acceleration: float = 30.0
@@ -15,12 +16,17 @@ const OUTLINE_SHADER: Shader = preload("res://fx/outline.gdshader")
 @export var pickup_assist_radius: float = 1.6
 ## Mantener F recoge en cadena con este intervalo.
 @export var pickup_repeat_sec: float = 0.12
+## Cada cuánto la telequinesis atrae un fragmento cercano (s).
+@export var telekinesis_interval_sec: float = 0.14
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _shards: ShardPool
 var _target_shard: int = -1
 var _pickup_cooldown: float = 0.0
 var _grab_point: Marker3D
+## Con el Grimorio abierto el mago no se mueve ni mira.
+var _locked: bool = false
+var _telekinesis_timer: float = 0.0
 
 @onready var _head: Node3D = $Head
 @onready var _camera: CameraRig = $Head/Camera
@@ -29,16 +35,25 @@ var _grab_point: Marker3D
 
 
 func _ready() -> void:
+	add_to_group(&"player")
+	Events.grimoire_opened.connect(func() -> void: _locked = true)
+	Events.grimoire_closed.connect(func() -> void: _locked = false)
+	Events.upgrade_bought.connect(func(_id: StringName, _l: int) -> void: _apply_upgrades())
 	_head.rotation.x = deg_to_rad(start_pitch_deg)
 	_caster.camera = _camera
 	_hands.attach_camera(_camera, SpellCaster.ELEMENT.hand_visual, SpellCaster.RECIPE.visual)
 	_caster.hands = _hands
-	_caster.set_tier(0)
 	_add_outline()
 	_grab_point = Marker3D.new()
 	_grab_point.position = Vector3(-0.18, -0.32, -0.55)
 	_camera.add_child(_grab_point)
 	_shards = get_tree().get_first_node_in_group(&"shard_pool") as ShardPool
+	_apply_upgrades()
+
+
+## Las mejoras que tocan los hechizos: el nivel de la Chispa sale de la Potencia.
+func _apply_upgrades() -> void:
+	_caster.set_tier(roundi(GameState.stat(&"spark_tier", 0.0)))
 
 
 func get_caster() -> SpellCaster:
@@ -50,7 +65,18 @@ func get_camera() -> Camera3D:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if (
+		OS.is_debug_build()
+		and event is InputEventKey
+		and (event as InputEventKey).pressed
+		and not (event as InputEventKey).echo
+		and (event as InputEventKey).physical_keycode == KEY_G
+	):
+		# Debug: maná gratis para probar el Grimorio.
+		GameState.deliver(100)
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		if _locked:
+			return
 		var motion: InputEventMouseMotion = event
 		rotate_y(-motion.relative.x * mouse_sensitivity)
 		_head.rotation.x = clampf(
@@ -63,8 +89,10 @@ func _unhandled_input(event: InputEvent) -> void:
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= _gravity * delta
-	var input: Vector2 = Input.get_vector(
-		&"move_left", &"move_right", &"move_forward", &"move_back"
+	var input: Vector2 = (
+		Vector2.ZERO
+		if _locked
+		else Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
 	)
 	var wish: Vector3 = (global_basis * Vector3(input.x, 0.0, input.y)).normalized() * walk_speed
 	var horizontal := Vector3(velocity.x, 0.0, velocity.z).move_toward(wish, acceleration * delta)
@@ -98,14 +126,45 @@ func _update_pickup(delta: float) -> void:
 		_shards.set_highlight(target)
 		Events.shard_targeted.emit(_shards.type_of(target) if target >= 0 else null)
 	_pickup_cooldown = maxf(0.0, _pickup_cooldown - delta)
-	if target >= 0 and _pickup_cooldown <= 0.0 and Input.is_action_pressed(&"interact"):
+	if (
+		target >= 0
+		and not _locked
+		and _pickup_cooldown <= 0.0
+		and Input.is_action_pressed(&"interact")
+	):
 		_pickup_cooldown = pickup_repeat_sec
-		var pos: Vector3 = _shards.position_of(target)
-		var type: ShardType = _shards.collect(target, _grab_point)
-		GameState.collect_shard(type, pos)
-		_hands.play_grab()
+		if GameState.is_bag_full():
+			# No cabe: el fragmento se queda en el suelo y el HUD avisa.
+			Events.bag_full.emit()
+			_pickup_cooldown = 0.4
+		else:
+			_collect(target)
+	_update_telekinesis(delta)
+
+
+func _collect(index: int) -> void:
+	var pos: Vector3 = _shards.position_of(index)
+	var type: ShardType = _shards.collect(index, _grab_point)
+	GameState.collect_shard(type, pos)
+	_hands.play_grab()
+	if index == _target_shard:
 		_target_shard = -1
 		Events.shard_targeted.emit(null)
+
+
+## Telequinesis (mejora): los fragmentos cercanos vuelan solos a la mano mientras quepan.
+func _update_telekinesis(delta: float) -> void:
+	var radius: float = GameState.stat(&"telekinesis_radius", 0.0)
+	if radius <= 0.0 or _locked or GameState.is_bag_full():
+		return
+	_telekinesis_timer = maxf(0.0, _telekinesis_timer - delta)
+	if _telekinesis_timer > 0.0:
+		return
+	var i: int = _shards.nearest(global_position, radius)
+	if i >= 0:
+		_telekinesis_timer = telekinesis_interval_sec
+		AudioDirector.play_sfx(TELEKINESIS_SFX, -8.0)
+		_collect(i)
 
 
 func _add_outline() -> void:

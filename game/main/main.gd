@@ -25,19 +25,26 @@ func _ready() -> void:
 	# Hasta que exista el sistema de rangos, se empieza en Aprendiz (1 capa).
 	AudioDirector.play_music(MUSIC_LAYERS, _arg_int("--music-layers=", 1))
 	GameState.emit_all()
+	# La música crece con el mago: una capa más cada 3 niveles comprados (Aprendiz -> Archimago).
+	AudioDirector.set_music_layers(_rank_layers(), 0.1)
+	Events.upgrade_bought.connect(
+		func(_id: StringName, _l: int) -> void: AudioDirector.set_music_layers(_rank_layers())
+	)
 	if OS.is_debug_build():
 		_setup_autoplay()
 
 
 ## Modo demo para grabar capturas sin ratón (sólo debug):
 ## godot --path game -- --autoplay [--tier=N] [--yaw=grados] [--pitch=grados] [--combo]
-## --delay=s espera antes de empezar. Con --combo junta las manos, carga la Bola de Fuego
-## `--hold=s` segundos y la suelta.
+## --delay=s espera antes de empezar. --no-cast no lanza; --mana=N, --bag=N y --warp=x,z
+## preparan la partida; --grimoire abre el Grimorio (y --buy inscribe y lo cierra).
+## Con --combo junta las manos, carga la Bola de Fuego `--hold=s` segundos y la suelta.
+## En modo demo no se carga ni se guarda la partida (ver SaveSystem).
 func _setup_autoplay() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	if not args.has("--autoplay"):
 		return
-	var tier: int = 0
+	var tier: int = -1
 	for a: String in args:
 		if a.begins_with("--tier="):
 			tier = int(a.get_slice("=", 1)) - 1
@@ -47,8 +54,31 @@ func _setup_autoplay() -> void:
 			(_player.get_node(^"Head") as Node3D).rotation.x = deg_to_rad(
 				float(a.get_slice("=", 1))
 			)
-	_player.get_caster().set_tier(tier)
+	if tier > 0:
+		_player.get_caster().set_tier(tier)
 	_hud.force_captured_look = true
+	# Estado de partida para probar el bucle: --mana=N, --bag=N (astillas), --warp=x,z.
+	for a: String in args:
+		if a.begins_with("--mana="):
+			GameState.deliver(int(a.get_slice("=", 1)))
+		elif a.begins_with("--bag="):
+			for i: int in int(a.get_slice("=", 1)):
+				GameState.progression.collect_shard(&"splinter")
+			GameState.emit_all()
+		elif a.begins_with("--warp="):
+			var xz: PackedStringArray = a.get_slice("=", 1).split(",")
+			_player.global_position = Vector3(float(xz[0]), 0.2, float(xz[1]))
+	if args.has("--grimoire"):
+		get_tree().create_timer(0.6).timeout.connect(
+			func() -> void: Events.grimoire_requested.emit(true)
+		)
+		if args.has("--buy"):
+			# Inscribe la estrella elegida y cierra el libro (para grabar una compra).
+			var book: Grimoire = _hud.get_node(^"Grimoire")
+			get_tree().create_timer(1.6).timeout.connect(book.try_buy)
+			get_tree().create_timer(3.4).timeout.connect(book.close)
+	if args.has("--no-cast"):
+		return
 	var timer := Timer.new()
 	timer.wait_time = 0.05
 	# --delay=s: unos segundos quieto antes de empezar (para ver las manos en reposo).
@@ -150,6 +180,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		AudioDirector.set_music_layers(AudioDirector.get_music_layers() % MUSIC_LAYERS.size() + 1)
 	elif event.is_action_pressed(&"ui_cancel"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+func _rank_layers() -> int:
+	return maxi(_arg_int("--music-layers=", 1), 1 + GameState.total_upgrade_levels() / 3)
 
 
 func _arg_int(prefix: String, fallback: int) -> int:
