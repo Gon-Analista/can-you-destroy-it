@@ -21,6 +21,8 @@ const DISCOVERY_SFX: AudioStream = preload("res://audio/sfx/sfx_combo_discovered
 ## Duración del aviso de combinación descubierta (s).
 const DISCOVERY_SEC: float = 2.8
 
+## Menú de título y pausa (encima de todo el HUD).
+var menu: GameMenu
 ## Muestra el HUD de juego aunque el ratón no esté capturado (modo demo).
 var force_captured_look: bool = false
 
@@ -122,10 +124,13 @@ func _ready() -> void:
 		func(layer: CrystalLayerDef, _i: int) -> void: _set_layer_title(layer)
 	)
 	_set_layer_title(GameState.current_layer())
-	# El Grimorio, por encima de todo el HUD.
+	# El Grimorio, por encima de todo el HUD, y el menú (título y pausa) encima de todo.
 	_grimoire = Grimoire.new()
 	_grimoire.name = "Grimoire"
 	add_child(_grimoire)
+	menu = GameMenu.new()
+	menu.name = "GameMenu"
+	add_child(menu)
 	_target_essence = GameState.progression.essence
 	_shown_essence = _target_essence
 	_essence.text = format_int(_target_essence)
@@ -309,9 +314,13 @@ func _show_banner(text: String, color: Color) -> void:
 
 func _process(delta: float) -> void:
 	var captured: bool = force_captured_look or Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
-	_prompt.visible = not captured and not _grimoire.is_open
-	_loop.visible = not _grimoire.is_open
-	_crosshair.visible = captured
+	_prompt.visible = not captured and not _grimoire.is_open and not menu.is_open()
+	_loop.visible = not _grimoire.is_open and not menu.is_open()
+	_crosshair.visible = captured and not menu.is_open()
+	var title: bool = menu.mode == GameMenu.Mode.TITLE
+	_essence.visible = not title
+	_essence_title.visible = not title
+	_debug.visible = OS.is_debug_build() and not title
 	if _caster:
 		_crosshair.charge = _caster.charge_ratio()
 	# Esencia: el número baja rodando y el texto da un golpe de escala y color.

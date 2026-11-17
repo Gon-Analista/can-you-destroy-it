@@ -221,6 +221,7 @@ func _input(event: InputEvent) -> void:
 		and event.is_pressed()
 		and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED
 		and not (_hud.get_node(^"Grimoire") as Grimoire).is_open
+		and not _hud.menu.is_open()
 	):
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		get_viewport().set_input_as_handled()
@@ -236,8 +237,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	):
 		# Debug: M sube una capa de música (1 -> 5 -> 1) para oír cómo crece con el rango.
 		AudioDirector.set_music_layers(AudioDirector.get_music_layers() % MUSIC_LAYERS.size() + 1)
-	elif event.is_action_pressed(&"ui_cancel"):
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
 ## Pantalla de carga que evita los tirones: la primera vez que se dibuja un shader o un sistema
@@ -280,6 +279,8 @@ func _warm_up() -> void:
 	await _frames(10)
 	cam.transform = saved
 	await _frames(2)
+	if get_tree().current_scene == self and not OS.get_cmdline_user_args().has("--autoplay"):
+		_hud.menu.show_title()
 	cover.finish()
 
 

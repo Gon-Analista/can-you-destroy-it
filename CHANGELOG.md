@@ -2,6 +2,43 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-17 · Pasada de calidad: título y pausa, capas del cristal, geodas y entrega más vistosa
+
+**Qué hay nuevo**
+
+- **Pantalla de título** sobre el valle vivo (logo, Continuar, Nueva partida, Opciones, Salir) y **pausa con Esc**
+  (Reanudar, Opciones, Guardar y salir; congela el juego). **Opciones**: volumen general, música, efectos y
+  ambiente, sensibilidad del ratón, sacudida de cámara y pantalla completa (se guardan en `settings.cfg`).
+- **Entrega más lenta y vistosa** (pedido del equipo): cada cristal sale de las manos en abanico con su propio arco,
+  altura y giro, cae en un punto distinto del borde de la tolva y resbala hacia dentro; ya no se apelotonan. Echar y
+  triturar van más despacio; el montón de la tolva son agujas finas.
+- **Sonidos que ya no se acoplan** (pedido del equipo): tintineos de la tolva, crujidos, gotas del Pilón y golpes al
+  cristal con separación mínima, menos voces a la vez y menos volumen.
+- **Capas del cristal** (GDD 6): Corteza, Manto Geódico, Venas Resonantes, Corazón Cristalino y Núcleo, con su
+  paleta (también en los fragmentos), tono del golpe y transición (tormenta de rayos, retumbe, aviso "NUEVA CAPA").
+  El HUD dice en qué capa estás.
+- **Geodas** en el Manto Geódico: racimos violetas que laten en la superficie; un golpe cerca las revienta en ocho
+  fragmentos grandes ("¡GEODA!") y reaparecen en otro sitio.
+- **Mejoras nuevas del Mago**: Engranajes (trituradora más rápida) y Envío directo (lo recogido vuela solo a la
+  tolva; pide Telequinesis).
+- **Ritmo**: la bolsa empieza en 3 (10, 30, 100) para que, con el Pilón a 30 m, la primera mejora llegue en menos
+  de 30 s. La luz del proyectil ya no tiñe el suelo junto al mago.
+- Debug: L salta de capa; demo `--layer=N`.
+
+**Capturas**: `docs/capturas/entrega_trituradora.gif`, `docs/capturas/titulo.png`, `docs/capturas/manto_geodico.png`.
+
+**Cómo se probó**
+
+- Tests: `progression_smoke`, `combine_input_smoke`, `loop_smoke` (bolsa de 3, tolva, palanca, salto; con y sin
+  ventana), `grimoire_click_smoke`, `hit_stop_smoke`, `music_layers_smoke`: OK. `gdlint` y `gdformat` limpios.
+- Render: título, entrega en abanico, trituración, capa Manto Geódico con geodas.
+
+**Pendiente**
+
+- Escuchar el conjunto de sonidos con oídos humanos y ajustar volúmenes finos.
+- Venas Resonantes (débiles a un elemento) y Corazón Cristalino (sólo combinaciones) aún sin su mecánica propia.
+- Simulador de balance (dev guidelines 8).
+
 ## 2026-11-17 · Trituradora para entregar, golpes al cristal variados y el cristal que reacciona
 
 **Qué hay nuevo**

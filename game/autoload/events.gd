@@ -36,6 +36,8 @@ signal bag_full
 signal shard_sent_to_pylon(type: ShardType)
 ## Abrir el Grimorio: `at_sanctum` = true si se puede comprar (junto al atril).
 signal grimoire_requested(at_sanctum: bool)
+signal menu_opened
+signal menu_closed
 signal grimoire_opened
 signal grimoire_closed
 ## Mensaje para el HUD ("¡BOLSA LLENA!", "¡MEJORA DISPONIBLE!"...).

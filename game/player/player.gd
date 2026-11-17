@@ -65,6 +65,8 @@ func _ready() -> void:
 	_steps.random_volume_offset_db = 2.0
 	Events.grimoire_opened.connect(func() -> void: _locked = true)
 	Events.grimoire_closed.connect(func() -> void: _locked = false)
+	Events.menu_opened.connect(func() -> void: _locked = true)
+	Events.menu_closed.connect(func() -> void: _locked = false)
 	Events.upgrade_bought.connect(func(_id: StringName, _l: int) -> void: _apply_upgrades(true))
 	_head.rotation.x = deg_to_rad(start_pitch_deg)
 	_caster.camera = _camera
@@ -105,11 +107,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _locked:
 			return
 		var motion: InputEventMouseMotion = event
-		rotate_y(-motion.relative.x * mouse_sensitivity)
+		var sens: float = mouse_sensitivity * Settings.mouse_sensitivity
+		rotate_y(-motion.relative.x * sens)
 		_head.rotation.x = clampf(
-			_head.rotation.x - motion.relative.y * mouse_sensitivity,
-			deg_to_rad(-80),
-			deg_to_rad(80)
+			_head.rotation.x - motion.relative.y * sens, deg_to_rad(-80), deg_to_rad(80)
 		)
 
 
