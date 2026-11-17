@@ -2,7 +2,8 @@ extends SceneTree
 ## Familiares: sin la mejora no hay jaula ni familiares; con "Familiar" nivel 2 aparecen la jaula y
 ## dos recolectores que recogen los fragmentos sueltos del suelo, los echan a la tolva y tiran de
 ## la palanca (la trituradora da maná); el Familiar hechicero lanza chispas de verdad que quitan
-## esencia sin tocar la racha del mago; y al volver a cargar la escena siguen ahí (salen de las
+## esencia sin tocar la racha del mago; los que se compran con el Grimorio abierto aparecen al
+## cerrarlo, delante del mago; y al volver a cargar la escena siguen ahí (salen de las
 ## mejoras compradas). No toca la partida guardada.
 ## godot --headless --path game --script res://tests/smoke/familiars_smoke.gd
 
@@ -56,6 +57,41 @@ func _initialize() -> void:
 	_check(int(flock.get(&"pulls")) >= 1, "tiran de la palanca")
 	_check(int(prog.get(&"mana")) > mana0, "la trituradora da maná (%d)" % prog.get(&"mana"))
 	print("  recolección en %.1f s" % t)
+	# Los que sobran (menos de `lever_at`) también se trituran cuando ya no queda nada que
+	# recoger: no se quedan en la tolva para siempre.
+	t = 0.0
+	while t < 90.0:
+		await process_frame
+		t += current_scene.get_process_delta_time()
+		if (
+			int(flock.get(&"dropped")) >= 10
+			and int(crusher.call(&"queued_count")) == 0
+			and not bool(crusher.call(&"is_busy"))
+		):
+			break
+	_check(int(flock.get(&"dropped")) >= 10, "recogen los diez (%d)" % flock.get(&"dropped"))
+	_check(
+		int(crusher.call(&"queued_count")) == 0 and int(flock.get(&"pulls")) >= 2,
+		"y trituran los últimos aunque sean pocos (%d tirones)" % flock.get(&"pulls")
+	)
+	# Comprado con el Grimorio abierto: aparece al cerrarlo, delante del mago.
+	events.emit_signal(&"grimoire_opened")
+	levels[&"familiar"] = 3
+	events.emit_signal(&"upgrade_bought", &"familiar", 3)
+	await process_frame
+	_check(int(flock.call(&"active_count", 0)) == 2, "con el Grimorio abierto aún no llega")
+	events.emit_signal(&"grimoire_closed")
+	await process_frame
+	_check(int(flock.call(&"active_count", 0)) == 3, "al cerrarlo llega el tercero")
+	var player: Node3D = current_scene.get_tree().get_first_node_in_group(&"player")
+	var near: bool = false
+	for f: Node3D in flock.call(&"familiars"):
+		if (
+			bool(f.call(&"is_active"))
+			and f.global_position.distance_to(player.global_position) < 6.0
+		):
+			near = true
+	_check(near, "y aparece delante del mago")
 	# El hechicero: chispas que quitan esencia; la racha del mago no se mueve.
 	var essence0: int = int(prog.get(&"essence"))
 	var streaks: Array[int] = [0]
@@ -85,7 +121,7 @@ func _initialize() -> void:
 	await process_frame
 	await _settle()
 	var flock2: Node3D = current_scene.get_node(FLOCK_PATH)
-	_check(int(flock2.call(&"active_count")) == 3, "al recargar siguen los tres familiares")
+	_check(int(flock2.call(&"active_count")) == 4, "al recargar siguen los cuatro familiares")
 	_check((flock2.get(&"nest") as Node3D).visible, "y su jaula")
 	# Sin la mejora (nueva partida) se retiran.
 	levels[&"familiar"] = 0

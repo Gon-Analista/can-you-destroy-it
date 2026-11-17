@@ -62,6 +62,10 @@ var _shard_meshes: Dictionary[ShardType, ArrayMesh] = {}
 var _now: float = 0.0
 var _idle_t: float = 8.0
 var _rng := RandomNumberGenerator.new()
+## El Grimorio está abierto: los familiares recién comprados esperan a que se cierre para
+## aparecer delante del mago (si no, nacerían tapados por el libro y a 90 m, en la jaula).
+var _book_open: bool = false
+var _pending_announce: bool = false
 
 
 func _ready() -> void:
@@ -73,6 +77,8 @@ func _ready() -> void:
 	toon = ShaderMaterial.new()
 	toon.shader = TOON_SHADER
 	toon.set_shader_parameter("rim", 0.55)
+	# Un poco de luz propia: a 15 m y a contraluz del cristal se leían como manchas oscuras.
+	toon.set_shader_parameter("self_light", 0.3)
 	shard_material = ShaderMaterial.new()
 	shard_material.shader = SHARD_SHADER
 	for type: ShardType in ShardPool.TYPES:
@@ -99,6 +105,8 @@ func _ready() -> void:
 	# Al final del fotograma: la escena ya ha colocado al mago (los hechiceros vuelan hacia él).
 	_sync.call_deferred(false)
 	Events.upgrade_bought.connect(_on_upgrade_bought)
+	Events.grimoire_opened.connect(func() -> void: _book_open = true)
+	Events.grimoire_closed.connect(_on_book_closed)
 
 
 ## Familiares en juego de un tipo (o de todos con `role` = -1).
@@ -128,14 +136,14 @@ func hopper_spot(slot: int) -> Vector3:
 	return crusher.hopper_mouth() + Vector3(cos(a) * 0.7, 1.2 + 0.15 * float(slot), sin(a) * 0.7)
 
 
-## Un familiar quiere tirar de la palanca: sólo uno a la vez, con la máquina parada y bastantes
-## cristales en la tolva.
-func wants_lever(f: Familiar) -> bool:
+## Un familiar quiere tirar de la palanca: sólo uno a la vez, con la máquina parada y al menos
+## `at_least` cristales en la tolva.
+func wants_lever(f: Familiar, at_least: int) -> bool:
 	if crusher == null or crusher.is_busy():
 		return false
 	if _lever_by != null and _lever_by != f:
 		return false
-	if crusher.queued_count() < f.def.lever_at:
+	if crusher.queued_count() < maxi(1, at_least):
 		return false
 	_lever_by = f
 	return true
@@ -193,7 +201,32 @@ func _process(delta: float) -> void:
 
 
 func _on_upgrade_bought(id: StringName, _level: int) -> void:
-	_sync(id == &"familiar" or id == &"familiar_caster")
+	var announce: bool = id == &"familiar" or id == &"familiar_caster"
+	if _book_open and (announce or _pending_announce):
+		_pending_announce = true
+		return
+	_sync(announce)
+
+
+func _on_book_closed() -> void:
+	_book_open = false
+	if _pending_announce:
+		_pending_announce = false
+		_sync(true)
+
+
+## Donde aparece un familiar recién invocado: delante del mago, un poco por encima de la vista
+## (desde ahí vuela a su percha o al cristal, y el mago lo ve irse).
+func _summon_point(k: int, n: int) -> Vector3:
+	if _player == null:
+		player_position()
+	if _player == null:
+		return nest.top() + Vector3.UP * 0.4
+	var fwd: Vector3 = -_player.global_basis.z
+	fwd.y = 0.0
+	fwd = fwd.normalized() if fwd.length_squared() > 0.01 else Vector3.FORWARD
+	var side: Vector3 = fwd.cross(Vector3.UP) * (float(k) - float(n - 1) * 0.5) * 1.2
+	return _player.global_position + fwd * 2.6 + Vector3.UP * 2.1 + side
 
 
 ## Activa (o retira) familiares hasta lo que dicen las mejoras. `announce`: recién comprado.
@@ -214,8 +247,11 @@ func _sync(announce: bool) -> void:
 		nest.pop_in()
 	elif not nest.visible:
 		nest.show_now()
-	for f: Familiar in arrived:
-		f.activate(nest.top() + Vector3.UP * 0.4, announce)
+	for i: int in arrived.size():
+		var at: Vector3 = (
+			_summon_point(i, arrived.size()) if announce else nest.top() + Vector3.UP * 0.4
+		)
+		arrived[i].activate(at, announce)
 	set_process(true)
 	if not announce:
 		return

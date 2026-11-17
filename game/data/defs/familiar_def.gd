@@ -52,6 +52,9 @@ enum Role { COLLECTOR, CASTER }
 @export var orbit_out: float = 7.0
 @export var orbit_radius: float = 2.6
 @export var orbit_height: float = 7.0
+## Separación a un lado de la línea mago-cristal (m; el primero a la izquierda, el segundo a la
+## derecha): así no revolotea delante de la mira.
+@export var orbit_side: float = 5.0
 
 @export_group("Aspecto")
 @export var body_color: Color = Color("#8f7be8")

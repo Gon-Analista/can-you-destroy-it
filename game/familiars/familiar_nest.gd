@@ -1,7 +1,7 @@
 class_name FamiliarNest
 extends Node3D
 ## La Jaula de Familiares (GDD 4.3): una pajarera mágica junto al Pilón. Zócalo de piedra, un
-## poste de madera con cuatro perchas en espiral, un nido con un huevo de cristal arriba y una
+## poste de madera con seis perchas en espiral, un nido con un huevo de cristal arriba y una
 ## cúpula de varillas doradas rematada por un tejadito azul y un cristal que late. Aparece de
 ## golpe (con destello y sonido) al comprar el primer familiar; los familiares descansan en las
 ## perchas entre viaje y viaje.
@@ -308,6 +308,8 @@ func _build_fx() -> void:
 	(_sparkle.process_material as ParticleProcessMaterial).gravity = Vector3(0, -2.0, 0)
 	(_sparkle.process_material as ParticleProcessMaterial).emission_sphere_radius = 0.6
 	_sparkle.position = Vector3.UP * 3.0
+	# Con prueba de profundidad: el cristal la tapa (regla de la capa de magia).
+	(_sparkle.draw_pass_1 as RibbonTrailMesh).material.set(&"no_depth_test", false)
 	add_child(_sparkle)
 
 

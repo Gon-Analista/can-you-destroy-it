@@ -101,6 +101,9 @@ func hide_now() -> void:
 	state = State.HIDDEN
 	visible = false
 	_trail.emitting = false
+	if _circles:
+		# Si se retira cargando, su círculo no se queda abierto.
+		_circles.cancel()
 	_drop_all_claims()
 	carried.clear()
 	_update_carry_meshes()
@@ -271,8 +274,9 @@ func _update_pose(delta: float) -> void:
 	else:
 		bob = 0.02 if int(frame / 8.0) % 2 == 0 else 0.0
 	_model.position.y = bob - _tug * 0.4
-	# El halo es tenue: más en vuelo (se ve la estela de luz), casi nada en la percha.
-	var glow: float = 0.06 if state == State.PERCHED else 0.18
+	# El halo es tenue (más en vuelo, casi nada en la percha): si no, tiñe el cuerpo y el búho
+	# se lee como una mancha azul.
+	var glow: float = 0.06 if state == State.PERCHED else 0.11
 	if state == State.CHARGE:
 		glow = 0.25 + 0.35 * clampf(1.0 - _timer / def.cast_charge_sec, 0.0, 1.0)
 	var pulse: float = (0.85 + 0.15 * sin(_t * 5.0 + _phase_offset)) * glow
@@ -299,8 +303,9 @@ func _update_perched() -> void:
 		return
 	_timer = def.rest_sec
 	if not _seek(global_position, def.search_radius):
-		# Nada que recoger: si la tolva tiene bastante, va a la palanca.
-		_maybe_lever()
+		# Nada más que recoger: tritura lo que haya en la tolva, aunque sea poco (si no, unos
+		# pocos cristales se quedarían ahí para siempre sin dar maná).
+		_maybe_lever(1)
 
 
 ## Busca el fragmento suelto más cercano a `center` y vuela hacia él. False si no hay.
@@ -338,7 +343,10 @@ func _update_grab(delta: float) -> void:
 	global_position = global_position.lerp(low, 1.0 - exp(-delta * 10.0))
 	if _timer > 0.0:
 		return
-	var type: ShardType = flock.shards.take(_target_shard)
+	# El pool recicla fragmentos: si el índice ya es otro (lejos de aquí), no se lo lleva.
+	var type: ShardType = null
+	if flock.shards.position_of(_target_shard).distance_to(_target_pos) <= 1.2:
+		type = flock.shards.take(_target_shard)
 	_drop_all_claims()
 	if type != null:
 		carried.append(type)
@@ -382,9 +390,10 @@ func _update_drop(delta: float) -> void:
 	flock.dropped += 1
 
 
-## Si en la tolva hay bastante y nadie la está usando, va a tirar de la palanca.
-func _maybe_lever() -> bool:
-	if not flock.wants_lever(self):
+## Si en la tolva hay bastante (`at_least`; por defecto `def.lever_at`) y nadie la está
+## usando, va a tirar de la palanca.
+func _maybe_lever(at_least: int = -1) -> bool:
+	if not flock.wants_lever(self, def.lever_at if at_least < 0 else at_least):
 		return false
 	_fly(flock.crusher.lever_tip() + Vector3(0.0, 0.25, 0.0), Goal.LEVER)
 	return true
@@ -461,8 +470,8 @@ func _pick_anchor() -> bool:
 	var player: Vector3 = flock.player_position()
 	var gap: float = Vector2(player.x - _aim.x, player.z - _aim.z).length()
 	_anchor = _aim + _out * clampf(gap - 8.0, 3.0, def.orbit_out)
-	# Cada hechicero un poco a un lado (el primero algo a la derecha del mago).
-	_anchor += _out.cross(Vector3.UP).normalized() * (1.5 if slot == 0 else -3.5)
+	# Cada hechicero a un lado de la mira (el primero a la izquierda del mago, el otro a la derecha).
+	_anchor += _out.cross(Vector3.UP).normalized() * def.orbit_side * (1.0 if slot == 0 else -1.0)
 	return true
 
 
