@@ -33,3 +33,6 @@ var minor: bool = false
 var vein: int = -1
 ## True si dio en la vena con su elemento débil (daño extra y Fragmentos Resonantes).
 var vein_weak: bool = false
+## False si no lo lanzó el jugador (rayo del Pilón): no cuenta para la racha ni mueve la mirilla,
+## la cámara o la levitación, y no da avisos.
+var by_player: bool = true

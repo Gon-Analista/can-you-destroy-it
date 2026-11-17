@@ -120,8 +120,8 @@ func _apply_upgrades(celebrate: bool = false) -> void:
 
 ## Impulso del cristal (mejora): cada golpe que llega al cristal estando en el aire devuelve
 ## carga de levitación. Así se sube hasta la punta golpeando.
-func _on_spell_impacted(_hit: SpellHit) -> void:
-	if is_on_floor() or levitation_max <= 0.0:
+func _on_spell_impacted(hit: SpellHit) -> void:
+	if not hit.by_player or is_on_floor() or levitation_max <= 0.0:
 		return
 	var refill: float = GameState.stat(&"levitation_refill", 0.0)
 	if refill > 0.0:

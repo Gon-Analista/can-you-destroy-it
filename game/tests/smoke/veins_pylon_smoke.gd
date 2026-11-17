@@ -13,6 +13,7 @@ var _ok: bool = true
 var _demo: Script
 var _milestones: Array[int] = []
 var _bolts: int = 0
+var _last_impact: SpellHit
 
 
 func _initialize() -> void:
@@ -43,6 +44,7 @@ func _initialize() -> void:
 	var events: Node = root.get_node(^"Events")
 	events.connect(&"pylon_milestone", func(i: int, _m: float) -> void: _milestones.append(i))
 	events.connect(&"pylon_bolt", func(_at: Vector3) -> void: _bolts += 1)
+	events.connect(&"spell_impacted", func(h: SpellHit) -> void: _last_impact = h)
 	var prog: RefCounted = gs.get(&"progression")
 	var levels: Dictionary = prog.get(&"upgrade_levels")
 	var world: Node = main.get_node(^"WorldView/WorldViewport")
@@ -132,6 +134,10 @@ func _initialize() -> void:
 	_check(at is Vector3, "el rayo encuentra el cristal")
 	_check(_bolts == 1, "aviso del rayo")
 	_check(int(prog.get(&"essence")) < essence0, "el rayo quita esencia")
+	_check(
+		_last_impact != null and not _last_impact.by_player and _last_impact.streak == 0,
+		"el rayo no es del jugador: no cuenta para la racha"
+	)
 	# Que terminen las mallas del cristal que se rehacen en otros hilos antes de salir.
 	await create_timer(1.5).timeout
 	print("veins_pylon_smoke: ", "OK" if _ok else "FALLO")

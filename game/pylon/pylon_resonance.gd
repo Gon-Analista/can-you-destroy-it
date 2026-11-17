@@ -39,6 +39,8 @@ var _charge_player: AudioStreamPlayer3D
 var _bolt_player: AudioStreamPlayer3D
 var _ascend_player: AudioStreamPlayer
 var _rng := RandomNumberGenerator.new()
+## Con el título o la pausa abiertos (el título no pausa el mundo) el Pilón no dispara.
+var _menu_open: bool = false
 
 
 func _ready() -> void:
@@ -48,6 +50,8 @@ func _ready() -> void:
 	_build_fx()
 	_build_audio()
 	Events.pylon_milestone.connect(_celebrate)
+	Events.menu_opened.connect(func() -> void: _menu_open = true)
+	Events.menu_closed.connect(func() -> void: _menu_open = false)
 	Events.upgrade_bought.connect(
 		func(id: StringName, _level: int) -> void:
 			if id == &"pylon_resonance":
@@ -73,7 +77,7 @@ static func bolt_damage() -> int:
 
 func _process(delta: float) -> void:
 	var every: float = _interval()
-	if every > 0.0 and _charge_t < 0.0:
+	if every > 0.0 and _charge_t < 0.0 and not _menu_open:
 		_timer += delta
 		if _timer >= every:
 			_timer = 0.0
@@ -126,6 +130,7 @@ func fire() -> Variant:
 	hit.position = at
 	hit.normal = n
 	hit.direction = (at - from).normalized()
+	hit.by_player = false
 	crystal.receive_hit(hit)
 	# Las hebras se dibujan después del golpe: los rayos del cristal (pool de 40) no las pisan.
 	# Tres: la principal gruesa, un núcleo blanco y una que se abre.

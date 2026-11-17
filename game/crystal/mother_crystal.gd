@@ -336,7 +336,7 @@ func _setup_audio() -> void:
 ## Punto de entrada de los hechizos: aplica el daño y dispara toda la reacción.
 func receive_hit(hit: SpellHit) -> void:
 	var balance: BalanceConfig = GameState.BALANCE
-	hit.streak = _streak.register_hit(_now)
+	hit.streak = _streak.register_hit(_now) if hit.by_player else 0
 	_apply_weakness(hit)
 	_combos.check_temper(hit)
 	_check_geodes(hit)
@@ -416,7 +416,7 @@ func receive_hit(hit: SpellHit) -> void:
 	_play_tink(hit)
 	if hit.recipe and (not hit.minor or _rng.randf() < 0.3):
 		_play_spell_impact(hit)
-	if hit.minor:
+	if hit.minor or not hit.by_player:
 		pass
 	elif hit.resonant:
 		HitStop.trigger(get_tree(), 0.09)
@@ -653,7 +653,7 @@ func _too_hard(hit: SpellHit) -> void:
 	p.volume_db = -8.0
 	p.play()
 	_shudder = minf(1.0, _shudder + 0.2)
-	if _now - _hard_hint_at > 5.0:
+	if hit.by_player and _now - _hard_hint_at > 5.0:
 		_hard_hint_at = _now
 		Events.hint.emit(
 			tr(layer.too_hard_hint) if layer.too_hard_hint != "" else tr("¡DEMASIADO DURO!"),

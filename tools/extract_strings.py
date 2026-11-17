@@ -8,7 +8,7 @@ Las claves son los textos en español tal cual aparecen en el código y en los d
 - en los scripts: tr("..."), _label("..."), _button("..."), _slider("...") y las constantes
   (texto o lista de textos) marcadas con `# i18n` en la línea anterior;
 - en los recursos .tres: display_name, display_name_plural, description, value_format,
-  too_hard_hint, riddle y level_names.
+  too_hard_hint, riddle, level_names y vein_names.
 
 Conserva las traducciones que ya haya en el CSV (no borra columnas ni filas que sigan en uso) y
 añade las claves nuevas con su texto español y las demás columnas vacías (el juego muestra la
@@ -34,7 +34,7 @@ TRES_FIELDS = re.compile(
     r'^(display_name|display_name_plural|description|value_format|too_hard_hint|riddle) = "((?:[^"\\]|\\.)*)"',
     re.M,
 )
-TRES_LIST = re.compile(r"^level_names = PackedStringArray\((.*)\)", re.M)
+TRES_LIST = re.compile(r"^(?:level_names|vein_names) = PackedStringArray\((.*)\)", re.M)
 
 
 def unescape(s: str) -> str:

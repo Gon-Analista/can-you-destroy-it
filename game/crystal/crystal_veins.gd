@@ -136,7 +136,8 @@ func react(hit: SpellHit) -> void:
 	_burst(hit, n, col)
 	_chime(hit)
 	Events.vein_hit.emit(hit, element)
-	_banner(def, hit.vein, col)
+	if hit.by_player:
+		_banner(def, hit.vein, col)
 
 
 ## La vena se enciende: rayos de su color que corren por la veta, chispas y un halo.
@@ -200,7 +201,7 @@ func _banner(def: CrystalLayerDef, sector: int, col: Color) -> void:
 func _wrong(hit: SpellHit, def: CrystalLayerDef, col: Color) -> void:
 	if not hit.minor:
 		_arcs.strike(hit.position, hit.normal, 0.2, col * 1.4)
-	if _now - _last_hint < HINT_GAP_SEC:
+	if not hit.by_player or _now - _last_hint < HINT_GAP_SEC:
 		return
 	_last_hint = _now
 	var vein_name: String = tr(def.vein_names[hit.vein]) if hit.vein < def.vein_names.size() else ""
