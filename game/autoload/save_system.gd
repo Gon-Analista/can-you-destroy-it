@@ -5,10 +5,11 @@ const SAVE_PATH: String = "user://save.json"
 const TMP_PATH: String = "user://save.json.tmp"
 const SAVE_VERSION: int = 1
 
-var _autosave: Timer
 ## En el modo demo (`-- --autoplay`) no se toca la partida guardada: las capturas empiezan de
 ## cero y sus trucos (--mana, --bag) no ensucian la partida del jugador.
 var enabled: bool = not OS.get_cmdline_user_args().has("--autoplay")
+
+var _autosave: Timer
 
 
 func _ready() -> void:

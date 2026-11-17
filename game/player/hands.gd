@@ -191,6 +191,10 @@ func _process(delta: float) -> void:
 		var pos: Vector2 = _hand_pos(side)
 		if side == 1:
 			pos.x = screen_w - FRAME_SIZE.x - pos.x
+		# Al cargar el hechizo combinado las manos tiemblan, más cuanto más carga (a píxel entero).
+		if _combining:
+			var amp: float = combine_charge * 2.0
+			pos += Vector2(randf_range(-amp, amp), randf_range(-amp, amp) * 0.5)
 		sprite.position = pos.round()
 	_update_orbs()
 

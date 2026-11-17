@@ -24,13 +24,15 @@ func _ready() -> void:
 
 
 ## Reproduce un sonido. Usar AudioStreamRandomizer para variar tono y sample.
-func play_sfx(stream: AudioStream, volume_db: float = 0.0) -> void:
+## `pitch` desplaza el tono (p. ej. un hechizo más grave cuanto más nivel tiene).
+func play_sfx(stream: AudioStream, volume_db: float = 0.0, pitch: float = 1.0) -> void:
 	if stream == null:
 		return
 	var player: AudioStreamPlayer = _pool[_next]
 	_next = (_next + 1) % SFX_POOL_SIZE
 	player.stream = stream
 	player.volume_db = volume_db
+	player.pitch_scale = pitch
 	player.play()
 
 

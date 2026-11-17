@@ -75,6 +75,10 @@ func _setup_autoplay() -> void:
 		if args.has("--buy"):
 			# Inscribe la estrella elegida y cierra el libro (para grabar una compra).
 			var book: Grimoire = _hud.get_node(^"Grimoire")
+			for a: String in args:
+				if a.begins_with("--select="):
+					var idx: int = int(a.get_slice("=", 1))
+					get_tree().create_timer(0.9).timeout.connect(book.select.bind(idx))
 			get_tree().create_timer(1.6).timeout.connect(book.try_buy)
 			get_tree().create_timer(3.4).timeout.connect(book.close)
 	if args.has("--no-cast"):

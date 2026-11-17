@@ -217,14 +217,14 @@ func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		var hover: int = _star_at((event as InputEventMouseMotion).position)
 		if hover >= 0 and hover != _selected:
-			_select(hover)
+			select(hover)
 	elif event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
 		var mb: InputEventMouseButton = event
 		if mb.button_index != MOUSE_BUTTON_LEFT:
 			return
 		var star: int = _star_at(mb.position)
 		if star >= 0:
-			_select(star)
+			select(star)
 		elif _button_rect().has_point(mb.position - _ofs()):
 			try_buy()
 		accept_event()
@@ -244,9 +244,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	):
 		close()
 	elif event.is_action_pressed(&"ui_up") or event.is_action_pressed(&"move_forward"):
-		_select(wrapi(_selected - 1, 0, GameState.UPGRADES.size()))
+		select(wrapi(_selected - 1, 0, GameState.UPGRADES.size()))
 	elif event.is_action_pressed(&"ui_down") or event.is_action_pressed(&"move_back"):
-		_select(wrapi(_selected + 1, 0, GameState.UPGRADES.size()))
+		select(wrapi(_selected + 1, 0, GameState.UPGRADES.size()))
 	elif event.is_action_pressed(&"ui_accept"):
 		try_buy()
 	else:
@@ -254,7 +254,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	get_viewport().set_input_as_handled()
 
 
-func _select(i: int) -> void:
+## Elige una estrella (con sonido y la página que se reescribe).
+func select(i: int) -> void:
 	_selected = i
 	_write_t = 0.0
 	_write_speed = 5.0

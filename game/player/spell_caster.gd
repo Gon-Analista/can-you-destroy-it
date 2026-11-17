@@ -237,7 +237,8 @@ func _cast_single(side: int) -> void:
 	_launch(projectile, hit, side)
 	if hands:
 		hands.play_cast(side)
-	AudioDirector.play_sfx(_cast_random, -2.0)
+	# GDD 10: el crepitar suena más grave (y más fuerte) al subir de nivel.
+	AudioDirector.play_sfx(_cast_random, -2.0 + tier_index * 0.8, 1.0 - tier_index * 0.07)
 	Events.spell_cast.emit(tier, side)
 
 
@@ -260,6 +261,9 @@ func _update_combine(delta: float) -> void:
 	# El rugido del fuego sube de tono y de volumen con la carga.
 	_charge_player.pitch_scale = lerpf(0.85, 1.25, k)
 	_charge_player.volume_db = lerpf(-18.0, -6.0, k)
+	# El mundo vibra un poco mientras se concentra el poder (pasa por Settings.screen_shake).
+	if camera is CameraRig:
+		(camera as CameraRig).add_trauma(delta * 0.35 * k)
 	if k >= 1.0 and not _combine_full_announced:
 		_combine_full_announced = true
 		Events.spell_ready.emit()

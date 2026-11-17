@@ -2,6 +2,57 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-17 · Bucle completo jugable y hechizos que resaltan
+
+**Qué hay nuevo**
+
+- **Hechizos que resaltan** (pedido del equipo). La chispa en vuelo ya no es un "+" blanco que se perdía contra el
+  cielo: es la misma llama de la mano (`SpellOrb`) de cara a la cámara, con una **estela de fuego** en píxeles sólidos
+  (`SpellTrail`), brasas y luz que tiñe el valle; al impactar **estalla** con un fogonazo pixel art
+  (`fx/impact_blast.gdshader`) en los colores del hechizo. Cada nivel tiene su aspecto: **Chispa** (1-2), **Llama** (3)
+  y **Llama mágica** rosa (4-5), también en las manos. El crepitar al lanzar suena más grave con el nivel y, al
+  cargar la Bola de Fuego, las manos tiemblan y el mundo vibra.
+- **Bucle completo (M1b)**: golpear → recoger con F → llevar al Pilón → maná → comprar en el Santuario → hechizos
+  más fuertes.
+  - **Bolsa** con tope (1 al empezar, GDD 8.1). Llena: el fragmento se queda en el suelo y el HUD avisa con sonido.
+  - **Pilón de Maná**: columna de vidrio y bronce con el maná líquido subiendo (rosa, violeta, remolinos y burbujas),
+    marcas al 10/25/50/75/100 % que se encienden, cristal flotante en la cima y zumbido que crece. Al acercarte, los
+    fragmentos salen volando de tus manos con estela, caen dentro con una gota de maná (cada una una nota más alta)
+    y la superficie se agita.
+  - **Santuario**: templete de tejado azul cobalto con un atril y el Grimorio flotando sobre un orbe arcano. Con
+    cada nivel comprado aparece un objeto nuevo con un destello (velas, estantería, bola de cristal, pociones...).
+  - **Grimorio de Constelaciones**: libro que sube a pantalla con aleteo de páginas; las mejoras son estrellas que
+    crecen con cada nivel y laten en oro si te llega el maná; la página de la derecha se escribe sola con qué hace,
+    cómo está ahora y cómo quedará. Al inscribir: acorde mágico, estallido de estrellas y aviso grande
+    ("¡CHISPA ARDIENTE!"). F junto al atril para comprar; Tab para consultarlo en cualquier sitio.
+  - **5 mejoras** (`data/upgrades/`): Bolsa de aprendiz, Potencia, Canalización, Resonancia y Telequinesis.
+  - **HUD**: barra del Pilón con marcas (porcentaje con decimales para que siempre se mueva), maná con número
+    rodante, bolsa en casillas que late en oro al llenarse, avisos encadenados para la primera partida
+    ("¡RECOGE LOS FRAGMENTOS CON [F]!", "¡LLÉVALOS AL PILÓN!", "¡MEJORA DISPONIBLE!") y marcadores en pantalla
+    hacia el Pilón y el Santuario (en el borde con flecha si quedan fuera).
+  - **Sonidos nuevos** (`tools/sfx_loop.py`, afinados en La mayor) y la **música** suma una capa cada 3 niveles.
+- Debug: G da 100 de maná. Modo demo: `--no-cast`, `--mana=N`, `--bag=N`, `--warp=x,z`,
+  `--grimoire [--buy --select=N]`; en modo demo no se carga ni se guarda la partida.
+
+**Capturas**: `docs/capturas/bucle_completo.gif` (golpe, Bola de Fuego, entrega y compra),
+`docs/capturas/chispa_cometa.png`, `docs/capturas/pilon_entrega.png`, `docs/capturas/grimorio_compra.png`.
+
+**Cómo se probó**
+
+- Render Forward+ (Vulkan por software) fotograma a fotograma: chispas de nivel 1 y 5, Bola de Fuego, entrega en el
+  Pilón, compra en el Grimorio y cambio de llama.
+- `loop_smoke` (nuevo): bolsa con tope y aviso, entrega junto al Pilón (y no lejos), compra sólo junto al atril y
+  la Potencia sube el nivel de la Chispa. `progression_smoke` (bolsa, mejoras por nivel, bloqueos),
+  `combine_input_smoke`, `hit_stop_smoke`, `music_layers_smoke` y galería de VFX: OK. `gdlint` y `gdformat` limpios.
+- Rendimiento (modo demo con combos, `--report`): 126 draw calls (218 con la Chispa 5 a toda cadencia).
+
+**Pendiente**
+
+- Jugar los primeros 5 minutos con personas y ajustar el ritmo (costes y valores en `data/upgrades/`); falta el
+  simulador de balance. Ojo: con la Potencia alta los fragmentos valen más que la esencia que quitan.
+- Escuchar los sonidos nuevos con oídos humanos.
+- Q / E para cambiar el elemento de cada mano y la Escarcha (M2).
+
 ## 2026-11-17 · Bola de Fuego: una llama en cada mano que se funden en una grande
 
 Retoma lo que quedó a medias: los sonidos de la Bola de Fuego estaban en la rama `claude/keen-lovelace-7haa9v` sin
