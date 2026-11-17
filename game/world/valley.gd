@@ -41,9 +41,9 @@ func _ready() -> void:
 ## Altura del terreno: llano en el claro del cristal, sube hacia los bordes del valle.
 static func ground_height(x: float, z: float) -> float:
 	var r: float = Vector2(x, z).length()
-	var rise: float = smoothstep(62.0, 170.0, r) * 22.0
+	var rise: float = smoothstep(100.0, 210.0, r) * 24.0
 	var waves: float = sin(x * 0.045) * cos(z * 0.05) * 2.2 + sin(x * 0.11 + z * 0.07) * 0.8
-	return rise + waves * smoothstep(40.0, 80.0, r)
+	return rise + waves * smoothstep(90.0, 130.0, r)
 
 
 func _build() -> void:
@@ -80,8 +80,8 @@ func _add_mesh(node_name: String, mesh: ArrayMesh) -> MeshInstance3D:
 
 func _build_ground(rng: RandomNumberGenerator) -> ArrayMesh:
 	var st: SurfaceTool = MeshKit.begin()
-	var size: float = 340.0
-	var cells: int = 64
+	var size: float = 480.0
+	var cells: int = 80
 	var step_size: float = size / cells
 	var noise := FastNoiseLite.new()
 	noise.seed = rng.randi()
@@ -249,7 +249,9 @@ func _build_castle(rng: RandomNumberGenerator) -> ArrayMesh:
 
 func _build_village(rng: RandomNumberGenerator) -> ArrayMesh:
 	var st: SurfaceTool = MeshKit.begin()
-	var clusters: Array[Vector3] = [Vector3(-55, 0, -70), Vector3(-90, 0, -20), Vector3(50, 0, -95)]
+	var clusters: Array[Vector3] = [
+		Vector3(-85, 0, -105), Vector3(-130, 0, -30), Vector3(75, 0, -135)
+	]
 	for cl: Vector3 in clusters:
 		for i: int in 6:
 			var p: Vector3 = cl + Vector3(rng.randf_range(-16, 16), 0, rng.randf_range(-12, 12))
@@ -306,13 +308,13 @@ func _add_forest(rng: RandomNumberGenerator) -> void:
 	while xforms.size() < tree_count and attempts < tree_count * 8:
 		attempts += 1
 		var ang: float = rng.randf() * TAU
-		var r: float = rng.randf_range(60.0, 170.0)
+		var r: float = rng.randf_range(98.0, 215.0)
 		var x: float = cos(ang) * r
 		var z: float = sin(ang) * r
 		# El bosque se agrupa en manchas y deja libre la vista hacia el castillo y el cristal.
 		if noise.get_noise_2d(x, z) < -0.05:
 			continue
-		if z > 10.0 and absf(x) < 45.0:
+		if z > 10.0 and absf(x) < 60.0:
 			continue
 		# Ni encima del Pilón ni del Santuario.
 		if (

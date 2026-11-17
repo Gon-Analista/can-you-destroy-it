@@ -128,6 +128,11 @@ func _ready() -> void:
 	_essence.text = format_int(_target_essence)
 
 
+## Antes de abrir la puerta de la casucha no se ve el cristal: ni su esencia ni el Pilón.
+func set_intro(on: bool) -> void:
+	_loop.intro = on
+
+
 func bind(camera: Camera3D, caster: SpellCaster) -> void:
 	_camera = camera
 	_caster = caster
@@ -331,8 +336,8 @@ func _process(delta: float) -> void:
 	_loop.visible = not _grimoire.is_open and not menu.is_open()
 	_crosshair.visible = captured and not menu.is_open()
 	var title: bool = menu.mode == GameMenu.Mode.TITLE
-	_essence.visible = not title
-	_essence_title.visible = not title
+	_essence.visible = not title and not _loop.intro
+	_essence_title.visible = not title and not _loop.intro
 	_debug.visible = OS.is_debug_build() and not title
 	if _caster:
 		_crosshair.charge = _caster.charge_ratio()

@@ -48,6 +48,7 @@ Tecnologías ya previstas (validar la versión al integrarlas):
 | Mallas del prototipo | `core/mesh_kit.gd` (prismas, conos, cajas con normales planas y color por vértice) | Corrige el orden de vértices solo. |
 | Contorno pixel art | `fx/outline.gdshader`: post-proceso de profundidad + normales | Técnica estándar de "3D pixel art" en Godot 4. |
 | SFX del prototipo | `tools/sfx_synth.py` y `tools/sfx_loop.py` (numpy + scipy + ffmpeg) | Reproducible con semillas fijas; afinado en La mayor. |
+| SFX de la casucha | `tools/sfx_hut.py` (puerta, viento, revelación, ambiente de dentro) | Igual que el resto: semillas fijas. |
 | Música | `tools/music_synth.py` (valle por capas) y `tools/music_title.py` (vals del título) | Mismos instrumentos sintetizados; bucles sin costura. |
 | Cristal destructible | `tools/crystal_volume.py` (numpy + scipy) -> `game/crystal/data/crystal_volume.bin`; en el juego `CrystalVolume` + `CrystalChunks` | La forma, las capas, las geodas y las densidades se cambian en el script y se vuelve a hornear. |
 | Textos e idiomas | `tools/extract_strings.py` -> `game/localization/strings.csv` | Conserva las traducciones; prueba: `localization_smoke.gd`. |

@@ -54,8 +54,8 @@ fog_light_color = Color(0.66, 0.78, 0.9, 1)
 fog_light_energy = 1.0
 fog_sky_affect = 0.0
 fog_depth_curve = 1.4
-fog_depth_begin = 60.0
-fog_depth_end = 560.0
+fog_depth_begin = 110.0
+fog_depth_end = 700.0
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1")
@@ -82,7 +82,7 @@ shadow_enabled = true
 shadow_bias = 0.12
 shadow_normal_bias = 3.0
 shadow_blur = 0.0
-directional_shadow_max_distance = 140.0
+directional_shadow_max_distance = 240.0
 
 [node name="Valley" type="Node3D" parent="WorldView/WorldViewport"]
 script = ExtResource("3")

@@ -17,6 +17,9 @@ var _music_tween: Tween
 var _theme: AudioStreamPlayer
 var _theme_tween: Tween
 var _music_base_db: float = -8.0
+## Filtro de paso bajo en el bus de música: la música "se oye desde dentro" de la casucha.
+var _muffle: AudioEffectLowPassFilter
+var _muffle_tween: Tween
 
 
 func _ready() -> void:
@@ -25,6 +28,25 @@ func _ready() -> void:
 		player.bus = &"SFX"
 		add_child(player)
 		_pool.append(player)
+	var bus: int = AudioServer.get_bus_index(&"Music")
+	if bus >= 0:
+		_muffle = AudioEffectLowPassFilter.new()
+		_muffle.cutoff_hz = 20000.0
+		AudioServer.add_bus_effect(bus, _muffle)
+
+
+## Música amortiguada (dentro de un sitio cerrado) o abierta, con un fundido.
+func muffle_music(on: bool, fade_sec: float = 2.0) -> void:
+	if _muffle == null:
+		return
+	if _muffle_tween:
+		_muffle_tween.kill()
+	_muffle_tween = create_tween()
+	(
+		_muffle_tween
+		. tween_property(_muffle, "cutoff_hz", 700.0 if on else 20000.0, fade_sec)
+		. set_trans(Tween.TRANS_EXPO)
+	)
 
 
 ## Reproduce un sonido. Usar AudioStreamRandomizer para variar tono y sample.

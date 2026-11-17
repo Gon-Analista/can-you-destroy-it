@@ -126,7 +126,9 @@ en el Grimorio del Santuario mejoras que cambian los hechizos. Lo que hay:
   golpe es el volumen que arranca por la densidad de su capa (las densidades reparten el 1.000.000 como el GDD 6).
   Shader con paleta y dibujo por capa, placas y estrías por fuera, interior que centellea, corazón
   violeta, grietas persistentes (voronoi 3D) y destellos/ondas de impacto. La excavación se guarda aparte
-  (`user://crystal_volume.bin`).
+  (`user://crystal_volume.bin`). Tamaño actual: 108 m de alto, base de ~75 m (escala 1,7 en el script).
+- **Casucha del aprendiz** (`world/apprentice_hut.gd`): se empieza dentro y el cristal no se ve hasta abrir la
+  puerta (F); el HUD esconde la esencia y el Pilón hasta entonces.
   `ShardPool` con 64 fragmentos físicos reciclados en 3 tamaños según el daño (astilla, fragmento, fragmento
   grande), que se congelan al quedarse quietos, se resaltan al apuntarlos y vuelan a la mano al recogerlos.
 - **Mago** (`player/`): primera persona (ratón + WASD), manos 2D de Sprite AI; cada mano lleva una llamita de
@@ -232,6 +234,7 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-17 | Bolsa inicial de 3 (no 1): con el Pilón a ~30 m del cristal, 1 por viaje hacía la primera mejora demasiado lenta. | GDD 8.1: primera mejora en menos de 30 s. |
 | 2026-11-17 | Capas del cristal por esencia destruida con paleta, tono y geodas (`data/crystal/layer_*.tres`). | GDD 6; progreso siempre visible. (Sustituida: ver "destructible de verdad".) |
 | 2026-11-17 | **Cristal destructible de verdad**: volumen excavable (rejilla de distancias horneada + erosión por golpe + malla por trozos en otros hilos) en vez de ≈ 4.000 piezas físicas (GDD 6). Cristal mucho más grande (63 m, base de ~42 m) y layout más abierto (Pilón y Santuario a ~50 m). Las capas van por profundidad: se entra en el cristal excavando. Cada capa tiene densidad de esencia propia para repartir el 1.000.000 como el GDD (Corteza 6,4/m3, Manto 22, Venas 55, Corazón 89). | Pedido del equipo: que se rompa de verdad poco a poco y que las capas sean ir entrando. Con piezas físicas no se puede entrar ni ver el interior, y 4.000 cuerpos son caros. |
+| 2026-11-17 | Cristal a escala 1,7 (108 m, base ~75 m, celdas de 0,8 m) apoyado en el suelo; claro de 100 m. Se empieza dentro de una casucha y el cristal se revela al abrir la puerta. | Pedido del equipo: "más grande aún" y que la primera vista del cristal sea un momento. |
 | 2026-11-17 | El Corazón Cristalino sólo cede ante hechizos combinados y el Núcleo ante nada (por ahora): el golpe rebota con aviso. Geodas: 26 bolsas huecas en el Manto; al abrirlas se ven y un golpe las revienta (8 fragmentos grandes). | GDD 6 ("facetas duras que exigen combinados", "inmune salvo la Gran Convergencia", "geodas"). |
 | 2026-11-17 | La capa de magia HD queda tapada por el cristal: copias de sus trozos en esa capa que sólo escriben profundidad, metidas 1 m hacia dentro; los efectos HD dejan de ignorar la profundidad. | Con túneles y geodas dentro, los destellos se veían a través de las paredes. |
 | 2026-11-17 | Pantalla de título y pausa (`ui/game_menu.gd`) con opciones guardadas en Settings. | Pasada de calidad pedida por el equipo. |

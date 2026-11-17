@@ -24,9 +24,9 @@ func _initialize() -> void:
 					total += f * vol * v.layer_density[v.layer_at(wp)]
 	_check(absf(total - 1000000.0) < 25000.0, "la esencia total es ~1.000.000 (%.0f)" % total)
 	_check(v.layer_at(v.core_center) == 4, "el centro de la base es el Núcleo")
-	_check(v.layer_at(Vector3(0.0, 20.0, 0.0)) == 3, "el eje de la punta es Corazón")
+	_check(v.layer_at(Vector3(0.0, 35.0, 0.0)) == 3, "el eje de la punta es Corazón")
 	# Excavar en la superficie del lado del claro.
-	var p := Vector3(0.0, 3.0, 30.0)
+	var p := Vector3(0.0, 3.0, 60.0)
 	while not v.is_solid(p) and p.z > 0.0:
 		p.z -= 0.1
 	_check(v.is_solid(p), "hay superficie delante")

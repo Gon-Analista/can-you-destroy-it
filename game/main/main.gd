@@ -12,6 +12,7 @@ const MUSIC_LAYERS: Array[AudioStream] = [
 ]
 
 var _day_night: DayNight
+var _hut: ApprenticeHut
 
 @onready var _world: SubViewport = $WorldView/WorldViewport
 @onready var _sun: DirectionalLight3D = $WorldView/WorldViewport/Sun
@@ -26,7 +27,17 @@ func _ready() -> void:
 	_place(_world.get_node(^"ManaPylon") as Node3D, WorldLayout.PYLON)
 	_place(_world.get_node(^"Sanctum") as Node3D, WorldLayout.SANCTUM)
 	(_world.get_node(^"Sanctum") as Node3D).rotation.y = deg_to_rad(WorldLayout.SANCTUM_YAW_DEG)
-	_player.global_position = WorldLayout.PLAYER_START
+	# Se empieza dentro de la casucha, mirando a la puerta: el cristal no se ve hasta abrirla.
+	_hut = ApprenticeHut.new()
+	_hut.name = "ApprenticeHut"
+	_world.add_child(_hut)
+	_place(_hut, WorldLayout.HUT)
+	_player.global_position = _hut.start_position()
+	_player.rotation.y = 0.0
+	if not _hut.is_open:
+		AudioDirector.muffle_music(true, 0.01)
+		_hud.set_intro.call_deferred(true)
+		_hut.door_opened.connect(func() -> void: _hud.set_intro(false))
 	# El día y la noche mueven el sol, el cielo y el sonido ambiente.
 	_day_night = DayNight.new()
 	_day_night.name = "DayNight"
@@ -60,6 +71,10 @@ func _setup_autoplay() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	if not args.has("--autoplay"):
 		return
+	# La demo empieza ya fuera, delante de la casucha y con la puerta abierta (salvo --hut).
+	if not args.has("--hut"):
+		_hut.set_open()
+		_player.global_position = WorldLayout.HUT + Vector3(0.0, 0.2, -5.0)
 	var tier: int = -1
 	for a: String in args:
 		if a.begins_with("--tier="):
@@ -107,6 +122,9 @@ func _setup_autoplay() -> void:
 			(_player.get_node(^"Head") as Node3D).rotation.x = atan2(
 				to_geode.y, Vector2(to_geode.x, to_geode.z).length()
 			)
+		elif a.begins_with("--open-door="):
+			# --open-door=s (con --hut): abre la puerta a los s segundos.
+			get_tree().create_timer(float(a.get_slice("=", 1))).timeout.connect(_hut.open_door)
 		elif a.begins_with("--time="):
 			_day_night.time_of_day = float(a.get_slice("=", 1))
 		elif a.begins_with("--warp="):

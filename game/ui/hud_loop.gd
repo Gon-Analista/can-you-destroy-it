@@ -28,6 +28,14 @@ const SHARD_ICON: PackedStringArray = [
 ]
 const HINT_SEC: float = 2.4
 
+## Dentro de la casucha, antes de abrir la puerta: el Pilón aún no se conoce.
+var intro: bool = false:
+	set(v):
+		intro = v
+		if _pylon_title:
+			_pylon_title.visible = not v
+			_pylon_pct.visible = not v
+		queue_redraw()
 var _camera: Camera3D
 var _pylon_title: Label
 var _pylon_pct: Label
@@ -236,6 +244,10 @@ func _update_markers(count: int, full: bool) -> void:
 	if sanctum and GameState.cheapest_affordable() != null:
 		_sanctum_marker = sanctum.marker_position() + Vector3.UP * 0.5
 		_sanctum_tag.text = tr("¡MEJORA!")
+	var hut: ApprenticeHut = get_tree().get_first_node_in_group(&"apprentice_hut") as ApprenticeHut
+	if hut and hut.player_can_open():
+		_prompt.visible = true
+		_prompt.text = hut.prompt()
 	if sanctum and sanctum.player_in_range():
 		_prompt.visible = true
 		_prompt.text = tr("[F] ABRIR EL GRIMORIO")
@@ -279,7 +291,8 @@ func _to_screen(world: Vector3) -> Array:
 
 
 func _draw() -> void:
-	_draw_pylon_bar()
+	if not intro:
+		_draw_pylon_bar()
 	_draw_icon(MANA_ICON, Vector2(452 + 176 - _mana_text_width() - 22, 338), 2, C_PINK)
 	_draw_bag()
 	if _pylon_tag.visible:

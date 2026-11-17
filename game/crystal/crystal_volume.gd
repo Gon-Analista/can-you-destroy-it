@@ -69,10 +69,20 @@ func load_baked(path: String = PATH) -> bool:
 
 
 ## float16 -> float32 en C++ (con Image), mucho más rápido que decodificar en GDScript.
+## Por lonchas de z: una imagen no puede pasar de 16384 píxeles de alto.
 func _halfs(bytes: PackedByteArray) -> PackedFloat32Array:
-	var img := Image.create_from_data(size.x, size.y * size.z, false, Image.FORMAT_RH, bytes)
-	img.convert(Image.FORMAT_RF)
-	return img.get_data().to_float32_array()
+	var slab: int = maxi(1, 16384 / size.y)
+	var out := PackedByteArray()
+	var z: int = 0
+	while z < size.z:
+		var nz: int = mini(slab, size.z - z)
+		var from: int = z * size.x * size.y * 2
+		var part: PackedByteArray = bytes.slice(from, from + nz * size.x * size.y * 2)
+		var img := Image.create_from_data(size.x, size.y * nz, false, Image.FORMAT_RH, part)
+		img.convert(Image.FORMAT_RF)
+		out.append_array(img.get_data())
+		z += nz
+	return out.to_float32_array()
 
 
 ## Estado actual para la partida guardada (sólo cambia `sdf`).

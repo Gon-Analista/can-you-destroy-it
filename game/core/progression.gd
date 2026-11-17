@@ -19,6 +19,8 @@ var discovered_recipes: Array[StringName] = []
 var deepest_layer: int = 0
 ## Estado de cada geoda del Manto (índice en el volumen horneado): 1 = abierta, 2 = reventada.
 var geodes: Dictionary[int, int] = {}
+## La puerta de la casucha ya se abrió (el cristal ya se ha visto).
+var hut_door_open: bool = false
 
 
 func _init(p_total_essence: int) -> void:
@@ -146,6 +148,7 @@ func to_dict() -> Dictionary:
 		"discovered_recipes": discovered_recipes.map(func(r: StringName) -> String: return str(r)),
 		"deepest_layer": deepest_layer,
 		"geodes": geodes.duplicate(),
+		"hut_door_open": hut_door_open,
 	}
 
 
@@ -162,6 +165,7 @@ func load_dict(data: Dictionary) -> void:
 	for key: Variant in saved_bag:
 		bag[StringName(str(key))] = maxi(int(saved_bag[key]), 0)
 	deepest_layer = maxi(int(data.get("deepest_layer", 0)), 0)
+	hut_door_open = bool(data.get("hut_door_open", false))
 	geodes.clear()
 	var saved_geodes: Dictionary = data.get("geodes", {})
 	for key: Variant in saved_geodes:

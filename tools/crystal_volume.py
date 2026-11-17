@@ -31,10 +31,14 @@ from scipy import ndimage
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "game" / "crystal" / "data" / "crystal_volume.bin"
 
-H = 0.7  # tamaño de la celda (m)
+H = 0.8  # tamaño de la celda (m)
 CHUNK = 16  # celdas por lado de cada trozo de malla
-LO = np.array([-36.0, -4.2, -36.0])
-HI = np.array([36.0, 72.0, 36.0])
+# Escala de la forma de abajo (diseñada a 1): con 1,7 la punta principal mide ~107 m.
+S = 1.7
+# El cristal se apoya en el suelo: nada por debajo de FLOOR (no se podría excavar).
+FLOOR = -0.4
+LO = np.array([-62.0, FLOOR - 1.2, -62.0])
+HI = np.array([62.0, 112.0, 62.0])
 
 # Puntas: base (x, y, z), eje, radio (al vértice del hexágono), largo hasta el hombro, punta, giro.
 SPIRES = [
@@ -63,18 +67,19 @@ BASE = ((0.0, -4.0, 0.0), (0.0, 1.0, 0.0), 21.0, 4.5, 6.5, 0.26)
 # Capas (GDD 6): profundidad mínima bajo la superficie original (m) y parte de la esencia.
 LAYERS = [
     ("crust", 0.0, 0.10),
-    ("geode_mantle", 1.6, 0.35),
-    ("resonant_veins", 4.2, 0.35),
-    ("crystal_heart", 7.2, 0.19),
+    ("geode_mantle", 2.2, 0.35),
+    ("resonant_veins", 6.0, 0.35),
+    ("crystal_heart", 10.5, 0.19),
     ("core", None, 0.01),
 ]
 # El Núcleo: esfera violeta en la base del cristal.
-CORE_CENTER = np.array([0.0, 5.0, 0.0])
-CORE_RADIUS = 3.6
+CORE_CENTER = np.array([0.0, 7.5, 0.0])
+CORE_RADIUS = 5.5
 TOTAL_ESSENCE = 1_000_000
 OUTSIDE_CLAMP = 3 * H
-GEODE_COUNT = 26
-GEODE_RADIUS = (1.3, 2.0)
+GEODE_COUNT = 40
+GEODE_RADIUS = (1.6, 2.6)
+GEODE_SPACING = 11.0
 
 
 def basis(axis, twist):
@@ -115,21 +120,27 @@ def build_grid():
     # Orden de memoria: x más rápido, luego y, luego z (igual que en GDScript).
     Z, Y, X = np.meshgrid(zs, ys, xs, indexing="ij")
     p = np.stack([X, Y, Z], axis=-1)
-    d = spire_sdf(p, *BASE)
+    d = spire_sdf(p, *scaled(BASE))
     for s in SPIRES:
-        d = np.minimum(d, spire_sdf(p, *s))
+        d = np.minimum(d, spire_sdf(p, *scaled(s)))
+    d = np.maximum(d, FLOOR - p[..., 1])
     return n, p, d
+
+
+def scaled(spec):
+    base, axis, radius, length, tip, twist = spec
+    return tuple(v * S for v in base), axis, radius * S, length * S, tip * S, twist
 
 
 def place_geodes(p, depth):
     rng = np.random.default_rng(7)
     lo, hi = LAYERS[1][1] + 0.6, LAYERS[2][1] - 0.4
-    cand = np.argwhere((depth > lo) & (depth < hi) & (p[..., 1] > 0.5))
+    cand = np.argwhere((depth > lo) & (depth < hi) & (p[..., 1] > 2.5))
     rng.shuffle(cand)
     geodes = []
     for idx in cand:
         c = p[tuple(idx)]
-        if all(np.linalg.norm(c - np.array(g["center"])) > 9.0 for g in geodes):
+        if all(np.linalg.norm(c - np.array(g["center"])) > GEODE_SPACING for g in geodes):
             geodes.append({"center": [round(float(v), 3) for v in c],
                            "radius": round(float(rng.uniform(*GEODE_RADIUS)), 3)})
         if len(geodes) >= GEODE_COUNT:

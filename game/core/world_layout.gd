@@ -3,12 +3,16 @@ extends RefCounted
 ## Dónde está cada cosa en el claro del valle (m). Un solo sitio para que el valle, los caminos,
 ## el Pilón, el Santuario y el jugador estén de acuerdo.
 ## El Cristal Madre está en el origen: un racimo que se puede excavar (crystal/data, horneado
-## con tools/crystal_volume.py), de 63 m de alto y una base de ~42 m de ancho.
+## con tools/crystal_volume.py), de 108 m de alto y una base de ~75 m de ancho.
+## El aprendiz empieza dentro de su casucha (`HUT`), con la puerta mirando al cristal.
 
 ## Radio aproximado de la base del racimo (m), para dejar libre el suelo a su alrededor.
-const CRYSTAL_FOOTPRINT: float = 24.0
-const PLAYER_START := Vector3(0.0, 0.2, 50.0)
-const PYLON := Vector3(-33.0, 0.0, 36.0)
-const SANCTUM := Vector3(35.0, 0.0, 34.0)
+const CRYSTAL_FOOTPRINT: float = 40.0
+## La casucha del aprendiz: la puerta (lado -z) da al cristal.
+const HUT := Vector3(0.0, 0.0, 78.0)
+## Dentro de la casucha, mirando a la puerta.
+const PLAYER_START := Vector3(0.0, 0.2, 80.2)
+const PYLON := Vector3(-46.0, 0.0, 52.0)
+const SANCTUM := Vector3(48.0, 0.0, 50.0)
 ## Orientación del Santuario: el lado abierto del templete mira al cristal.
 const SANCTUM_YAW_DEG: float = 47.0

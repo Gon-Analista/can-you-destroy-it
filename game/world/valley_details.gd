@@ -92,13 +92,16 @@ func _free(x: float, z: float, margin: float) -> bool:
 		return false
 	if Vector2(x - WorldLayout.SANCTUM.x, z - WorldLayout.SANCTUM.z).length() < 4.6 + margin:
 		return false
+	if Vector2(x - WorldLayout.HUT.x, z - WorldLayout.HUT.z).length() < 4.6 + margin:
+		return false
 	return not _near_path(x, z, 1.6 + margin)
 
 
 func _build_paths() -> void:
 	var hub: Vector3 = _hub()
 	var ends: Array[Vector3] = [
-		WorldLayout.PLAYER_START + Vector3(0, 0, 8),
+		# Desde la puerta de la casucha.
+		WorldLayout.HUT + Vector3(0, 0, -3.2),
 		# El camino del Pilón llega delante de la trituradora (al este del Pilón).
 		WorldLayout.PYLON + Vector3(5.6, 0.0, 0.0),
 		WorldLayout.SANCTUM + (hub - WorldLayout.SANCTUM).normalized() * 4.2,
@@ -279,7 +282,7 @@ func _build_rocks_and_props() -> void:
 		while d < length - 2.0:
 			var p: Vector3 = a + dir * d + side * (1.9 if k % 2 == 0 else -1.9)
 			p.y = _ground(p.x, p.z)
-			if p.distance_to(WorldLayout.PLAYER_START) < 5.0:
+			if p.distance_to(WorldLayout.HUT) < 5.5:
 				d += 6.5
 				k += 1
 				continue
@@ -364,7 +367,7 @@ func _build_grass() -> void:
 		while xforms.size() < target and attempts < target * 6:
 			attempts += 1
 			# Más densa cerca del claro y en manchas.
-			var r: float = lerpf(WorldLayout.CRYSTAL_FOOTPRINT, 95.0, pow(_rng.randf(), 1.6))
+			var r: float = lerpf(WorldLayout.CRYSTAL_FOOTPRINT, 140.0, pow(_rng.randf(), 1.6))
 			var ang: float = _rng.randf() * TAU
 			var x: float = cos(ang) * r
 			var z: float = sin(ang) * r
@@ -410,7 +413,7 @@ func _build_flowers() -> void:
 		while xforms.size() < target and attempts < target * 8:
 			attempts += 1
 			# En corros: un centro y varias flores alrededor.
-			var r: float = _rng.randf_range(WorldLayout.CRYSTAL_FOOTPRINT + 3.0, 75.0)
+			var r: float = _rng.randf_range(WorldLayout.CRYSTAL_FOOTPRINT + 3.0, 110.0)
 			var ang: float = _rng.randf() * TAU
 			var cx: float = cos(ang) * r
 			var cz: float = sin(ang) * r

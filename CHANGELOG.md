@@ -2,6 +2,36 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-17 · Un cristal aún más grande y se empieza dentro de la casucha
+
+**Qué hay nuevo** (pedidos del equipo: "el cristal debe ser más grande aún" y "partir dentro de una casucha mágica
+para que al abrir la puerta veas el cristal, no antes")
+
+- **Cristal de 108 m** (antes 63): la misma forma a escala 1,7, con una base de ~75 m que se apoya en el suelo
+  (ya no hay cristal enterrado que contara esencia sin poder excavarse). Celdas de 0,8 m; 40 geodas; capas más
+  gruesas (Manto desde 2,2 m, Venas desde 6 m, Corazón desde 10,5 m) y Núcleo más grande. Con tanto volumen,
+  cada golpe arranca más: la primera chispa ya deja una muesca de ~1 m.
+- **Valle más grande**: claro de 100 m de radio, Pilón y Santuario a ~70 m del centro, bosque y aldea más lejos,
+  niebla y sombras hasta más distancia.
+- **La casucha del aprendiz**: se empieza dentro, mirando a la puerta. Cama, mesa con el libro abierto y una vela,
+  estante de pociones y libros, caldero verde que borbotea, chimenea encendida, alfombra, escoba y cristalitos
+  colgando; fuego y velas que parpadean, chisporroteo y burbujas de fondo y la música amortiguada, "desde dentro".
+  Sin ventanas hacia el cristal: el HUD tampoco enseña aún la esencia ni el Pilón.
+- **La revelación**: junto a la puerta, "[F] ABRIR LA PUERTA". Pestillo, crujido de bisagra, ráfaga de viento, la
+  puerta se abre hacia fuera, la música se abre y suena un acorde de cristal que crece: aparece el Cristal Madre
+  ("EL CRISTAL MADRE"). La puerta queda abierta en la partida guardada.
+- Sonidos nuevos con `tools/sfx_hut.py`. Demo: `--hut` (empezar dentro), `--open-door=s`.
+
+**Capturas**: `docs/capturas/casucha.png`, `docs/capturas/puerta_abierta.png`, `docs/capturas/casucha_fuera.png`,
+`docs/capturas/cristal_gigante.png`.
+
+**Cómo se probó**: todos los tests (incluido `crystal_volume_smoke` con el volumen nuevo, 3,7 M de puntos) en verde;
+`gdlint` y `gdformat` limpios. Render: dentro de la casucha, la puerta abriéndose, la casucha por fuera y el
+cristal desde la puerta.
+
+**Pendiente**: animar el momento de la revelación con la cámara (ahora es la puerta, el sonido y el aviso); la casucha
+aún no tiene usos (dormir para pasar la noche, guardar objetos...).
+
 ## 2026-11-17 · El Cristal Madre se rompe de verdad y se entra en él por capas
 
 **Qué hay nuevo** (pedido del equipo: "destruible de verdad de a poco, y que las capas sean entrar en el cristal")
