@@ -9,11 +9,6 @@ extends Node
 ## Sonido: de día el viento con pájaros y cantos sueltos en 3D (más al amanecer); de noche
 ## grillos, brisa y algún búho lejano. Todo espaciado y al azar para que nunca se repita.
 
-## Duración de un día completo (s).
-@export var day_length_sec: float = 600.0
-## Hora al empezar (media mañana).
-@export_range(0.0, 1.0) var time_of_day: float = 0.33
-
 const DAY_LOOP: AudioStream = preload("res://audio/sfx/amb_valley_loop.ogg")
 const NIGHT_LOOP: AudioStream = preload("res://audio/sfx/amb_night_loop.ogg")
 const BIRDS: Array[AudioStream] = [
@@ -173,6 +168,11 @@ const KEYS: Array[Array] = [
 		1.0
 	],
 ]
+
+## Duración de un día completo (s).
+@export var day_length_sec: float = 600.0
+## Hora al empezar (media mañana).
+@export_range(0.0, 1.0) var time_of_day: float = 0.33
 
 var night: float = 0.0
 

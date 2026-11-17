@@ -11,13 +11,13 @@ const MUSIC_LAYERS: Array[AudioStream] = [
 	preload("res://audio/music/music_valley_5_archimago.ogg"),
 ]
 
+var _day_night: DayNight
+
 @onready var _world: SubViewport = $WorldView/WorldViewport
 @onready var _sun: DirectionalLight3D = $WorldView/WorldViewport/Sun
 @onready var _player: Player = $WorldView/WorldViewport/Player
 @onready var _hud: Hud = $HUDLayer/Hud
 @onready var _magic: MagicLayer = $MagicView
-
-var _day_night: DayNight
 
 
 func _ready() -> void:
