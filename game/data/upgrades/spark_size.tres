@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"spark_size"
+display_name = "Chispa enorme"
+description = "La chispa sale de la mano como siempre y crece en el aire: estalla más ancha, arranca más cristal y suelta más fragmentos."
+branch = 0
+element = &"spark"
+star_pos = Vector2i(196, 172)
+costs = PackedInt32Array(40, 180, 700, 2500)
+prerequisites = Array[StringName]([])
+stat = &"spark_size"
+values = PackedFloat32Array(1, 1.35, 1.75, 2.2, 2.8)
+value_format = "tamaño x%.2f"

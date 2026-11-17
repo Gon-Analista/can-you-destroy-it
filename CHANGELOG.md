@@ -2,6 +2,27 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-17 · Hechizos que crecen y levitación hasta la punta del cristal
+
+**Qué hay nuevo** (pedidos del equipo: "que todos los hechizos tengan mejoras para hacerlos más grandes; en la mano
+siempre el mismo tamaño, pero al salir deben crecer" y "sí" a poder llegar a la punta levitando)
+
+- **Mejoras de Tamaño para cada hechizo**: Chispa enorme y Bola colosal (constelación de la Chispa), Granizo
+  gigante y Choque descomunal (constelación de la Escarcha). Cuatro niveles: x1,35 / x1,75 / x2,2 / x2,8.
+  - En la mano no cambian; al salir **crecen en el primer tercio del vuelo** hasta su tamaño (orbe, estela y luz).
+  - Al llegar todo es más grande: estallido, onda, grieta, explosión en área, quemadura, zona helada o quebradiza
+    y el cráter (más ancho), y sueltan más fragmentos (+60 % del aumento). El daño sube la mitad del aumento.
+- **Levitación hasta 6 niveles**: 1,6 / 3 / 5 / 8 / 12 / 18 s de vuelo.
+- **Impulso del cristal** (pide Levitación): cada golpe que llega al cristal mientras estás en el aire devuelve
+  0,25 / 0,45 / 0,7 s de carga (la barra destella en dorado). Golpeando sin parar se sube hasta la punta.
+- Iconos nuevos y textos en español e inglés.
+
+**Capturas**: `docs/capturas/hechizo_grande.png` (Chispa a x2,8).
+
+**Cómo se probó**: `movement_smoke` amplía con el Impulso del cristal (un golpe en el aire recarga) y una caída de
+20 m sin daño; el resto de tests en verde. Render: Chispa a tamaño x2,8 en vuelo y estallando; páginas de la Chispa
+y la Escarcha con las estrellas nuevas.
+
 ## 2026-11-17 · Mejoras de movimiento: doble salto y levitación
 
 **Qué hay nuevo** (pedido del equipo: "mejoras de movimiento, doble salto y después levitar como un jetpack con

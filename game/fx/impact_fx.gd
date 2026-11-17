@@ -102,7 +102,9 @@ func _ramp_texture(g: Gradient) -> GradientTexture1D:
 	return tex
 
 
-func play(pos: Vector3, normal: Vector3, tier: SpellTier, resonant: bool) -> void:
+func play(
+	pos: Vector3, normal: Vector3, tier: SpellTier, resonant: bool, scale_k: float = 1.0
+) -> void:
 	var i: int = _next
 	_next = (_next + 1) % pool_size
 	var burst: Node3D = _bursts[i]
@@ -111,7 +113,8 @@ func play(pos: Vector3, normal: Vector3, tier: SpellTier, resonant: bool) -> voi
 	burst.global_transform = Transform3D(
 		Basis(side, up, side.cross(up)).orthonormalized(), pos + up * 0.1
 	)
-	var power: float = 2.2 if resonant else 1.0
+	var power: float = (2.2 if resonant else 1.0) * scale_k
+	burst.scale = Vector3.ONE * scale_k
 	var sparkles: GPUParticles3D = _sparkles[i]
 	sparkles.amount = maxi(4, int(tier.impact_particles * power))
 	var tinted: bool = tier.impact_tint.a > 0.0
@@ -123,7 +126,7 @@ func play(pos: Vector3, normal: Vector3, tier: SpellTier, resonant: bool) -> voi
 	chips.amount = maxi(4, int(tier.impact_particles * 0.8 * power))
 	chips.restart()
 	var ring: MeshInstance3D = _rings[i]
-	ring.scale = Vector3.ONE * (tier.crack_radius * 5.0 * (1.6 if resonant else 1.0))
+	ring.scale = Vector3.ONE * (tier.crack_radius * 5.0 * (1.6 if resonant else 1.0) * scale_k)
 	ring.visible = true
 	_ring_mats[i].set_shader_parameter(
 		"color",

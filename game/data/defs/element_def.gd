@@ -14,6 +14,8 @@ extends Resource
 @export var hand_visual: SpellVisualDef
 ## Estadística de mejora que da su nivel (índice en `tiers`), p. ej. &"spark_tier".
 @export var power_stat: StringName
+## Estadística de mejora del tamaño del hechizo (multiplicador, 1 = el de siempre).
+@export var size_stat: StringName
 ## Mejora que hay que tener para poder ponerlo en una mano (vacío = disponible desde el inicio).
 @export var unlock_upgrade: StringName
 ## Sonido al lanzar (si está vacío, el crepitar de la Chispa) y su tono.

@@ -22,3 +22,6 @@ var weakened: bool = false
 var weak_mult: float = 1.0
 ## Capa del cristal en la que cayó (0 = Corteza); la pone MotherCrystal.
 var layer: int = 0
+## Tamaño del hechizo (mejora de Tamaño): crece al salir de la mano y agranda el impacto, el
+## cráter, la quemadura, la zona helada y los fragmentos. 1 = el de siempre.
+var size: float = 1.0

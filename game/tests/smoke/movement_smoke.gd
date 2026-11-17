@@ -47,6 +47,23 @@ func _initialize() -> void:
 	for i: int in 160:
 		await physics_frame
 	_check(float(player.call(&"fuel_ratio")) > 0.99, "en el suelo se recarga")
+	# Impulso del cristal: un golpe al cristal en el aire devuelve carga.
+	levels[&"crystal_impulse"] = 2
+	player.global_position = start + Vector3(0.0, 20.0, 0.0)
+	player.set(&"levitation_fuel", 0.5)
+	await physics_frame
+	var hit := SpellHit.new()
+	hit.tier = (load("res://data/elements/spark.tres").get(&"tiers") as Array)[0]
+	hit.position = player.global_position + Vector3(0, 0, -10)
+	hit.normal = Vector3.BACK
+	hit.damage = 1
+	root.get_node(^"Events").emit_signal(&"spell_impacted", hit)
+	_check(float(player.get(&"levitation_fuel")) > 0.9, "un golpe en el aire recarga levitación")
+	for i: int in 400:
+		await physics_frame
+		if player.is_on_floor():
+			break
+	_check(player.is_on_floor(), "cae 20 m y aterriza sin daño")
 	_check(player.is_on_floor(), "aterriza sin problema (sin daño por caída)")
 	print("movement_smoke: ", "OK" if _ok else "FALLO")
 	quit(0 if _ok else 1)

@@ -16,6 +16,11 @@ const UPGRADES: Array[UpgradeNode] = [
 	preload("res://data/upgrades/direct_send.tres"),
 	preload("res://data/upgrades/double_jump.tres"),
 	preload("res://data/upgrades/levitation.tres"),
+	preload("res://data/upgrades/crystal_impulse.tres"),
+	preload("res://data/upgrades/spark_size.tres"),
+	preload("res://data/upgrades/fireball_size.tres"),
+	preload("res://data/upgrades/frost_size.tres"),
+	preload("res://data/upgrades/thermal_size.tres"),
 ]
 
 ## Capas del Cristal Madre, de fuera a dentro (GDD 6).

@@ -48,6 +48,8 @@ const LEVITATE_EMPTY_SFX: AudioStream = preload("res://audio/sfx/sfx_levitate_em
 var levitation_max: float = 0.0
 var levitation_fuel: float = 0.0
 var levitating: bool = false
+## Destello de la barra al recargar con el Impulso del cristal (1 -> 0).
+var refill_flash: float = 0.0
 
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _shards: ShardPool
@@ -98,6 +100,7 @@ func _ready() -> void:
 	_caster.hands = _hands
 	_add_outline()
 	_build_jet()
+	Events.spell_impacted.connect(_on_spell_impacted)
 	_grab_point = Marker3D.new()
 	_grab_point.position = Vector3(-0.18, -0.32, -0.55)
 	_camera.add_child(_grab_point)
@@ -113,6 +116,17 @@ func _apply_upgrades(celebrate: bool = false) -> void:
 	if lev > levitation_max:
 		levitation_fuel = lev
 	levitation_max = lev
+
+
+## Impulso del cristal (mejora): cada golpe que llega al cristal estando en el aire devuelve
+## carga de levitación. Así se sube hasta la punta golpeando.
+func _on_spell_impacted(_hit: SpellHit) -> void:
+	if is_on_floor() or levitation_max <= 0.0:
+		return
+	var refill: float = GameState.stat(&"levitation_refill", 0.0)
+	if refill > 0.0:
+		levitation_fuel = minf(levitation_max, levitation_fuel + refill)
+		refill_flash = 1.0
 
 
 ## Carga de levitación (0..1) para el HUD.
@@ -195,6 +209,7 @@ func _air_moves(on_floor: bool, delta: float) -> void:
 		else:
 			tw.tween_property(_jet_audio, "volume_db", -60.0, 0.35)
 			tw.tween_callback(_jet_audio.stop)
+	refill_flash = maxf(0.0, refill_flash - delta * 4.0)
 	if levitating:
 		# Más agudo cuanto menos carga queda: se nota que se acaba.
 		_jet_audio.pitch_scale = lerpf(1.25, 0.95, fuel_ratio())

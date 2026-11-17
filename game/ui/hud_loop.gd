@@ -338,6 +338,8 @@ func _draw_levitation() -> void:
 	if k < 0.25 and player.levitating and int(Time.get_ticks_msec() / 120) % 2 == 0:
 		col = Color.WHITE
 	draw_rect(Rect2(r.position, Vector2(roundf(r.size.x * k), r.size.y)), col)
+	if player.refill_flash > 0.0:
+		draw_rect(r.grow(2), Color(C_GOLD, player.refill_flash), false, 1.0)
 
 
 func _draw_bag() -> void:

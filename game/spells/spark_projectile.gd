@@ -41,6 +41,10 @@ var _wobble: float = 0.0
 var _wobble_phase: float = 0.0
 var _arc: float = 0.6
 var _linger: float = 0.0
+## Crecimiento al salir de la mano (mejora de Tamaño): de 1 a `hit.size` en el primer tramo.
+var _grow: float = 1.0
+var _trail_width: float = 1.0
+var _light_range: float = 3.0
 
 
 func _ready() -> void:
@@ -76,7 +80,9 @@ func launch(from: Vector3, to: Vector3, p_hit: SpellHit, collider: Object) -> vo
 		_orb.charge = orb_charge
 		_orb.set_flow(Vector2(0.0, -1.0), 1.0)
 		_face_camera()
-	_trail.width = tier.trail_width * (1.35 if p_hit.resonant else 1.0)
+	_grow = 1.0
+	_trail_width = tier.trail_width * (1.35 if p_hit.resonant else 1.0)
+	_trail.width = _trail_width
 	_trail.length_sec = tier.trail_length
 	_trail.near_depth = HANDS_DEPTH
 	_trail.max_scale = _orb_scale
@@ -86,7 +92,8 @@ func launch(from: Vector3, to: Vector3, p_hit: SpellHit, collider: Object) -> vo
 	_light.light_color = tier.color_glow
 	_light_peak = tier.light_energy * 0.6
 	_light.light_energy = 0.0
-	_light.omni_range = 3.0 + tier.orb_scale * 0.4
+	_light_range = 3.0 + tier.orb_scale * 0.4
+	_light.omni_range = _light_range
 	_light.visible = true
 	var ember_cols := PackedColorArray([tier.color_core * 2.0, tier.color_glow * 1.4])
 	_ember_mat.color_ramp = HdFx.color_ramp(ember_cols)
@@ -116,6 +123,11 @@ func _process(delta: float) -> void:
 		return
 	_t += delta / _duration
 	var k: float = clampf(_t, 0.0, 1.0)
+	# En la mano siempre del mismo tamaño; al salir crece hasta el de su mejora.
+	_grow = lerpf(1.0, hit.size, smoothstep(0.0, 0.35, k))
+	_trail.width = _trail_width * _grow
+	_trail.max_scale = _orb_scale * _grow
+	_light.omni_range = _light_range * _grow
 	var pos: Vector3 = _from.lerp(_to, k)
 	# Arco suave hacia arriba y bamboleo que se apaga al llegar.
 	pos.y += sin(k * PI) * _arc
@@ -185,7 +197,7 @@ func _face_camera() -> void:
 	var cam: Camera3D = get_viewport().get_camera_3d()
 	if cam:
 		var dist: float = cam.global_position.distance_to(_orb.global_position)
-		var s: float = clampf(dist / HANDS_DEPTH, 1.0, _orb_scale)
+		var s: float = clampf(dist / HANDS_DEPTH, 1.0, _orb_scale) * _grow
 		_orb.global_basis = cam.global_basis.scaled(Vector3.ONE * s)
 
 

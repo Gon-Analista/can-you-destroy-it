@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"thermal_size"
+display_name = "Choque descomunal"
+description = "El Choque Térmico crece al salir: deja quebradiza una zona enorme del cristal."
+branch = 0
+element = &"frost"
+star_pos = Vector2i(44, 150)
+costs = PackedInt32Array(200, 800, 2800, 9000)
+prerequisites = Array[StringName]([&"recipe:thermal_shock"])
+stat = &"thermal_size"
+values = PackedFloat32Array(1, 1.35, 1.75, 2.2, 2.8)
+value_format = "tamaño x%.2f"

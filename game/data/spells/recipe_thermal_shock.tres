@@ -45,6 +45,7 @@ flight_sfx = ExtResource("5")
 script = ExtResource("1")
 id = &"thermal_shock"
 display_name = "Choque Térmico"
+size_stat = &"thermal_size"
 elements = Array[StringName]([&"spark", &"frost"])
 damage_multiplier = 1.6
 area_radius = 0.0

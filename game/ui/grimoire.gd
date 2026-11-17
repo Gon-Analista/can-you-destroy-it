@@ -61,7 +61,26 @@ const C_RED := Color("#c8423a")
 const C_SHADOW := Color("#14183a")
 
 ## Iconos de cada rama (8x8): '#' color, '+' brillo, '.' vacío.
+## Mejoras de Tamaño: una bolita que se hace grande.
+const SIZE_ICON: PackedStringArray = [
+	"....####", "...#++##", "..#++###", ".#.#####", "#.#.####", ".#..###.", "#.#.....", ".#......"
+]
 const ICONS: Dictionary[StringName, PackedStringArray] = {
+	&"spark_size": SIZE_ICON,
+	&"fireball_size": SIZE_ICON,
+	&"frost_size": SIZE_ICON,
+	&"thermal_size": SIZE_ICON,
+	&"crystal_impulse":
+	[
+		"...##...",
+		"..#++#..",
+		".#++++#.",
+		"..#++#..",
+		"...##...",
+		".#.##.#.",
+		"..####..",
+		"...##..."
+	],
 	&"bag":
 	[
 		"..##.#..",

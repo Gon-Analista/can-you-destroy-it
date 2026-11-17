@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"fireball_size"
+display_name = "Bola colosal"
+description = "La Bola de Fuego se hincha al salir de las manos: explosión, cráter y fuego mucho más grandes."
+branch = 0
+element = &"spark"
+star_pos = Vector2i(52, 236)
+costs = PackedInt32Array(150, 600, 2200, 7000)
+prerequisites = Array[StringName]([&"recipe:fireball"])
+stat = &"fireball_size"
+values = PackedFloat32Array(1, 1.35, 1.75, 2.2, 2.8)
+value_format = "tamaño x%.2f"

@@ -89,6 +89,7 @@ unlock_pylon_ratio = 0.1
 tiers = Array[ExtResource("2")]([SubResource("tier_1"), SubResource("tier_2"), SubResource("tier_3")])
 hand_visual = ExtResource("3")
 power_stat = &"frost_tier"
+size_stat = &"frost_size"
 unlock_upgrade = &"awaken_frost"
 cast_sfx = Array[AudioStream]([ExtResource("6"), ExtResource("7")])
 cast_pitch = 1.0

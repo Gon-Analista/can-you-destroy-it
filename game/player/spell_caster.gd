@@ -324,7 +324,11 @@ func _cast_single(side: int) -> void:
 	var hit := SpellHit.new()
 	hit.tier = tier
 	hit.resonant = _rng.randf() < _resonant_chance()
-	hit.damage = tier.damage * (GameState.BALANCE.resonant_damage_mult if hit.resonant else 1)
+	hit.size = GameState.stat(el.size_stat, 1.0) if el.size_stat != &"" else 1.0
+	hit.damage = (
+		_sized_damage(tier.damage, hit.size)
+		* (GameState.BALANCE.resonant_damage_mult if hit.resonant else 1)
+	)
 	hit.element = el.id
 	hit.element_def = el
 	_launch(projectile, hit, side)
@@ -390,6 +394,8 @@ func _launch_combine() -> void:
 	var damage: int = recipe.damage_for(tier_for(0).damage, tier_for(1).damage, charge)
 	if recipe.power_stat != &"":
 		damage = roundi(float(damage) * GameState.stat(recipe.power_stat, 1.0))
+	hit.size = GameState.stat(recipe.size_stat, 1.0) if recipe.size_stat != &"" else 1.0
+	damage = _sized_damage(damage, hit.size)
 	hit.damage = damage * (GameState.BALANCE.resonant_damage_mult if hit.resonant else 1)
 	var projectile: SparkProjectile = _free_projectile(_combo_projectiles)
 	if projectile:
@@ -399,6 +405,11 @@ func _launch_combine() -> void:
 	AudioDirector.play_sfx(_combo_sounds[recipe], lerpf(-4.0, 0.0, charge))
 	Events.spell_cast.emit(tier, BOTH_HANDS)
 	GameState.register_recipe_cast(recipe)
+
+
+## Más grande, más cristal: la mitad del aumento de tamaño se suma al daño.
+static func _sized_damage(damage: int, size: float) -> int:
+	return maxi(damage, roundi(float(damage) * (1.0 + (size - 1.0) * 0.5)))
 
 
 func _start_cooldown(side: int, seconds: float) -> void:

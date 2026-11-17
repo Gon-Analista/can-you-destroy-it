@@ -27,6 +27,8 @@ extends Resource
 @export var shatter_sec: float = 6.0
 ## Estadística de mejora que multiplica su daño (p. ej. &"fireball_mult"); vacía = ninguna.
 @export var power_stat: StringName
+## Estadística de mejora del tamaño del hechizo (multiplicador, 1 = el de siempre).
+@export var size_stat: StringName
 
 @export_group("Carga")
 ## Tiempo manteniendo las dos manos juntas hasta la carga completa (s).

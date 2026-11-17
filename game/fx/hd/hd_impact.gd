@@ -77,7 +77,12 @@ func _ready() -> void:
 
 
 func play(
-	pos: Vector3, normal: Vector3, tier: SpellTier, resonant: bool, big: bool = false
+	pos: Vector3,
+	normal: Vector3,
+	tier: SpellTier,
+	resonant: bool,
+	big: bool = false,
+	scale_k: float = 1.0
 ) -> void:
 	var i: int = _next
 	_next = (_next + 1) % pool_size
@@ -86,7 +91,9 @@ func play(
 	var toward: Vector3 = (cam.global_position - pos).normalized() if cam else normal
 	slot.global_position = pos + normal * 0.3 + toward * 0.6
 	slot.visible = true
-	var size: float = tier.crack_radius * 2.6 * (1.6 if resonant else 1.0) * (1.4 if big else 1.0)
+	var size: float = (
+		tier.crack_radius * 2.6 * (1.6 if resonant else 1.0) * (1.4 if big else 1.0) * scale_k
+	)
 	_size[i] = size
 	_peak[i] = 0.7 + (0.6 if resonant else 0.0) - (0.3 if big else 0.0)
 	var ramp: Gradient = tier.trail_ramp if tier.trail_ramp else _default_ramp

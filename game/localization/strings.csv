@@ -125,6 +125,10 @@ caben %d,caben %d,holds %d
 Cadencia,Cadencia,Cadence
 Las manos recargan antes: lanzas más a menudo.,Las manos recargan antes: lanzas más a menudo.,Your hands recharge sooner: you cast more often.
 recarga x%.2f,recarga x%.2f,recharge x%.2f
+Impulso del cristal,Impulso del cristal,Crystal impulse
+Cada golpe que das al cristal en el aire te devuelve carga de levitación. Golpea y sube: así se llega a la punta.,Cada golpe que das al cristal en el aire te devuelve carga de levitación. Golpea y sube: así se llega a la punta.,Every hit you land on the crystal while airborne gives you back levitation charge. Hit and climb: that's how you reach the tip.
++%.2f s por golpe,+%.2f s por golpe,+%.2f s per hit
+Sin impulso,Sin impulso,No impulse
 Envío directo,Envío directo,Direct delivery
 "Tu telequinesis llega lejos: lo que recoges vuela solo a la tolva de la trituradora, sin pasar por la bolsa.","Tu telequinesis llega lejos: lo que recoges vuela solo a la tolva de la trituradora, sin pasar por la bolsa.","Your telekinesis reaches far: what you pick up flies straight into the crusher's hopper, skipping the bag."
 A la bolsa,A la bolsa,Into the bag
@@ -135,10 +139,15 @@ Un salto,Un salto,One jump
 Dos saltos,Dos saltos,Two jumps
 La bola de fuego arde más: más daño en la explosión y en el fuego que deja en el cristal.,La bola de fuego arde más: más daño en la explosión y en el fuego que deja en el cristal.,The fireball burns hotter: more damage from the blast and from the fire it leaves on the crystal.
 daño x%.1f,daño x%.1f,damage x%.1f
+Bola colosal,Bola colosal,Colossal fireball
+"La Bola de Fuego se hincha al salir de las manos: explosión, cráter y fuego mucho más grandes.","La Bola de Fuego se hincha al salir de las manos: explosión, cráter y fuego mucho más grandes.","The Fireball swells as it leaves your hands: a much bigger blast, crater and fire."
+tamaño x%.2f,tamaño x%.2f,size x%.2f
 Potencia,Potencia,Power
 "La escarcha se endurece: más daño, más rápida y congela más grande. Cambia de forma.","La escarcha se endurece: más daño, más rápida y congela más grande. Cambia de forma.","Frost hardens: more damage, faster, and it freezes a bigger area. It changes shape."
 Hielo,Hielo,Ice
 Ventisca,Ventisca,Blizzard
+Granizo gigante,Granizo gigante,Giant hail
+La escarcha crece en el aire: hiela una zona mucho más grande y arranca más cristal.,La escarcha crece en el aire: hiela una zona mucho más grande y arranca más cristal.,Frost grows in the air: it freezes a much bigger area and tears off more crystal.
 Engranajes,Engranajes,Gears
 Engrasas y afilas la trituradora: los cristales salen antes de tus manos y los rodillos trituran más deprisa.,Engrasas y afilas la trituradora: los cristales salen antes de tus manos y los rodillos trituran más deprisa.,You oil and sharpen the crusher: crystals leave your hands sooner and the rollers crush faster.
 velocidad x%.1f,velocidad x%.1f,speed x%.1f
@@ -154,7 +163,11 @@ Chispa ardiente,Chispa ardiente,Blazing spark
 Llama,Llama,Flame
 Llama mágica,Llama mágica,Magic flame
 Fuego estelar,Fuego estelar,Starfire
+Chispa enorme,Chispa enorme,Huge spark
+"La chispa sale de la mano como siempre y crece en el aire: estalla más ancha, arranca más cristal y suelta más fragmentos.","La chispa sale de la mano como siempre y crece en el aire: estalla más ancha, arranca más cristal y suelta más fragmentos.","The spark leaves your hand as always and grows in the air: it bursts wider, tears off more crystal and drops more shards."
 Telequinesis,Telequinesis,Telekinesis
 Los fragmentos cercanos vuelan solos a tus manos si te cabe alguno.,Los fragmentos cercanos vuelan solos a tus manos si te cabe alguno.,Nearby shards fly to your hands on their own if you have room.
 atrae a %d m,atrae a %d m,pulls from %d m
 Sin telequinesis,Sin telequinesis,No telekinesis
+Choque descomunal,Choque descomunal,Massive shock
+El Choque Térmico crece al salir: deja quebradiza una zona enorme del cristal.,El Choque Térmico crece al salir: deja quebradiza una zona enorme del cristal.,Thermal Shock grows as it flies: it leaves a huge patch of the crystal brittle.

@@ -325,7 +325,9 @@ func receive_hit(hit: SpellHit) -> void:
 	hit.streak = _streak.register_hit(_now)
 	_apply_weakness(hit)
 	_check_geodes(hit)
-	var removed: float = _dig(hit.position, hit.normal, float(hit.damage), hit.recipe != null)
+	var removed: float = _dig(
+		hit.position, hit.normal, float(hit.damage), hit.recipe != null, hit.size
+	)
 	if removed < 0.0:
 		_too_hard(hit)
 		return
@@ -339,7 +341,7 @@ func receive_hit(hit: SpellHit) -> void:
 		hit.position.x,
 		hit.position.y,
 		hit.position.z,
-		tier.crack_radius * (1.6 if hit.resonant else 1.0) * _rng.randf_range(0.85, 1.15)
+		tier.crack_radius * (1.6 if hit.resonant else 1.0) * hit.size * _rng.randf_range(0.85, 1.15)
 	)
 	_crack_index = (_crack_index + 1) % MAX_CRACKS
 	if hit.recipe and hit.recipe.area_radius > 0.0:
@@ -353,14 +355,19 @@ func receive_hit(hit: SpellHit) -> void:
 	_core_pulse = 1.0
 	if hit.resonant:
 		_global_flash = 0.55
-	var count: int = _rng.randi_range(tier.shards_min, tier.shards_max) * (2 if hit.resonant else 1)
+	var count: int = ceili(
+		(
+			float(_rng.randi_range(tier.shards_min, tier.shards_max) * (2 if hit.resonant else 1))
+			* (1.0 + (hit.size - 1.0) * 0.6)
+		)
+	)
 	var shard_type: ShardType = ShardPool.type_for_hit(hit.damage, hit.resonant)
 	_shards.spawn(
 		hit.position, hit.normal, shard_type, count, 1.25 if hit.resonant else 1.0, _hit_layer
 	)
-	_fx.play(hit.position, hit.normal, tier, hit.resonant)
+	_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.size)
 	_crystal_reacts(hit)
-	_hd_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.recipe != null)
+	_hd_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.recipe != null, hit.size)
 	_play_tink(hit)
 	if hit.recipe:
 		_play_spell_impact(hit)
@@ -395,10 +402,10 @@ func _area_blast(hit: SpellHit) -> void:
 	var phase: float = _rng.randf() * TAU
 	for i: int in recipe.area_hits:
 		var a: float = phase + TAU * float(i) / float(maxi(recipe.area_hits, 1))
-		var r: float = recipe.area_radius * _rng.randf_range(0.55, 1.0)
+		var r: float = recipe.area_radius * hit.size * _rng.randf_range(0.55, 1.0)
 		var p: Vector3 = hit.position + (side * cos(a) + up * sin(a)) * r
 		_cracks[_crack_index] = Vector4(
-			p.x, p.y, p.z, hit.tier.crack_radius * _rng.randf_range(0.45, 0.7)
+			p.x, p.y, p.z, hit.tier.crack_radius * hit.size * _rng.randf_range(0.45, 0.7)
 		)
 		_crack_index = (_crack_index + 1) % MAX_CRACKS
 		_hits[_hit_index] = Vector4(p.x, p.y, p.z, _now)
@@ -498,7 +505,7 @@ func warm_up(at: Vector3, normal: Vector3, tier: SpellTier, big_tier: SpellTier)
 ## Arranca cristal donde da el golpe: tanto volumen como esencia lleva el daño en la capa que
 ## toca. Devuelve la esencia arrancada, o -1 si esa capa no cede ante este golpe (el Corazón
 ## sólo con combinaciones; el Núcleo, con nada todavía).
-func _dig(at: Vector3, normal: Vector3, damage: float, combo: bool) -> float:
+func _dig(at: Vector3, normal: Vector3, damage: float, combo: bool, size: float = 1.0) -> float:
 	var n: Vector3 = (global_basis.inverse() * normal).normalized()
 	var p: Vector3 = to_local(at)
 	var layer: int = volume.layer_at(p - n * 0.35)
@@ -511,7 +518,8 @@ func _dig(at: Vector3, normal: Vector3, damage: float, combo: bool) -> float:
 	# Volumen que se lleva el daño en esta capa; el cráter, una cazoleta de ese tamaño con el
 	# centro un poco dentro (la malla queda unos centímetros por fuera en lo cóncavo).
 	var vol: float = damage / volume.layer_density[layer]
-	var radius: float = clampf(pow(vol / 0.3, 1.0 / 3.0), 0.85, 14.0)
+	# Los hechizos más grandes (mejora de Tamaño) abren cráteres más anchos.
+	var radius: float = clampf(pow(vol / 0.3, 1.0 / 3.0) * sqrt(size), 0.85, 14.0)
 	var center: Vector3 = p - n * radius * 0.25
 	var amount: float = radius * 0.2
 	# Ajuste en seco: la esencia sale de las celdas que dejan de estar llenas, así que hay que
@@ -641,7 +649,7 @@ func _apply_element(hit: SpellHit) -> void:
 	if el and el.weaken_mult > 1.0:
 		_add_weak(
 			hit.position,
-			hit.tier.crack_radius * 1.6,
+			hit.tier.crack_radius * 1.6 * hit.size,
 			el.weaken_mult,
 			el.weaken_sec,
 			false,
@@ -661,7 +669,7 @@ func _apply_element(hit: SpellHit) -> void:
 		_spell_player.play()
 	# Combinaciones que dejan la zona quebradiza (Choque Térmico): congelada y al rojo a la vez.
 	if hit.recipe and hit.recipe.shatter_mult > 1.0:
-		var r2: float = hit.tier.crack_radius * 2.0
+		var r2: float = hit.tier.crack_radius * 2.0 * hit.size
 		_add_weak(
 			hit.position, r2, hit.recipe.shatter_mult, hit.recipe.shatter_sec, true, 2.0, &"shatter"
 		)
@@ -670,7 +678,7 @@ func _apply_element(hit: SpellHit) -> void:
 	if hit.element != &"spark":
 		return
 	var big: bool = hit.recipe != null
-	var radius: float = hit.tier.crack_radius * (2.4 if big else 1.1)
+	var radius: float = hit.tier.crack_radius * (2.4 if big else 1.1) * hit.size
 	_add_burn(hit.position, radius)
 	if big and hit.recipe.burn_sec > 0.0:
 		_burn_fire.ignite(
@@ -776,7 +784,7 @@ func _reveal_geode(i: int, announce: bool) -> void:
 
 ## Un golpe cerca de una geoda abierta la revienta.
 func _check_geodes(hit: SpellHit) -> void:
-	var reach: float = 2.0 + hit.tier.crack_radius * 0.5
+	var reach: float = 2.0 + hit.tier.crack_radius * 0.5 * hit.size
 	for i: int in _geode_nodes:
 		var g: Geode = _geode_nodes[i]
 		if g.active and g.global_position.distance_to(hit.position) <= reach + g.scale.x * 0.4:
