@@ -42,6 +42,7 @@ PROFILES = {
 }
 P = dict(PROFILES["eficiente"])
 CRUSHER_DIST = 50.0  # del cristal a la trituradora
+FAMILIAR_DIST = 55.0  # de la tolva a donde caen los fragmentos
 SANCTUM_EXTRA = 94.0  # trituradora -> Santuario -> cristal, lo que se añade al viaje
 FEED_START, FEED_MIN, FEED_RAMP = 0.4, 0.09, 2.4
 LEVER_SEC = 1.0
@@ -245,6 +246,10 @@ def load():
         shards.append(ShardT(main["id"], int(main.get("min_damage", 0)), int(main.get("value", 1))))
     shards.sort(key=lambda s: s.min_damage)
     balance, _ = parse_tres(DATA / "balance" / "default_balance.tres")
+    balance["_familiars"] = {}
+    for p in sorted((DATA / "familiars").glob("*.tres")) if (DATA / "familiars").exists() else []:
+        main, _ = parse_tres(p)
+        balance["_familiars"][main["id"]] = main
     if TUNING is not None:
         apply_tuning(TUNING, elements, recipes, upgrades, balance)
     return elements, recipes, upgrades, shards, balance
@@ -289,6 +294,7 @@ class Game:
         self.elements, self.recipes, self.upgrades, self.shards, self.balance = load()
         self.total = float(self.balance.get("total_essence", 1_000_000))
         self.res_mult = int(self.balance.get("resonant_damage_mult", 3))
+        self.familiars = self.balance.get("_familiars", {})
 
     # -- estadísticas --
     def stat(self, s: State, stat: str, fallback: float) -> float:
@@ -456,6 +462,36 @@ class Game:
             return 0.0
         return (sum(x**2 for x in rates) / len(rates)) ** 0.5
 
+    def familiar_rates(self, s: State) -> tuple[float, float, float, float]:
+        """(fragmentos/s que llevan los recolectores, y esencia/s, maná/s y fragmentos/s que sueltan
+        los hechiceros) según data/familiars/ y familiar.gd."""
+        collectors = int(self.stat(s, "familiar_count", 0.0))
+        casters = int(self.stat(s, "familiar_caster", 0.0))
+        wings = self.stat(s, "familiar_speed", 1.0)
+        wing_lv = s.levels.get("familiar_wings", 0)
+        carry_rate = 0.0
+        if collectors:
+            f = self.familiars.get("collector", {})
+            carry = int(f.get("carry", 3)) + wing_lv
+            speed = float(f.get("fly_speed", 7.0)) * wings
+            # Ida y vuelta tolva <-> cristal (en arco, un 20 % más largo) y recoger/soltar cada uno.
+            trip = 2 * FAMILIAR_DIST * 1.2 / speed
+            per = carry * (float(f.get("grab_sec", 0.3)) + float(f.get("drop_gap_sec", 0.16)) + 0.5)
+            carry_rate = collectors * carry / (trip + per)
+        ce = cm = cn = 0.0
+        if casters:
+            f = self.familiars.get("caster", {})
+            spark = self.elements["spark"]
+            idx = max(0, int(round(self.stat(s, spark.power_stat, 0.0))) + int(f.get("tier_offset", -1)))
+            t = spark.tiers[min(idx, len(spark.tiers) - 1)]
+            dmg = max(1, gd_round(t.damage * float(f.get("damage_mult", 0.6))))
+            period = float(f.get("cast_interval", 3.2)) + float(f.get("cast_charge_sec", 0.9))
+            res_p = self.stat(s, "resonant_percent", 7.0) / 100
+            e, m, n = self.hit_yield(dmg, t, 1.0, 0, res_p)
+            k = casters * 0.85 / period  # alguno falla
+            ce, cm, cn = e * k, m * k, n * k
+        return carry_rate, ce, cm, cn
+
     def rates(self, s: State) -> list[tuple[float, float, str]]:
         heart = s.essence / self.total < 0.2
         out: list[tuple[float, float, str]] = []
@@ -465,23 +501,28 @@ class Game:
         trip = CRUSHER_DIST / P["speed"]
         gears = self.stat(s, "crusher_speed", 1.0)
         direct = self.stat(s, "direct_send", 0.0) > 0.5
+        carry_rate, fe, fm, fn = self.familiar_rates(s)
         for name, e, m, n, combo in self.attacks(s):
             if heart and not combo:
                 continue
             if n <= 0 or m <= 0:
                 continue
+            # Los hechiceros suman lo suyo mientras el mago ataca.
+            e, m, n = e + fe, m + fm, n + fn
+            # Segundos de logística del mago por cada fragmento que le toca a él.
             if direct:
-                # Sin viajes: recoger (vuelan solos) y de vez en cuando ir a la palanca.
-                per_sec = 1.0 + n * pick
-                lever = (2 * trip + LEVER_SEC) / DIRECT_SEND_LEVER_EVERY
-                k = 1.0 / (per_sec + lever)
-                mana, ess = m * k, e * k
+                # Vuelan solos a la tolva: recogerlos y, de vez en cuando, ir a la palanca (si no
+                # hay familiares que tiren de ella).
+                lever = 0.0 if carry_rate > 0 else (2 * trip + LEVER_SEC) / DIRECT_SEND_LEVER_EVERY
+                per_shard = pick
+                fixed = lever
             else:
-                t_attack = cap / n
-                t_cycle = t_attack + cap * pick + 2 * trip + self.feed_time(cap, gears) + LEVER_SEC
-                mana = cap * (m / n) / t_cycle
-                ess = e * t_attack / t_cycle
-            out.append((mana * P["focus"], ess * P["focus"], name))
+                per_shard = pick + (2 * trip + self.feed_time(cap, gears) + LEVER_SEC) / cap
+                fixed = 0.0
+            # Los recolectores se llevan una parte de los fragmentos (los que caen al suelo).
+            mine = max(0.0, n - carry_rate)
+            k = 1.0 / (1.0 + mine * per_shard + fixed)
+            out.append((m * k * P["focus"], e * k * P["focus"], name))
         return out
 
     # -- mejoras --
