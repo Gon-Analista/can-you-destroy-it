@@ -70,6 +70,28 @@ const ICONS: Dictionary[StringName, PackedStringArray] = {
 	&"fireball_size": SIZE_ICON,
 	&"frost_size": SIZE_ICON,
 	&"thermal_size": SIZE_ICON,
+	&"purity":
+	[
+		"...#....",
+		"..#+#...",
+		".#+++#..",
+		"#++++##.",
+		"#+++###.",
+		"#++####.",
+		".#####..",
+		"..###..."
+	],
+	&"pylon_resonance":
+	[
+		"#..#..#.",
+		".#.#.#..",
+		"..###...",
+		"..#+#...",
+		"..#+#...",
+		"..#+#...",
+		".#####..",
+		"#######."
+	],
 	&"crystal_impulse":
 	[
 		"...##...",

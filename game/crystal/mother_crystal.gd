@@ -82,6 +82,8 @@ var _hard_hint_at: float = -10.0
 var _geode_nodes: Dictionary[int, Geode] = {}
 ## Efectos de las combinaciones (lanzas, rayos que saltan, reacciones, Trueno, Magnetismo).
 var _combos: CrystalCombos
+## Venas Resonantes: golpes con el elemento débil de cada vena (ver CrystalVeins).
+var _veins: CrystalVeins
 var _shards: ShardPool
 var _fx: ImpactFx
 var _hd_fx: HdImpact
@@ -169,6 +171,10 @@ func _ready() -> void:
 	_combos.name = "Combos"
 	add_child(_combos)
 	_combos.setup(self, _arcs, _shards, _hd_fx, _fx)
+	_veins = CrystalVeins.new()
+	_veins.name = "Veins"
+	add_child(_veins)
+	_veins.setup(self, _arcs, _shards)
 	_arcs.setup_ambient(
 		global_position + Vector3(0.0, volume.top * 0.4, 0.0),
 		Vector3(
@@ -334,6 +340,7 @@ func receive_hit(hit: SpellHit) -> void:
 	_apply_weakness(hit)
 	_combos.check_temper(hit)
 	_check_geodes(hit)
+	_veins.apply(hit)
 	var removed: float = _dig(
 		hit.position, hit.normal, float(hit.damage), hit.recipe != null, hit.size
 	)
@@ -397,6 +404,7 @@ func receive_hit(hit: SpellHit) -> void:
 	)
 	_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.size)
 	_crystal_reacts(hit)
+	_veins.react(hit)
 	if hit.resonant or hit.recipe != null or _now - _last_hd >= 0.12:
 		_last_hd = _now
 		_hd_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.recipe != null, hit.size)
@@ -590,6 +598,11 @@ func add_crack(at: Vector3, radius: float) -> void:
 func flash(amount: float) -> void:
 	_global_flash = maxf(_global_flash, amount)
 	set_process(true)
+
+
+## Para CrystalVeins: un parámetro del shader del cristal (las venas que se encienden).
+func set_crystal_param(param: StringName, value: Variant) -> void:
+	_material.set_shader_parameter(param, value)
 
 
 ## Capa del último golpe (para el color de los fragmentos).

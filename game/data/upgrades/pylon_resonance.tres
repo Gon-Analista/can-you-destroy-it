@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"pylon_resonance"
+display_name = "Resonancia del Pilón"
+description = "Hito del Pilón: el maná acumulado despierta y dispara rayos al Cristal Madre. Cuanto más lleno esté el Pilón, más fuerte golpea."
+branch = 5
+element = &""
+star_pos = Vector2i(166, 46)
+costs = PackedInt32Array(1500, 6000, 25000)
+prerequisites = Array[StringName]([&"purity"])
+stat = &"pylon_bolt_sec"
+values = PackedFloat32Array(0, 20, 13, 8)
+value_format = "un rayo cada %d s"
+level_names = PackedStringArray("Dormida")

@@ -15,3 +15,7 @@ col_dark = Color(0.14, 0.26, 0.46, 1)
 col_core = Color(0.55, 0.2, 0.52, 1)
 hit_pitch = 0.89
 geode_count = 2
+vein_elements = Array[StringName]([&"spark", &"frost", &"bolt", &"earth", &"arcane"])
+vein_names = PackedStringArray("Chispa", "Escarcha", "Rayo", "Tierra", "Arcano")
+vein_damage_mult = 2.0
+vein_shards = 2

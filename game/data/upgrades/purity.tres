@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"purity"
+display_name = "Pureza"
+description = "Afinas el Pilón de Maná: cada fragmento que entregas vale más maná y llena más el Pilón."
+branch = 5
+element = &""
+star_pos = Vector2i(72, 60)
+costs = PackedInt32Array(150, 700, 3000, 12000, 45000)
+prerequisites = Array[StringName]([])
+stat = &"purity_mult"
+values = PackedFloat32Array(1, 1.25, 1.5625, 1.953, 2.441, 3.052)
+value_format = "maná x%.2f"
+level_names = PackedStringArray()

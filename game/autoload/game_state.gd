@@ -5,6 +5,8 @@ const BALANCE: BalanceConfig = preload("res://data/balance/default_balance.tres"
 ## Las mejoras del Grimorio (M1b: una estrella por rama; el orden es el de la constelación).
 const UPGRADES: Array[UpgradeNode] = [
 	preload("res://data/upgrades/bag.tres"),
+	preload("res://data/upgrades/purity.tres"),
+	preload("res://data/upgrades/pylon_resonance.tres"),
 	preload("res://data/upgrades/spark_power.tres"),
 	preload("res://data/upgrades/channeling.tres"),
 	preload("res://data/upgrades/resonance.tres"),
@@ -111,19 +113,31 @@ func has_direct_send() -> bool:
 ## Saca de la bolsa el fragmento de más valor para entregarlo (el Pilón lo suma al llegar).
 ## Devuelve su tipo, o null si la bolsa está vacía.
 func take_for_delivery() -> ShardType:
-	for i: int in range(ShardPool.TYPES.size() - 1, -1, -1):
-		var type: ShardType = ShardPool.TYPES[i]
+	for i: int in range(ShardPool.ALL_TYPES.size() - 1, -1, -1):
+		var type: ShardType = ShardPool.ALL_TYPES[i]
 		if progression.take_from_bag(type.id):
 			Events.bag_changed.emit(progression.bag_count(), bag_capacity())
 			return type
 	return null
 
 
+## Maná (y Pilón) que da un fragmento al entregarlo: su valor por la Pureza (GDD 7). Es el
+## único sitio donde se aplica el multiplicador.
+func shard_value(type: ShardType) -> int:
+	return maxi(1, roundi(float(type.value) * stat(&"purity_mult", 1.0)))
+
+
 func deliver(value: int) -> void:
+	var before: float = progression.pylon_ratio()
 	progression.deliver(value)
 	Events.shard_delivered.emit(value)
 	Events.mana_changed.emit(progression.mana)
-	Events.pylon_changed.emit(progression.pylon_progress, progression.pylon_ratio())
+	var ratio: float = progression.pylon_ratio()
+	Events.pylon_changed.emit(progression.pylon_progress, ratio)
+	# Hitos del Pilón: cada marca tallada se celebra una vez (el Pilón nunca baja).
+	for i: int in ManaPylon.MARKS.size():
+		if not ManaPylon.mark_reached(before, i) and ManaPylon.mark_reached(ratio, i):
+			Events.pylon_milestone.emit(i, ManaPylon.MARKS[i])
 
 
 ## Llamar cada vez que se lanza una combinación: la primera vez se celebra el descubrimiento.

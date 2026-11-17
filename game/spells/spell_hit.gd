@@ -29,3 +29,7 @@ var size: float = 1.0
 var direction: Vector3 = Vector3.FORWARD
 ## Golpe menor de un hechizo múltiple (lluvia, haz): sin pausa de impacto ni destello global.
 var minor: bool = false
+## Vena Resonante en la que cayó (sector del cristal, ver CrystalVeins) o -1 si no cayó en una.
+var vein: int = -1
+## True si dio en la vena con su elemento débil (daño extra y Fragmentos Resonantes).
+var vein_weak: bool = false

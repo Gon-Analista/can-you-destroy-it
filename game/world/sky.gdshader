@@ -20,6 +20,11 @@ uniform vec4 moon_color : source_color = vec4(0.85, 0.9, 1.0, 1.0);
 uniform float stars = 0.0;
 // Tinte de las nubes (anaranjadas al atardecer, azuladas de noche).
 uniform vec4 cloud_tint : source_color = vec4(1.0, 1.0, 1.0, 1.0);
+// 0..1: auroras de maná (de noche, crecen con el Pilón; ver ValleyMilestones y DayNight).
+uniform float aurora = 0.0;
+uniform vec4 aurora_low : source_color = vec4(0.36, 1.0, 0.82, 1.0);
+uniform vec4 aurora_mid : source_color = vec4(0.78, 0.55, 1.0, 1.0);
+uniform vec4 aurora_high : source_color = vec4(1.0, 0.48, 0.85, 1.0);
 
 float hash13(vec3 p) {
 	p = fract(p * 0.1031);
@@ -52,6 +57,26 @@ void sky() {
 			vec3 sc = mix(vec3(1.0, 0.95, 0.8), vec3(0.75, 0.85, 1.0), fract(hs * 13.1));
 			col = mix(col, sc * 1.3, stars * tw * smoothstep(0.02, 0.2, d.y));
 		}
+	}
+	// Auroras de maná: cortinas onduladas, verde y cian abajo, violeta y rosa arriba, con rayos
+	// verticales; se mueven a saltos y se tiñen por bandas con tramado (pixel art).
+	if (aurora > 0.01 && d.y > 0.02) {
+		float az = atan(d.x, d.z);
+		float tt = floor(TIME * 6.0) / 6.0;
+		float center = 0.3 + 0.07 * sin(az * 3.0 + tt * 0.12) + 0.035 * sin(az * 7.0 - tt * 0.21);
+		float dist = d.y - center;
+		float curtain = smoothstep(-0.035, 0.0, dist) * (1.0 - smoothstep(0.0, 0.24, dist));
+		float rays = 0.5 + 0.5 * sin(az * 55.0 + sin(az * 9.0 + tt * 0.35) * 3.0);
+		rays *= 0.65 + 0.35 * sin(az * 21.0 - tt * 0.5);
+		vec2 flat_dir = normalize(d.xz + vec2(1e-4));
+		// Más intensas hacia el norte (detrás del cristal), tenues alrededor.
+		float side = 0.35 + 0.65 * smoothstep(-0.3, 0.8, -flat_dir.y);
+		float a = curtain * (0.35 + 0.65 * rays) * side * aurora;
+		float k = clamp(dist / 0.24, 0.0, 1.0);
+		vec3 ac = mix(aurora_low.rgb, aurora_mid.rgb, smoothstep(0.05, 0.5, k));
+		ac = mix(ac, aurora_high.rgb, smoothstep(0.5, 1.0, k));
+		float q = floor(a * 4.0 + dither) / 4.0;
+		col = mix(col, ac * 1.15, clamp(q, 0.0, 0.8));
 	}
 	// Sol y luna: discos de píxeles con un halo en bandas.
 	float sd = dot(d, normalize(sun_dir));

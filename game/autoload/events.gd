@@ -11,6 +11,12 @@ signal crystal_destroyed
 ## Se ha abierto una capa nueva del cristal (Corteza -> Manto Geódico -> ...).
 signal crystal_layer_changed(layer: CrystalLayerDef, index: int)
 signal geode_broken(position: Vector3)
+## Un golpe dio en una Vena Resonante con su elemento débil (`element`: el de la vena).
+signal vein_hit(hit: SpellHit, element: StringName)
+## El Pilón pasa una de sus marcas talladas (índice en ManaPylon.MARKS). Sólo una vez cada una.
+signal pylon_milestone(index: int, mark: float)
+## La Resonancia del Pilón lanza un rayo al cristal (`at`: dónde da).
+signal pylon_bolt(at: Vector3)
 
 # --- Sensación del golpe (prototipo de la chispa) ---
 signal spell_cast(tier: SpellTier, hand_side: int)
