@@ -82,14 +82,14 @@ func _ready() -> void:
 	_banner.visible = false
 	_prompt = _label(
 		(
-			"CLIC PARA EMPEZAR  ·  WASD MOVERSE  ·  CLIC IZQ / DER: CADA MANO"
-			+ "  ·  LOS DOS A LA VEZ: COMBINAR  ·  F RECOGER"
+			"CLIC PARA EMPEZAR  ·  WASD MOVERSE  ·  SHIFT CORRER  ·  ESPACIO SALTAR\n"
+			+ "CLIC IZQ / DER: CADA MANO  ·  LOS DOS A LA VEZ: COMBINAR  ·  F RECOGER  ·  TAB GRIMORIO"
 		),
 		8,
 		C_TEXT,
 		HORIZONTAL_ALIGNMENT_CENTER
 	)
-	_place(_prompt, Control.PRESET_CENTER, Rect2(-310, 30, 620, 10))
+	_place(_prompt, Control.PRESET_CENTER, Rect2(-310, 30, 620, 22))
 	_discovery_title = _label("¡COMBINACIÓN NUEVA!", 8, C_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	_place(_discovery_title, Control.PRESET_CENTER_TOP, Rect2(-150, 62, 300, 10))
 	_discovery_name = _label("", 32, C_FIRE, HORIZONTAL_ALIGNMENT_CENTER, true)

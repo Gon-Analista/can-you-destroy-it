@@ -162,6 +162,36 @@ def pylon_milestone(seed: int) -> np.ndarray:
     return normalize(fade(reverb(x, rng, 2.0, 0.35), 0.002, 0.4), -2)
 
 
+def footstep_grass(seed: int) -> np.ndarray:
+    """Paso sobre hierba: roce suave de hojas + golpe sordo muy bajo. Sin agudos molestos."""
+    rng = np.random.default_rng(seed)
+    t = t_axis(0.22)
+    swish = bandpass(rng.standard_normal(len(t)), 900, 4500, 2) * np.exp(-t / 0.045)
+    swish *= 1 - np.exp(-t / 0.006)
+    thump = lowpass(rng.standard_normal(len(t)), 220) * np.exp(-t / 0.03) * 2.0
+    return normalize(fade(swish * 0.6 + thump, 0.001, 0.04), -14)
+
+
+def jump_whoosh(seed: int) -> np.ndarray:
+    """Salto: impulso de ropa y aire que sube."""
+    rng = np.random.default_rng(seed)
+    t = t_axis(0.3)
+    noise = rng.standard_normal(len(t))
+    x = bandpass(noise, 400, 2500, 2) * np.sin(np.pi * np.clip(t / 0.25, 0, 1)) ** 2
+    x += lowpass(noise, 200) * np.exp(-t / 0.03) * 1.5
+    return normalize(fade(x, 0.002, 0.05), -12)
+
+
+def land_thud(seed: int) -> np.ndarray:
+    """Aterrizar: golpe sordo en la hierba con un roce corto."""
+    rng = np.random.default_rng(seed)
+    t = t_axis(0.35)
+    thud = lowpass(rng.standard_normal(len(t)), 180) * np.exp(-t / 0.05) * 2.5
+    thud += np.sin(2 * np.pi * 70 * t) * np.exp(-t / 0.06) * 0.6
+    swish = bandpass(rng.standard_normal(len(t)), 800, 4000, 2) * np.exp(-t / 0.06) * 0.4
+    return normalize(fade(thud + swish, 0.001, 0.06), -9)
+
+
 # Pentatónica de La (semitonos sobre A5) para la escala de gotas: cada entrega sube una nota.
 DROP_NOTES = [-12, -10, -8, -5, -3, 0, 2, 4, 7, 9, 12]
 
@@ -183,6 +213,10 @@ def main() -> None:
     write(out, "sfx_ui_deny_01", ui_deny(760))
     write(out, "sfx_telekinesis_01", telekinesis(770))
     write(out, "sfx_pylon_milestone_01", pylon_milestone(780))
+    for i in range(4):
+        write(out, f"sfx_step_grass_{i + 1:02d}", footstep_grass(790 + i))
+    write(out, "sfx_jump_01", jump_whoosh(800))
+    write(out, "sfx_land_01", land_thud(810))
 
 
 if __name__ == "__main__":

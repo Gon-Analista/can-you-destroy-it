@@ -5,8 +5,23 @@ extends CharacterBody3D
 
 const OUTLINE_SHADER: Shader = preload("res://fx/outline.gdshader")
 const TELEKINESIS_SFX: AudioStream = preload("res://audio/sfx/sfx_telekinesis_01.ogg")
+const STEP_SFX: Array[AudioStream] = [
+	preload("res://audio/sfx/sfx_step_grass_01.ogg"),
+	preload("res://audio/sfx/sfx_step_grass_02.ogg"),
+	preload("res://audio/sfx/sfx_step_grass_03.ogg"),
+	preload("res://audio/sfx/sfx_step_grass_04.ogg"),
+]
+const JUMP_SFX: AudioStream = preload("res://audio/sfx/sfx_jump_01.ogg")
+const LAND_SFX: AudioStream = preload("res://audio/sfx/sfx_land_01.ogg")
 
 @export var walk_speed: float = 4.5
+@export var sprint_speed: float = 8.0
+@export var jump_velocity: float = 5.4
+## Margen para saltar justo después de dejar el suelo y para un salto pulsado antes de tocarlo.
+@export var coyote_sec: float = 0.12
+@export var jump_buffer_sec: float = 0.12
+## Distancia entre pasos (m) andando; corriendo los pasos se alargan.
+@export var step_length: float = 1.7
 @export var acceleration: float = 30.0
 @export var mouse_sensitivity: float = 0.0022
 @export var start_pitch_deg: float = 20.0
@@ -27,6 +42,13 @@ var _grab_point: Marker3D
 ## Con el Grimorio abierto el mago no se mueve ni mira.
 var _locked: bool = false
 var _telekinesis_timer: float = 0.0
+var _coyote: float = 0.0
+var _jump_buffer: float = 0.0
+var _was_on_floor: bool = true
+var _fall_speed: float = 0.0
+var _step_dist: float = 0.0
+var _bob_phase: float = 0.0
+var _steps: AudioStreamRandomizer
 
 @onready var _head: Node3D = $Head
 @onready var _camera: CameraRig = $Head/Camera
@@ -36,6 +58,11 @@ var _telekinesis_timer: float = 0.0
 
 func _ready() -> void:
 	add_to_group(&"player")
+	_steps = AudioStreamRandomizer.new()
+	for st: AudioStream in STEP_SFX:
+		_steps.add_stream(-1, st)
+	_steps.random_pitch = 1.12
+	_steps.random_volume_offset_db = 2.0
 	Events.grimoire_opened.connect(func() -> void: _locked = true)
 	Events.grimoire_closed.connect(func() -> void: _locked = false)
 	Events.upgrade_bought.connect(func(_id: StringName, _l: int) -> void: _apply_upgrades(true))
@@ -87,20 +114,64 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if not is_on_floor():
+	var on_floor: bool = is_on_floor()
+	if not on_floor:
 		velocity.y -= _gravity * delta
+		_fall_speed = maxf(_fall_speed, -velocity.y)
+	_coyote = coyote_sec if on_floor else maxf(0.0, _coyote - delta)
+	_jump_buffer = maxf(0.0, _jump_buffer - delta)
+	if not _locked and Input.is_action_just_pressed(&"jump"):
+		_jump_buffer = jump_buffer_sec
+	if _jump_buffer > 0.0 and _coyote > 0.0:
+		velocity.y = jump_velocity
+		_jump_buffer = 0.0
+		_coyote = 0.0
+		_fall_speed = 0.0
+		AudioDirector.play_sfx(JUMP_SFX, -6.0)
 	var input: Vector2 = (
 		Vector2.ZERO
 		if _locked
 		else Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
 	)
-	var wish: Vector3 = (global_basis * Vector3(input.x, 0.0, input.y)).normalized() * walk_speed
-	var horizontal := Vector3(velocity.x, 0.0, velocity.z).move_toward(wish, acceleration * delta)
+	# Correr: sólo hacia delante (como en casi todos los FPS) y con las manos libres de carga.
+	var sprinting: bool = (
+		not _locked and Input.is_action_pressed(&"sprint") and input.y < -0.3 and on_floor
+	)
+	var speed: float = sprint_speed if sprinting else walk_speed
+	var wish: Vector3 = (global_basis * Vector3(input.x, 0.0, input.y)).normalized() * speed
+	# En el aire se controla menos.
+	var accel: float = acceleration * (1.0 if on_floor else 0.35)
+	var horizontal := Vector3(velocity.x, 0.0, velocity.z).move_toward(wish, accel * delta)
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
 	move_and_slide()
-	_hands.move_speed = horizontal.length()
+	_land_and_steps(horizontal.length(), sprinting, delta)
+	_hands.move_speed = horizontal.length() if is_on_floor() else 0.0
 	_update_pickup(delta)
+
+
+## Pasos sobre la hierba, cabeceo de cámara, campo de visión al correr y caída al aterrizar.
+func _land_and_steps(speed: float, sprinting: bool, delta: float) -> void:
+	var on_floor: bool = is_on_floor()
+	if on_floor and not _was_on_floor:
+		var strength: float = clampf((_fall_speed - 2.0) / 8.0, 0.0, 1.0)
+		if _fall_speed > 2.5:
+			_camera.land(strength)
+			AudioDirector.play_sfx(LAND_SFX, lerpf(-10.0, -2.0, strength))
+			_hands.play_grab()
+		_fall_speed = 0.0
+		_step_dist = 0.0
+	_was_on_floor = on_floor
+	_camera.sprint = move_toward(_camera.sprint, 1.0 if sprinting else 0.0, delta * 4.0)
+	if on_floor and speed > 0.5:
+		_step_dist += speed * delta
+		_bob_phase += speed * delta * PI / step_length
+		var stride: float = step_length * (1.25 if sprinting else 1.0)
+		if _step_dist >= stride:
+			_step_dist = 0.0
+			AudioDirector.play_sfx(_steps, -8.0 if sprinting else -11.0)
+	var amp: float = clampf(speed / walk_speed, 0.0, 1.8) if on_floor else 0.0
+	_camera.bob = Vector2(cos(_bob_phase) * 0.012, absf(sin(_bob_phase)) * 0.02) * amp
 
 
 ## Resalta el fragmento al que apuntas (o el más cercano delante) y lo recoge con F.

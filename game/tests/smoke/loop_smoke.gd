@@ -72,6 +72,20 @@ func _run() -> void:
 	_check(gs.call(&"bag_capacity") == 5, "la bolsa sube a 5")
 	_check(bag.cost_for_level(0) == 5, "la primera mejora cuesta 5 (GDD 8.1)")
 
+	grimoire.call(&"close")
+	# Saltar: con el jugador en el suelo, Espacio lo levanta y vuelve a caer.
+	player.global_position = Vector3(0, 0.5, 32)
+	await create_timer(0.8).timeout
+	var y0: float = player.global_position.y
+	Input.action_press(&"jump")
+	await physics_frame
+	await physics_frame
+	Input.action_release(&"jump")
+	await create_timer(0.25).timeout
+	_check(player.global_position.y > y0 + 0.4, "Espacio salta")
+	await create_timer(1.2).timeout
+	_check(absf(player.global_position.y - y0) < 0.2, "y vuelve al suelo")
+
 	gs.set(&"progression", Progression.new(1_000_000))
 	(gs.get(&"progression") as Progression).load_dict(state_before)
 	root.get_node(^"SaveSystem").call(&"save_game")
