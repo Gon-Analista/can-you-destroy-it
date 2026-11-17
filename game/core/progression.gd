@@ -96,11 +96,19 @@ func purchase_block(node: UpgradeNode) -> StringName:
 	if level >= node.get_max_level():
 		return &"max"
 	for req: StringName in node.prerequisites:
-		if get_level(req) == 0:
+		if not _has_requirement(req):
 			return &"locked"
 	if not can_afford(node.cost_for_level(level)):
 		return &"mana"
 	return &""
+
+
+## Una mejora comprada, o "recipe:<id>": una combinación ya descubierta.
+func _has_requirement(req: StringName) -> bool:
+	var r: String = req
+	if r.begins_with("recipe:"):
+		return discovered_recipes.has(StringName(r.trim_prefix("recipe:")))
+	return get_level(req) > 0
 
 
 func buy_upgrade(node: UpgradeNode) -> bool:
@@ -108,7 +116,7 @@ func buy_upgrade(node: UpgradeNode) -> bool:
 	if level >= node.get_max_level():
 		return false
 	for req: StringName in node.prerequisites:
-		if get_level(req) == 0:
+		if not _has_requirement(req):
 			return false
 	if not spend(node.cost_for_level(level)):
 		return false

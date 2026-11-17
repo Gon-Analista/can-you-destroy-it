@@ -267,7 +267,7 @@ func _apply_element(hit: SpellHit) -> void:
 			radius * 0.9,
 			hit.recipe.burn_sec,
 			hit.recipe.burn_tick_sec,
-			hit.recipe.burn_damage
+			maxi(1, roundi(hit.recipe.burn_damage * GameState.stat(&"fireball_mult", 1.0)))
 		)
 
 

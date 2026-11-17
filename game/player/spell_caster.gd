@@ -292,6 +292,7 @@ func _launch_combine() -> void:
 	hit.element = RECIPE.elements[0] if not RECIPE.elements.is_empty() else ELEMENT.id
 	hit.resonant = _rng.randf() < _resonant_chance()
 	var damage: int = RECIPE.damage_for(current_tier().damage, current_tier().damage, charge)
+	damage = roundi(float(damage) * GameState.stat(&"fireball_mult", 1.0))
 	hit.damage = damage * (GameState.BALANCE.resonant_damage_mult if hit.resonant else 1)
 	var projectile: SparkProjectile = _free_projectile(_combo_projectiles)
 	if projectile:

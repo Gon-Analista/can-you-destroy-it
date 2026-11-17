@@ -14,3 +14,5 @@ stat = &"resonant_percent"
 values = PackedFloat32Array(7, 10, 13, 17, 22)
 value_format = "%d %% resonantes"
 level_names = PackedStringArray()
+element = &""
+star_pos = Vector2i(170, 92)

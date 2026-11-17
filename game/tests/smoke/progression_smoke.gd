@@ -59,6 +59,15 @@ func _init() -> void:
 		bag.buy_upgrade(bag_node)
 	_check(bag.purchase_block(bag_node) == &"max", "no se pasa del último nivel")
 
+	var fb: UpgradeNode = load("res://data/upgrades/fireball_power.tres")
+	var fresh_fb := Progression.new(1000)
+	fresh_fb.deliver(500)
+	_check(
+		fresh_fb.purchase_block(fb) == &"locked", "la mejora de la Bola de Fuego pide descubrirla"
+	)
+	fresh_fb.discover_recipe(&"fireball")
+	_check(fresh_fb.buy_upgrade(fb), "descubierta, ya se puede comprar")
+
 	var restored := Progression.new(1000)
 	restored.load_dict(p.to_dict())
 	_check(restored.to_dict() == p.to_dict(), "guardar y cargar conserva el estado")

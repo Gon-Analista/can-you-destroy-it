@@ -9,6 +9,7 @@ const UPGRADES: Array[UpgradeNode] = [
 	preload("res://data/upgrades/channeling.tres"),
 	preload("res://data/upgrades/resonance.tres"),
 	preload("res://data/upgrades/telekinesis.tres"),
+	preload("res://data/upgrades/fireball_power.tres"),
 ]
 
 var progression: Progression = Progression.new(BALANCE.total_essence)

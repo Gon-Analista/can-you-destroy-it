@@ -19,14 +19,26 @@ const BUY_SFX: AudioStream = preload("res://audio/sfx/sfx_upgrade_buy_01.ogg")
 const BOOK := Rect2i(70, 34, 500, 292)
 const LEFT_PAGE := Rect2i(80, 42, 236, 276)
 const RIGHT_PAGE := Rect2i(324, 42, 236, 276)
-## Posición de cada estrella en la página izquierda (mismo orden que GameState.UPGRADES).
-const STAR_POS: Array[Vector2i] = [
-	Vector2i(48, 84), Vector2i(120, 58), Vector2i(194, 102), Vector2i(150, 176), Vector2i(58, 186)
+## Páginas del Grimorio: una constelación por elemento (y la del Mago, con lo general).
+## [id del elemento ("" = Mago), nombre, color del título, cielo, cielo profundo, se abre con
+## el Pilón al...].
+const PAGES: Array[Array] = [
+	[&"", "MAGO", "#ffd27a", "#1b2a6b", "#141c4d", 0.0],
+	[&"spark", "CHISPA", "#ff9a3a", "#3a1840", "#26102e", 0.0],
+	[&"frost", "ESCARCHA", "#a5dae5", "#14305a", "#0d2042", 0.1],
+	[&"bolt", "RAYO", "#ffe66b", "#2a2450", "#1b1838", 0.25],
+	[&"earth", "TIERRA", "#c9a26b", "#2e2a24", "#1f1c18", 0.5],
+	[&"arcane", "ARCANO", "#c79bff", "#24164a", "#170e33", 0.75],
 ]
-## Trazos de la constelación (índices de estrellas).
-const LINES: Array[Vector2i] = [
-	Vector2i(0, 1), Vector2i(1, 2), Vector2i(2, 3), Vector2i(3, 4), Vector2i(4, 0)
+const PAGE_TITLES: PackedStringArray = [
+	"CONSTELACIÓN DEL MAGO",
+	"CONSTELACIÓN DE LA CHISPA",
+	"CONSTELACIÓN DE LA ESCARCHA",
+	"CONSTELACIÓN DEL RAYO",
+	"CONSTELACIÓN DE LA TIERRA",
+	"CONSTELACIÓN DEL ARCANO",
 ]
+const TAB_W: int = 36
 
 const C_INK := Color("#2a1d4a")
 const C_INK_SOFT := Color("#6a5a86")
@@ -92,6 +104,17 @@ const ICONS: Dictionary[StringName, PackedStringArray] = {
 		".##..##.",
 		"##....##"
 	],
+	&"fireball_power":
+	[
+		"..#..#..",
+		".#.##.#.",
+		"..####..",
+		".##++##.",
+		"#+++++##",
+		"#+++++##",
+		".##+###.",
+		"..####.."
+	],
 	&"telekinesis":
 	[
 		".######.",
@@ -104,6 +127,71 @@ const ICONS: Dictionary[StringName, PackedStringArray] = {
 		"#......."
 	],
 }
+const PAGE_ICONS: Array[PackedStringArray] = [
+	[
+		"...#....",
+		"..###...",
+		".#####..",
+		"########",
+		"...#....",
+		"..###...",
+		".#...#..",
+		"#.....#."
+	],
+	[
+		"...#....",
+		"...##...",
+		"..###.#.",
+		".#####..",
+		".##+###.",
+		"##+++###",
+		"##+++##.",
+		".#####.."
+	],
+	[
+		"#..#..#.",
+		".#.#.#..",
+		"..###...",
+		"#######.",
+		"..###...",
+		".#.#.#..",
+		"#..#..#.",
+		"........"
+	],
+	[
+		"....##..",
+		"...##...",
+		"..##....",
+		".######.",
+		"....##..",
+		"...##...",
+		"..##....",
+		".##....."
+	],
+	[
+		"........",
+		"..####..",
+		".##++##.",
+		"###++###",
+		"########",
+		".######.",
+		"..####..",
+		"........"
+	],
+	[
+		"..####..",
+		".#....#.",
+		"#..##..#",
+		"#.#++#.#",
+		"#..##..#",
+		".#....#.",
+		"..####..",
+		"........"
+	],
+]
+const LOCK_ICON: PackedStringArray = [
+	"..###...", ".#...#..", ".#...#..", "#######.", "##+++##.", "###+###.", "#######.", "........"
+]
 const MANA_ICON: PackedStringArray = [
 	"...#....", "..###...", "..###...", ".##+##..", ".#+####.", ".#+####.", "..####..", "........"
 ]
@@ -112,6 +200,7 @@ var is_open: bool = false
 
 var _at_sanctum: bool = false
 var _selected: int = 0
+var _page: int = 0
 var _open_t: float = 0.0
 var _closing: bool = false
 var _t: float = 0.0
@@ -131,7 +220,7 @@ var _star_labels: Array[Label] = []
 var _write_t: float = 1.0
 var _write_speed: float = 4.0
 var _deny_t: float = 0.0
-var _flash_t: PackedFloat32Array = PackedFloat32Array([0, 0, 0, 0, 0])
+var _flash_t: PackedFloat32Array = PackedFloat32Array()
 var _shown_mana: float = 0.0
 ## Partículas 2D propias (píxeles dorados al inscribir): pos, vel, vida.
 var _parts_pos: PackedVector2Array = PackedVector2Array()
@@ -141,10 +230,11 @@ var _parts_col: PackedColorArray = PackedColorArray()
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_flash_t.resize(GameState.UPGRADES.size())
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4
 	for i: int in 70:
@@ -155,9 +245,9 @@ func _ready() -> void:
 	_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_content.size = Vector2(640, 360)
 	add_child(_content)
-	_title = _label("GRIMORIO DE CONSTELACIONES", 8, C_GOLD_LIGHT, Rect2(80, 48, 236, 10), 1)
+	_title = _label("", 8, C_GOLD_LIGHT, Rect2(80, 64, 236, 10), 1)
 	for i: int in GameState.UPGRADES.size():
-		var p: Vector2i = STAR_POS[i] + LEFT_PAGE.position
+		var p: Vector2i = GameState.UPGRADES[i].star_pos + LEFT_PAGE.position
 		_star_labels.append(_label("", 8, C_DIM, Rect2(p.x - 50, p.y + 12, 100, 10), 1))
 	var rx: int = RIGHT_PAGE.position.x
 	var ry: int = RIGHT_PAGE.position.y
@@ -171,7 +261,7 @@ func _ready() -> void:
 	_button = _label("", 8, C_INK, Rect2(rx + 18, ry + 214, 200, 10), 1)
 	_mana = _label("", 8, C_GOLD_LIGHT, Rect2(rx + 120, ry - 2 - 10 + 2, 112, 10), 2)
 	_footer = _label(
-		"W/S ELEGIR  ·  CLIC O ESPACIO: INSCRIBIR  ·  TAB / ESC CERRAR",
+		"Q/E ELEMENTO  ·  W/S ESTRELLA  ·  CLIC O ESPACIO: INSCRIBIR  ·  TAB / ESC CERRAR",
 		8,
 		C_CYAN,
 		Rect2(70, 330, 500, 10),
@@ -197,6 +287,7 @@ func open(at_sanctum: bool) -> void:
 	var best: UpgradeNode = GameState.cheapest_affordable()
 	if best:
 		_selected = GameState.UPGRADES.find(best)
+	_page = _page_of(GameState.UPGRADES[_selected])
 	_write_t = 0.0
 	_write_speed = 2.5
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -222,8 +313,11 @@ func _gui_input(event: InputEvent) -> void:
 		var mb: InputEventMouseButton = event
 		if mb.button_index != MOUSE_BUTTON_LEFT:
 			return
+		var tab: int = _tab_at(mb.position)
 		var star: int = _star_at(mb.position)
-		if star >= 0:
+		if tab >= 0:
+			open_page(tab)
+		elif star >= 0:
 			select(star)
 		elif _button_rect().has_point(mb.position - _ofs()):
 			try_buy()
@@ -244,14 +338,61 @@ func _unhandled_input(event: InputEvent) -> void:
 	):
 		close()
 	elif event.is_action_pressed(&"ui_up") or event.is_action_pressed(&"move_forward"):
-		select(wrapi(_selected - 1, 0, GameState.UPGRADES.size()))
+		_step_star(-1)
 	elif event.is_action_pressed(&"ui_down") or event.is_action_pressed(&"move_back"):
-		select(wrapi(_selected + 1, 0, GameState.UPGRADES.size()))
+		_step_star(1)
+	elif event.is_action_pressed(&"cycle_element_left") or event.is_action_pressed(&"ui_left"):
+		open_page(wrapi(_page - 1, 0, PAGES.size()))
+	elif event.is_action_pressed(&"cycle_element_right") or event.is_action_pressed(&"ui_right"):
+		open_page(wrapi(_page + 1, 0, PAGES.size()))
 	elif event.is_action_pressed(&"ui_accept"):
 		try_buy()
 	else:
 		return
 	get_viewport().set_input_as_handled()
+
+
+## Abre la constelación de un elemento (pasa la página con su aleteo).
+func open_page(page: int) -> void:
+	if page == _page:
+		return
+	_page = page
+	var nodes: Array[int] = _page_nodes()
+	if not nodes.is_empty():
+		_selected = nodes[0]
+	_write_t = 0.0
+	_write_speed = 4.0
+	AudioDirector.play_sfx(OPEN_SFX, -10.0, 1.25)
+	_refresh()
+
+
+## Índices (en GameState.UPGRADES) de las estrellas de la página abierta.
+func _page_nodes() -> Array[int]:
+	var out: Array[int] = []
+	var el: StringName = PAGES[_page][0]
+	for i: int in GameState.UPGRADES.size():
+		if GameState.UPGRADES[i].element == el:
+			out.append(i)
+	return out
+
+
+func _page_of(node: UpgradeNode) -> int:
+	for i: int in PAGES.size():
+		if PAGES[i][0] == node.element:
+			return i
+	return 0
+
+
+func _page_locked() -> bool:
+	return _page_nodes().is_empty()
+
+
+func _step_star(dir: int) -> void:
+	var nodes: Array[int] = _page_nodes()
+	if nodes.is_empty():
+		return
+	var at: int = maxi(nodes.find(_selected), 0)
+	select(nodes[wrapi(at + dir, 0, nodes.size())])
 
 
 ## Elige una estrella (con sonido y la página que se reescribe).
@@ -264,6 +405,10 @@ func select(i: int) -> void:
 
 
 func try_buy() -> void:
+	if _page_locked():
+		_deny_t = 0.35
+		AudioDirector.play_sfx(DENY_SFX, -2.0)
+		return
 	var node: UpgradeNode = GameState.UPGRADES[_selected]
 	var block: StringName = GameState.progression.purchase_block(node)
 	if block != &"" or not _at_sanctum:
@@ -276,7 +421,7 @@ func try_buy() -> void:
 	_flash_t[_selected] = 1.0
 	_write_t = 0.0
 	_write_speed = 1.6
-	var star: Vector2 = Vector2(STAR_POS[_selected] + LEFT_PAGE.position)
+	var star: Vector2 = Vector2(node.star_pos + LEFT_PAGE.position)
 	_burst(star, 26, [C_GOLD_LIGHT, C_PINK, C_CYAN])
 	_burst(_button_rect().get_center(), 18, [C_GOLD_LIGHT, C_GOLD])
 	var lvl: int = GameState.progression.get_level(node.id)
@@ -330,10 +475,14 @@ func _refresh() -> void:
 	if not is_open:
 		return
 	var prog: Progression = GameState.progression
+	var page: Array = PAGES[_page]
+	_title.text = tr(PAGE_TITLES[_page])
+	_title.add_theme_color_override(&"font_color", Color(page[2] as String))
 	for i: int in GameState.UPGRADES.size():
 		var n: UpgradeNode = GameState.UPGRADES[i]
 		var lvl: int = prog.get_level(n.id)
 		var label: Label = _star_labels[i]
+		label.visible = n.element == page[0]
 		var block: StringName = prog.purchase_block(n)
 		label.text = tr(n.display_name).to_upper() if block != &"locked" else "?"
 		var c: Color = C_DIM
@@ -346,6 +495,19 @@ func _refresh() -> void:
 		elif lvl > 0:
 			c = Color("#c79bff")
 		label.add_theme_color_override(&"font_color", c)
+	if _page_locked():
+		_page_title.text = tr(page[1] as String)
+		_level.text = tr("ELEMENTO DORMIDO")
+		_desc.text = (
+			tr("Su constelación aún no brilla. Despertará cuando el Pilón de Maná llegue al %d %%.")
+			% roundi(float(page[5]) * 100.0)
+		)
+		_now.text = ""
+		_next.text = ""
+		_cost.text = ""
+		_button.text = tr("SELLADO")
+		_button.add_theme_color_override(&"font_color", C_INK_SOFT)
+		return
 	var node: UpgradeNode = GameState.UPGRADES[_selected]
 	var level: int = prog.get_level(node.id)
 	var max_level: int = node.get_max_level()
@@ -382,6 +544,8 @@ func _refresh() -> void:
 func _prereq_names(node: UpgradeNode) -> String:
 	var names: PackedStringArray = []
 	for req: StringName in node.prerequisites:
+		if String(req).begins_with("recipe:"):
+			names.append(tr("DESCUBRIR LA BOLA DE FUEGO"))
 		for n: UpgradeNode in GameState.UPGRADES:
 			if n.id == req:
 				names.append(tr(n.display_name).to_upper())
@@ -390,10 +554,23 @@ func _prereq_names(node: UpgradeNode) -> String:
 
 func _star_at(p: Vector2) -> int:
 	var local: Vector2 = p - _ofs()
-	for i: int in STAR_POS.size():
-		if local.distance_to(Vector2(STAR_POS[i] + LEFT_PAGE.position)) < 14.0:
+	for i: int in _page_nodes():
+		if local.distance_to(Vector2(GameState.UPGRADES[i].star_pos + LEFT_PAGE.position)) < 14.0:
 			return i
 	return -1
+
+
+## Pestaña bajo el puntero (o -1).
+func _tab_at(p: Vector2) -> int:
+	var local: Vector2 = p - _ofs()
+	for i: int in PAGES.size():
+		if _tab_rect(i).has_point(local):
+			return i
+	return -1
+
+
+func _tab_rect(i: int) -> Rect2:
+	return Rect2(LEFT_PAGE.position.x + 4 + i * (TAB_W + 2), LEFT_PAGE.position.y + 2, TAB_W, 14)
 
 
 func _button_rect() -> Rect2:
@@ -429,35 +606,70 @@ func _draw() -> void:
 
 
 func _draw_left_page(o: Vector2) -> void:
+	var page_def: Array = PAGES[_page]
+	var sky := Color(page_def[3] as String)
+	var deep := Color(page_def[4] as String)
 	var page := Rect2(Vector2(LEFT_PAGE.position) + o, Vector2(LEFT_PAGE.size))
-	draw_rect(page, C_SKY)
+	draw_rect(page, sky)
 	# Franja más profunda abajo, separada con tramado de 1 px.
 	var deep_y: float = page.position.y + 200.0
-	draw_rect(Rect2(page.position.x, deep_y, page.size.x, page.end.y - deep_y), C_SKY_DEEP)
+	draw_rect(Rect2(page.position.x, deep_y, page.size.x, page.end.y - deep_y), deep)
 	for x: int in range(0, int(page.size.x), 2):
-		draw_rect(Rect2(page.position.x + x + 0.0, deep_y - 1.0, 1, 1), C_SKY_DEEP)
+		draw_rect(Rect2(page.position.x + x + 0.0, deep_y - 1.0, 1, 1), deep)
 	# Polvo de estrellas que titila.
 	var step: float = floor(_t * 6.0)
 	for d: Vector3 in _dust:
 		var on: bool = fmod(d.z * 13.0 + step * 0.37, 1.0) > 0.25
-		if on:
+		if on and d.y > 20.0:
 			draw_rect(Rect2(page.position + Vector2(d.x, d.y), Vector2(1, 1)), Color(C_CYAN, 0.75))
+	_draw_tabs(o)
+	if _page_locked():
+		# Elemento dormido: un sello grande en el centro.
+		_draw_icon(LOCK_ICON, page.get_center() - Vector2(16, 24), 4, C_LOCKED)
+		return
 	# Trazos de la constelación: punteados; dorados entre estrellas ya despiertas.
 	var prog: Progression = GameState.progression
-	for l: Vector2i in LINES:
-		var a := Vector2(STAR_POS[l.x] + LEFT_PAGE.position) + o
-		var b := Vector2(STAR_POS[l.y] + LEFT_PAGE.position) + o
-		var lit: bool = (
-			prog.get_level(GameState.UPGRADES[l.x].id) > 0
-			and prog.get_level(GameState.UPGRADES[l.y].id) > 0
-		)
+	var nodes: Array[int] = _page_nodes()
+	for k: int in nodes.size():
+		if nodes.size() < 2 or (nodes.size() == 2 and k == 1):
+			break
+		var na: UpgradeNode = GameState.UPGRADES[nodes[k]]
+		var nb: UpgradeNode = GameState.UPGRADES[nodes[(k + 1) % nodes.size()]]
+		var a := Vector2(na.star_pos + LEFT_PAGE.position) + o
+		var b := Vector2(nb.star_pos + LEFT_PAGE.position) + o
+		var lit: bool = prog.get_level(na.id) > 0 and prog.get_level(nb.id) > 0
 		var n: int = int(a.distance_to(b) / 3.0)
-		for k: int in n:
-			if k % 2 == 0:
-				var p: Vector2 = a.lerp(b, float(k) / float(n)).round()
+		for j: int in n:
+			if j % 2 == 0:
+				var p: Vector2 = a.lerp(b, float(j) / float(n)).round()
 				draw_rect(Rect2(p, Vector2(1, 1)), C_GOLD if lit else C_LOCKED)
-	for i: int in GameState.UPGRADES.size():
-		_draw_star(i, Vector2(STAR_POS[i] + LEFT_PAGE.position) + o)
+	for i: int in nodes:
+		_draw_star(i, Vector2(GameState.UPGRADES[i].star_pos + LEFT_PAGE.position) + o)
+
+
+## Pestañas de los elementos, arriba de la página: la abierta, unida a la página.
+func _draw_tabs(o: Vector2) -> void:
+	for i: int in PAGES.size():
+		var r := Rect2(_tab_rect(i).position + o, _tab_rect(i).size)
+		var col := Color(PAGES[i][2] as String)
+		var open_tab: bool = i == _page
+		var empty: bool = not _has_nodes(i)
+		draw_rect(r.grow(1), C_SHADOW)
+		draw_rect(r, Color(PAGES[i][3] as String) if open_tab else C_COVER_DARK)
+		if open_tab:
+			draw_rect(Rect2(r.position + Vector2(0, r.size.y - 2), Vector2(r.size.x, 2)), col)
+		var icon: PackedStringArray = LOCK_ICON if empty else PAGE_ICONS[i]
+		var ic: Color = col if not empty else C_LOCKED
+		if not open_tab and not empty:
+			ic = col.darkened(0.35)
+		_draw_icon(icon, r.position + Vector2(r.size.x * 0.5 - 4, 3), 1, ic)
+
+
+func _has_nodes(page: int) -> bool:
+	for n: UpgradeNode in GameState.UPGRADES:
+		if n.element == PAGES[page][0]:
+			return true
+	return false
 
 
 func _draw_star(i: int, c: Vector2) -> void:
@@ -513,6 +725,12 @@ func _draw_right_page(o: Vector2) -> void:
 	draw_rect(
 		Rect2(page.position + Vector2(0, page.size.y - 3), Vector2(page.size.x, 3)), C_PAGE_EDGE
 	)
+	if _page_locked():
+		var lock_at: Vector2 = page.position + Vector2(10, 8)
+		draw_rect(Rect2(lock_at - Vector2(2, 2), Vector2(32, 32)), C_PAGE_EDGE)
+		draw_rect(Rect2(lock_at, Vector2(28, 28)), C_COVER_DARK)
+		_draw_icon(PAGE_ICONS[_page], lock_at + Vector2(2, 2), 3, Color(PAGES[_page][2] as String))
+		return
 	var node: UpgradeNode = GameState.UPGRADES[_selected]
 	var prog: Progression = GameState.progression
 	var level: int = prog.get_level(node.id)

@@ -10,12 +10,17 @@ enum Branch { POWER, CHANNELING, ELEMENTS, TELEKINESIS, FAMILIARS, PYLON, RESONA
 ## Qué hace, en una frase (se muestra en el Grimorio).
 @export_multiline var description: String
 @export var branch: Branch = Branch.POWER
+## Elemento de su constelación en el Grimorio (id de ElementDef); vacío = página del Mago.
+@export var element: StringName = &""
+## Posición de la estrella en la página de su constelación (px, página de 236x276).
+@export var star_pos: Vector2i = Vector2i(118, 140)
 ## Coste de cada nivel (el índice 0 es el primer nivel comprado). Si está vacío se usa
 ## `base_cost` x `cost_growth` ^ nivel hasta `max_level`.
 @export var costs: PackedInt32Array = PackedInt32Array()
 @export var base_cost: int = 5
 @export var cost_growth: float = 1.2
 @export var max_level: int = 1
+## Ids de mejoras que hay que tener, o "recipe:<id>" para una combinación ya descubierta.
 @export var prerequisites: Array[StringName] = []
 ## Estadística que modifica (p. ej. &"bag_capacity").
 @export var stat: StringName

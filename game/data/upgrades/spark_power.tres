@@ -14,3 +14,5 @@ stat = &"spark_tier"
 values = PackedFloat32Array(0, 1, 2, 3, 4)
 value_format = "%s"
 level_names = PackedStringArray("Chispa", "Chispa ardiente", "Llama", "Llama mágica", "Fuego estelar")
+element = &"spark"
+star_pos = Vector2i(60, 100)

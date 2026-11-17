@@ -14,3 +14,5 @@ stat = &"telekinesis_radius"
 values = PackedFloat32Array(0, 3.5, 7, 12)
 value_format = "atrae a %d m"
 level_names = PackedStringArray("Sin telequinesis")
+element = &""
+star_pos = Vector2i(112, 190)

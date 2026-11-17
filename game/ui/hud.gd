@@ -54,7 +54,7 @@ var _floater_next: int = 0
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	theme = _make_theme()
 	_essence_title = _label("ESENCIA DEL CRISTAL", 8, C_CYAN, HORIZONTAL_ALIGNMENT_CENTER)
 	_place(_essence_title, Control.PRESET_CENTER_TOP, Rect2(-80, 6, 160, 10))
@@ -71,7 +71,7 @@ func _ready() -> void:
 	_place(_debug, Control.PRESET_BOTTOM_LEFT, Rect2(8, -16, 240, 10))
 	_debug.visible = OS.is_debug_build()
 	_crosshair = Crosshair.new()
-	_crosshair.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_crosshair.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_crosshair)
 	_streak = _label("", 16, STREAK_COLORS[0], HORIZONTAL_ALIGNMENT_LEFT, true)
 	_place(_streak, Control.PRESET_CENTER, Rect2(14, 6, 90, 20))
@@ -99,7 +99,7 @@ func _ready() -> void:
 	_discovery_name.visible = false
 	_loop = HudLoop.new()
 	_loop.name = "Loop"
-	_loop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_loop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_loop)
 	for i: int in FLOATERS:
 		var f: Label = _label("", 8, C_TEXT, HORIZONTAL_ALIGNMENT_CENTER, true)
