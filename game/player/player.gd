@@ -38,7 +38,7 @@ func _ready() -> void:
 	add_to_group(&"player")
 	Events.grimoire_opened.connect(func() -> void: _locked = true)
 	Events.grimoire_closed.connect(func() -> void: _locked = false)
-	Events.upgrade_bought.connect(func(_id: StringName, _l: int) -> void: _apply_upgrades())
+	Events.upgrade_bought.connect(func(_id: StringName, _l: int) -> void: _apply_upgrades(true))
 	_head.rotation.x = deg_to_rad(start_pitch_deg)
 	_caster.camera = _camera
 	_hands.attach_camera(_camera, SpellCaster.ELEMENT.hand_visual, SpellCaster.RECIPE.visual)
@@ -52,8 +52,8 @@ func _ready() -> void:
 
 
 ## Las mejoras que tocan los hechizos: el nivel de la Chispa sale de la Potencia.
-func _apply_upgrades() -> void:
-	_caster.set_tier(roundi(GameState.stat(&"spark_tier", 0.0)))
+func _apply_upgrades(celebrate: bool = false) -> void:
+	_caster.set_tier(roundi(GameState.stat(&"spark_tier", 0.0)), celebrate)
 
 
 func get_caster() -> SpellCaster:

@@ -35,7 +35,7 @@ func _ready() -> void:
 	_viewport.transparent_bg = true
 	_viewport.audio_listener_enable_3d = false
 	_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	_viewport.msaa_3d = Viewport.MSAA_2X
+	_viewport.msaa_3d = Viewport.MSAA_DISABLED
 	_viewport.use_hdr_2d = false
 	add_child(_viewport)
 	_camera = Camera3D.new()

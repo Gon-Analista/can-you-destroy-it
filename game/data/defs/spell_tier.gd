@@ -34,3 +34,7 @@ extends Resource
 @export var trail_width: float = 0.2
 ## Duración de la estela (s): cuanto más, más larga.
 @export var trail_length: float = 0.14
+## Humo que deja en vuelo (0 = nada; la Bola de Fuego, mucho).
+@export var trail_smoke: float = 0.0
+## Rugido en bucle mientras vuela (opcional; la Bola de Fuego).
+@export var flight_sfx: AudioStream

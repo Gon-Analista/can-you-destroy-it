@@ -64,6 +64,8 @@ var _mote_trails: Array[SpellTrail] = []
 var _mote_t: PackedFloat32Array = []
 var _mote_from: Array[Vector3] = []
 var _mote_type: Array[ShardType] = []
+## Motas de la pantalla de carga: no entregan nada.
+var _mote_warm: Array[bool] = []
 var _mote_meshes: Dictionary[ShardType, ArrayMesh] = {}
 
 
@@ -73,6 +75,8 @@ func _ready() -> void:
 	_build_glass()
 	_build_crown()
 	_build_motes()
+	for type: ShardType in ShardPool.TYPES:
+		_mesh_for(type)
 	_build_fx()
 	_build_audio()
 	Events.pylon_changed.connect(_on_pylon_changed)
@@ -137,7 +141,16 @@ func _update_delivery(delta: float) -> void:
 	Events.shard_sent_to_pylon.emit(type)
 
 
-func _launch_mote(type: ShardType) -> void:
+## Pantalla de carga: un fragmento de cada tamaño vuela a la boca (sin entregar nada).
+func warm_up() -> void:
+	if _player == null:
+		_player = get_tree().get_first_node_in_group(&"player") as Node3D
+	for type: ShardType in ShardPool.TYPES:
+		_mesh_for(type)
+		_launch_mote(type, true)
+
+
+func _launch_mote(type: ShardType, warm: bool = false) -> void:
 	for i: int in MOTES:
 		if _mote_t[i] < 0.0:
 			var cam: Camera3D = get_viewport().get_camera_3d()
@@ -147,6 +160,7 @@ func _launch_mote(type: ShardType) -> void:
 			_mote_from[i] = from
 			_mote_t[i] = 0.0
 			_mote_type[i] = type
+			_mote_warm[i] = warm
 			var mote: MeshInstance3D = _motes[i]
 			mote.mesh = _mesh_for(type)
 			mote.global_position = from
@@ -178,7 +192,10 @@ func _update_motes(delta: float) -> void:
 			_mote_t[i] = -1.0
 			mote.visible = false
 			_mote_trails[i].stop()
-			_on_mote_arrived(_mote_type[i])
+			if _mote_warm[i]:
+				_splash.restart()
+			else:
+				_on_mote_arrived(_mote_type[i])
 
 
 func _on_mote_arrived(type: ShardType) -> void:
@@ -400,6 +417,7 @@ func _build_motes() -> void:
 		_mote_t.append(-1.0)
 		_mote_from.append(Vector3.ZERO)
 		_mote_type.append(null)
+		_mote_warm.append(false)
 
 
 func _build_fx() -> void:

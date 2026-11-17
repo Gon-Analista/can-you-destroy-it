@@ -39,6 +39,8 @@ var _converge: GPUParticles3D
 var _sparks: GPUParticles3D
 var _light: OmniLight3D
 var _release_t: float = -1.0
+## > 0 durante el destello de "transformación" (al subir de nivel).
+var _flare: float = 0.0
 var _precession: float = 0.0
 var _t: float = 0.0
 
@@ -112,6 +114,22 @@ func release() -> void:
 	set_process(true)
 
 
+## Destello de transformación (al subir de nivel el hechizo): el halo se hincha, salta una
+## onda de choque y una lluvia de chispas, sin apagar el orbe.
+func flare() -> void:
+	_flare = 1.0
+	_sparks.amount_ratio = 1.0
+	_sparks.restart()
+	_ring.visible = true
+	set_process(true)
+
+
+## Hacia dónde se arrastran las llamas en pantalla (en vuelo: hacia atrás de la trayectoria).
+func set_flow(dir: Vector2, strength: float) -> void:
+	_body_mat.set_shader_parameter("flow", dir)
+	_body_mat.set_shader_parameter("flow_strength", strength)
+
+
 func is_releasing() -> bool:
 	return _release_t >= 0.0
 
@@ -125,8 +143,19 @@ func _process(delta: float) -> void:
 	_converge.emitting = _release_t < 0.0 and def.converge_amount > 0 and charge < 0.98
 	var flicker: float = 0.9 + 0.1 * sin(_t * 23.0) * sin(_t * 17.0)
 	if _release_t < 0.0:
-		_light.light_energy = _light_energy() * flicker
-		_glow_mat.set_shader_parameter("intensity", _glow_intensity() * flicker)
+		if _flare > 0.0:
+			_flare = maxf(0.0, _flare - delta * 1.1)
+			var fl: float = _flare * _flare
+			_glow.scale = Vector3.ONE * _glow_size() * (1.0 + fl * 1.5)
+			_body.scale = (
+				Vector3.ONE * def.core_radius * 2.0 * def.body_scale * _scale() * (1.0 + fl * 0.6)
+			)
+			_ring_mat.set_shader_parameter("progress", 1.0 - _flare)
+			_ring.visible = _flare > 0.0
+		_light.light_energy = _light_energy() * flicker * (1.0 + _flare * 4.0)
+		_glow_mat.set_shader_parameter(
+			"intensity", _glow_intensity() * flicker * (1.0 + _flare * _flare * 5.0)
+		)
 		return
 	_release_t += delta
 	var k: float = clampf(_release_t / def.release_time, 0.0, 1.0)

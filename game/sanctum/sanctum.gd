@@ -86,6 +86,12 @@ func marker_position() -> Vector3:
 	return _book.global_position + Vector3.UP * 0.6
 
 
+## Pantalla de carga: el destello de "objeto nuevo" una vez, para compilarlo antes de jugar.
+func warm_up() -> void:
+	_poof.global_position = marker_position()
+	_poof.restart()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if (
 		event.is_action_pressed(&"interact")

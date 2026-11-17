@@ -7,6 +7,7 @@ extends Node3D
 const CRYSTAL_SHADER: Shader = preload("res://crystal/crystal.gdshader")
 const MAX_HITS: int = 6
 const MAX_CRACKS: int = 16
+const MAX_BURNS: int = 12
 ## Escala pentatónica (semitonos) que recorre el "tink" a medida que crece la racha.
 const STREAK_LADDER: PackedInt32Array = [-5, -3, 0, 2, 4, 7, 9, 12, 14, 16]
 const TINKS: Array[AudioStream] = [
@@ -32,6 +33,11 @@ var _mesh_instance: MeshInstance3D
 var _shards: ShardPool
 var _fx: ImpactFx
 var _hd_fx: HdImpact
+var _burn_fire: CrystalBurn
+var _burns: PackedVector4Array = []
+var _burn_radius: PackedFloat32Array = []
+var _burn_index: int = 0
+var _burn_ticks: int = 0
 var _streak: StreakTracker
 var _hits: PackedVector4Array = []
 var _hit_resonant: PackedFloat32Array = []
@@ -86,6 +92,15 @@ func _ready() -> void:
 	_hd_fx = HdImpact.new()
 	_hd_fx.name = "HdImpact"
 	add_child(_hd_fx)
+	_burn_fire = CrystalBurn.new()
+	_burn_fire.name = "Burn"
+	_burn_fire.burned.connect(_on_burn_tick)
+	add_child(_burn_fire)
+	for i: int in MAX_BURNS:
+		_burns.append(Vector4(0, 0, 0, -1))
+		_burn_radius.append(0.0)
+	_material.set_shader_parameter("burns", _burns)
+	_material.set_shader_parameter("burn_radius", _burn_radius)
 	_setup_audio()
 	for i: int in MAX_HITS:
 		_hits.append(Vector4(0, 0, 0, -1))
@@ -163,6 +178,7 @@ func receive_hit(hit: SpellHit) -> void:
 	_crack_index = (_crack_index + 1) % MAX_CRACKS
 	if hit.recipe and hit.recipe.area_radius > 0.0:
 		_area_blast(hit)
+	_apply_element(hit)
 	_material.set_shader_parameter("hits", _hits)
 	_material.set_shader_parameter("hit_resonant", _hit_resonant)
 	_material.set_shader_parameter("cracks", _cracks)
@@ -222,6 +238,61 @@ func _area_blast(hit: SpellHit) -> void:
 		_shards.spawn(p, n, splinter, 1, 1.15)
 		_fx.play(p, n, hit.tier, false)
 		_hd_fx.play(p, n, hit.tier, false)
+
+
+## Pantalla de carga: dispara una vez cada efecto de impacto y de fuego en `at` (sin daño ni
+## fragmentos que recoger) para compilar shaders y partículas antes de jugar.
+func warm_up(at: Vector3, normal: Vector3, tier: SpellTier, big_tier: SpellTier) -> void:
+	_fx.play(at, normal, tier, true)
+	_hd_fx.play(at, normal, tier, false)
+	_hd_fx.play(at, normal, big_tier, true, true)
+	_burn_fire.ignite(at, normal, 1.0, 0.6, 0.3, 0)
+	_add_burn(at, 0.01)
+	_shards.warm_up(at + normal * 1.5)
+	set_process(true)
+
+
+## Cada elemento deja su huella en el cristal. Fuego: quemadura al rojo (más grande cuanto más
+## nivel) y, si el hechizo lo pide (Bola de Fuego), fuego que sigue ardiendo y quemando.
+func _apply_element(hit: SpellHit) -> void:
+	if hit.element != &"spark":
+		return
+	var big: bool = hit.recipe != null
+	var radius: float = hit.tier.crack_radius * (2.4 if big else 1.1)
+	_add_burn(hit.position, radius)
+	if big and hit.recipe.burn_sec > 0.0:
+		_burn_fire.ignite(
+			hit.position,
+			hit.normal,
+			radius * 0.9,
+			hit.recipe.burn_sec,
+			hit.recipe.burn_tick_sec,
+			hit.recipe.burn_damage
+		)
+
+
+func _add_burn(at: Vector3, radius: float) -> void:
+	_burns[_burn_index] = Vector4(at.x, at.y, at.z, _now)
+	_burn_radius[_burn_index] = radius
+	_burn_index = (_burn_index + 1) % MAX_BURNS
+	_material.set_shader_parameter("burns", _burns)
+	_material.set_shader_parameter("burn_radius", _burn_radius)
+
+
+## Golpe de quemadura: quita esencia, mantiene caliente la marca y, uno de cada tres, suelta
+## una astilla fundida.
+func _on_burn_tick(damage: int, at: Vector3) -> void:
+	if damage <= 0:
+		return
+	GameState.hit_crystal(damage, at)
+	Events.crystal_burned.emit(damage, at)
+	_burn_ticks += 1
+	_core_pulse = maxf(_core_pulse, 0.4)
+	if _burn_ticks % 3 == 0:
+		var n: Vector3 = at - global_position
+		n.y = 0.0
+		_shards.spawn(at, n.normalized(), ShardPool.type_for_hit(1, false), 1, 0.8)
+	set_process(true)
 
 
 func _play_spell_impact(hit: SpellHit) -> void:

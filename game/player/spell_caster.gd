@@ -90,10 +90,12 @@ func is_combining() -> bool:
 	return _combining
 
 
-func set_tier(index: int) -> void:
+## `celebrate`: al subir de nivel comprando, las manos lo celebran (destello y chispas).
+func set_tier(index: int, celebrate: bool = false) -> void:
+	var changed: bool = index != tier_index
 	tier_index = clampi(index, 0, ELEMENT.tiers.size() - 1)
 	if hands:
-		hands.set_flame_visual(current_tier().visual)
+		hands.set_flame_visual(current_tier().visual, celebrate and changed)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -114,7 +116,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	):
 		var key: Key = (event as InputEventKey).physical_keycode
 		if key >= KEY_1 and key <= KEY_5:
-			set_tier(key - KEY_1)
+			set_tier(key - KEY_1, true)
 
 
 ## Lanza con una mano, sin esperar a la combinación (lo usa el modo demo).
@@ -234,6 +236,7 @@ func _cast_single(side: int) -> void:
 	hit.tier = tier
 	hit.resonant = _rng.randf() < _resonant_chance()
 	hit.damage = tier.damage * (GameState.BALANCE.resonant_damage_mult if hit.resonant else 1)
+	hit.element = ELEMENT.id
 	_launch(projectile, hit, side)
 	if hands:
 		hands.play_cast(side)
@@ -286,6 +289,7 @@ func _launch_combine() -> void:
 	var hit := SpellHit.new()
 	hit.tier = tier
 	hit.recipe = RECIPE
+	hit.element = RECIPE.elements[0] if not RECIPE.elements.is_empty() else ELEMENT.id
 	hit.resonant = _rng.randf() < _resonant_chance()
 	var damage: int = RECIPE.damage_for(current_tier().damage, current_tier().damage, charge)
 	hit.damage = damage * (GameState.BALANCE.resonant_damage_mult if hit.resonant else 1)
@@ -351,7 +355,31 @@ func _free_projectile(pool: Array[SparkProjectile]) -> SparkProjectile:
 	return null
 
 
+## Pantalla de carga: lanza un proyectil de cada nivel y la Bola de Fuego hacia `target` sin
+## efecto de juego, para que el motor compile sus shaders y partículas antes de jugar.
+func warm_up(target: Vector3) -> void:
+	var from: Vector3 = camera.global_position + camera.global_basis * Vector3(0.0, -0.3, -1.5)
+	var k: int = 0
+	for tier: SpellTier in ELEMENT.tiers:
+		var hit := SpellHit.new()
+		hit.tier = tier
+		hit.warmup = true
+		hit.position = target
+		hit.normal = Vector3.BACK
+		_projectiles[k].launch(from, target, hit, null)
+		k += 1
+	var combo := SpellHit.new()
+	combo.tier = RECIPE.tier
+	combo.recipe = RECIPE
+	combo.warmup = true
+	combo.position = target
+	combo.normal = Vector3.BACK
+	_combo_projectiles[0].launch(from, target, combo, null)
+
+
 func _on_projectile_arrived(projectile: SparkProjectile) -> void:
+	if projectile.hit.warmup:
+		return
 	var collider: Object = projectile.target_collider
 	if collider is Node and (collider as Node).has_meta(&"mother_crystal"):
 		var crystal: MotherCrystal = (collider as Node).get_meta(&"mother_crystal")

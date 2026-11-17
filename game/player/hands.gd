@@ -35,6 +35,7 @@ const JOIN_SPEED: float = 9.0
 const MERGED_AT: float = 0.8
 ## Tinte de las manos cuando el hechizo las ilumina (HDR suave).
 const HAND_GLOW := Color(1.35, 1.08, 0.82)
+const LEVEL_UP_SFX: AudioStream = preload("res://audio/sfx/sfx_spell_combine_01.ogg")
 
 ## Carga de cada mano (0 = recién lanzada, 1 = lista). [izquierda, derecha]
 var charges: PackedFloat32Array = PackedFloat32Array([1.0, 1.0])
@@ -48,6 +49,8 @@ var orb_enabled: bool = true:
 		_apply_orb_visibility()
 
 var _sprites: Array[Sprite2D] = []
+var _pending_flare: bool = false
+var _grimoire_open: bool = false
 var _flames: Array[SpellOrb] = []
 var _flame_spent: Array[bool] = [false, false]
 var _combo_orb: SpellOrb
@@ -64,6 +67,12 @@ var _walk_phase: float = 0.0
 
 
 func _ready() -> void:
+	Events.grimoire_opened.connect(func() -> void: _grimoire_open = true)
+	Events.grimoire_closed.connect(
+		func() -> void:
+			_grimoire_open = false
+			_play_level_up()
+	)
 	layer = 0
 	for side: int in 2:
 		var s := Sprite2D.new()
@@ -133,7 +142,7 @@ func release_combine() -> void:
 
 ## Cambia la llama de las dos manos (al subir de nivel la Chispa pasa a Llama, a Llama mágica...).
 ## Recrea los orbes sólo si el aspecto es otro: ocurre al comprar una mejora, no en caliente.
-func set_flame_visual(def: SpellVisualDef) -> void:
+func set_flame_visual(def: SpellVisualDef, celebrate: bool = false) -> void:
 	if def == null or _camera == null or (not _flames.is_empty() and _flames[0].def == def):
 		return
 	for side: int in _flames.size():
@@ -146,10 +155,46 @@ func set_flame_visual(def: SpellVisualDef) -> void:
 		old.queue_free()
 		_camera.add_child(flame)
 		_flames[side] = flame
-		# Se enciende con un estallido nuevo: la mano "cambia" de hechizo a la vista.
 		_flame_spent[side] = false
-		_kick_vel[side] = -8.0
 	_place_orbs()
+	# Al subir de nivel (no al empezar), la transformación se ve en cuanto se cierra el
+	# Grimorio: con el libro abierto quedaría tapada.
+	if celebrate:
+		_pending_flare = true
+		if not _grimoire_open:
+			_play_level_up.call_deferred()
+
+
+## Las llamas nuevas se encienden de golpe: las manos dan un tirón, destello, onda, chispas y
+## un acorde que sube. Que subir de nivel se note.
+func _play_level_up() -> void:
+	if not _pending_flare:
+		return
+	_pending_flare = false
+	for side: int in _flames.size():
+		_flames[side].flare()
+		_kick_vel[side] = -14.0
+	_ready_pop = 1.0
+	AudioDirector.play_sfx(LEVEL_UP_SFX, -2.0)
+
+
+## Pantalla de carga: enciende un momento cada aspecto posible de las llamas (con su destello
+## y su estallido) delante de la cámara, para compilarlos antes de jugar.
+func warm_up(defs: Array[SpellVisualDef]) -> void:
+	var temp: Array[SpellOrb] = []
+	for i: int in defs.size():
+		var o := SpellOrb.new()
+		o.def = defs[i]
+		_camera.add_child(o)
+		o.position = Vector3((float(i) - defs.size() * 0.5) * 0.12, 0.0, -1.2)
+		o.flare()
+		temp.append(o)
+	await get_tree().create_timer(0.25).timeout
+	for o: SpellOrb in temp:
+		o.release()
+	await get_tree().create_timer(0.8).timeout
+	for o: SpellOrb in temp:
+		o.queue_free()
 
 
 func is_combining() -> bool:

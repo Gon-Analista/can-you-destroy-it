@@ -40,6 +40,7 @@ func _ready() -> void:
 	)
 	if OS.is_debug_build():
 		_setup_autoplay()
+	_warm_up()
 
 
 ## Modo demo para grabar capturas sin ratón (sólo debug):
@@ -198,6 +199,60 @@ func _unhandled_input(event: InputEvent) -> void:
 		AudioDirector.set_music_layers(AudioDirector.get_music_layers() % MUSIC_LAYERS.size() + 1)
 	elif event.is_action_pressed(&"ui_cancel"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+## Pantalla de carga que evita los tirones: la primera vez que se dibuja un shader o un sistema
+## de partículas, el motor lo compila y el juego se congela un instante (al primer golpe, la
+## primera entrega...). Por detrás de la pantalla de carga, la cámara mira al cristal, al
+## Pilón y al Santuario y dispara una vez cada efecto, sin tocar la partida.
+func _warm_up() -> void:
+	var cover := LoadingCover.new()
+	cover.name = "LoadingCover"
+	_hud.add_child(cover)
+	var cam: Camera3D = _player.get_camera()
+	var saved: Transform3D = cam.transform
+	var crystal: MotherCrystal = _world.get_node(^"MotherCrystal")
+	var pylon: ManaPylon = _world.get_node(^"ManaPylon")
+	var sanctum: Sanctum = _world.get_node(^"Sanctum")
+	var caster: SpellCaster = _player.get_caster()
+	var hands: WizardHands = _player.get_node(^"Hands")
+	await get_tree().process_frame
+	# 1) El cristal: impactos, fuego, fragmentos y todos los hechizos en vuelo y en la mano.
+	var front := Vector3(0.0, 4.0, WorldLayout.CRYSTAL_FOOTPRINT * 0.55)
+	_aim(cam, front)
+	var defs: Array[SpellVisualDef] = [caster.current_recipe().visual]
+	for t: SpellTier in SpellCaster.ELEMENT.tiers:
+		if not defs.has(t.visual):
+			defs.append(t.visual)
+	hands.warm_up(defs)
+	caster.warm_up(front)
+	var tiers: Array[SpellTier] = SpellCaster.ELEMENT.tiers
+	crystal.warm_up(front, Vector3.BACK, tiers[tiers.size() - 1], caster.current_recipe().tier)
+	await _frames(24)
+	_aim(cam, front)
+	await _frames(12)
+	# 2) El Pilón: fragmentos que vuelan a la boca y la salpicadura.
+	_aim(cam, pylon.mouth_position())
+	pylon.warm_up()
+	await _frames(24)
+	# 3) El Santuario: el destello de objeto nuevo.
+	_aim(cam, sanctum.marker_position())
+	sanctum.warm_up()
+	await _frames(10)
+	cam.transform = saved
+	await _frames(2)
+	cover.finish()
+
+
+func _aim(cam: Camera3D, target: Vector3) -> void:
+	var from: Vector3 = cam.global_position
+	if from.distance_to(target) > 0.1:
+		cam.global_basis = Basis.looking_at(target - from, Vector3.UP)
+
+
+func _frames(n: int) -> void:
+	for i: int in n:
+		await get_tree().process_frame
 
 
 func _place(node: Node3D, at: Vector3) -> void:

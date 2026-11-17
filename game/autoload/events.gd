@@ -16,6 +16,8 @@ signal spell_combine_started(recipe: SpellRecipe)
 signal recipe_discovered(recipe: SpellRecipe)
 signal spell_impacted(hit: SpellHit)
 signal spell_fizzled(position: Vector3)
+## Daño por quemadura (el fuego que queda ardiendo en el cristal).
+signal crystal_burned(damage: int, position: Vector3)
 signal streak_changed(streak: int)
 signal streak_milestone(streak: int)
 signal streak_broken(final_streak: int)

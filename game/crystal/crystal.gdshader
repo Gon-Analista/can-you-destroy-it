@@ -22,6 +22,14 @@ uniform float hit_radius = 1.5;
 uniform vec4 cracks[16];
 uniform float crack_scale = 1.7;
 uniform float global_flash = 0.0;
+// Quemaduras del fuego: xyz = centro, w = instante (en `now`); w < 0: vacío.
+uniform vec4 burns[12];
+// Radio de cada quemadura (m).
+uniform float burn_radius[12];
+// Al rojo vivo: vetas de lava; al enfriarse, hollín.
+uniform vec4 col_lava : source_color = vec4(1.0, 0.45, 0.12, 1.0);
+uniform vec4 col_lava_hot : source_color = vec4(1.0, 0.85, 0.45, 1.0);
+uniform vec4 col_soot : source_color = vec4(0.2, 0.13, 0.2, 1.0);
 
 varying vec3 world_pos;
 varying vec3 world_nrm;
@@ -83,6 +91,28 @@ void fragment() {
 		float line = step(e, 0.07 * crack_mask);
 		c = mix(c, col_crack.rgb, line);
 		c = mix(c, col_dark.rgb, step(e, 0.16 * crack_mask) * (1.0 - line) * 0.35);
+	}
+
+	// Quemaduras (elemento fuego): la zona se pone al rojo con vetas de lava que brillan (HDR,
+	// florecen con el glow), se enfrían en unos segundos y dejan hollín que se va borrando.
+	float burn_heat = 0.0;
+	float burn_soot = 0.0;
+	for (int i = 0; i < 12; i++) {
+		if (burns[i].w >= 0.0) {
+			float age = now - burns[i].w;
+			float d = distance(world_pos, burns[i].xyz);
+			float wobble = hash33(floor(world_pos * 3.0)).x * 0.25;
+			float m = 1.0 - smoothstep(burn_radius[i] * 0.45, burn_radius[i] * (1.0 + wobble), d);
+			burn_heat = max(burn_heat, m * exp(-age / 2.2));
+			burn_soot = max(burn_soot, m * exp(-age / 30.0));
+		}
+	}
+	if (burn_soot > 0.01) {
+		c = mix(c, col_soot.rgb, burn_soot * 0.55);
+		float e = voronoi_edge(world_pos * 2.6);
+		float vein = 1.0 - smoothstep(0.0, 0.12, e);
+		vec3 lava = mix(col_lava.rgb, col_lava_hot.rgb, burn_heat) * (1.0 + burn_heat * 1.6);
+		c = mix(c, lava, clamp(vein * burn_heat * 1.4 + burn_heat * 0.35, 0.0, 1.0));
 	}
 
 	// Destellos y ondas de impacto.

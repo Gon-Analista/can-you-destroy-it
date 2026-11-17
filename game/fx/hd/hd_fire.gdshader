@@ -20,6 +20,10 @@ uniform float charge = 1.0;
 uniform float burst = 0.0;
 // 0..1 de opacidad global.
 uniform float fade = 1.0;
+// Hacia dónde se arrastran las llamas en pantalla (UV: y crece hacia abajo). Quieto: hacia
+// arriba; en vuelo, hacia atrás de la trayectoria. `flow_strength` alarga las lenguas.
+uniform vec2 flow = vec2(0.0, -1.0);
+uniform float flow_strength = 1.0;
 
 void vertex() {
 	HD_BILLBOARD
@@ -35,12 +39,15 @@ void fragment() {
 		float a = atan(q.y, q.x) + (1.0 - r0) * 3.5 + t * 0.8;
 		q = vec2(cos(a), sin(a)) * r0;
 	}
-	float n = hd_fbm(vec3(q * 2.6 + vec2(0.0, style == 0 ? -t * 0.9 : 0.0), t * 0.45));
-	float n2 = hd_fbm(vec3(q * 5.1 + vec2(3.0, style == 0 ? -t * 1.7 : 0.0), t * 0.8 + 4.0));
-	// Lenguas de fuego: el borde superior se estira hacia arriba.
-	float lick = style == 0 ? max(0.0, p.y) * 0.55 * n2 : 0.0;
+	vec2 fd = normalize(flow + vec2(0.0001));
+	vec2 scroll = style == 0 ? fd * t : vec2(0.0);
+	float n = hd_fbm(vec3(q * 2.6 - scroll * 0.9, t * 0.45));
+	float n2 = hd_fbm(vec3(q * 5.1 + vec2(3.0, 0.0) - scroll * 1.7, t * 0.8 + 4.0));
+	// Lenguas de fuego: el borde que mira hacia `flow` se estira en esa dirección.
+	float along = dot(p, fd);
+	float lick = style == 0 ? max(0.0, along) * 0.55 * n2 * flow_strength : 0.0;
 	float radius = mix(0.5, 0.62, charge) * (1.0 + burst * 0.5);
-	float r = length(p - vec2(0.0, lick * 0.6));
+	float r = length(p - fd * lick * 0.6);
 	float edge = radius + (n - 0.5) * turbulence + lick;
 	float body = smoothstep(edge, edge - 0.12, r);
 	// Calor: 1 en el centro, 0 en el borde, con vetas de ruido.

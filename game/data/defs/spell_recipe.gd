@@ -14,6 +14,13 @@ extends Resource
 ## Golpes secundarios repartidos por el área (cada uno agrieta y suelta fragmentos).
 @export var area_hits: int = 0
 
+@export_group("Fuego que queda")
+## Segundos que sigue ardiendo el cristal donde impacta (0 = nada).
+@export var burn_sec: float = 0.0
+## Daño de cada golpe de quemadura y cada cuánto.
+@export var burn_damage: int = 1
+@export var burn_tick_sec: float = 0.5
+
 @export_group("Carga")
 ## Tiempo manteniendo las dos manos juntas hasta la carga completa (s).
 @export var charge_sec: float = 0.7

@@ -88,7 +88,7 @@ func play(
 	slot.visible = true
 	var size: float = tier.crack_radius * 2.6 * (1.6 if resonant else 1.0) * (1.4 if big else 1.0)
 	_size[i] = size
-	_peak[i] = 0.7 + (0.6 if resonant else 0.0) + (0.4 if big else 0.0)
+	_peak[i] = 0.7 + (0.6 if resonant else 0.0) - (0.3 if big else 0.0)
 	var ramp: Gradient = tier.trail_ramp if tier.trail_ramp else _default_ramp
 	var glow: Color = Color("#ffd27a") if resonant else tier.color_glow
 	_fire[i].set_shader_parameter("ramp", HdFx.smooth_ramp(ramp))
@@ -148,7 +148,7 @@ func _animate(i: int) -> void:
 	_fire[i].set_shader_parameter("charge", 1.0)
 	var fk: float = clampf(_age[i] / 0.3, 0.0, 1.0)
 	_flash_mi[i].visible = fk < 1.0
-	_flash_mi[i].scale = Vector3.ONE * s * lerpf(1.0, 2.0, fk)
+	_flash_mi[i].scale = Vector3.ONE * s * lerpf(0.9, 1.7, fk)
 	_flash[i].set_shader_parameter("intensity", _peak[i] * (1.0 - fk) * (1.0 - fk))
 	_ring[i].set_shader_parameter("progress", k)
 	_slots[i].get_child(2).set(&"scale", Vector3.ONE * s * 2.4)

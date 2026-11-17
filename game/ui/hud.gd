@@ -117,6 +117,7 @@ func _ready() -> void:
 	Events.shard_targeted.connect(_on_shard_targeted)
 	Events.recipe_discovered.connect(_on_recipe_discovered)
 	Events.shard_delivered.connect(_on_shard_delivered)
+	Events.crystal_burned.connect(_on_burned)
 	# El Grimorio, por encima de todo el HUD.
 	_grimoire = Grimoire.new()
 	_grimoire.name = "Grimoire"
@@ -130,6 +131,19 @@ func bind(camera: Camera3D, caster: SpellCaster) -> void:
 	_camera = camera
 	_caster = caster
 	_loop.bind(camera)
+
+
+## "-1" naranja de la quemadura, que sube desde el fuego.
+func _on_burned(damage: int, at: Vector3) -> void:
+	var i: int = _floater_next
+	_floater_next = (_floater_next + 1) % FLOATERS
+	var f: Label = _floaters[i]
+	f.text = "-%d" % damage
+	f.add_theme_color_override(&"font_color", Color("#ff9a3a"))
+	f.add_theme_font_size_override(&"font_size", 8)
+	_floater_pos[i] = at + Vector3(randf_range(-0.6, 0.6), 0.8, 0.0)
+	_floater_age[i] = 0.0
+	f.visible = true
 
 
 ## "+5 MANÁ" que sube desde la boca del Pilón con cada fragmento entregado.

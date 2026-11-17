@@ -168,6 +168,25 @@ func spawn(origin: Vector3, normal: Vector3, type: ShardType, count: int, power:
 	set_physics_process(true)
 
 
+## Pantalla de carga: enseña un fragmento de cada tamaño quieto un momento (no se pueden
+## recoger) para compilar su material antes de jugar.
+func warm_up(at: Vector3) -> void:
+	var used: Array[int] = []
+	for t: int in TYPES.size():
+		var i: int = pool_size - 1 - t
+		var body: RigidBody3D = _shards[i]
+		_meshes[i].mesh = _type_meshes[t][0]
+		_meshes[i].scale = Vector3.ONE
+		body.global_position = at + Vector3(float(t) - 1.0, 0.0, 0.0)
+		body.visible = true
+		_meshes[i].set_instance_shader_parameter("spawn_flash", 1.0)
+		used.append(i)
+	await get_tree().create_timer(0.4).timeout
+	for i: int in used:
+		if _spawn_time[i] < 0.0:
+			_deactivate(_shards[i])
+
+
 ## Índice del fragmento al que apunta el collider, o -1.
 func index_of(collider: Object) -> int:
 	if collider is Node and (collider as Node).has_meta(&"shard_index"):

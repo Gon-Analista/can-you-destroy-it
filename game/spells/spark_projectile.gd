@@ -28,6 +28,9 @@ var _trail: SpellTrail
 var _embers: GPUParticles3D
 var _ember_mat: ParticleProcessMaterial
 var _sparks: GPUParticles3D
+var _smoke: GPUParticles3D
+var _roar: AudioStreamPlayer3D
+var _prev_screen := Vector2.ZERO
 var _light: OmniLight3D
 var _from: Vector3
 var _to: Vector3
@@ -70,6 +73,7 @@ func launch(from: Vector3, to: Vector3, p_hit: SpellHit, collider: Object) -> vo
 	if _orb:
 		_orb.appear()
 		_orb.charge = orb_charge
+		_orb.set_flow(Vector2(0.0, -1.0), 1.0)
 		_face_camera()
 	_trail.width = tier.trail_width * (1.35 if p_hit.resonant else 1.0)
 	_trail.length_sec = tier.trail_length
@@ -87,6 +91,13 @@ func launch(from: Vector3, to: Vector3, p_hit: SpellHit, collider: Object) -> vo
 	(_sparks.process_material as ParticleProcessMaterial).color_ramp = HdFx.color_ramp(ember_cols)
 	_embers.amount_ratio = clampf(tier.orb_scale / 10.0, 0.3, 1.0)
 	_sparks.amount_ratio = clampf(tier.orb_scale / 10.0, 0.3, 1.0)
+	_smoke.amount_ratio = clampf(tier.trail_smoke, 0.01, 1.0)
+	_prev_screen = Vector2.ZERO
+	if tier.flight_sfx:
+		_roar.stream = tier.flight_sfx
+		_roar.pitch_scale = 0.8
+		_roar.volume_db = -4.0
+		_roar.play()
 	active = true
 	visible = true
 	set_process(true)
@@ -117,12 +128,16 @@ func _process(delta: float) -> void:
 	# Las brasas sólo cuando ya va lejos: pegadas a la cámara se verían como manchas enormes.
 	_embers.emitting = k < 1.0 and _from.distance_to(pos) > EMBERS_FROM
 	_sparks.emitting = _embers.emitting
+	_smoke.emitting = _embers.emitting and hit.tier.trail_smoke > 0.0
+	_update_flow()
 	if k >= 1.0:
 		_light.visible = false
 		_trail.stop()
 		_embers.emitting = false
 		_sparks.emitting = false
-		_linger = maxf(_embers.lifetime, _trail.length_sec)
+		_smoke.emitting = false
+		_roar.stop()
+		_linger = maxf(_smoke.lifetime, _trail.length_sec)
 		if _orb:
 			_orb.release()
 			_linger = maxf(_linger, _orb_def.release_time + _orb_def.sparkle_lifetime)
@@ -143,6 +158,20 @@ func _set_orb(def: SpellVisualDef) -> void:
 	_orb.name = "Orb"
 	_orb.def = def
 	add_child(_orb)
+
+
+## Las llamas se arrastran hacia atrás de la trayectoria en pantalla (y algo hacia arriba).
+func _update_flow() -> void:
+	var cam: Camera3D = get_viewport().get_camera_3d()
+	if cam == null or _orb == null or cam.is_position_behind(global_position):
+		return
+	var sp: Vector2 = cam.unproject_position(global_position)
+	if _prev_screen != Vector2.ZERO:
+		var v: Vector2 = sp - _prev_screen
+		if v.length() > 0.5:
+			var back: Vector2 = -v.normalized() + Vector2(0.0, -0.35)
+			_orb.set_flow(back.normalized(), 1.0 + minf(v.length() / 6.0, 1.6))
+	_prev_screen = sp
 
 
 ## El orbe se diseñó para verse de frente (sus órbitas giran en el plano de la cámara).
@@ -174,6 +203,22 @@ func _build_embers() -> void:
 	_sparks.trail_lifetime = 0.07
 	(_sparks.process_material as ParticleProcessMaterial).gravity = Vector3(0, -3.0, 0)
 	add_child(_sparks)
+	# Humo que deja la Bola de Fuego: le da cuerpo y peso a la trayectoria.
+	_smoke = HdFx.smoke(40, 1.4, Color(0.3, 0.22, 0.26))
+	_smoke.name = "Smoke"
+	_smoke.one_shot = false
+	_smoke.explosiveness = 0.0
+	_smoke.lifetime = 1.1
+	var spm: ParticleProcessMaterial = _smoke.process_material
+	spm.initial_velocity_min = 0.2
+	spm.initial_velocity_max = 0.8
+	add_child(_smoke)
+	_roar = AudioStreamPlayer3D.new()
+	_roar.name = "Roar"
+	_roar.bus = &"SFX"
+	_roar.unit_size = 10.0
+	_roar.doppler_tracking = AudioStreamPlayer3D.DOPPLER_TRACKING_PHYSICS_STEP
+	add_child(_roar)
 
 
 func _deactivate() -> void:
@@ -181,6 +226,8 @@ func _deactivate() -> void:
 	visible = false
 	_embers.emitting = false
 	_sparks.emitting = false
+	_smoke.emitting = false
+	_roar.stop()
 	_trail.stop()
 	_linger = -1.0
 	set_process(false)
