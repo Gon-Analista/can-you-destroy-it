@@ -16,7 +16,7 @@ func _run() -> void:
 	await process_frame
 	# Sin tipos de escena (SpellCaster, Player): sus scripts usan autoloads, que no existen al
 	# compilar un script de --script. Se llaman por nombre.
-	var caster: Node = main.get_node(^"Player").call(&"get_caster")
+	var caster: Node = main.get_node(^"WorldView/WorldViewport/Player").call(&"get_caster")
 	var recipe: SpellRecipe = load("res://data/spells/recipe_fireball.tres")
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:

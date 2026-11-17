@@ -27,7 +27,7 @@ var _phase: int = 0
 func _ready() -> void:
 	var main: Node3D = MAIN_SCENE.instantiate()
 	add_child(main)
-	var player: Player = main.get_node(^"Player")
+	var player: Player = main.get_node(^"WorldView/WorldViewport/Player")
 	var head: Node3D = player.get_node(^"Head")
 	var camera: Camera3D = player.get_camera()
 	var def_path: String = DEFAULT_DEF

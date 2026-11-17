@@ -47,6 +47,7 @@ func _ready() -> void:
 	_build_sparkles()
 	_build_light()
 	_apply_charge()
+	MagicLayer.tag(self)
 
 
 ## Vuelve a mostrar el orbe tras un `release()`.

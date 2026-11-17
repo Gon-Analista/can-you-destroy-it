@@ -25,8 +25,8 @@ func _run() -> void:
 	root.add_child(main)
 	for i: int in 20:
 		await process_frame
-	var player: Node3D = main.get_node(^"Player")
-	var pylon: Node3D = main.get_node(^"ManaPylon")
+	var player: Node3D = main.get_node(^"WorldView/WorldViewport/Player")
+	var pylon: Node3D = main.get_node(^"WorldView/WorldViewport/ManaPylon")
 	var splinter: ShardType = load("res://data/shards/splinter.tres")
 	var full_events: Array[int] = [0]
 	events.connect(&"bag_full", func() -> void: full_events[0] += 1)

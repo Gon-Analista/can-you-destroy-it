@@ -13,16 +13,19 @@ const MUSIC_LAYERS: Array[AudioStream] = [
 	preload("res://audio/music/music_valley_5_archimago.ogg"),
 ]
 
-@onready var _sun: DirectionalLight3D = $Sun
-@onready var _player: Player = $Player
+@onready var _world: SubViewport = $WorldView/WorldViewport
+@onready var _sun: DirectionalLight3D = $WorldView/WorldViewport/Sun
+@onready var _player: Player = $WorldView/WorldViewport/Player
 @onready var _hud: Hud = $HUDLayer/Hud
+@onready var _magic: MagicLayer = $MagicView
 
 
 func _ready() -> void:
 	# Todo en su sitio según WorldLayout (y a ras del suelo ondulado).
-	_place(get_node(^"ManaPylon") as Node3D, WorldLayout.PYLON)
-	_place(get_node(^"Sanctum") as Node3D, WorldLayout.SANCTUM)
-	(get_node(^"Sanctum") as Node3D).rotation.y = deg_to_rad(WorldLayout.SANCTUM_YAW_DEG)
+	_magic.bind(_player.get_camera())
+	_place(_world.get_node(^"ManaPylon") as Node3D, WorldLayout.PYLON)
+	_place(_world.get_node(^"Sanctum") as Node3D, WorldLayout.SANCTUM)
+	(_world.get_node(^"Sanctum") as Node3D).rotation.y = deg_to_rad(WorldLayout.SANCTUM_YAW_DEG)
 	_player.global_position = WorldLayout.PLAYER_START
 	_sun.look_at_from_position(Vector3.ZERO, SUN_DIR.normalized(), Vector3.UP)
 	_hud.bind(_player.get_camera(), _player.get_caster())
@@ -170,15 +173,21 @@ func _process(_delta: float) -> void:
 		Engine.time_scale = 1.0
 
 
-func _unhandled_input(event: InputEvent) -> void:
+## Clic para capturar el ratón. En `_input` (no en `_unhandled_input`): el clic lo consume
+## la vista del valle al pasárselo a su SubViewport.
+func _input(event: InputEvent) -> void:
 	if (
 		event is InputEventMouseButton
 		and event.is_pressed()
 		and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED
+		and not (_hud.get_node(^"Grimoire") as Grimoire).is_open
 	):
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		get_viewport().set_input_as_handled()
-	elif (
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if (
 		OS.is_debug_build()
 		and event is InputEventKey
 		and (event as InputEventKey).pressed
