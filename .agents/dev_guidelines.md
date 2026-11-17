@@ -48,6 +48,7 @@ Tecnologías ya previstas (validar la versión al integrarlas):
 | Mallas del prototipo | `core/mesh_kit.gd` (prismas, conos, cajas con normales planas y color por vértice) | Corrige el orden de vértices solo. |
 | Contorno pixel art | `fx/outline.gdshader`: post-proceso de profundidad + normales | Técnica estándar de "3D pixel art" en Godot 4. |
 | SFX del prototipo | `tools/sfx_synth.py` y `tools/sfx_loop.py` (numpy + scipy + ffmpeg) | Reproducible con semillas fijas; afinado en La mayor. |
+| SFX de movimiento | `tools/sfx_move.py` (doble salto, levitación en bucle, carga agotada) | Semillas fijas. |
 | SFX de la casucha | `tools/sfx_hut.py` (puerta, viento, revelación, ambiente de dentro) | Igual que el resto: semillas fijas. |
 | Música | `tools/music_synth.py` (valle por capas) y `tools/music_title.py` (vals del título) | Mismos instrumentos sintetizados; bucles sin costura. |
 | Cristal destructible | `tools/crystal_volume.py` (numpy + scipy) -> `game/crystal/data/crystal_volume.bin`; en el juego `CrystalVolume` + `CrystalChunks` | La forma, las capas, las geodas y las densidades se cambian en el script y se vuelve a hornear. |
@@ -289,6 +290,7 @@ godot --headless --path game --script res://tests/smoke/progression_smoke.gd
   que el tiempo siempre vuelve a la normalidad tras un hit-stop; `tests/smoke/combine_input_smoke.gd`, la combinación
   con las dos manos (carga la escena principal); `tests/smoke/loop_smoke.gd`, el bucle bolsa -> Pilón -> Grimorio;
   `tests/smoke/localization_smoke.gd`, que todos los idiomas cargan, están completos y conservan los `%d`/`%s`;
+  `tests/smoke/movement_smoke.gd`, el doble salto y la levitación (no toca la partida guardada);
   `tests/smoke/crystal_volume_smoke.gd`, que el volumen del cristal reparte el 1.000.000, se excava, respeta el
   Núcleo, se malla y se guarda.
 - Ojo en los tests `--script`: los autoloads no existen al compilar el script, así que no se pueden nombrar

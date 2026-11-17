@@ -293,6 +293,7 @@ func _to_screen(world: Vector3) -> Array:
 func _draw() -> void:
 	if not intro:
 		_draw_pylon_bar()
+	_draw_levitation()
 	_draw_icon(MANA_ICON, Vector2(452 + 176 - _mana_text_width() - 22, 338), 2, C_PINK)
 	_draw_bag()
 	if _pylon_tag.visible:
@@ -320,6 +321,23 @@ func _draw_pylon_bar() -> void:
 		var x: float = r.position.x + floor(r.size.x * ManaPylon.display_fill(m))
 		var lit: bool = GameState.progression.pylon_ratio() >= m
 		draw_rect(Rect2(x, r.position.y - 2, 1, r.size.y + 4), C_GOLD if lit else C_GOLD_DARK)
+
+
+## Carga de levitación: una barrita bajo la mirilla, sólo mientras se vuela o se recarga.
+func _draw_levitation() -> void:
+	var player: Player = get_tree().get_first_node_in_group(&"player") as Player
+	if player == null or player.levitation_max <= 0.0:
+		return
+	var k: float = player.fuel_ratio()
+	if not player.levitating and k >= 0.999:
+		return
+	var r := Rect2(300, 196, 40, 4)
+	draw_rect(r.grow(1), C_SHADOW)
+	draw_rect(r, Color(C_SHADOW, 0.6))
+	var col: Color = C_CYAN.lerp(C_PINK, clampf(1.0 - k * 2.0, 0.0, 1.0))
+	if k < 0.25 and player.levitating and int(Time.get_ticks_msec() / 120) % 2 == 0:
+		col = Color.WHITE
+	draw_rect(Rect2(r.position, Vector2(roundf(r.size.x * k), r.size.y)), col)
 
 
 func _draw_bag() -> void:

@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"levitation"
+display_name = "Levitación"
+description = "Tras el doble salto, mantén ESPACIO y sube flotando mientras dure la carga. Se recarga en el suelo."
+branch = 3
+element = &""
+star_pos = Vector2i(140, 246)
+costs = PackedInt32Array(250, 900, 3000)
+prerequisites = Array[StringName]([&"double_jump"])
+stat = &"levitation_sec"
+values = PackedFloat32Array(0, 1.6, 3, 5)
+value_format = "%.1f s de vuelo"
+level_names = PackedStringArray("Sin levitar")

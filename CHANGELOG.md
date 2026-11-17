@@ -2,6 +2,28 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-17 · Mejoras de movimiento: doble salto y levitación
+
+**Qué hay nuevo** (pedido del equipo: "mejoras de movimiento, doble salto y después levitar como un jetpack con
+carga, sin daño por caída")
+
+- **Doble salto** (constelación del Mago, 60 de maná): un segundo impulso en el aire, con estallido de chispas bajo
+  los pies y un "fuuum" con dos notas que suben. De 1,5 m a ~3,5 m de altura.
+- **Levitación** (pide el doble salto; 250 / 900 / 3.000 de maná): tras el doble salto, mantener ESPACIO sube
+  flotando mientras dure la carga (1,6 / 3 / 5 s; con 3 s se pasan los 15 m). Chorro de magia bajo los pies, un
+  zumbido encantado que se vuelve más agudo cuando queda poca carga y un "pff, pff" al agotarse. Se controla
+  mejor el movimiento en el aire mientras levitas. La carga se recarga entera en ~1 s de suelo.
+- **Barra de carga** bajo la mirilla (sólo mientras vuelas o recargas): cian, rosa al final y parpadea cuando se
+  acaba.
+- **Sin daño por caída**: caer de cualquier altura sólo da el golpe de cámara y el sonido de aterrizar.
+- Iconos nuevos en el Grimorio, textos en español e inglés y sonidos con `tools/sfx_move.py`. Demo: `--up=id:nivel`
+  (mejoras ya compradas) y `--fly=s` (salta, doble salto y levita).
+
+**Cómo se probó**: nuevo `movement_smoke` (sin mejoras un solo salto; con doble salto se sube más; levitando se
+sigue subiendo y se gasta la carga; en el suelo se recarga; se aterriza sin problema) y el resto de tests: OK.
+Render: vuelo sobre el valle con la barra y el chorro (`docs/capturas/levitacion.png`); página del Mago con las
+dos estrellas nuevas.
+
 ## 2026-11-17 · Un cristal aún más grande y se empieza dentro de la casucha
 
 **Qué hay nuevo** (pedidos del equipo: "el cristal debe ser más grande aún" y "partir dentro de una casucha mágica

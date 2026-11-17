@@ -125,6 +125,27 @@ func _setup_autoplay() -> void:
 		elif a.begins_with("--open-door="):
 			# --open-door=s (con --hut): abre la puerta a los s segundos.
 			get_tree().create_timer(float(a.get_slice("=", 1))).timeout.connect(_hut.open_door)
+		elif a.begins_with("--up="):
+			# --up=id:nivel,id:nivel: mejoras ya compradas (p. ej. double_jump:1,levitation:3).
+			for pair: String in a.get_slice("=", 1).split(","):
+				GameState.progression.upgrade_levels[StringName(pair.get_slice(":", 0))] = int(
+					pair.get_slice(":", 1)
+				)
+			Events.upgrade_bought.emit(&"", 0)
+		elif a.begins_with("--fly="):
+			# --fly=s: a los s segundos salta, hace el doble salto y mantiene Espacio para levitar.
+			var t0: float = float(a.get_slice("=", 1))
+			var tree: SceneTree = get_tree()
+			tree.create_timer(t0).timeout.connect(func() -> void: Input.action_press(&"jump"))
+			tree.create_timer(t0 + 0.15).timeout.connect(
+				func() -> void: Input.action_release(&"jump")
+			)
+			tree.create_timer(t0 + 0.55).timeout.connect(
+				func() -> void: Input.action_press(&"jump")
+			)
+			tree.create_timer(t0 + 5.5).timeout.connect(
+				func() -> void: Input.action_release(&"jump")
+			)
 		elif a.begins_with("--time="):
 			_day_night.time_of_day = float(a.get_slice("=", 1))
 		elif a.begins_with("--warp="):

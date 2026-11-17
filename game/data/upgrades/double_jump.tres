@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"double_jump"
+display_name = "Doble salto"
+description = "Un segundo impulso de aire mágico en pleno salto. Llega más alto y cae donde quieras."
+branch = 3
+element = &""
+star_pos = Vector2i(196, 222)
+costs = PackedInt32Array(60)
+prerequisites = Array[StringName]([])
+stat = &"double_jump"
+values = PackedFloat32Array(0, 1)
+value_format = "%s"
+level_names = PackedStringArray("Un salto", "Dos saltos")
