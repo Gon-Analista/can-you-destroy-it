@@ -24,7 +24,7 @@ const RESONANT_SFX: AudioStream = preload("res://audio/sfx/sfx_resonant_hit_01.o
 const STREAK_SFX: AudioStream = preload("res://audio/sfx/sfx_streak_chime_01.ogg")
 const HUM_SFX: AudioStream = preload("res://audio/sfx/amb_crystal_hum_loop.ogg")
 
-@export var crystal_scale: float = 1.35
+@export var crystal_scale: float = WorldLayout.CRYSTAL_SCALE
 @export var seed_value: int = 11
 
 var _material: ShaderMaterial

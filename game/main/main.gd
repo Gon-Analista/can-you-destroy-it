@@ -19,6 +19,11 @@ const MUSIC_LAYERS: Array[AudioStream] = [
 
 
 func _ready() -> void:
+	# Todo en su sitio según WorldLayout (y a ras del suelo ondulado).
+	_place(get_node(^"ManaPylon") as Node3D, WorldLayout.PYLON)
+	_place(get_node(^"Sanctum") as Node3D, WorldLayout.SANCTUM)
+	(get_node(^"Sanctum") as Node3D).rotation.y = deg_to_rad(WorldLayout.SANCTUM_YAW_DEG)
+	_player.global_position = WorldLayout.PLAYER_START
 	_sun.look_at_from_position(Vector3.ZERO, SUN_DIR.normalized(), Vector3.UP)
 	_hud.bind(_player.get_camera(), _player.get_caster())
 	AudioDirector.play_ambience(AMBIENCE, -10.0)
@@ -184,6 +189,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		AudioDirector.set_music_layers(AudioDirector.get_music_layers() % MUSIC_LAYERS.size() + 1)
 	elif event.is_action_pressed(&"ui_cancel"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+func _place(node: Node3D, at: Vector3) -> void:
+	node.position = Vector3(at.x, Valley.ground_height(at.x, at.z) - 0.05, at.z)
 
 
 func _rank_layers() -> int:
