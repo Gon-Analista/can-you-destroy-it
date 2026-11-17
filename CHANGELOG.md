@@ -2,6 +2,157 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-17 · Magia HD (HD-2D), cristal más grande y valle con más detalle
+
+**Qué hay nuevo**
+
+- **Nuevo método para los hechizos: HD-2D.** El valle y las manos siguen en pixel art a 640x360, pero la magia se
+  dibuja en una capa aparte a resolución nativa (`fx/hd/magic_layer.gd`) con resplandor HDR y se compone con alfa
+  premultiplicado (no se lava sobre el cielo claro). Piezas nuevas en `fx/hd/`:
+  - `hd_fire.gdshader`: bola de energía turbulenta (fbm a 60 fps) con lenguas de fuego, núcleo blanco ardiente y
+    borde que se vuelve luz; estilo remolino para lo arcano.
+  - `hd_glow.gdshader` (halo con rayos), `hd_ring.gdshader` (onda de choque), `hd_trail.gdshader` (estela suave).
+  - `HdFx`: brasas suaves, chispas con estela (trails de GPUParticles) y humo.
+  - `HdImpact`: destello con rayos, fuego que se hincha y se deshace, onda, chispas, brasas y humo.
+  - `SpellOrb` reescrito en HD (misma API): halo, cuerpo de fuego, órbitas suaves, brasas, partículas que se
+    arremolinan hacia la Bola de Fuego mientras carga, y estallido con chispas y onda.
+- **Bola de Fuego mucho más grande** entre las manos; las manos se tiñen con su luz al cargar.
+- **Cristal Madre a escala 2,3** (punta de ~57 m, 30 veces el mago, GDD 4.1). `WorldLayout` reúne las posiciones;
+  **Pilón y Santuario más lejos** (~30 m del centro).
+- **Valle con más detalle** (`world/valley_details.gd`): caminos de tierra con losas, faroles, hierba y flores,
+  rocas, setas, tocones, cristales que brotan del suelo y motas de maná flotando.
+- Proyecto: stretch `canvas_items` (antes `viewport`); el mundo vive en `WorldView/WorldViewport`.
+
+**Capturas**: pendientes de grabar en un GIF; ver la sesión.
+
+**Cómo se probó**
+
+- Render Forward+ fotograma a fotograma: llamas en las manos, carga y vuelo de la Bola de Fuego, chispas de nivel
+  2 y 5 e impactos; iteración de mezcla (aditivo → premultiplicado), resplandor y rampas de color.
+- `progression_smoke`, `combine_input_smoke`, `loop_smoke`: OK. `gdlint` y `gdformat` limpios.
+
+**Pendiente**
+
+- Ciclo de día y noche con sonidos ambientales (pájaros, búhos, grillos), pedido por el equipo.
+- Grimorio organizado por elemento (ramas por elemento) y mejora de la Bola de Fuego.
+- Mundo menos "lavado": más contraste y profundidad (va con el día y la noche).
+- Pulir más los hechizos: distorsión de calor, nivel 5 menos blanquecino, impactos de nivel 1 más legibles.
+
+## 2026-11-17 · Bucle completo jugable y hechizos que resaltan
+
+**Qué hay nuevo**
+
+- **Hechizos que resaltan** (pedido del equipo). La chispa en vuelo ya no es un "+" blanco que se perdía contra el
+  cielo: es la misma llama de la mano (`SpellOrb`) de cara a la cámara, con una **estela de fuego** en píxeles sólidos
+  (`SpellTrail`), brasas y luz que tiñe el valle; al impactar **estalla** con un fogonazo pixel art
+  (`fx/impact_blast.gdshader`) en los colores del hechizo. Cada nivel tiene su aspecto: **Chispa** (1-2), **Llama** (3)
+  y **Llama mágica** rosa (4-5), también en las manos. El crepitar al lanzar suena más grave con el nivel y, al
+  cargar la Bola de Fuego, las manos tiemblan y el mundo vibra.
+- **Bucle completo (M1b)**: golpear → recoger con F → llevar al Pilón → maná → comprar en el Santuario → hechizos
+  más fuertes.
+  - **Bolsa** con tope (1 al empezar, GDD 8.1). Llena: el fragmento se queda en el suelo y el HUD avisa con sonido.
+  - **Pilón de Maná**: columna de vidrio y bronce con el maná líquido subiendo (rosa, violeta, remolinos y burbujas),
+    marcas al 10/25/50/75/100 % que se encienden, cristal flotante en la cima y zumbido que crece. Al acercarte, los
+    fragmentos salen volando de tus manos con estela, caen dentro con una gota de maná (cada una una nota más alta)
+    y la superficie se agita.
+  - **Santuario**: templete de tejado azul cobalto con un atril y el Grimorio flotando sobre un orbe arcano. Con
+    cada nivel comprado aparece un objeto nuevo con un destello (velas, estantería, bola de cristal, pociones...).
+  - **Grimorio de Constelaciones**: libro que sube a pantalla con aleteo de páginas; las mejoras son estrellas que
+    crecen con cada nivel y laten en oro si te llega el maná; la página de la derecha se escribe sola con qué hace,
+    cómo está ahora y cómo quedará. Al inscribir: acorde mágico, estallido de estrellas y aviso grande
+    ("¡CHISPA ARDIENTE!"). F junto al atril para comprar; Tab para consultarlo en cualquier sitio.
+  - **5 mejoras** (`data/upgrades/`): Bolsa de aprendiz, Potencia, Canalización, Resonancia y Telequinesis.
+  - **HUD**: barra del Pilón con marcas (porcentaje con decimales para que siempre se mueva), maná con número
+    rodante, bolsa en casillas que late en oro al llenarse, avisos encadenados para la primera partida
+    ("¡RECOGE LOS FRAGMENTOS CON [F]!", "¡LLÉVALOS AL PILÓN!", "¡MEJORA DISPONIBLE!") y marcadores en pantalla
+    hacia el Pilón y el Santuario (en el borde con flecha si quedan fuera).
+  - **Sonidos nuevos** (`tools/sfx_loop.py`, afinados en La mayor) y la **música** suma una capa cada 3 niveles.
+- Debug: G da 100 de maná. Modo demo: `--no-cast`, `--mana=N`, `--bag=N`, `--warp=x,z`,
+  `--grimoire [--buy --select=N]`; en modo demo no se carga ni se guarda la partida.
+
+**Capturas**: `docs/capturas/bucle_completo.gif` (golpe, Bola de Fuego, entrega y compra),
+`docs/capturas/chispa_cometa.png`, `docs/capturas/pilon_entrega.png`, `docs/capturas/grimorio_compra.png`.
+
+**Cómo se probó**
+
+- Render Forward+ (Vulkan por software) fotograma a fotograma: chispas de nivel 1 y 5, Bola de Fuego, entrega en el
+  Pilón, compra en el Grimorio y cambio de llama.
+- `loop_smoke` (nuevo): bolsa con tope y aviso, entrega junto al Pilón (y no lejos), compra sólo junto al atril y
+  la Potencia sube el nivel de la Chispa. `progression_smoke` (bolsa, mejoras por nivel, bloqueos),
+  `combine_input_smoke`, `hit_stop_smoke`, `music_layers_smoke` y galería de VFX: OK. `gdlint` y `gdformat` limpios.
+- Rendimiento (modo demo con combos, `--report`): 126 draw calls (218 con la Chispa 5 a toda cadencia).
+
+**Pendiente**
+
+- Jugar los primeros 5 minutos con personas y ajustar el ritmo (costes y valores en `data/upgrades/`); falta el
+  simulador de balance. Ojo: con la Potencia alta los fragmentos valen más que la esencia que quitan.
+- Escuchar los sonidos nuevos con oídos humanos.
+- Q / E para cambiar el elemento de cada mano y la Escarcha (M2).
+
+## 2026-11-17 · Bola de Fuego: una llama en cada mano que se funden en una grande
+
+Retoma lo que quedó a medias: los sonidos de la Bola de Fuego estaban en la rama `claude/keen-lovelace-7haa9v` sin
+integrar ni usar (ver su entrada más abajo). Se integran y se implementa la combinación del GDD 5.2.
+
+**Qué hay nuevo**
+
+- **Una llama en cada mano.** Cada mano lleva su elemento (Chispa) como una llamita (`SpellOrb` con
+  `data/spells/vfx_fire_spark.tres`) sobre la punta de los dedos, y recarga por separado. Clic izquierdo lanza la
+  izquierda y clic derecho la derecha; la chispa sale de su llama, que estalla y se vuelve a encender al recargar.
+- **Combinar (GDD 5.2 y 10.1).** Los dos clics a la vez juntan las manos: las dos llamas viajan al centro, se
+  encogen y se funden en la **Bola de Fuego** (`data/spells/vfx_fireball.tres`), que crece mientras se mantiene
+  (0,7 s a carga completa, con el rugido en bucle subiendo de tono). Al soltar sale volando como orbe de fuego
+  (el mismo orbe, sin saltos de tamaño) y estalla contra el cristal: explosión en área con 3 golpes secundarios
+  (grietas, destellos, partículas naranjas y astillas), sonido de explosión, hit-stop y sacudida.
+- **Combinación descubierta (GDD 10).** La primera vez: pausa breve, "¡COMBINACIÓN NUEVA! BOLA DE FUEGO" en grande
+  y fanfarria. Queda registrada en `Progression.discovered_recipes` y en el guardado.
+- **Todo en datos**: `SpellRecipe` (`data/spells/recipe_fireball.tres`) lleva daño, área, carga, enfriamiento,
+  orbe, proyectil y sonidos; `ElementDef.hand_visual` la llama de cada elemento; `SpellTier.impact_tint` el color
+  del impacto; `SpellVisualDef.sparkle_rise` hace que los destellos suban como brasas;
+  `BalanceConfig.combine_window_sec` (0,09 s) el margen para pulsar "a la vez".
+- Para no perder la combinación, con las dos manos listas un clic suelto espera esa ventana, o sale en el acto al
+  soltar el botón (un clic normal dura menos).
+- Modo demo: `-- --autoplay --combo [--hold=s]` lanza Bolas de Fuego; `--delay=s` espera antes de empezar.
+
+**Capturas**: `docs/capturas/bola_de_fuego_combinacion.gif`, `docs/capturas/bola_de_fuego_combinacion.png`.
+
+**Cómo se probó**
+
+- Godot 4.7 (Forward+, Vulkan por software): render frame a frame de disparos sueltos y de combinaciones; las
+  llamas se ven en cada mano, se funden en el centro y la bola sale sin saltos.
+- `combine_input_smoke` (nuevo): clic a la vez = combinación con un solo lanzamiento y un solo descubrimiento,
+  clic suelto = una mano, clic corto sale en el acto, sin las dos manos listas no se combina. OK.
+- `progression_smoke` (recetas, descubrimientos y su guardado), `hit_stop_smoke`, `music_layers_smoke`: OK.
+- Galería de VFX y modo demo sin errores de script. `gdlint` y `gdformat --check` limpios.
+- Rendimiento (modo demo con combos, `--report`): 85 draw calls, 6 fragmentos en movimiento.
+
+**Pendiente**
+
+- Balance de la Bola de Fuego (valores en el `.tres`) cuando haya entrega de fragmentos y maná (M1b).
+- Cambiar el elemento de cada mano con Q / E y la página del Grimorio que se escribe sola al descubrir (M2).
+- Escuchar con oídos humanos los sonidos de la Bola de Fuego en el juego.
+
+## 2026-11-15 · Sonidos de la Bola de Fuego
+
+**Qué hay nuevo** (sólo audio; la integración en el juego la hace la sesión de las manos)
+
+- **`tools/sfx_fireball.py`**: sintetiza los sonidos de la Bola de Fuego y de descubrir una combinación, reutilizando
+  `sfx_synth.py`. Deterministas. En `game/audio/sfx/`:
+  - `sfx_spell_combine_01`: las manos se juntan; dos tonos a una 5.ª (E5 y A4) se deslizan al unísono en La y suena una campanita.
+  - `sfx_fireball_charge_loop` (bucle de 2 s, `loop=true` ya en la importación): rugido de fuego con chisporroteo.
+    Pensado para subir `pitch_scale` de 0,85 a 1,25 y el volumen con la carga.
+  - `sfx_fireball_cast_01..03`: golpe grave + llamarada con barrido de filtro.
+  - `sfx_fireball_impact_01..03`: explosión (sub con caída de tono, estallido, brasas) + lluvia de esquirlas afinadas en
+    La mayor (A, C#, E), para casar con la música y el "tink".
+  - `sfx_combo_discovered_01`: fanfarria corta del GDD 10 (IV - V - I en La mayor, metal sintético + arpegio de campanas + timbal).
+- Demo de la secuencia completa: `docs/audio/bola_de_fuego_preview.ogg` (juntar → cargar → lanzar → impacto → fanfarria).
+
+**Cómo se probó**
+
+- Duraciones y niveles medidos (picos entre -1 y -4 dB); costura del bucle de carga por debajo del salto medio entre
+  muestras (sin clic); espectrograma del impacto revisado. Los SFX existentes no cambian (`git status` limpio en ellos).
+- Pendiente de escucha humana.
+
 ## 2026-11-15 · Integración en main: música del valle por capas
 
 - Entra en `main` la música de la sesión de hechizos/música (rama `claude/keen-lovelace-7haa9v`, ver la entrada siguiente):

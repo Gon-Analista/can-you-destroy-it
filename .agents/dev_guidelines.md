@@ -47,7 +47,8 @@ Tecnologías ya previstas (validar la versión al integrarlas):
 | Arte pixel | Aseprite (fuentes `.aseprite`) + exportación PNG | Importar con filtro nearest. |
 | Mallas del prototipo | `core/mesh_kit.gd` (prismas, conos, cajas con normales planas y color por vértice) | Corrige el orden de vértices solo. |
 | Contorno pixel art | `fx/outline.gdshader`: post-proceso de profundidad + normales | Técnica estándar de "3D pixel art" en Godot 4. |
-| SFX del prototipo | `tools/sfx_synth.py` (numpy + scipy + ffmpeg) | Reproducible con semillas fijas. |
+| SFX del prototipo | `tools/sfx_synth.py` y `tools/sfx_loop.py` (numpy + scipy + ffmpeg) | Reproducible con semillas fijas; afinado en La mayor. |
+| Estelas de hechizos | `spells/vfx/spell_trail.gd` (`ImmediateMesh` orientada a cámara + `spell_trail.gdshader`) | Píxeles sólidos con bandas; se estrecha cerca de la cámara. |
 | Fuentes | Silkscreen (8 px) y Pixelify Sans, OFL | Importadas sin antialiasing, hinting ni subpíxel. |
 | Sprites pixel art (manos, efectos) | **Sprite AI** (MCP `sprite-ai` en `.mcp.json`, o `tools/sprite_ai/sai.py`) | No hay artista: es la fuente de arte 2D. Ver sección 15 y `docs/sprite_ai.md`. |
 | VFX de hechizos | `spells/vfx/spell_orb.gd` + un `SpellVisualDef` (`.tres`) | Núcleo, cintas, destellos y luz; píxeles sólidos y animación a `anim_fps`. Probar en `tests/vfx_gallery/`. |
@@ -270,8 +271,12 @@ godot --path game --write-movie /tmp/captura/f.png --fixed-fps 60 --quit-after 1
 godot --headless --path game --script res://tests/smoke/progression_smoke.gd
 ```
 
-- `tests/smoke/progression_smoke.gd` cubre `Progression` y `StreakTracker`; `tests/smoke/hit_stop_smoke.gd`, que el tiempo
-  siempre vuelve a la normalidad tras un hit-stop.
+- `tests/smoke/progression_smoke.gd` cubre `Progression`, `SpellRecipe` y `StreakTracker`; `tests/smoke/hit_stop_smoke.gd`,
+  que el tiempo siempre vuelve a la normalidad tras un hit-stop; `tests/smoke/combine_input_smoke.gd`, la combinación
+  con las dos manos (carga la escena principal); `tests/smoke/loop_smoke.gd`, el bucle bolsa -> Pilón -> Grimorio.
+- Ojo en los tests `--script`: los autoloads no existen al compilar el script, así que no se pueden nombrar
+  (`Events`, `GameState`) ni usar como tipo una clase cuyo script los use (`SpellCaster`, `Player`): se buscan con
+  `root.get_node(^"Events")` y se llama a los métodos por nombre.
 - Toda regla de juego nueva llega con su test.
 - Antes de cada commit, como mínimo: el proyecto abre sin errores en headless, `gdlint` limpio y tests en verde.
 

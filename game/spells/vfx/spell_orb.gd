@@ -1,51 +1,82 @@
 class_name SpellOrb
 extends Node3D
-## Orbe de un hechizo como pila de capas, todo configurado por un `SpellVisualDef`:
-## 1. Núcleo: espiral en bandas + destello en cruz + halo tramado (`spell_core.gdshader`).
-## 2. Cintas: órbitas con cometas que pasan por delante y por detrás (`spell_ribbon.gdshader`).
-## 3. Destellos: estrellas pixel que parpadean (flipbook) alrededor del orbe.
-## 4. Luz: tiñe de color lo que hay cerca (las manos), en bandas gracias al shader toon.
-## Se coloca donde haga falta (entre las manos, en una palma, como proyectil) y se controla con
-## `charge` (0..1), `appear()` y `release()`. Todo se crea una vez; nada se instancia en caliente.
+## Orbe de un hechizo en alta definición (capa de magia HD, ver MagicLayer), configurado por un
+## `SpellVisualDef`:
+## 1. Halo: luz radial aditiva con rayos que florece con el resplandor.
+## 2. Cuerpo: bola de energía turbulenta (`hd_fire.gdshader`): fuego que lame hacia arriba o
+##    remolino arcano, núcleo blanco ardiente y borde de color.
+## 3. Cintas: órbitas de energía que pasan por delante y por detrás.
+## 4. Brasas suaves que se desprenden y, mientras carga, partículas que se arremolinan hacia él.
+## 5. Luz: tiñe lo que hay cerca (las manos, el valle).
+## Se controla con `charge` (0..1), `appear()` y `release()` (estallido con destello, chispas
+## con estela y onda de choque). Todo se crea una vez; nada se instancia en caliente.
 
 signal released
 
-const CORE_SHADER: Shader = preload("res://spells/vfx/spell_core.gdshader")
 const RIBBON_SHADER: Shader = preload("res://spells/vfx/spell_ribbon.gdshader")
-const TWINKLE: Texture2D = preload("res://fx/textures/particle_twinkle.png")
-const TWINKLE_FRAMES: int = 7
 const RING_SEGMENTS: int = 72
 
 @export var def: SpellVisualDef
-## 0..1. Con carga baja el orbe es pequeño y gira lento; con carga completa, a tope.
+## 0..1. Con carga baja el orbe es pequeño y tenue; con carga completa, a tope.
 @export_range(0.0, 1.0) var charge: float = 1.0:
 	set(value):
 		charge = clampf(value, 0.0, 1.0)
 		if is_node_ready():
 			_apply_charge()
 
-var _core: MeshInstance3D
-var _core_mat: ShaderMaterial
+var _body: MeshInstance3D
+var _body_mat: ShaderMaterial
+var _glow: MeshInstance3D
+var _glow_mat: ShaderMaterial
+var _ring: MeshInstance3D
+var _ring_mat: ShaderMaterial
 var _ribbon_pivot: Node3D
 var _ribbons: Array[MeshInstance3D] = []
-## Dos materiales por cinta: [2 i] mitad trasera, [2 i + 1] mitad delantera (next_pass).
 var _ribbon_mats: Array[ShaderMaterial] = []
 var _ribbon_base_speed: PackedFloat32Array = []
-var _sparkles: GPUParticles3D
-var _burst: GPUParticles3D
+var _embers: GPUParticles3D
+var _converge: GPUParticles3D
+var _sparks: GPUParticles3D
 var _light: OmniLight3D
 var _release_t: float = -1.0
 var _precession: float = 0.0
-var _step_acc: float = 0.0
-var _flicker: float = 1.0
+var _t: float = 0.0
 
 
 func _ready() -> void:
 	assert(def != null, "SpellOrb necesita un SpellVisualDef")
-	_build_core()
+	var seed_f: float = float(def.seed) * 1.37
+	_glow = HdFx.quad(HdFx.GLOW_SHADER, 1.0, 3)
+	_glow.name = "Glow"
+	_glow_mat = _glow.material_override
+	_glow_mat.set_shader_parameter("color", def.light_color)
+	_glow_mat.set_shader_parameter("rays", def.glow_rays)
+	_glow_mat.set_shader_parameter("seed", seed_f)
+	add_child(_glow)
+	_body = HdFx.quad(HdFx.FIRE_SHADER, 1.0, 5)
+	_body.name = "Body"
+	_body_mat = _body.material_override
+	_body_mat.set_shader_parameter("ramp", HdFx.smooth_ramp(def.core_ramp))
+	_body_mat.set_shader_parameter("style", def.style)
+	_body_mat.set_shader_parameter("seed", seed_f)
+	_body_mat.set_shader_parameter("intensity", def.body_intensity)
+	add_child(_body)
+	_ring = HdFx.quad(HdFx.RING_SHADER, 1.0, 8)
+	_ring.name = "Shockwave"
+	_ring_mat = _ring.material_override
+	_ring_mat.set_shader_parameter("color", def.light_color)
+	_ring_mat.set_shader_parameter("seed", seed_f)
+	_ring.visible = false
+	add_child(_ring)
 	_build_ribbons()
-	_build_sparkles()
-	_build_light()
+	_build_particles()
+	_light = OmniLight3D.new()
+	_light.name = "Light"
+	_light.light_color = def.light_color
+	_light.omni_range = def.light_range
+	_light.omni_attenuation = 1.4
+	_light.shadow_enabled = false
+	add_child(_light)
 	_apply_charge()
 
 
@@ -53,27 +84,31 @@ func _ready() -> void:
 func appear() -> void:
 	_release_t = -1.0
 	visible = true
-	# Si el estallido se corta antes de terminar, el núcleo y las cintas siguen ocultos.
-	_core.visible = true
+	_body.visible = true
+	_glow.visible = true
 	_ribbon_pivot.visible = true
-	_sparkles.emitting = true
+	_ring.visible = false
+	_embers.emitting = true
+	_body_mat.set_shader_parameter("burst", 0.0)
+	_body_mat.set_shader_parameter("fade", 1.0)
 	_ribbon_pivot.scale = Vector3.ONE
-	_core_mat.set_shader_parameter("burst", 0.0)
 	for m: ShaderMaterial in _ribbon_mats:
 		m.set_shader_parameter("fade", 1.0)
 	_apply_charge()
 	set_process(true)
 
 
-## Estallido: el centro destella y se apaga, las órbitas se abren y se desvanecen
-## y salta una lluvia de destellos. Emite `released` al terminar.
+## Estallido: el cuerpo se hincha y se deshace en llamas, destello de luz, onda de choque,
+## chispas con estela y las órbitas se abren. Emite `released` al terminar.
 func release() -> void:
 	if _release_t >= 0.0:
 		return
 	_release_t = 0.0
-	_sparkles.emitting = false
-	_burst.amount_ratio = lerpf(0.4, 1.0, charge)
-	_burst.restart()
+	_embers.emitting = false
+	_converge.emitting = false
+	_sparks.amount_ratio = lerpf(0.4, 1.0, charge)
+	_sparks.restart()
+	_ring.visible = def.release_flash >= 0.5
 	set_process(true)
 
 
@@ -82,42 +117,58 @@ func is_releasing() -> bool:
 
 
 func _process(delta: float) -> void:
-	# Animación escalonada a `anim_fps`, igual que los shaders.
-	_step_acc += delta
-	var step: float = 1.0 / def.anim_fps
-	if _step_acc < step:
-		return
-	var dt: float = _step_acc
-	_step_acc = 0.0
+	_t += delta
 	var spin_mul: float = lerpf(1.0, def.charge_spin_boost, charge)
-	_precession = wrapf(_precession + deg_to_rad(def.precession_deg) * spin_mul * dt, 0.0, TAU)
-	# Sólo alrededor del eje de la vista: las elipses giran como un remolino sin ponerse de canto.
+	_precession = wrapf(_precession + deg_to_rad(def.precession_deg) * spin_mul * delta, 0.0, TAU)
 	_ribbon_pivot.basis = Basis(Vector3.BACK, _precession)
-	_flicker = 0.85 + randf() * 0.3
+	# Las partículas que se arremolinan sólo mientras se está cargando.
+	_converge.emitting = _release_t < 0.0 and def.converge_amount > 0 and charge < 0.98
+	var flicker: float = 0.9 + 0.1 * sin(_t * 23.0) * sin(_t * 17.0)
 	if _release_t < 0.0:
-		_light.light_energy = _light_energy() * _flicker
+		_light.light_energy = _light_energy() * flicker
+		_glow_mat.set_shader_parameter("intensity", _glow_intensity() * flicker)
 		return
-	_release_t += dt
+	_release_t += delta
 	var k: float = clampf(_release_t / def.release_time, 0.0, 1.0)
 	var ease_out: float = 1.0 - (1.0 - k) * (1.0 - k)
-	_core_mat.set_shader_parameter("burst", k)
+	_body_mat.set_shader_parameter("burst", k)
+	_body_mat.set_shader_parameter("fade", 1.0 - k * k)
 	_ribbon_pivot.scale = Vector3.ONE * lerpf(1.0, def.release_ring_scale, ease_out)
 	for m: ShaderMaterial in _ribbon_mats:
 		m.set_shader_parameter("fade", 1.0 - k)
-	# Flash de luz al soltar y luego se apaga.
-	_light.light_energy = _light_energy() * (2.5 * (1.0 - k))
+	_ring_mat.set_shader_parameter("progress", k)
+	# Destello: el halo se hincha y se apaga.
+	var flash: float = (1.0 - k) * (1.0 - k)
+	var f: float = def.release_flash
+	_glow.scale = Vector3.ONE * _glow_size() * (1.0 + ease_out * 0.8 * f)
+	_glow_mat.set_shader_parameter(
+		"intensity", _glow_intensity() * (1.0 + 2.5 * flash * f) * (1.0 - k)
+	)
+	_light.light_energy = _light_energy() * (1.0 + 2.0 * f) * flash
 	if k >= 1.0:
 		_light.light_energy = 0.0
-		_core.visible = false
+		_body.visible = false
+		_glow.visible = false
 		_ribbon_pivot.visible = false
-		# Esperamos a que caigan los destellos del estallido antes de apagar el nodo.
-		if _release_t >= def.release_time + def.sparkle_lifetime:
+		_ring.visible = false
+		# Esperamos a que caigan las chispas antes de apagar el nodo.
+		if _release_t >= def.release_time + _sparks.lifetime + _sparks.trail_lifetime:
 			_release_t = -1.0
 			visible = false
-			_core.visible = true
-			_ribbon_pivot.visible = true
 			set_process(false)
 			released.emit()
+
+
+func _scale() -> float:
+	return lerpf(def.charge_min_scale, 1.0, charge)
+
+
+func _glow_size() -> float:
+	return def.core_radius * 2.0 * def.glow_scale * _scale()
+
+
+func _glow_intensity() -> float:
+	return def.glow_intensity * lerpf(0.35, 1.0, charge)
 
 
 func _light_energy() -> float:
@@ -125,48 +176,66 @@ func _light_energy() -> float:
 
 
 func _apply_charge() -> void:
-	var s: float = lerpf(def.charge_min_scale, 1.0, charge)
-	_core.scale = Vector3.ONE * def.core_radius * 2.0 * s
-	_core_mat.set_shader_parameter("charge", charge)
+	var s: float = _scale()
+	_body.scale = Vector3.ONE * def.core_radius * 2.0 * def.body_scale * s
+	_glow.scale = Vector3.ONE * _glow_size()
+	_ring.scale = Vector3.ONE * def.core_radius * 2.0 * def.release_ring_scale * 2.0
+	_body_mat.set_shader_parameter("charge", charge)
+	_glow_mat.set_shader_parameter("intensity", _glow_intensity())
 	var spin_mul: float = lerpf(1.0, def.charge_spin_boost, charge)
 	for i: int in _ribbons.size():
 		var r: MeshInstance3D = _ribbons[i]
 		r.scale = Vector3.ONE * float(r.get_meta(&"radius")) * s
 		_ribbon_mats[2 * i].set_shader_parameter("speed", _ribbon_base_speed[i] * spin_mul)
 		_ribbon_mats[2 * i + 1].set_shader_parameter("speed", _ribbon_base_speed[i] * spin_mul)
-	_sparkles.amount_ratio = lerpf(0.3, 1.0, charge)
-	(_sparkles.process_material as ParticleProcessMaterial).emission_sphere_radius = (
-		def.sparkle_radius * s
+	_embers.amount_ratio = lerpf(0.3, 1.0, charge)
+	(_embers.process_material as ParticleProcessMaterial).emission_sphere_radius = (
+		def.core_radius * s
 	)
 	_light.light_energy = _light_energy()
 
 
-func _build_core() -> void:
-	_core = MeshInstance3D.new()
-	_core.name = "Core"
-	var q := QuadMesh.new()
-	q.size = Vector2.ONE
-	_core.mesh = q
-	_core_mat = ShaderMaterial.new()
-	_core_mat.shader = CORE_SHADER
-	_core_mat.render_priority = 5
-	var ramp := GradientTexture1D.new()
-	ramp.gradient = def.core_ramp
-	ramp.use_hdr = true
-	ramp.width = 128
-	_core_mat.set_shader_parameter("ramp", ramp)
-	_core_mat.set_shader_parameter("arms", def.core_arms)
-	_core_mat.set_shader_parameter("twist", def.core_twist)
-	_core_mat.set_shader_parameter("spin", def.core_spin)
-	_core_mat.set_shader_parameter("swirl", def.core_swirl)
-	_core_mat.set_shader_parameter("flare_length", def.flare_length)
-	_core_mat.set_shader_parameter("flare_color", def.flare_color)
-	_core_mat.set_shader_parameter("anim_fps", def.anim_fps)
-	_core_mat.set_shader_parameter("spin_boost", def.charge_spin_boost)
-	_core_mat.set_shader_parameter("seed", float(def.seed) * 1.37)
-	_core.material_override = _core_mat
-	_core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	add_child(_core)
+func _build_particles() -> void:
+	var cols: PackedColorArray = []
+	var g: Gradient = def.sparkle_colors
+	for i: int in g.get_point_count():
+		cols.append(g.get_color(i))
+	var dot: float = def.core_radius * 0.35
+	_embers = HdFx.embers(def.sparkle_amount, dot, cols)
+	_embers.name = "Embers"
+	_embers.lifetime = def.sparkle_lifetime
+	var epm: ParticleProcessMaterial = _embers.process_material
+	epm.gravity = Vector3(0.0, def.sparkle_rise * 4.0, 0.0)
+	epm.initial_velocity_min = def.core_radius * 0.5
+	epm.initial_velocity_max = def.core_radius * 2.5
+	epm.turbulence_noise_scale = def.core_radius * 20.0
+	add_child(_embers)
+	# Remolino de carga: nacen en una cáscara amplia y caen girando hacia el centro.
+	_converge = HdFx.embers(maxi(def.converge_amount, 1), dot * 0.6, cols)
+	_converge.name = "Converge"
+	_converge.lifetime = 0.6
+	_converge.local_coords = true
+	var cpm: ParticleProcessMaterial = _converge.process_material
+	cpm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE_SURFACE
+	cpm.emission_sphere_radius = def.core_radius * 2.4
+	cpm.initial_velocity_min = 0.0
+	cpm.initial_velocity_max = 0.0
+	cpm.gravity = Vector3.ZERO
+	cpm.radial_accel_min = -def.core_radius * 22.0
+	cpm.radial_accel_max = -def.core_radius * 14.0
+	cpm.tangential_accel_min = def.core_radius * 12.0
+	cpm.tangential_accel_max = def.core_radius * 20.0
+	cpm.turbulence_enabled = false
+	_converge.emitting = false
+	add_child(_converge)
+	_sparks = HdFx.sparks(def.spark_amount, def.burst_speed * 2.5, def.core_radius * 0.18, cols)
+	_sparks.name = "Sparks"
+	(_sparks.process_material as ParticleProcessMaterial).gravity = Vector3(0, -def.burst_speed, 0)
+	(_sparks.process_material as ParticleProcessMaterial).emission_sphere_radius = (
+		def.core_radius * 0.5
+	)
+	(_sparks.draw_pass_1 as RibbonTrailMesh).section_length = def.core_radius * 0.6
+	add_child(_sparks)
 
 
 func _build_ribbons() -> void:
@@ -181,18 +250,16 @@ func _build_ribbons() -> void:
 		var ring := MeshInstance3D.new()
 		ring.name = "Ribbon%d" % i
 		ring.mesh = mesh
-		# El ancho de la cinta se añade en el shader: margen para que no la recorte el culling.
 		ring.extra_cull_margin = 0.05
 		ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		ring.layers = MagicLayer.MAGIC_LAYER
 		var f: float = 0.0 if n <= 1 else float(i) / float(n - 1)
 		ring.set_meta(&"radius", lerpf(def.ribbon_radius_min, def.ribbon_radius_max, f))
-		# Órbitas repartidas: cada una inclinada distinto alrededor de la dirección de la cámara.
 		var tilt: float = deg_to_rad(rng.randf_range(0.45, 1.0) * def.ribbon_tilt_max_deg)
 		var roll: float = TAU * float(i) / float(maxi(n, 1)) + rng.randf_range(-0.3, 0.3)
 		ring.basis = Basis(Vector3.BACK, roll) * Basis(Vector3.RIGHT, PI * 0.5 - tilt)
 		var m := ShaderMaterial.new()
 		m.shader = RIBBON_SHADER
-		# Mitad trasera antes del núcleo (5); la delantera, después.
 		m.render_priority = 4
 		var col: Color = (
 			def.ribbon_colors[i % def.ribbon_colors.size()]
@@ -200,13 +267,14 @@ func _build_ribbons() -> void:
 			else def.light_color
 		)
 		m.set_shader_parameter("color", col)
-		m.set_shader_parameter("hdr", def.ribbon_hdr)
+		m.set_shader_parameter("hdr", def.ribbon_hdr * 1.6)
 		m.set_shader_parameter("dashes", float(def.ribbon_dashes))
 		m.set_shader_parameter("tail", def.ribbon_tail)
 		m.set_shader_parameter("width", def.ribbon_width)
 		m.set_shader_parameter("phase", rng.randf())
-		m.set_shader_parameter("anim_fps", def.anim_fps)
-		# Las órbitas interiores giran más rápido (como un remolino); alternan sentido.
+		# En HD la animación va fluida (60 fps), no escalonada.
+		m.set_shader_parameter("anim_fps", 60.0)
+		m.set_shader_parameter("smooth_hd", true)
 		var dir: float = 1.0 if i % 2 == 0 else -1.0
 		_ribbon_base_speed.append(def.ribbon_speed * lerpf(1.5, 0.8, f) * dir)
 		var front: ShaderMaterial = m.duplicate()
@@ -247,91 +315,3 @@ func _ring_vertex(st: SurfaceTool, p: Vector3, tangent: Vector3, uv: Vector2) ->
 	st.set_normal(tangent)
 	st.set_uv(uv)
 	st.add_vertex(p)
-
-
-func _build_sparkles() -> void:
-	var draw := StandardMaterial3D.new()
-	draw.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	draw.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	draw.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
-	draw.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	draw.particles_anim_h_frames = TWINKLE_FRAMES
-	draw.particles_anim_v_frames = 1
-	draw.particles_anim_loop = false
-	draw.vertex_color_use_as_albedo = true
-	draw.albedo_texture = TWINKLE
-	draw.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	draw.disable_fog = true
-	draw.render_priority = 7
-	var quad := QuadMesh.new()
-	# 9 texels por frame, 1 texel ≈ 1 píxel: sin escalado aleatorio para no crear mixels.
-	quad.size = Vector2.ONE * def.sparkle_texel * 9.0
-	quad.material = draw
-
-	var colors := GradientTexture1D.new()
-	colors.gradient = def.sparkle_colors
-	colors.use_hdr = true
-
-	var pm := ParticleProcessMaterial.new()
-	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE_SURFACE
-	pm.emission_sphere_radius = def.sparkle_radius
-	pm.direction = Vector3.UP
-	pm.spread = 180.0
-	pm.initial_velocity_min = 0.01
-	pm.initial_velocity_max = 0.05
-	pm.gravity = Vector3.ZERO
-	pm.anim_speed_min = 1.0
-	pm.anim_speed_max = 1.0
-	pm.color_initial_ramp = colors
-	_sparkles = GPUParticles3D.new()
-	_sparkles.name = "Sparkles"
-	_sparkles.amount = maxi(def.sparkle_amount, 1)
-	_sparkles.lifetime = def.sparkle_lifetime
-	_sparkles.randomness = 0.5
-	_sparkles.local_coords = true
-	_sparkles.process_material = pm
-	_sparkles.draw_pass_1 = quad
-	_sparkles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_sparkles.visibility_aabb = AABB(Vector3.ONE * -1.0, Vector3.ONE * 2.0)
-	_sparkles.fixed_fps = int(def.anim_fps)
-	_sparkles.interpolate = false
-	add_child(_sparkles)
-
-	var bm := ParticleProcessMaterial.new()
-	bm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	bm.emission_sphere_radius = def.core_radius * 0.5
-	bm.direction = Vector3.FORWARD
-	bm.spread = 180.0
-	bm.initial_velocity_min = def.burst_speed * 0.4
-	bm.initial_velocity_max = def.burst_speed
-	bm.damping_min = def.burst_speed * 1.5
-	bm.damping_max = def.burst_speed * 2.5
-	bm.gravity = Vector3(0.0, -0.4, 0.0)
-	bm.anim_speed_min = 1.0
-	bm.anim_speed_max = 1.0
-	bm.color_initial_ramp = colors
-	_burst = GPUParticles3D.new()
-	_burst.name = "Burst"
-	_burst.amount = maxi(def.burst_amount, 1)
-	_burst.lifetime = def.sparkle_lifetime
-	_burst.one_shot = true
-	_burst.explosiveness = 0.9
-	_burst.emitting = false
-	_burst.local_coords = false
-	_burst.process_material = bm
-	_burst.draw_pass_1 = quad
-	_burst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_burst.visibility_aabb = AABB(Vector3.ONE * -2.0, Vector3.ONE * 4.0)
-	_burst.fixed_fps = int(def.anim_fps)
-	_burst.interpolate = false
-	add_child(_burst)
-
-
-func _build_light() -> void:
-	_light = OmniLight3D.new()
-	_light.name = "Light"
-	_light.light_color = def.light_color
-	_light.omni_range = def.light_range
-	_light.omni_attenuation = 1.4
-	_light.shadow_enabled = false
-	add_child(_light)

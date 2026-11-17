@@ -34,9 +34,49 @@ func _init() -> void:
 		p.collect_shard(&"splinter") == 2 and p.bag[&"splinter"] == 2, "la bolsa cuenta por tipo"
 	)
 
+	_check(p.discover_recipe(&"fireball"), "primera Bola de Fuego: descubrimiento")
+	_check(not p.discover_recipe(&"fireball"), "la segunda vez ya no es descubrimiento")
+
+	var bag := Progression.new(1000)
+	_check(bag.collect_shard(&"splinter", 1) == 1, "con capacidad 1 cabe uno")
+	_check(bag.collect_shard(&"shard", 1) == 0, "la bolsa llena no acepta más")
+	_check(bag.bag_count() == 1, "la bolsa cuenta todos los tipos")
+	_check(bag.take_from_bag(&"splinter") and bag.bag_count() == 0, "entregar saca de la bolsa")
+	_check(not bag.take_from_bag(&"splinter"), "no se saca lo que no hay")
+
+	var bag_node: UpgradeNode = load("res://data/upgrades/bag.tres")
+	_check(bag.stat_of(bag_node) == 1.0, "sin comprar, la bolsa lleva 1")
+	_check(bag.purchase_block(bag_node) == &"mana", "sin maná no se puede")
+	bag.deliver(5)
+	_check(bag.buy_upgrade(bag_node) and bag.stat_of(bag_node) == 5.0, "la bolsa sube a 5")
+	_check(bag_node.cost_for_level(1) == 40, "el coste sale del .tres")
+	var tk: UpgradeNode = load("res://data/upgrades/telekinesis.tres")
+	var fresh := Progression.new(1000)
+	fresh.deliver(100)
+	_check(fresh.purchase_block(tk) == &"locked", "la telequinesis pide la bolsa")
+	for i: int in 3:
+		bag.deliver(10000)
+		bag.buy_upgrade(bag_node)
+	_check(bag.purchase_block(bag_node) == &"max", "no se pasa del último nivel")
+
 	var restored := Progression.new(1000)
 	restored.load_dict(p.to_dict())
 	_check(restored.to_dict() == p.to_dict(), "guardar y cargar conserva el estado")
+
+	_check(
+		restored.discovered_recipes == ([&"fireball"] as Array[StringName]),
+		"las combinaciones descubiertas se guardan"
+	)
+
+	var recipe := SpellRecipe.new()
+	recipe.elements = [&"spark", &"spark"] as Array[StringName]
+	recipe.damage_multiplier = 2.5
+	recipe.min_power = 0.4
+	_check(recipe.matches(&"spark", &"spark"), "Chispa + Chispa forma la receta")
+	_check(not recipe.matches(&"spark", &"frost"), "Chispa + Escarcha no")
+	_check(recipe.damage_for(1, 1, 1.0) == 5, "carga completa: (1 + 1) x 2,5")
+	_check(recipe.damage_for(1, 1, 0.0) == 2, "sin carga: potencia mínima")
+	_check(recipe.damage_for(0, 0, 0.0) == 1, "nunca menos de 1")
 
 	var streak := StreakTracker.new(2.0)
 	_check(streak.register_hit(0.0) == 1, "primer golpe: racha 1")

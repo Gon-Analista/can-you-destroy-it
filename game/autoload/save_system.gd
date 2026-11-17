@@ -5,10 +5,16 @@ const SAVE_PATH: String = "user://save.json"
 const TMP_PATH: String = "user://save.json.tmp"
 const SAVE_VERSION: int = 1
 
+## En el modo demo (`-- --autoplay`) no se toca la partida guardada: las capturas empiezan de
+## cero y sus trucos (--mana, --bag) no ensucian la partida del jugador.
+var enabled: bool = not OS.get_cmdline_user_args().has("--autoplay")
+
 var _autosave: Timer
 
 
 func _ready() -> void:
+	if not enabled:
+		return
 	load_game()
 	_autosave = Timer.new()
 	_autosave.wait_time = GameState.BALANCE.autosave_interval_sec
@@ -16,6 +22,7 @@ func _ready() -> void:
 	_autosave.timeout.connect(save_game)
 	add_child(_autosave)
 	Events.upgrade_bought.connect(func(_id: StringName, _lvl: int) -> void: save_game())
+	Events.recipe_discovered.connect(func(_r: SpellRecipe) -> void: save_game())
 
 
 func _notification(what: int) -> void:
@@ -24,6 +31,8 @@ func _notification(what: int) -> void:
 
 
 func save_game() -> bool:
+	if not enabled:
+		return false
 	var payload: Dictionary = {
 		"version": SAVE_VERSION, "progression": GameState.progression.to_dict()
 	}

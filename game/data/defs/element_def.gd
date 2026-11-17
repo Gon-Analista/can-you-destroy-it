@@ -10,3 +10,5 @@ extends Resource
 @export var unlock_pylon_ratio: float = 0.0
 ## Niveles de poder del elemento (el índice 0 es el inicial).
 @export var tiers: Array[SpellTier] = []
+## Lo que flota sobre la palma de la mano que lleva este elemento.
+@export var hand_visual: SpellVisualDef

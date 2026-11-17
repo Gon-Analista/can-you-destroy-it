@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=18 format=3]
 
 [ext_resource type="Script" path="res://main/main.gd" id="1"]
 [ext_resource type="Shader" path="res://world/sky.gdshader" id="2"]
@@ -6,6 +6,10 @@
 [ext_resource type="Script" path="res://crystal/mother_crystal.gd" id="4"]
 [ext_resource type="PackedScene" path="res://player/player.tscn" id="5"]
 [ext_resource type="Script" path="res://ui/hud.gd" id="6"]
+[ext_resource type="Script" path="res://pylon/mana_pylon.gd" id="7"]
+[ext_resource type="Script" path="res://sanctum/sanctum.gd" id="8"]
+[ext_resource type="Script" path="res://world/valley_details.gd" id="9"]
+[ext_resource type="Script" path="res://fx/hd/magic_layer.gd" id="10"]
 
 [sub_resource type="FastNoiseLite" id="cloud_noise"]
 frequency = 0.012
@@ -49,10 +53,22 @@ fog_depth_end = 560.0
 [node name="Main" type="Node3D"]
 script = ExtResource("1")
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="WorldView" type="SubViewportContainer" parent="."]
+texture_filter = 1
+offset_right = 640.0
+offset_bottom = 360.0
+stretch = true
+
+[node name="WorldViewport" type="SubViewport" parent="WorldView"]
+handle_input_locally = false
+audio_listener_enable_3d = true
+size = Vector2i(640, 360)
+render_target_update_mode = 4
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="WorldView/WorldViewport"]
 environment = SubResource("env")
 
-[node name="Sun" type="DirectionalLight3D" parent="."]
+[node name="Sun" type="DirectionalLight3D" parent="WorldView/WorldViewport"]
 light_color = Color(1, 0.97, 0.9, 1)
 light_energy = 2.0
 shadow_enabled = true
@@ -61,14 +77,31 @@ shadow_normal_bias = 3.0
 shadow_blur = 0.0
 directional_shadow_max_distance = 140.0
 
-[node name="Valley" type="Node3D" parent="."]
+[node name="Valley" type="Node3D" parent="WorldView/WorldViewport"]
 script = ExtResource("3")
 
-[node name="MotherCrystal" type="Node3D" parent="."]
+[node name="ValleyDetails" type="Node3D" parent="WorldView/WorldViewport"]
+script = ExtResource("9")
+
+[node name="MotherCrystal" type="Node3D" parent="WorldView/WorldViewport"]
 script = ExtResource("4")
 
-[node name="Player" parent="." instance=ExtResource("5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 21)
+[node name="ManaPylon" type="Node3D" parent="WorldView/WorldViewport"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22, 0, 21)
+script = ExtResource("7")
+
+[node name="Sanctum" type="Node3D" parent="WorldView/WorldViewport"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23, 0, 22)
+script = ExtResource("8")
+
+[node name="Player" parent="WorldView/WorldViewport" instance=ExtResource("5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 32)
+
+[node name="MagicView" type="TextureRect" parent="."]
+offset_right = 640.0
+offset_bottom = 360.0
+mouse_filter = 2
+script = ExtResource("10")
 
 [node name="HUDLayer" type="CanvasLayer" parent="."]
 

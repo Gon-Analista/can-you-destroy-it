@@ -13,29 +13,46 @@ const MUSIC_LAYERS: Array[AudioStream] = [
 	preload("res://audio/music/music_valley_5_archimago.ogg"),
 ]
 
-@onready var _sun: DirectionalLight3D = $Sun
-@onready var _player: Player = $Player
+@onready var _world: SubViewport = $WorldView/WorldViewport
+@onready var _sun: DirectionalLight3D = $WorldView/WorldViewport/Sun
+@onready var _player: Player = $WorldView/WorldViewport/Player
 @onready var _hud: Hud = $HUDLayer/Hud
+@onready var _magic: MagicLayer = $MagicView
 
 
 func _ready() -> void:
+	# Todo en su sitio según WorldLayout (y a ras del suelo ondulado).
+	_magic.bind(_player.get_camera())
+	_place(_world.get_node(^"ManaPylon") as Node3D, WorldLayout.PYLON)
+	_place(_world.get_node(^"Sanctum") as Node3D, WorldLayout.SANCTUM)
+	(_world.get_node(^"Sanctum") as Node3D).rotation.y = deg_to_rad(WorldLayout.SANCTUM_YAW_DEG)
+	_player.global_position = WorldLayout.PLAYER_START
 	_sun.look_at_from_position(Vector3.ZERO, SUN_DIR.normalized(), Vector3.UP)
 	_hud.bind(_player.get_camera(), _player.get_caster())
 	AudioDirector.play_ambience(AMBIENCE, -10.0)
 	# Hasta que exista el sistema de rangos, se empieza en Aprendiz (1 capa).
 	AudioDirector.play_music(MUSIC_LAYERS, _arg_int("--music-layers=", 1))
 	GameState.emit_all()
+	# La música crece con el mago: una capa más cada 3 niveles comprados (Aprendiz -> Archimago).
+	AudioDirector.set_music_layers(_rank_layers(), 0.1)
+	Events.upgrade_bought.connect(
+		func(_id: StringName, _l: int) -> void: AudioDirector.set_music_layers(_rank_layers())
+	)
 	if OS.is_debug_build():
 		_setup_autoplay()
 
 
 ## Modo demo para grabar capturas sin ratón (sólo debug):
-## godot --path game -- --autoplay [--tier=N] [--yaw=grados] [--pitch=grados]
+## godot --path game -- --autoplay [--tier=N] [--yaw=grados] [--pitch=grados] [--combo]
+## --delay=s espera antes de empezar. --no-cast no lanza; --mana=N, --bag=N y --warp=x,z
+## preparan la partida; --grimoire abre el Grimorio (y --buy inscribe y lo cierra).
+## Con --combo junta las manos, carga la Bola de Fuego `--hold=s` segundos y la suelta.
+## En modo demo no se carga ni se guarda la partida (ver SaveSystem).
 func _setup_autoplay() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	if not args.has("--autoplay"):
 		return
-	var tier: int = 0
+	var tier: int = -1
 	for a: String in args:
 		if a.begins_with("--tier="):
 			tier = int(a.get_slice("=", 1)) - 1
@@ -45,17 +62,69 @@ func _setup_autoplay() -> void:
 			(_player.get_node(^"Head") as Node3D).rotation.x = deg_to_rad(
 				float(a.get_slice("=", 1))
 			)
-	_player.get_caster().set_tier(tier)
+	if tier > 0:
+		_player.get_caster().set_tier(tier)
 	_hud.force_captured_look = true
+	# Estado de partida para probar el bucle: --mana=N, --bag=N (astillas), --warp=x,z.
+	for a: String in args:
+		if a.begins_with("--mana="):
+			GameState.deliver(int(a.get_slice("=", 1)))
+		elif a.begins_with("--bag="):
+			for i: int in int(a.get_slice("=", 1)):
+				GameState.progression.collect_shard(&"splinter")
+			GameState.emit_all()
+		elif a.begins_with("--warp="):
+			var xz: PackedStringArray = a.get_slice("=", 1).split(",")
+			_player.global_position = Vector3(float(xz[0]), 0.2, float(xz[1]))
+	if args.has("--grimoire"):
+		get_tree().create_timer(0.6).timeout.connect(
+			func() -> void: Events.grimoire_requested.emit(true)
+		)
+		if args.has("--buy"):
+			# Inscribe la estrella elegida y cierra el libro (para grabar una compra).
+			var book: Grimoire = _hud.get_node(^"Grimoire")
+			for a: String in args:
+				if a.begins_with("--select="):
+					var idx: int = int(a.get_slice("=", 1))
+					get_tree().create_timer(0.9).timeout.connect(book.select.bind(idx))
+			get_tree().create_timer(1.6).timeout.connect(book.try_buy)
+			get_tree().create_timer(3.4).timeout.connect(book.close)
+	if args.has("--no-cast"):
+		return
 	var timer := Timer.new()
 	timer.wait_time = 0.05
-	timer.autostart = true
+	# --delay=s: unos segundos quieto antes de empezar (para ver las manos en reposo).
+	var delay: float = 0.0
+	for a: String in args:
+		if a.begins_with("--delay="):
+			delay = float(a.get_slice("=", 1))
+	if delay > 0.0:
+		get_tree().create_timer(delay).timeout.connect(timer.start)
+	else:
+		timer.autostart = true
 	var side: Array[int] = [0]
-	timer.timeout.connect(
-		func() -> void:
-			_player.get_caster().try_cast(side[0])
-			side[0] = 1 - side[0]
-	)
+	if args.has("--combo"):
+		var hold: float = 0.9
+		for a: String in args:
+			if a.begins_with("--hold="):
+				hold = float(a.get_slice("=", 1))
+		var held: Array[float] = [0.0]
+		timer.timeout.connect(
+			func() -> void:
+				var caster: SpellCaster = _player.get_caster()
+				if caster.is_combining():
+					held[0] += timer.wait_time
+					if held[0] >= hold:
+						caster.try_release_combine()
+				elif caster.try_begin_combine():
+					held[0] = 0.0
+		)
+	else:
+		timer.timeout.connect(
+			func() -> void:
+				_player.get_caster().try_cast(side[0])
+				side[0] = 1 - side[0]
+		)
 	add_child(timer)
 	if args.has("--collect"):
 		# Tras unos golpes: camina hacia el cristal y mantiene F para recoger.
@@ -104,15 +173,21 @@ func _process(_delta: float) -> void:
 		Engine.time_scale = 1.0
 
 
-func _unhandled_input(event: InputEvent) -> void:
+## Clic para capturar el ratón. En `_input` (no en `_unhandled_input`): el clic lo consume
+## la vista del valle al pasárselo a su SubViewport.
+func _input(event: InputEvent) -> void:
 	if (
 		event is InputEventMouseButton
 		and event.is_pressed()
 		and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED
+		and not (_hud.get_node(^"Grimoire") as Grimoire).is_open
 	):
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		get_viewport().set_input_as_handled()
-	elif (
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if (
 		OS.is_debug_build()
 		and event is InputEventKey
 		and (event as InputEventKey).pressed
@@ -123,6 +198,14 @@ func _unhandled_input(event: InputEvent) -> void:
 		AudioDirector.set_music_layers(AudioDirector.get_music_layers() % MUSIC_LAYERS.size() + 1)
 	elif event.is_action_pressed(&"ui_cancel"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+func _place(node: Node3D, at: Vector3) -> void:
+	node.position = Vector3(at.x, Valley.ground_height(at.x, at.z) - 0.05, at.z)
+
+
+func _rank_layers() -> int:
+	return maxi(_arg_int("--music-layers=", 1), 1 + GameState.total_upgrade_levels() / 3)
 
 
 func _arg_int(prefix: String, fallback: int) -> int:

@@ -109,7 +109,11 @@ func _build_ground(rng: RandomNumberGenerator) -> ArrayMesh:
 				col = C_GRASS_A.darkened(0.05)
 			# Claro alrededor del cristal: tierra pisada en anillo.
 			var r: float = Vector2(center.x, center.z).length()
-			if r > 6.0 and r < 9.0 and rng.randf() < 0.55:
+			if (
+				r > WorldLayout.CRYSTAL_FOOTPRINT - 2.0
+				and r < WorldLayout.CRYSTAL_FOOTPRINT + 3.0
+				and rng.randf() < 0.55
+			):
 				col = C_DIRT
 			var below: Vector3 = center - Vector3(0, 5, 0)
 			MeshKit.add_tri(st, p[0], p[1], p[2], col, below)
@@ -302,13 +306,19 @@ func _add_forest(rng: RandomNumberGenerator) -> void:
 	while xforms.size() < tree_count and attempts < tree_count * 8:
 		attempts += 1
 		var ang: float = rng.randf() * TAU
-		var r: float = rng.randf_range(34.0, 165.0)
+		var r: float = rng.randf_range(38.0, 165.0)
 		var x: float = cos(ang) * r
 		var z: float = sin(ang) * r
 		# El bosque se agrupa en manchas y deja libre la vista hacia el castillo y el cristal.
 		if noise.get_noise_2d(x, z) < -0.05:
 			continue
 		if z > 10.0 and absf(x) < 30.0:
+			continue
+		# Ni encima del Pilón ni del Santuario.
+		if (
+			Vector2(x - WorldLayout.PYLON.x, z - WorldLayout.PYLON.z).length() < 9.0
+			or Vector2(x - WorldLayout.SANCTUM.x, z - WorldLayout.SANCTUM.z).length() < 10.0
+		):
 			continue
 		var s: float = rng.randf_range(1.6, 3.2)
 		var basis := Basis(Vector3.UP, rng.randf() * TAU).scaled(

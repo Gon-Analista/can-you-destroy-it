@@ -4,6 +4,11 @@ extends Node3D
 ## expande y un flash de luz. Todo preasignado; play() sólo reposiciona y reinicia.
 
 const RING_SHADER: Shader = preload("res://fx/ring.gdshader")
+const BLAST_SHADER: Shader = preload("res://fx/impact_blast.gdshader")
+## Duración del estallido (s).
+const BLAST_SEC: float = 0.4
+## Diámetro del estallido respecto al radio de grieta del golpe.
+const BLAST_PER_CRACK: float = 2.6
 
 @export var pool_size: int = 10
 
@@ -13,6 +18,10 @@ var _chips: Array[GPUParticles3D] = []
 var _rings: Array[MeshInstance3D] = []
 var _ring_mats: Array[ShaderMaterial] = []
 var _lights: Array[OmniLight3D] = []
+var _blasts: Array[MeshInstance3D] = []
+var _blast_mats: Array[ShaderMaterial] = []
+var _default_ramp: GradientTexture1D
+var _ramps: Dictionary[Gradient, GradientTexture1D] = {}
 var _age: PackedFloat32Array = []
 var _light_peak: PackedFloat32Array = []
 var _next: int = 0
@@ -40,6 +49,20 @@ func _ready() -> void:
 		ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		ring.visible = false
 		burst.add_child(ring)
+		var blast := MeshInstance3D.new()
+		var bquad := QuadMesh.new()
+		bquad.size = Vector2.ONE
+		blast.mesh = bquad
+		var bm := ShaderMaterial.new()
+		bm.shader = BLAST_SHADER
+		bm.render_priority = 8
+		blast.material_override = bm
+		blast.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		blast.top_level = true
+		blast.visible = false
+		burst.add_child(blast)
+		_blasts.append(blast)
+		_blast_mats.append(bm)
 		var light := OmniLight3D.new()
 		light.light_color = Color("#bff3ff")
 		light.omni_range = 9.0
@@ -55,7 +78,28 @@ func _ready() -> void:
 		_lights.append(light)
 		_age.append(-1.0)
 		_light_peak.append(0.0)
+	var g := Gradient.new()
+	g.interpolation_mode = Gradient.GRADIENT_INTERPOLATE_CONSTANT
+	g.offsets = PackedFloat32Array([0.0, 0.2, 0.45, 0.7, 0.9])
+	g.colors = PackedColorArray(
+		[
+			Color(1.8, 1.9, 2.0),
+			Color("#c9f6ff"),
+			Color("#a5dae5"),
+			Color("#458fb8"),
+			Color(0.16, 0.29, 0.53, 0.4),
+		]
+	)
+	_default_ramp = _ramp_texture(g)
 	set_process(false)
+
+
+func _ramp_texture(g: Gradient) -> GradientTexture1D:
+	var tex := GradientTexture1D.new()
+	tex.gradient = g
+	tex.use_hdr = true
+	tex.width = 64
+	return tex
 
 
 func play(pos: Vector3, normal: Vector3, tier: SpellTier, resonant: bool) -> void:
@@ -70,8 +114,9 @@ func play(pos: Vector3, normal: Vector3, tier: SpellTier, resonant: bool) -> voi
 	var power: float = 2.2 if resonant else 1.0
 	var sparkles: GPUParticles3D = _sparkles[i]
 	sparkles.amount = maxi(4, int(tier.impact_particles * power))
+	var tinted: bool = tier.impact_tint.a > 0.0
 	(sparkles.process_material as ParticleProcessMaterial).color = (
-		Color("#ffe7a3") if resonant else Color("#d8fbff")
+		Color("#ffe7a3") if resonant else (tier.impact_tint if tinted else Color("#d8fbff"))
 	)
 	sparkles.restart()
 	var chips: GPUParticles3D = _chips[i]
@@ -80,13 +125,34 @@ func play(pos: Vector3, normal: Vector3, tier: SpellTier, resonant: bool) -> voi
 	var ring: MeshInstance3D = _rings[i]
 	ring.scale = Vector3.ONE * (tier.crack_radius * 5.0 * (1.6 if resonant else 1.0))
 	ring.visible = true
-	_ring_mats[i].set_shader_parameter("color", Color("#ffd27a") if resonant else Color("#c9f6ff"))
+	_ring_mats[i].set_shader_parameter(
+		"color",
+		Color("#ffd27a") if resonant else (tier.impact_tint if tinted else Color("#c9f6ff"))
+	)
 	_ring_mats[i].set_shader_parameter("progress", 0.0)
 	var light: OmniLight3D = _lights[i]
-	light.light_color = Color("#ffd27a") if resonant else Color("#bff3ff")
+	light.light_color = (
+		Color("#ffd27a") if resonant else (tier.impact_tint if tinted else Color("#bff3ff"))
+	)
 	light.visible = true
 	_light_peak[i] = tier.light_energy * power
 	light.light_energy = _light_peak[i]
+	# Estallido de píxeles: con los colores de la estela del hechizo, un poco hacia la cámara.
+	var blast: MeshInstance3D = _blasts[i]
+	var cam: Camera3D = get_viewport().get_camera_3d()
+	var toward: Vector3 = (cam.global_position - pos).normalized() if cam else up
+	blast.global_position = pos + up * 0.15 + toward * 0.4
+	blast.scale = Vector3.ONE * tier.crack_radius * BLAST_PER_CRACK * (1.5 if resonant else 1.0)
+	var ramp: GradientTexture1D = _default_ramp
+	if tier.trail_ramp:
+		if not _ramps.has(tier.trail_ramp):
+			_ramps[tier.trail_ramp] = _ramp_texture(tier.trail_ramp)
+		ramp = _ramps[tier.trail_ramp]
+	_blast_mats[i].set_shader_parameter("ramp", ramp)
+	_blast_mats[i].set_shader_parameter("seed", randf() * 10.0)
+	_blast_mats[i].set_shader_parameter("progress", 0.0)
+	# El estallido pixel art queda sustituido por el impacto HD (HdImpact).
+	blast.visible = false
 	_age[i] = 0.0
 	set_process(true)
 
@@ -100,8 +166,11 @@ func _process(delta: float) -> void:
 		var t: float = _age[i]
 		_ring_mats[i].set_shader_parameter("progress", clampf(t / 0.35, 0.0, 1.0))
 		_lights[i].light_energy = _light_peak[i] * maxf(0.0, 1.0 - t / 0.28)
+		_blast_mats[i].set_shader_parameter("progress", clampf(t / BLAST_SEC, 0.0, 1.0))
 		if t > 0.35:
 			_rings[i].visible = false
+		if t > BLAST_SEC:
+			_blasts[i].visible = false
 			_lights[i].visible = false
 			_age[i] = -1.0
 		else:

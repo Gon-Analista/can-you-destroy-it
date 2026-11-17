@@ -8,6 +8,7 @@ total_essence = 1000000
 spark_damage = 1
 spark_cooldown_sec = 1.5
 cast_buffer_sec = 0.3
+combine_window_sec = 0.09
 streak_window_sec = 2.6
 resonant_chance = 0.07
 resonant_damage_mult = 3

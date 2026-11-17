@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"resonance"
+display_name = "Resonancia"
+description = "Más golpes resonantes: triple de daño y el doble de fragmentos."
+branch = 6
+costs = PackedInt32Array(20, 70, 250, 800)
+prerequisites = Array[StringName]([])
+stat = &"resonant_percent"
+values = PackedFloat32Array(7, 10, 13, 17, 22)
+value_format = "%d %% resonantes"
+level_names = PackedStringArray()

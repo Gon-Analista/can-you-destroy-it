@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"bag"
+display_name = "Bolsa de aprendiz"
+description = "Una bolsita encantada: llevas más fragmentos en cada viaje al Pilón."
+branch = 3
+costs = PackedInt32Array(5, 40, 300)
+prerequisites = Array[StringName]([])
+stat = &"bag_capacity"
+values = PackedFloat32Array(1, 5, 20, 100)
+value_format = "caben %d"
+level_names = PackedStringArray()
