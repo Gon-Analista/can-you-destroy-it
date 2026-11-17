@@ -2,6 +2,41 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-17 · Trituradora para entregar, golpes al cristal variados y el cristal que reacciona
+
+**Qué hay nuevo**
+
+- **Entregar ya no es automático: trituradora** junto al Pilón (`pylon/crystal_crusher.gd`).
+  - **Mantén F** junto a la tolva: los cristales salen de tus manos uno a uno, cada vez más deprisa (las manos se
+    alternan lanzándolos), caen en la tolva con un tintineo que sube de nota y se amontonan tras su cristal.
+  - **Toca F** para tirar de la palanca: la máquina arranca (motor que sube de vueltas), engranajes y rodillos
+    girando, vibración, un crujido por cada cristal entre los rodillos con polvo y chispas, el maná viaja brillando
+    por la tubería al Pilón (que sube con su gota y su nota) y la trituración acelera; termina con un resoplido de
+    vapor por la chimenea y "¡N CRISTALES TRITURADOS!".
+  - Sonidos nuevos: tolva, palanca con trinquete, arranque, bucle de maquinaria (motor, engranajes y cadena),
+    cuatro crujidos y vapor.
+- **Golpes al cristal más variados y menos molestos**: diez sonidos en tres timbres (cuenco, cristal y mazo) con
+  ataque suave y cuerpo grave, sin repetir el anterior; más bajos; la racha sube de nota dentro de una octava y
+  vuelve a empezar (antes acababa chillando).
+- **El cristal reacciona** (capa HD, `fx/hd/crystal_arcs.gd`): rayos de energía cian y violeta que recorren la
+  superficie desde cada impacto (más y más largos con la fuerza y la racha; dorados en los resonantes), destellos
+  en estrella al golpear y titilando por todo el cristal, chisporroteo eléctrico suave. Cada cierto daño acumulado
+  **"¡El cristal se resquebraja!"**: tormenta de rayos que trepa por todo el cristal, destello del corazón,
+  retumbe grave, sacudida y una grieta grande que se queda.
+
+**Capturas**: `docs/capturas/trituradora_y_rayos.gif`, `docs/capturas/trituradora.png`.
+
+**Cómo se probó**
+
+- `loop_smoke`: mantener F llena la tolva sin dar maná; la palanca tritura y da el maná (con y sin ventana).
+  Resto de tests en verde; `gdlint` y `gdformat` limpios.
+- Render fotograma a fotograma: echar cristales acelerando, palanca, trituración, rayos y resquebrajo.
+
+**Pendiente**
+
+- Escuchar los sonidos nuevos con oídos humanos (sobre todo el bucle de maquinaria y los golpes).
+- Mejoras para la trituradora (más rápida, tolva más grande) y la telequinesis de entrega directa del GDD.
+
 ## 2026-11-17 · Escarcha y Q/E, Grimorio por elementos, día y noche, movimiento y más
 
 **Qué hay nuevo**

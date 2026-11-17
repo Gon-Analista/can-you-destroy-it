@@ -9,13 +9,22 @@ const MAX_HITS: int = 6
 const MAX_CRACKS: int = 16
 const MAX_BURNS: int = 12
 const MAX_WEAK: int = 8
-## Escala pentatónica (semitonos) que recorre el "tink" a medida que crece la racha.
-const STREAK_LADDER: PackedInt32Array = [-5, -3, 0, 2, 4, 7, 9, 12, 14, 16]
+## Escala pentatónica (semitonos) que recorre el golpe a medida que crece la racha: sube una
+## octava y vuelve a empezar (antes subía sin parar y acababa chillando).
+const STREAK_LADDER: PackedInt32Array = [0, 2, 4, 7, 9, 12, 9, 7, 4, 2]
+## Golpes al cristal (tools/sfx_loop.py): diez variantes en tres timbres (cuenco, cristal y
+## mazo) con ataque suave; se eligen al azar sin repetir el anterior.
 const TINKS: Array[AudioStream] = [
-	preload("res://audio/sfx/sfx_crystal_tink_01.ogg"),
-	preload("res://audio/sfx/sfx_crystal_tink_02.ogg"),
-	preload("res://audio/sfx/sfx_crystal_tink_03.ogg"),
-	preload("res://audio/sfx/sfx_crystal_tink_04.ogg"),
+	preload("res://audio/sfx/sfx_crystal_hit_01.ogg"),
+	preload("res://audio/sfx/sfx_crystal_hit_02.ogg"),
+	preload("res://audio/sfx/sfx_crystal_hit_03.ogg"),
+	preload("res://audio/sfx/sfx_crystal_hit_04.ogg"),
+	preload("res://audio/sfx/sfx_crystal_hit_05.ogg"),
+	preload("res://audio/sfx/sfx_crystal_hit_06.ogg"),
+	preload("res://audio/sfx/sfx_crystal_hit_07.ogg"),
+	preload("res://audio/sfx/sfx_crystal_hit_08.ogg"),
+	preload("res://audio/sfx/sfx_crystal_hit_09.ogg"),
+	preload("res://audio/sfx/sfx_crystal_hit_10.ogg"),
 ]
 const BREAKS: Array[AudioStream] = [
 	preload("res://audio/sfx/sfx_shard_break_01.ogg"),
@@ -25,6 +34,19 @@ const BREAKS: Array[AudioStream] = [
 const RESONANT_SFX: AudioStream = preload("res://audio/sfx/sfx_resonant_hit_01.ogg")
 const STREAK_SFX: AudioStream = preload("res://audio/sfx/sfx_streak_chime_01.ogg")
 const HUM_SFX: AudioStream = preload("res://audio/sfx/amb_crystal_hum_loop.ogg")
+const SURGE_SFX: AudioStream = preload("res://audio/sfx/sfx_crystal_surge_01.ogg")
+const ARC_SFX: Array[AudioStream] = [
+	preload("res://audio/sfx/sfx_arc_crackle_01.ogg"),
+	preload("res://audio/sfx/sfx_arc_crackle_02.ogg"),
+	preload("res://audio/sfx/sfx_arc_crackle_03.ogg"),
+]
+## Colores de la energía del cristal (rayos): cian y violeta; dorado en los resonantes.
+const ARC_COLORS: Array[Color] = [
+	Color(0.25, 0.75, 2.0), Color(1.2, 0.3, 1.9), Color(0.4, 0.5, 2.0)
+]
+## Daño acumulado para el primer "resquebrajo"; cada siguiente pide un 60 % más.
+const FIRST_SURGE: float = 15.0
+const SURGE_GROWTH: float = 1.6
 
 @export var crystal_scale: float = WorldLayout.CRYSTAL_SCALE
 @export var seed_value: int = 11
@@ -34,6 +56,10 @@ var _mesh_instance: MeshInstance3D
 var _shards: ShardPool
 var _fx: ImpactFx
 var _hd_fx: HdImpact
+var _arcs: CrystalArcs
+var _arc_player: AudioStreamPlayer3D
+var _surge_acc: float = 0.0
+var _next_surge: float = FIRST_SURGE
 var _burn_fire: CrystalBurn
 var _burns: PackedVector4Array = []
 var _burn_radius: PackedFloat32Array = []
@@ -105,6 +131,13 @@ func _ready() -> void:
 	_hd_fx = HdImpact.new()
 	_hd_fx.name = "HdImpact"
 	add_child(_hd_fx)
+	_arcs = CrystalArcs.new()
+	_arcs.name = "Arcs"
+	add_child(_arcs)
+	_arcs.setup_ambient(
+		global_position + Vector3(0.0, 9.0 * crystal_scale, 0.0),
+		Vector3(9.0, 18.0, 9.0) * crystal_scale
+	)
 	_burn_fire = CrystalBurn.new()
 	_burn_fire.name = "Burn"
 	_burn_fire.burned.connect(_on_burn_tick)
@@ -142,7 +175,8 @@ func _setup_audio() -> void:
 	for s: AudioStream in TINKS:
 		_tink_random.add_stream(-1, s)
 	_tink_random.random_pitch = 1.0
-	_tink_random.random_volume_offset_db = 1.5
+	_tink_random.random_volume_offset_db = 2.5
+	_tink_random.playback_mode = AudioStreamRandomizer.PLAYBACK_RANDOM_NO_REPEATS
 	for i: int in 6:
 		var p := AudioStreamPlayer3D.new()
 		p.bus = &"SFX"
@@ -159,7 +193,7 @@ func _setup_audio() -> void:
 	_break_player.bus = &"SFX"
 	_break_player.stream = breaks
 	_break_player.unit_size = 30.0
-	_break_player.volume_db = -4.0
+	_break_player.volume_db = -12.0
 	_break_player.max_polyphony = 3
 	add_child(_break_player)
 	_accent_player = AudioStreamPlayer.new()
@@ -171,6 +205,16 @@ func _setup_audio() -> void:
 	_spell_player.unit_size = 40.0
 	_spell_player.max_polyphony = 2
 	add_child(_spell_player)
+	_arc_player = AudioStreamPlayer3D.new()
+	_arc_player.bus = &"SFX"
+	_arc_player.unit_size = 20.0
+	_arc_player.max_polyphony = 2
+	var arcs := AudioStreamRandomizer.new()
+	for st: AudioStream in ARC_SFX:
+		arcs.add_stream(-1, st)
+	arcs.random_pitch = 1.2
+	_arc_player.stream = arcs
+	add_child(_arc_player)
 	var hum := AudioStreamPlayer3D.new()
 	hum.name = "Hum"
 	hum.bus = &"Ambience"
@@ -215,6 +259,7 @@ func receive_hit(hit: SpellHit) -> void:
 	var shard_type: ShardType = ShardPool.type_for_hit(hit.damage, hit.resonant)
 	_shards.spawn(hit.position, hit.normal, shard_type, count, 1.25 if hit.resonant else 1.0)
 	_fx.play(hit.position, hit.normal, tier, hit.resonant)
+	_crystal_reacts(hit)
 	_hd_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.recipe != null)
 	_play_tink(hit)
 	if hit.recipe:
@@ -268,6 +313,7 @@ func _area_blast(hit: SpellHit) -> void:
 ## fragmentos que recoger) para compilar shaders y partículas antes de jugar.
 func warm_up(at: Vector3, normal: Vector3, tier: SpellTier, big_tier: SpellTier) -> void:
 	_fx.play(at, normal, tier, true)
+	_arcs.strike(at, normal, 1.0, ARC_COLORS[0])
 	_hd_fx.play(at, normal, tier, false)
 	_hd_fx.play(at, normal, big_tier, true, true)
 	_burn_fire.ignite(at, normal, 1.0, 0.6, 0.3, 0)
@@ -413,13 +459,64 @@ func _play_spell_impact(hit: SpellHit) -> void:
 	_spell_player.play()
 
 
+## El cristal reacciona con energía propia: rayos que recorren la superficie desde el impacto
+## (más cuanto más fuerte el golpe y más larga la racha) y destellos en estrella. Cada cierto
+## daño acumulado, se resquebraja entero (`_surge`).
+func _crystal_reacts(hit: SpellHit) -> void:
+	var power: float = (
+		clampf(float(hit.damage) / 12.0, 0.1, 1.4) + minf(float(hit.streak) / 30.0, 0.5)
+	)
+	if hit.recipe or hit.resonant:
+		power += 0.6
+	var col: Color = (
+		Color(2.0, 1.3, 0.3) if hit.resonant else ARC_COLORS[_rng.randi() % ARC_COLORS.size()]
+	)
+	_arcs.strike(hit.position, hit.normal, power, col)
+	if power > 0.5 or _rng.randf() < 0.3:
+		_arc_player.global_position = hit.position
+		_arc_player.volume_db = lerpf(-14.0, -6.0, clampf(power, 0.0, 1.0))
+		_arc_player.play()
+	_surge_acc += float(hit.damage)
+	if _surge_acc >= _next_surge:
+		_surge_acc = 0.0
+		_next_surge *= SURGE_GROWTH
+		_surge.call_deferred(hit)
+
+
+## ¡El cristal se resquebraja!: tormenta de rayos por todo el cristal, destello desde el
+## corazón, retumbe grave, sacudida y una grieta grande que se queda.
+func _surge(hit: SpellHit) -> void:
+	_arcs.storm(
+		global_position,
+		30.0 * crystal_scale / 2.3 * 2.0,
+		WorldLayout.CRYSTAL_FOOTPRINT,
+		ARC_COLORS[0]
+	)
+	_global_flash = 0.85
+	_core_pulse = 1.0
+	_shudder = 1.0
+	_hd_fx.play(hit.position, hit.normal, hit.tier, true, true)
+	_accent_player.stream = SURGE_SFX
+	_accent_player.volume_db = -2.0
+	_accent_player.play()
+	_cracks[_crack_index] = Vector4(hit.position.x, hit.position.y, hit.position.z, 3.5)
+	_crack_index = (_crack_index + 1) % MAX_CRACKS
+	_material.set_shader_parameter("cracks", _cracks)
+	var cam: Camera3D = get_viewport().get_camera_3d()
+	if cam is CameraRig:
+		(cam as CameraRig).add_trauma(0.45)
+	HitStop.trigger(get_tree(), 0.08)
+	Events.hint.emit(tr("¡EL CRISTAL SE RESQUEBRAJA!"), Color("#a5f0ff"))
+	set_process(true)
+
+
 func _play_tink(hit: SpellHit) -> void:
-	var step: int = STREAK_LADDER[mini(hit.streak - 1, STREAK_LADDER.size() - 1)]
+	var step: int = STREAK_LADDER[(hit.streak - 1) % STREAK_LADDER.size()]
 	var p: AudioStreamPlayer3D = _tink_players[_tink_next]
 	_tink_next = (_tink_next + 1) % _tink_players.size()
 	p.global_position = hit.position
 	p.pitch_scale = pow(2.0, float(step) / 12.0) * _rng.randf_range(0.99, 1.01)
-	p.volume_db = -1.0 if hit.resonant else -4.0
+	p.volume_db = -3.0 if hit.resonant else -8.0
 	p.play()
 	_break_player.global_position = hit.position
 	_break_player.play()

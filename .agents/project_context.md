@@ -168,6 +168,8 @@ en el Grimorio del Santuario mejoras que cambian los hechizos. Lo que hay:
 - Debug: G da 100 de maná; demo con `--no-cast`, `--mana=N`, `--bag=N`, `--warp=x,z`, `--grimoire [--buy --select=N]`.
   En modo demo no se carga ni se guarda la partida.
 
+- **Trituradora** (`pylon/crystal_crusher.gd`): tolva (mantener F), palanca (tocar F) y rodillos; el maná llega al
+  Pilón por la tubería. **Reacción del cristal** (`fx/hd/crystal_arcs.gd`): rayos, destellos y resquebrajos.
 - **Elementos por mano** (Q / E): Chispa y Escarcha (`data/elements/`); combinaciones Bola de Fuego y Choque
   Térmico (`data/spells/recipe_*.tres`); efecto de cada elemento en el cristal (`MotherCrystal._apply_element`).
 - **Movimiento**: correr (Shift), saltar (Espacio), pasos y aterrizaje. **Día y noche** (`world/day_night.gd`) con
@@ -216,6 +218,8 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-15 | Manos en vertical que suben y se juntan desde su posición de reposo (no en horizontal desde los lados). | Pedido del equipo: juntar el hechizo verticalmente. |
 | 2026-11-17 | Cada mano lleva su llama (elemento) y recarga por separado; los dos clics a la vez (ventana de 0,09 s, `combine_window_sec`) juntan las manos y funden las llamas en la Bola de Fuego, que se carga manteniendo y sale al soltar. Con las dos manos listas, un clic suelto espera esa ventana o sale al soltar el botón. | GDD 5.2 y 10.1; pedido del equipo ("juntar 2 hechizos de fuego, uno en cada mano, en uno grande"). Sustituye al orbe único entre las manos. |
 | 2026-11-17 | Las llamas flotan sobre la punta de los dedos, no delante de la palma. | Las manos son 2D por encima del 3D: lo que queda detrás de la palma no se ve. |
+| 2026-11-17 | La entrega deja de ser automática: trituradora junto al Pilón (mantener F echa a la tolva, acelerando; tocar F tira de la palanca y tritura; el maná se gana al triturar). | Pedido del equipo; GDD 2.2 ("entregar no es un trámite"). |
+| 2026-11-17 | Golpes al cristal: 10 variantes suaves en 3 timbres; la racha sube dentro de una octava. El cristal reacciona con rayos, destellos y "resquebrajos" cada cierto daño. | Pedido del equipo: menos molesto, más variado y más reactivo. |
 | 2026-11-17 | Cada mano lleva un elemento (Q / E). Segundo elemento: Escarcha, que se despierta en el Grimorio (no al 10 % del Pilón todavía) para que Q/E y las combinaciones se puedan jugar ya. | Pedido del equipo (Q/E) y GDD 5.2; M2 pide 2 elementos y 1 combinación. |
 | 2026-11-17 | Efecto en el cristal por elemento: el fuego quema (marcas y fuego que sigue ardiendo con daño por quemadura), la Escarcha congela (x2 para los otros elementos 6 s) y el Choque Térmico deja la zona quebradiza (x3 al siguiente golpe). | Pedido del equipo ("afecte al cristal según elementos"); GDD 5.1 y 5.2. |
 | 2026-11-17 | Grimorio por elementos: una constelación por elemento en pestañas, más la del Mago (bolsa, telequinesis, resonancia). | Pedido del equipo. |

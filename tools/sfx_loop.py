@@ -323,6 +323,61 @@ def steam_release(seed: int) -> np.ndarray:
     return normalize(fade(reverb(hiss * 0.7 + ding, rng, 0.8, 0.2), 0.002, 0.2), -4)
 
 
+def crystal_hit(seed: int, n: int, timbre: str) -> np.ndarray:
+    """Golpe al cristal, versión suave: ataque redondo (sin chasquido agudo), cuerpo grave y
+    colas cortas. Tres timbres para variar: cuenco, cristal y mazo. `n`: semitonos sobre A5."""
+    rng = np.random.default_rng(seed)
+    t = t_axis(1.3)
+    f0 = note(n) * (1 + rng.uniform(-0.006, 0.006))
+    if timbre == "bowl":
+        body = bell(t, f0 / 2, [1.0, 2.71, 5.1], [1.0, 0.35, 0.12], [0.9, 0.4, 0.15], rng, 0.003)
+    elif timbre == "glass":
+        body = bell(t, f0, [1.0, 2.32, 4.25], [1.0, 0.3, 0.1], [0.5, 0.25, 0.1], rng, 0.003)
+    else:
+        body = bell(t, f0 / 2, [1.0, 3.93, 9.2], [1.0, 0.3, 0.08], [0.35, 0.08, 0.03], rng, 0.003)
+    # Ataque suave: unos milisegundos de subida en vez de un clic.
+    body *= 1 - np.exp(-t / 0.004)
+    thud = lowpass(rng.standard_normal(len(t)), 300) * np.exp(-t / 0.025) * 0.6
+    grit = bandpass(rng.standard_normal(len(t)), 1500, 4500, 2) * np.exp(-t / 0.012) * 0.15
+    x = lowpass(body + thud + grit, 6500, 2)
+    return normalize(fade(reverb(x, rng, 0.9, 0.2, 4500), 0.001, 0.12), -6)
+
+
+def crystal_surge(seed: int) -> np.ndarray:
+    """El cristal se resquebraja: retumbe grave de cristal enorme, brillo que sube y un crujido."""
+    rng = np.random.default_rng(seed)
+    t = t_axis(3.5)
+    boom = bell(t, 110, [1.0, 2.32, 4.25, 6.63], [1.0, 0.5, 0.3, 0.15], [2.2, 1.2, 0.6, 0.3], rng)
+    sub = np.sin(2 * np.pi * (45 + 20 * np.exp(-t / 0.2)) * t) * np.exp(-t / 0.8)
+    shimmer = np.zeros_like(t)
+    for k, nn in enumerate([0, 4, 7, 12, 16, 19]):
+        s0 = int((0.25 + k * 0.08) * SR)
+        tt = t[: len(t) - s0]
+        shimmer[s0:] += bell(tt, note(nn), [1.0, 2.0], [1.0, 0.3], [0.6, 0.3], rng) * 0.12
+    crack = np.zeros_like(t)
+    for _ in range(30):
+        s0 = int(rng.uniform(0, 0.35) * SR)
+        m = int(rng.uniform(0.002, 0.01) * SR)
+        crack[s0:s0 + m] += rng.standard_normal(m) * np.hanning(m)
+    crack = bandpass(crack, 800, 7000) * 0.7
+    x = boom * 0.7 + sub * 0.8 + shimmer + crack
+    return normalize(fade(reverb(x, rng, 2.5, 0.35, 4000), 0.002, 0.5), -1)
+
+
+def arc_crackle(seed: int) -> np.ndarray:
+    """Rayos de energía sobre el cristal: chisporroteo eléctrico corto y suave."""
+    rng = np.random.default_rng(seed)
+    t = t_axis(0.4)
+    x = np.zeros_like(t)
+    for _ in range(rng.integers(10, 18)):
+        s0 = int(rng.uniform(0, 0.22) * SR)
+        m = int(rng.uniform(0.001, 0.004) * SR)
+        x[s0:s0 + m] += rng.standard_normal(m) * rng.uniform(0.3, 1.0)
+    x = bandpass(x, 2000, 9000, 2)
+    hum = np.sin(2 * np.pi * 120 * t) * np.exp(-t / 0.1) * 0.15
+    return normalize(fade(x + hum, 0.001, 0.05), -14)
+
+
 # Pentatónica de La (semitonos sobre A5) para la escala de gotas: cada entrega sube una nota.
 DROP_NOTES = [-12, -10, -8, -5, -3, 0, 2, 4, 7, 9, 12]
 
@@ -360,6 +415,13 @@ def main() -> None:
     for i in range(4):
         write(out, f"sfx_crunch_{i + 1:02d}", crunch(890 + i))
     write(out, "sfx_steam_release_01", steam_release(900))
+    hits = [(-12, "bowl"), (-8, "bowl"), (-5, "bowl"), (-3, "glass"), (0, "glass"),
+            (2, "glass"), (-12, "mallet"), (-10, "mallet"), (-5, "mallet"), (-8, "glass")]
+    for i, (nn, timbre) in enumerate(hits):
+        write(out, f"sfx_crystal_hit_{i + 1:02d}", crystal_hit(910 + i, nn, timbre))
+    write(out, "sfx_crystal_surge_01", crystal_surge(930))
+    for i in range(3):
+        write(out, f"sfx_arc_crackle_{i + 1:02d}", arc_crackle(940 + i))
 
 
 if __name__ == "__main__":

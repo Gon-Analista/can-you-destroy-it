@@ -9,6 +9,7 @@ const RING_SHADER: Shader = preload("res://fx/hd/hd_ring.gdshader")
 
 static var _dot: Texture2D
 static var _puff: Texture2D
+static var _star: Texture2D
 static var _ramps: Dictionary[Gradient, GradientTexture1D] = {}
 
 
@@ -31,6 +32,27 @@ static func soft_dot() -> Texture2D:
 		t.height = 64
 		_dot = t
 	return _dot
+
+
+## Destello en estrella de cuatro puntas, suave (luz pura: color = máscara, alfa 0).
+static func soft_star() -> Texture2D:
+	if _star == null:
+		var size: int = 64
+		var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+		var c: float = (size - 1) * 0.5
+		for y: int in size:
+			for x: int in size:
+				var dx: float = absf(x - c) / c
+				var dy: float = absf(y - c) / c
+				var cross: float = maxf(
+					pow(maxf(0.0, 1.0 - dx), 6.0) * pow(maxf(0.0, 1.0 - dy * 9.0), 2.0),
+					pow(maxf(0.0, 1.0 - dy), 6.0) * pow(maxf(0.0, 1.0 - dx * 9.0), 2.0)
+				)
+				var core: float = pow(maxf(0.0, 1.0 - sqrt(dx * dx + dy * dy) * 2.2), 2.0)
+				var v: float = clampf(cross + core, 0.0, 1.0)
+				img.set_pixel(x, y, Color(v, v, v, 0.0))
+		_star = ImageTexture.create_from_image(img)
+	return _star
 
 
 ## Bocanada suave con alfa (humo): tapa el fondo, no suma luz.
