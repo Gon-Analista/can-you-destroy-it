@@ -1,9 +1,10 @@
 class_name ManaPylon
 extends Node3D
 ## El Pilón de Maná (GDD 4.2): columna de vidrio y bronce donde se entrega lo recogido.
-## Al acercarte con fragmentos en la bolsa, salen volando de tus manos uno a uno con estela, caen
-## dentro con una gota de maná (cada una una nota más alta de la pentatónica), el líquido sube,
-## la superficie se agita, el cristal de la cima brilla y el zumbido crece.
+## Se entrega con su trituradora (CrystalCrusher): echas los cristales a la tolva manteniendo F,
+## tiras de la palanca y el maná de cada cristal triturado entra en el Pilón con una gota (cada
+## una una nota más alta de la pentatónica): el líquido sube, la superficie se agita, el cristal
+## de la cima brilla y el zumbido crece.
 ## El nivel que se ve es la raíz del progreso real (ver `display_fill`): así los primeros
 ## minutos ya se notan y las marcas del 10 %, 25 %, 50 %, 75 % y 100 % quedan repartidas.
 
@@ -30,13 +31,8 @@ const GLASS_HEIGHT: float = 5.0
 const GLASS_BASE: float = 0.85
 const MOTES: int = 24
 
-## Radio en el que se entrega solo lo que llevas en la bolsa (m).
-@export var deliver_radius: float = 4.5
-## Tiempo entre fragmentos al vaciar la bolsa; baja si llevas muchos.
-@export var deliver_interval_sec: float = 0.16
-@export var deliver_interval_min_sec: float = 0.035
-## Vuelo de cada fragmento hasta la boca del Pilón (s).
-@export var flight_sec: float = 0.55
+## Vuelo de cada fragmento desde la mano hasta la tolva (s).
+@export var flight_sec: float = 0.5
 
 var _glass_mat: ShaderMaterial
 var _shown_fill: float = 0.0
@@ -53,7 +49,7 @@ var _drop_random: AudioStreamRandomizer
 var _accent: AudioStreamPlayer
 var _splash: GPUParticles3D
 var _player: Node3D
-var _send_timer: float = 0.0
+var _crusher: CrystalCrusher
 var _chain: int = 0
 var _chain_timer: float = 0.0
 var _t: float = 0.0
@@ -67,6 +63,8 @@ var _mote_from: Array[Vector3] = []
 var _mote_type: Array[ShardType] = []
 ## Motas de la pantalla de carga: no entregan nada.
 var _mote_warm: Array[bool] = []
+var _mote_to: Array[Vector3] = []
+var _mote_target: Array[CrystalCrusher] = []
 var _mote_meshes: Dictionary[ShardType, ArrayMesh] = {}
 
 
@@ -77,6 +75,11 @@ func _ready() -> void:
 	_build_glass()
 	_build_crown()
 	_build_motes()
+	_crusher = CrystalCrusher.new()
+	_crusher.name = "Crusher"
+	_crusher.pylon = self
+	_crusher.position = Vector3(2.8, 0.0, 0.0)
+	add_child(_crusher)
 	for type: ShardType in ShardPool.TYPES:
 		_mesh_for(type)
 	_build_fx()
@@ -107,7 +110,6 @@ func _process(delta: float) -> void:
 	_t += delta
 	if _player == null:
 		_player = get_tree().get_first_node_in_group(&"player") as Node3D
-	_update_delivery(delta)
 	_update_motes(delta)
 	var target: float = display_fill(GameState.progression.pylon_ratio())
 	_shown_fill = lerpf(_shown_fill, target, 1.0 - exp(-delta * 3.0))
@@ -129,24 +131,9 @@ func _process(delta: float) -> void:
 	_hum.pitch_scale = 1.0 + _pulse * 0.03
 
 
-func _update_delivery(delta: float) -> void:
-	_send_timer = maxf(0.0, _send_timer - delta)
-	if _player == null or _send_timer > 0.0:
-		return
-	var flat: Vector3 = _player.global_position - global_position
-	flat.y = 0.0
-	if flat.length() > deliver_radius:
-		return
-	var type: ShardType = GameState.take_for_delivery()
-	if type == null:
-		return
-	var left: int = GameState.progression.bag_count()
-	# Cuanto más llevas, más deprisa sale el chorro.
-	_send_timer = lerpf(
-		deliver_interval_sec, deliver_interval_min_sec, clampf(float(left) / 30.0, 0.0, 1.0)
-	)
-	_launch_mote(type)
-	Events.shard_sent_to_pylon.emit(type)
+## La trituradora del Pilón (tolva, palanca y rodillos).
+func crusher() -> CrystalCrusher:
+	return _crusher
 
 
 ## Pantalla de carga: un fragmento de cada tamaño vuela a la boca (sin entregar nada).
@@ -155,58 +142,64 @@ func warm_up() -> void:
 		_player = get_tree().get_first_node_in_group(&"player") as Node3D
 	for type: ShardType in ShardPool.TYPES:
 		_mesh_for(type)
-		_launch_mote(type, true)
+		launch_mote(type, _crusher.hopper_mouth(), null, true)
 
 
-func _launch_mote(type: ShardType, warm: bool = false) -> void:
+## Un cristal sale de la mano y vuela en arco hasta `to`; al llegar se lo da a `target` (la
+## tolva). Con `warm` (pantalla de carga) sólo salpica.
+func launch_mote(type: ShardType, to: Vector3, target: CrystalCrusher, warm: bool = false) -> void:
 	for i: int in MOTES:
 		if _mote_t[i] < 0.0:
 			var cam: Camera3D = get_viewport().get_camera_3d()
 			var from: Vector3 = _player.global_position + Vector3.UP * 1.1
 			if cam:
-				from = cam.global_position + cam.global_basis * Vector3(0.0, -0.35, -0.6)
+				from = cam.global_position + cam.global_basis * Vector3(0.0, -0.45, -1.1)
 			_mote_from[i] = from
 			_mote_t[i] = 0.0
 			_mote_type[i] = type
 			_mote_warm[i] = warm
+			_mote_to[i] = to
+			_mote_target[i] = target
 			var mote: MeshInstance3D = _motes[i]
 			mote.mesh = _mesh_for(type)
 			mote.global_position = from
 			mote.visible = true
-			_mote_trails[i].width = 0.12 + type.radius * 0.4
-			_mote_trails[i].start(from)
+			# Sin estela: tan cerca de la cámara se vería como una tabla blanca.
 			return
-	# Sin huecos (muchísimos a la vez): se entrega directamente.
-	_on_mote_arrived(type)
+	# Sin huecos (muchísimos a la vez): cae directamente en la tolva.
+	if target:
+		target.add_to_hopper(type)
 
 
 func _update_motes(delta: float) -> void:
-	var mouth: Vector3 = mouth_position()
 	for i: int in MOTES:
 		if _mote_t[i] < 0.0:
 			continue
 		_mote_t[i] += delta / flight_sec
 		var k: float = clampf(_mote_t[i], 0.0, 1.0)
 		var from: Vector3 = _mote_from[i]
-		# Curva de Bézier: sube en arco por encima de la boca y cae dentro.
-		var ctrl: Vector3 = (from + mouth) * 0.5 + Vector3.UP * 3.5
+		var mouth: Vector3 = _mote_to[i]
+		# Curva de Bézier: sube en arco por encima de la tolva y cae dentro.
+		var ctrl: Vector3 = (from + mouth) * 0.5 + Vector3.UP * 1.6
 		var a: Vector3 = from.lerp(ctrl, k)
 		var b: Vector3 = ctrl.lerp(mouth, k)
 		var mote: MeshInstance3D = _motes[i]
 		mote.global_position = a.lerp(b, k)
 		mote.rotation = Vector3(k * 9.0, k * 13.0, 0.0)
-		mote.scale = Vector3.ONE * lerpf(0.7, 1.0, sin(k * PI))
+		# Sale pequeño de la mano (pegado a la cámara se vería enorme) y crece al alejarse.
+		mote.scale = Vector3.ONE * lerpf(0.3, 1.0, smoothstep(0.0, 0.5, k))
 		if k >= 1.0:
 			_mote_t[i] = -1.0
 			mote.visible = false
 			_mote_trails[i].stop()
 			if _mote_warm[i]:
 				_splash.restart()
-			else:
-				_on_mote_arrived(_mote_type[i])
+			elif _mote_target[i]:
+				_mote_target[i].add_to_hopper(_mote_type[i])
 
 
-func _on_mote_arrived(type: ShardType) -> void:
+## Entra en el Pilón el maná de un cristal triturado.
+func receive_mana(type: ShardType) -> void:
 	GameState.deliver(type.value)
 	_wave = minf(1.0, _wave + 0.35)
 	_pulse = 1.0
@@ -426,6 +419,8 @@ func _build_motes() -> void:
 		_mote_from.append(Vector3.ZERO)
 		_mote_type.append(null)
 		_mote_warm.append(false)
+		_mote_to.append(Vector3.ZERO)
+		_mote_target.append(null)
 
 
 func _build_fx() -> void:

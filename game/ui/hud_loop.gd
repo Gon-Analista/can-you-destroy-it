@@ -218,15 +218,20 @@ func _update_markers(count: int, full: bool) -> void:
 	if _camera == null:
 		return
 	var player: Node3D = get_tree().get_first_node_in_group(&"player") as Node3D
-	if pylon and count > 0:
-		_pylon_marker = pylon.mouth_position() + Vector3.UP * 0.8
-		var d: float = player.global_position.distance_to(pylon.global_position) if player else 0.0
+	var crusher: CrystalCrusher = pylon.crusher() if pylon else null
+	var near_crusher: bool = crusher != null and crusher.player_in_range()
+	if crusher and (count > 0 or crusher.hopper_count() > 0) and not near_crusher:
+		_pylon_marker = crusher.marker_position()
+		var d: float = (
+			player.global_position.distance_to(crusher.global_position) if player else 0.0
+		)
 		_pylon_tag.text = (
-			(tr("¡PILÓN!  %d M") if full else tr("PILÓN  %d M")) % roundi(d)
-			if d > pylon.deliver_radius
-			else tr("ENTREGANDO...")
+			(tr("¡TRITURADORA!  %d M") if full else tr("TRITURADORA  %d M")) % roundi(d)
 		)
 		_pylon_tag.add_theme_color_override(&"font_color", C_GOLD if full else C_PINK)
+	if near_crusher:
+		_prompt.visible = true
+		_prompt.text = crusher.prompt()
 	if sanctum and GameState.cheapest_affordable() != null:
 		_sanctum_marker = sanctum.marker_position() + Vector3.UP * 0.5
 		_sanctum_tag.text = tr("¡MEJORA!")

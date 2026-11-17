@@ -233,6 +233,96 @@ def steam_burst(seed: int) -> np.ndarray:
     return normalize(fade(reverb(x, rng, 1.2, 0.25), 0.001, 0.2), -1)
 
 
+def hopper_clink(seed: int) -> np.ndarray:
+    """Cristal que cae en la tolva de bronce: campana metálica inarmónica + tintineo de vidrio."""
+    rng = np.random.default_rng(seed)
+    t = t_axis(0.7)
+    metal = bell(t, rng.uniform(520, 620), [1.0, 2.41, 3.87, 5.43], [1.0, 0.5, 0.3, 0.2],
+                 [0.35, 0.2, 0.12, 0.08], rng, 0.01)
+    glass = bell(t, rng.uniform(2600, 3400), [1.0, 2.7, 5.1], [1.0, 0.4, 0.2], [0.12, 0.06, 0.03], rng)
+    click = highpass(rng.standard_normal(len(t)), 4000) * np.exp(-t / 0.002) * 0.6
+    x = metal * 0.5 + glass * 0.5 + click
+    return normalize(fade(reverb(x, rng, 0.5, 0.18), 0.0005, 0.08), -5)
+
+
+def lever_pull(seed: int) -> np.ndarray:
+    """Palanca: trinquete (clics que se aceleran) y golpe metálico grave al tope."""
+    rng = np.random.default_rng(seed)
+    t = t_axis(0.9)
+    x = np.zeros_like(t)
+    times = np.cumsum(np.linspace(0.06, 0.025, 6))
+    for tt0 in times:
+        s0 = int(tt0 * SR)
+        n = int(0.012 * SR)
+        x[s0:s0 + n] += bandpass(rng.standard_normal(n), 1500, 6000, 2) * np.hanning(n)
+    s0 = int((times[-1] + 0.05) * SR)
+    tt = t[: len(t) - s0]
+    clunk = lowpass(rng.standard_normal(len(tt)), 400) * np.exp(-tt / 0.05) * 2.0
+    clunk += bell(tt, 180, [1.0, 2.6, 4.1], [1.0, 0.5, 0.3], [0.25, 0.12, 0.06], rng) * 0.8
+    x[s0:] += clunk
+    return normalize(fade(reverb(x, rng, 0.5, 0.15), 0.001, 0.1), -3)
+
+
+def machine_start(seed: int) -> np.ndarray:
+    """Arranque: motor que sube de vueltas con un silbido mágico."""
+    rng = np.random.default_rng(seed)
+    t = t_axis(1.2)
+    f = 40 + 70 * (1 - np.exp(-t / 0.35))
+    motor = np.sin(2 * np.pi * np.cumsum(f) / SR) + 0.5 * np.sin(2 * np.pi * np.cumsum(f * 2) / SR)
+    motor *= np.minimum(t / 0.2, 1.0)
+    whine = np.sin(2 * np.pi * np.cumsum(300 + 500 * (1 - np.exp(-t / 0.4))) / SR) * 0.15
+    x = (motor * 0.5 + whine) * np.minimum(1.0, (t[-1] - t) / 0.2)
+    return normalize(fade(lowpass(x, 3000), 0.002, 0.1), -6)
+
+
+def crusher_loop(seed: int) -> np.ndarray:
+    """Maquinaria en marcha: motor grave, engranajes que golpean a ritmo y cadena. 2 s exactos."""
+    rng = np.random.default_rng(seed)
+    dur = 2.0
+    t = t_axis(dur)
+    hum = np.sin(2 * np.pi * 55 * t) * 0.5 + np.sin(2 * np.pi * 110 * t) * 0.25 + np.sin(2 * np.pi * 165 * t) * 0.1
+    x = hum * (0.8 + 0.2 * np.sin(2 * np.pi * 8 * t))
+    # Dientes de engranaje: 16 golpes por vuelta, con acento cada 4.
+    for k in range(16):
+        s0 = int(k * dur / 16 * SR)
+        n = int(0.03 * SR)
+        hit = bandpass(rng.standard_normal(n), 800, 3500, 2) * np.exp(-np.arange(n) / SR / 0.008)
+        x[s0:s0 + n] += hit * (1.0 if k % 4 == 0 else 0.45)
+    # Cadena: tictac fino y continuo.
+    for k in range(48):
+        s0 = int(k * dur / 48 * SR)
+        n = int(0.006 * SR)
+        x[s0:s0 + n] += highpass(rng.standard_normal(n), 5000) * 0.25
+    return normalize(lowpass(x, 6000), -8)
+
+
+def crunch(seed: int) -> np.ndarray:
+    """Cristal triturado: crujido de vidrio entre rodillos + golpe sordo + destello agudo."""
+    rng = np.random.default_rng(seed)
+    t = t_axis(0.5)
+    grains = np.zeros_like(t)
+    for _ in range(40):
+        s0 = int(rng.uniform(0, 0.12) * SR)
+        n = int(rng.uniform(0.001, 0.006) * SR)
+        grains[s0:s0 + n] += rng.standard_normal(n) * np.hanning(n) * rng.uniform(0.3, 1.0)
+    grains = bandpass(grains, 1200, 11000)
+    thump = lowpass(rng.standard_normal(len(t)), 250) * np.exp(-t / 0.03) * 1.5
+    glint = bell(t, rng.uniform(1800, 2600), [1.0, 2.7], [1.0, 0.3], [0.1, 0.05], rng) * 0.3
+    x = grains * 1.2 + thump + glint
+    return normalize(fade(reverb(x, rng, 0.4, 0.12), 0.0005, 0.06), -2)
+
+
+def steam_release(seed: int) -> np.ndarray:
+    """Fin de la trituración: resoplido de vapor que se apaga + campanita de "listo"."""
+    rng = np.random.default_rng(seed)
+    t = t_axis(1.6)
+    hiss = bandpass(rng.standard_normal(len(t)), 1500, 9000, 2)
+    hiss *= np.minimum(t / 0.03, 1.0) * np.exp(-t / 0.45)
+    ding = bell(t, note(12), [1.0, 2.0, 3.0], [1.0, 0.3, 0.1], [0.8, 0.4, 0.2], rng) * 0.25
+    ding[: int(0.4 * SR)] = 0
+    return normalize(fade(reverb(hiss * 0.7 + ding, rng, 0.8, 0.2), 0.002, 0.2), -4)
+
+
 # Pentatónica de La (semitonos sobre A5) para la escala de gotas: cada entrega sube una nota.
 DROP_NOTES = [-12, -10, -8, -5, -3, 0, 2, 4, 7, 9, 12]
 
@@ -262,6 +352,14 @@ def main() -> None:
         write(out, f"sfx_frost_cast_{i + 1:02d}", frost_cast(820 + i))
         write(out, f"sfx_frost_impact_{i + 1:02d}", frost_impact(830 + i))
     write(out, "sfx_steam_burst_01", steam_burst(840))
+    for i in range(3):
+        write(out, f"sfx_hopper_clink_{i + 1:02d}", hopper_clink(850 + i))
+    write(out, "sfx_lever_pull_01", lever_pull(860))
+    write(out, "sfx_machine_start_01", machine_start(870))
+    write(out, "amb_crusher_loop", crusher_loop(880))
+    for i in range(4):
+        write(out, f"sfx_crunch_{i + 1:02d}", crunch(890 + i))
+    write(out, "sfx_steam_release_01", steam_release(900))
 
 
 if __name__ == "__main__":

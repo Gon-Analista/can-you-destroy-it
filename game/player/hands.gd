@@ -53,6 +53,7 @@ var _sprites: Array[Sprite2D] = []
 var _pending_flare: bool = false
 var _flare_side: Array[bool] = [false, false]
 var _night: float = 0.0
+var _toss_side: int = 0
 var _grimoire_open: bool = false
 var _flames: Array[SpellOrb] = []
 var _flame_spent: Array[bool] = [false, false]
@@ -71,6 +72,7 @@ var _walk_phase: float = 0.0
 
 func _ready() -> void:
 	add_to_group(&"night_listeners")
+	add_to_group(&"wizard_hands")
 	Events.grimoire_opened.connect(func() -> void: _grimoire_open = true)
 	Events.grimoire_closed.connect(
 		func() -> void:
@@ -234,6 +236,12 @@ func warm_up(defs: Array[SpellVisualDef]) -> void:
 
 func is_combining() -> bool:
 	return _combining
+
+
+## Al echar un cristal a la tolva: las manos se alternan dando un pequeño lanzamiento.
+func play_toss() -> void:
+	_toss_side = 1 - _toss_side
+	_kick_vel[_toss_side] = 9.0
 
 
 ## Al recoger un fragmento: tirón hacia abajo (lo atrapa).

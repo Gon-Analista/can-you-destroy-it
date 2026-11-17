@@ -36,19 +36,44 @@ func _run() -> void:
 	_check(not gs.call(&"collect_shard", splinter, Vector3.ZERO), "el segundo no cabe")
 	_check(full_events[0] == 1, "avisa de bolsa llena")
 
-	# Junto al Pilón la bolsa se vacía y sube el maná.
+	# Junto a la trituradora, mantener F echa los cristales a la tolva; la palanca los tritura
+	# y su maná entra en el Pilón.
 	prog.collect_shard(&"splinter")
 	prog.collect_shard(&"splinter")
-	player.global_position = pylon.global_position + Vector3(2.5, 0.3, 0.0)
-	await create_timer(2.0).timeout
-	_check(prog.bag_count() == 0, "la bolsa se vacía en el Pilón")
-	_check(prog.mana == 3 and prog.pylon_progress == 3, "cada astilla da 1 de maná y de Pilón")
+	var crusher: Node3D = pylon.call(&"crusher")
+	player.global_position = crusher.global_position + Vector3(2.2, 0.3, 0.0)
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	var captured: bool = Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	if captured:
+		Input.action_press(&"interact")
+		await create_timer(1.8).timeout
+		Input.action_release(&"interact")
+	else:
+		# Sin ventana no se captura el ratón: se echan a mano por la misma vía.
+		for k: int in 3:
+			pylon.call(
+				&"launch_mote",
+				gs.call(&"take_for_delivery"),
+				crusher.call(&"hopper_mouth"),
+				crusher
+			)
+		await create_timer(1.0).timeout
+	_check(prog.bag_count() == 0, "mantener F vacía la bolsa en la tolva")
+	_check(int(crusher.call(&"hopper_count")) == 3, "los cristales caen en la tolva")
+	_check(prog.mana == 0, "en la tolva todavía no dan maná")
+	_check(crusher.call(&"pull_lever"), "la palanca arranca la trituradora")
+	await create_timer(3.0).timeout
+	_check(int(crusher.call(&"hopper_count")) == 0, "la trituradora vacía la tolva")
+	_check(
+		prog.mana == 3 and prog.pylon_progress == 3,
+		"cada astilla triturada da 1 de maná y de Pilón"
+	)
 
 	# Lejos del Pilón no se entrega.
 	prog.collect_shard(&"splinter")
 	player.global_position = Vector3(0, 0.3, 22)
 	await create_timer(1.0).timeout
-	_check(prog.bag_count() == 1, "lejos del Pilón la bolsa no se toca")
+	_check(prog.bag_count() == 1, "lejos de la trituradora la bolsa no se toca")
 
 	# Comprar Potencia cambia la Chispa (nivel y aspecto de la llama).
 	prog.deliver(100)

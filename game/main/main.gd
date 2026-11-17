@@ -107,6 +107,24 @@ func _setup_autoplay() -> void:
 		if args.has("--buy"):
 			get_tree().create_timer(1.6).timeout.connect(book.try_buy)
 			get_tree().create_timer(3.4).timeout.connect(book.close)
+	for a: String in args:
+		if a.begins_with("--feed="):
+			# --feed=s: mantiene F junto a la trituradora s segundos y luego tira de la palanca.
+			CrystalCrusher.demo_input = true
+			var secs: float = float(a.get_slice("=", 1))
+			get_tree().create_timer(3.0).timeout.connect(
+				func() -> void: Input.action_press(&"interact")
+			)
+			get_tree().create_timer(3.0 + secs).timeout.connect(
+				func() -> void: Input.action_release(&"interact")
+			)
+			get_tree().create_timer(4.6 + secs).timeout.connect(
+				func() -> void:
+					Input.action_press(&"interact")
+					await get_tree().process_frame
+					await get_tree().process_frame
+					Input.action_release(&"interact")
+			)
 	if args.has("--no-cast"):
 		return
 	var timer := Timer.new()

@@ -87,6 +87,9 @@ func _free(x: float, z: float, margin: float) -> bool:
 		return false
 	if Vector2(x - WorldLayout.PYLON.x, z - WorldLayout.PYLON.z).length() < 3.0 + margin:
 		return false
+	# La trituradora, al este del Pilón.
+	if Vector2(x - WorldLayout.PYLON.x - 2.8, z - WorldLayout.PYLON.z).length() < 2.4 + margin:
+		return false
 	if Vector2(x - WorldLayout.SANCTUM.x, z - WorldLayout.SANCTUM.z).length() < 4.6 + margin:
 		return false
 	return not _near_path(x, z, 1.6 + margin)
@@ -96,7 +99,8 @@ func _build_paths() -> void:
 	var hub: Vector3 = _hub()
 	var ends: Array[Vector3] = [
 		WorldLayout.PLAYER_START + Vector3(0, 0, 8),
-		WorldLayout.PYLON + (hub - WorldLayout.PYLON).normalized() * 3.0,
+		# El camino del Pilón llega delante de la trituradora (al este del Pilón).
+		WorldLayout.PYLON + Vector3(5.6, 0.0, 0.0),
 		WorldLayout.SANCTUM + (hub - WorldLayout.SANCTUM).normalized() * 4.2,
 	]
 	var dirt: SurfaceTool = MeshKit.begin()
@@ -106,7 +110,7 @@ func _build_paths() -> void:
 		_add_path(dirt, stones, hub, e)
 	# Explanada de tierra donde se cruzan.
 	_add_patch(dirt, hub, 3.2)
-	_add_patch(dirt, WorldLayout.PYLON, 3.4)
+	_add_patch(dirt, WorldLayout.PYLON + Vector3(3.6, 0.0, 0.0), 3.6)
 	var d := MeshInstance3D.new()
 	d.name = "Paths"
 	d.mesh = MeshKit.commit(dirt)
