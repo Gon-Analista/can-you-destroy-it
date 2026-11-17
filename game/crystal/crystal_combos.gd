@@ -134,6 +134,46 @@ func sky_bolt(from: Vector3, to: Vector3, col: Color) -> void:
 		(cam as CameraRig).add_trauma(0.55)
 
 
+## Resonancia Arcana: el cristal entero vibra. Una onda de golpes resonantes se abre por la
+## superficie desde el impacto en tres anillos (cuanto más lejos, más tarde), cada uno con su
+## destello, su rayo desde el centro y un fragmento; tormenta de rayos violeta por el cristal.
+func resonance_pulse(hit: SpellHit) -> void:
+	var col: Color = hit.recipe.circle_hot * 1.4 if hit.recipe else Color(1.8, 1.2, 2.2)
+	_arcs.storm(
+		_crystal.global_position, _crystal.volume.top * 0.7, WorldLayout.CRYSTAL_FOOTPRINT, col
+	)
+	_crystal.flash(0.4)
+	var space: PhysicsDirectSpaceState3D = _crystal.get_world_3d().direct_space_state
+	var n0: Vector3 = hit.normal if hit.normal.length_squared() > 0.01 else Vector3.BACK
+	var side: Vector3 = n0.cross(Vector3.UP if absf(n0.y) < 0.95 else Vector3.RIGHT).normalized()
+	var up: Vector3 = side.cross(n0).normalized()
+	var phase: float = _rng.randf() * TAU
+	var count: int = 12
+	for k: int in count:
+		var ring: int = k % 3
+		var a: float = phase + TAU * float(k) / float(count) + float(ring) * 0.4
+		var radius: float = 4.0 + 4.5 * float(ring)
+		var from: Vector3 = hit.position + (side * cos(a) + up * sin(a)) * radius + n0 * 6.0
+		var q := PhysicsRayQueryParameters3D.create(from, from - n0 * 16.0, 1 << 1)
+		var r: Dictionary = space.intersect_ray(q)
+		if r.is_empty():
+			continue
+		var p: Vector3 = r["position"]
+		var n: Vector3 = r["normal"]
+		var center: Vector3 = hit.position + n0 * 0.3
+		get_tree().create_timer(0.1 + radius * 0.035).timeout.connect(
+			func() -> void:
+				_arcs.bolt_between(center, p, 0.22, col, 0.45)
+				_crystal.dig(p, n, maxf(1.0, float(hit.damage) * 0.1), true)
+				var t: ShardType = ShardPool.type_for_hit(hit.damage / 4, true)
+				_shards.spawn(p, n, t, 1, 1.2, _crystal.hit_layer())
+				_hd_fx.play(p, n, hit.tier, true, false, 0.7)
+		)
+	var cam: Camera3D = get_viewport().get_camera_3d()
+	if cam is CameraRig:
+		(cam as CameraRig).add_trauma(0.4)
+
+
 ## Magnetismo: rayos desde el mago a su alrededor; aviso si no había nada que atraer.
 func magnet_pulse(at: Vector3, pulled: int) -> void:
 	for k: int in mini(pulled + 4, 12):

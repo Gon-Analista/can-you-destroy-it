@@ -158,6 +158,29 @@ const ICONS: Dictionary[StringName, PackedStringArray] = {
 		"..#####.",
 		"..#####."
 	],
+	&"awaken_arcane":
+	[
+		"..####..",
+		".#....#.",
+		"#..##..#",
+		"#.#++#.#",
+		"#..##..#",
+		".#....#.",
+		"..####..",
+		"........"
+	],
+	# Potencia arcana: anillos de eco alrededor de un núcleo.
+	&"arcane_power":
+	[
+		"..####..",
+		".#....#.",
+		"#.####.#",
+		"#.#++#.#",
+		"#.#++#.#",
+		"#.####.#",
+		".#....#.",
+		"..####.."
+	],
 	&"levitation":
 	[
 		"...##...",

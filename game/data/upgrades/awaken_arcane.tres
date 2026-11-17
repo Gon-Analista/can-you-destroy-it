@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"awaken_arcane"
+display_name = "Despertar el Arcano"
+description = "Aprendes el Arcano: puro y extraño. Cada disparo deja un eco que vuelve a golpear. Júntalo con otro elemento y lo repetirá... o algo más raro."
+branch = 2
+element = &"arcane"
+star_pos = Vector2i(118, 96)
+costs = PackedInt32Array(1500)
+prerequisites = Array[StringName]([&"awaken_earth"])
+stat = &"arcane_awake"
+values = PackedFloat32Array(0, 1)
+value_format = "%s"
+level_names = PackedStringArray("Dormido", "Despierto")

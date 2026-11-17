@@ -9,8 +9,11 @@ extends Resource
 ## FRONT: proyectil desde las manos. SKY: círculos en el cielo sobre el blanco y cae desde arriba
 ## (Meteoro, Trueno). RAIN: lluvia desde el cielo sobre una zona. LANCE: perfora un túnel hondo.
 ## BEAM: rayo continuo que sigue la mirilla. GROUND: onda por el suelo que hace estallar la base.
-## MAGNET: utilidad, atrae los fragmentos.
-enum Delivery { FRONT, SKY, RAIN, LANCE, BEAM, GROUND, MAGNET }
+## MAGNET: utilidad, atrae los fragmentos. GRAVITY: pozo de gravedad que se traga en espiral
+## todos los fragmentos sueltos del valle. RESONANCE: golpe que hace vibrar el cristal entero y
+## deja unos segundos en los que todo golpe es resonante.
+## Los Ecos no son una entrega: usan la de la receta que repiten (`echo_of`).
+enum Delivery { FRONT, SKY, RAIN, LANCE, BEAM, GROUND, MAGNET, GRAVITY, RESONANCE }
 
 @export var id: StringName
 @export var display_name: String
@@ -70,6 +73,22 @@ enum Delivery { FRONT, SKY, RAIN, LANCE, BEAM, GROUND, MAGNET }
 ## Color de sus círculos mágicos.
 @export var circle_color: Color = Color(1.0, 0.6, 0.2)
 @export var circle_hot: Color = Color(1.0, 0.95, 0.75)
+
+@export_group("Arcano")
+## Eco de X (GDD 5.2): id de la receta que repite. Sale X como siempre (con este aspecto) y
+## después `echo_count` copias fantasma, una cada `echo_delay` s, con `echo_damage` del daño y
+## saliendo de círculos arcanos. Vacío = no es un eco.
+@export var echo_of: StringName
+@export var echo_count: int = 0
+@export var echo_delay: float = 0.3
+@export_range(0.0, 1.0) var echo_damage: float = 0.6
+@export var echo_sfx: Array[AudioStream] = []
+## RESONANCE: segundos en los que cada golpe es resonante y cuánto tarda en poder repetirse
+## desde que se lanzó.
+@export var buff_sec: float = 0.0
+@export var buff_lockout_sec: float = 0.0
+## GRAVITY: segundos hasta que el pozo se cierra (los fragmentos tardan eso en llegar).
+@export var gravity_sec: float = 2.5
 
 @export_group("Carga")
 ## Tiempo manteniendo las dos manos juntas hasta la carga completa (s).

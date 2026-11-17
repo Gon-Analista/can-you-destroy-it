@@ -8,9 +8,11 @@ extends Node3D
 ##   atraviesa: cada uno destella y se abre.
 ## - Hechizos de toque (Chispa, Escarcha): al lanzar sale de la mano un círculo pequeño que gira
 ##   rápido y se apaga (dos a nivel 8, tres a nivel 10).
+## - Sellos sueltos (`stamp`): un círculo que se dibuja, destella y se apaga donde haga falta: de
+##   ellos salen los ecos del Arcano, y tres rodean el pozo de la Gravedad.
 
 const SHADER: Shader = preload("res://fx/hd/hd_magic_circle.gdshader")
-const POOL: int = 12
+const POOL: int = 20
 const MAX_CHARGE_CIRCLES: int = 5
 ## Distancia (m) del primer círculo y separación de los siguientes, que crece.
 const FIRST_DIST: float = 1.4
@@ -18,12 +20,14 @@ const STEP_DIST: float = 0.75
 
 var _quads: Array[MeshInstance3D] = []
 var _mats: Array[ShaderMaterial] = []
-## Estado por quad: 0 libre, 1 de carga, 2 soltándose (destello), 3 de toque.
+## Estado por quad: 0 libre, 1 de carga, 2 soltándose (destello), 3 de toque, 4 sello (eco, pozo).
 var _state: PackedInt32Array = []
 var _age: PackedFloat32Array = []
 var _spin_speed: PackedFloat32Array = []
 var _spin: PackedFloat32Array = []
 var _base_scale: PackedFloat32Array = []
+## Duración de cada sello (estado 4).
+var _life: PackedFloat32Array = []
 var _charge_ids: Array[int] = []
 var _charge_count: int = 0
 var _origin := Vector3.ZERO
@@ -55,6 +59,7 @@ func _ready() -> void:
 		_spin_speed.append(0.0)
 		_spin.append(0.0)
 		_base_scale.append(1.0)
+		_life.append(1.0)
 
 
 ## Mientras se carga un hechizo combinado: `count` círculos (1..5) que aparecen con la carga `k`,
@@ -179,6 +184,41 @@ func muzzle(origin: Vector3, aim: Vector3, count: int, col: Color, hot: Color) -
 		_quads[i].visible = false
 
 
+## Sello suelto (ecos del Arcano, pozo de Gravedad): un círculo de `size` m en `pos`, de cara a
+## lo largo de `dir`, que se dibuja barriendo, destella, gira a `spin_speed` y dura `life` s.
+## Devuelve su índice (o -1 si no queda ninguno libre).
+func stamp(
+	pos: Vector3,
+	dir: Vector3,
+	size: float,
+	col: Color,
+	hot: Color,
+	life: float = 0.7,
+	spin_speed: float = 3.0
+) -> int:
+	var i: int = _free()
+	if i < 0:
+		return -1
+	_state[i] = 4
+	_age[i] = 0.0
+	_life[i] = life
+	_spin[i] = randf() * TAU
+	_spin_speed[i] = spin_speed
+	_base_scale[i] = size
+	_mats[i].set_shader_parameter("color", col)
+	_mats[i].set_shader_parameter("color_hot", hot)
+	_mats[i].set_shader_parameter("rune_count", clampf(12.0 + size * 2.0, 12.0, 28.0))
+	_mats[i].set_shader_parameter("appear", 0.0)
+	_mats[i].set_shader_parameter("flash", 0.0)
+	_mats[i].set_shader_parameter("fade", 1.0)
+	_mats[i].set_shader_parameter("intensity", 1.2)
+	_quads[i].set_meta(&"pos", pos)
+	_quads[i].set_meta(&"dir", dir.normalized() if dir.length() > 0.01 else Vector3.FORWARD)
+	_quads[i].visible = true
+	_animate_stamp(i)
+	return i
+
+
 func _process(delta: float) -> void:
 	for i: int in POOL:
 		if _state[i] == 0:
@@ -208,6 +248,22 @@ func _process(delta: float) -> void:
 				_place(i, pos + dir * t * 0.4, _base_scale[i] * (0.6 + t * 0.9))
 				if t >= 1.0:
 					_free_quad(i)
+			4:
+				_animate_stamp(i)
+
+
+## Sello: se dibuja barriendo en 0,14 s, destella al cerrarse, gira y se apaga al final.
+func _animate_stamp(i: int) -> void:
+	var t: float = _age[i] / maxf(_life[i], 0.05)
+	var a: float = clampf(_age[i] / 0.14, 0.0, 1.0)
+	_mats[i].set_shader_parameter("appear", a)
+	_mats[i].set_shader_parameter("flash", maxf(0.0, 0.9 - absf(_age[i] - 0.16) * 6.0))
+	_mats[i].set_shader_parameter("fade", clampf((1.0 - t) / 0.3, 0.0, 1.0))
+	_dir = _quads[i].get_meta(&"dir")
+	var pos: Vector3 = _quads[i].get_meta(&"pos")
+	_place(i, pos, _base_scale[i] * (0.7 + 0.3 * a + t * 0.2))
+	if t >= 1.0:
+		_free_quad(i)
 
 
 func _dist(c: int) -> float:

@@ -1,0 +1,83 @@
+class_name SpellGhost
+extends RefCounted
+## Versión "fantasma" de un hechizo para los ecos del Arcano: el mismo aspecto (llama, Bola de
+## Fuego, lanza...) teñido de violeta arcano, algo más pálido y más pequeño. Se calcula una vez
+## por aspecto y se guarda en esta caché (la tiene SpellEchoes): los ecos no crean recursos al
+## lanzarse (y se libera con ella).
+
+## Violeta arcano hacia el que tiran los colores (se conserva el brillo HDR de cada uno).
+const GHOST := Color(0.78, 0.52, 1.0)
+## Cuánto tiran hacia el violeta (0 = igual, 1 = todo violeta).
+const MIX: float = 0.6
+
+var _tiers: Dictionary[SpellTier, SpellTier] = {}
+var _visuals: Dictionary[SpellVisualDef, SpellVisualDef] = {}
+
+
+## El nivel `tier` en versión fantasma (aspecto, estela, colores del impacto).
+func tier(source: SpellTier) -> SpellTier:
+	if source == null:
+		return null
+	if _tiers.has(source):
+		return _tiers[source]
+	var t: SpellTier = source.duplicate()
+	t.visual = visual(source.visual)
+	t.color_core = tint(source.color_core)
+	t.color_glow = tint(source.color_glow)
+	t.impact_tint = tint(source.impact_tint) if source.impact_tint.a > 0.0 else GHOST
+	t.orb_scale = source.orb_scale * 0.85
+	# Golpe de eco: estallido y grieta algo menores que los del hechizo de verdad.
+	t.crack_radius = source.crack_radius * 0.7
+	t.light_energy = source.light_energy * 0.6
+	t.trail_width = source.trail_width * 0.8
+	t.trail_smoke = 0.0
+	# Sin rugido propio: cada eco suena con su campanada (ver SpellCaster).
+	t.flight_sfx = null
+	t.echoes = 0
+	if source.trail_ramp:
+		t.trail_ramp = _tint_gradient(source.trail_ramp)
+	_tiers[source] = t
+	return t
+
+
+## El aspecto `def` en versión fantasma.
+func visual(source: SpellVisualDef) -> SpellVisualDef:
+	if source == null:
+		return null
+	if _visuals.has(source):
+		return _visuals[source]
+	var v: SpellVisualDef = source.duplicate()
+	if source.core_ramp:
+		v.core_ramp = _tint_gradient(source.core_ramp)
+	if source.sparkle_colors:
+		v.sparkle_colors = _tint_gradient(source.sparkle_colors)
+	var ribbons := PackedColorArray()
+	for col: Color in source.ribbon_colors:
+		ribbons.append(tint(col))
+	v.ribbon_colors = ribbons
+	v.flare_color = tint(source.flare_color)
+	v.light_color = tint(source.light_color)
+	v.body_intensity = source.body_intensity * 0.65
+	v.glow_intensity = source.glow_intensity * 0.9
+	v.core_spin = source.core_spin * 1.5
+	# Sin onda de choque al llegar: con varios ecos seguidos sería un muro de anillos.
+	v.release_flash = minf(source.release_flash, 0.4)
+	v.seed = source.seed + 1000
+	_visuals[source] = v
+	return v
+
+
+## Un color tirando hacia el violeta arcano sin perder su brillo (HDR incluido).
+static func tint(col: Color) -> Color:
+	var peak: float = maxf(col.r, maxf(col.g, col.b))
+	var ghost := Color(GHOST.r * peak, GHOST.g * peak, GHOST.b * peak, col.a)
+	return col.lerp(ghost, MIX)
+
+
+static func _tint_gradient(src: Gradient) -> Gradient:
+	var g: Gradient = src.duplicate()
+	var cols := PackedColorArray()
+	for col: Color in src.colors:
+		cols.append(tint(col))
+	g.colors = cols
+	return g
