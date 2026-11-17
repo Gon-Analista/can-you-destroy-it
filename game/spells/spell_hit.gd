@@ -14,3 +14,9 @@ var recipe: SpellRecipe
 var element: StringName = &""
 ## Golpe de precalentamiento (pantalla de carga): se dibuja pero no hace nada.
 var warmup: bool = false
+## Su elemento (para el efecto en el cristal); null en las combinaciones.
+var element_def: ElementDef
+## True si cayó en una zona debilitada (congelada o quebradiza) y hizo daño extra.
+var weakened: bool = false
+## Multiplicador que se aplicó por la zona debilitada.
+var weak_mult: float = 1.0

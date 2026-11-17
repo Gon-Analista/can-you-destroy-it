@@ -168,7 +168,12 @@ en el Grimorio del Santuario mejoras que cambian los hechizos. Lo que hay:
 - Debug: G da 100 de maná; demo con `--no-cast`, `--mana=N`, `--bag=N`, `--warp=x,z`, `--grimoire [--buy --select=N]`.
   En modo demo no se carga ni se guarda la partida.
 
-**Aún no hay**: cambiar el elemento de cada mano (Q / E) ni más elementos que la Chispa, capas del cristal, geodas,
+- **Elementos por mano** (Q / E): Chispa y Escarcha (`data/elements/`); combinaciones Bola de Fuego y Choque
+  Térmico (`data/spells/recipe_*.tres`); efecto de cada elemento en el cristal (`MotherCrystal._apply_element`).
+- **Movimiento**: correr (Shift), saltar (Espacio), pasos y aterrizaje. **Día y noche** (`world/day_night.gd`) con
+  paisaje sonoro (`tools/sfx_ambience.py`). **Pantalla de carga** que precalienta efectos (`Main._warm_up`).
+
+**Aún no hay**: Rayo, Tierra y Arcano, capas del cristal, geodas,
 familiares, telequinesis de entrega directa ni simulador de balance (M2).
 
 ## 8. Hitos
@@ -211,6 +216,11 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-15 | Manos en vertical que suben y se juntan desde su posición de reposo (no en horizontal desde los lados). | Pedido del equipo: juntar el hechizo verticalmente. |
 | 2026-11-17 | Cada mano lleva su llama (elemento) y recarga por separado; los dos clics a la vez (ventana de 0,09 s, `combine_window_sec`) juntan las manos y funden las llamas en la Bola de Fuego, que se carga manteniendo y sale al soltar. Con las dos manos listas, un clic suelto espera esa ventana o sale al soltar el botón. | GDD 5.2 y 10.1; pedido del equipo ("juntar 2 hechizos de fuego, uno en cada mano, en uno grande"). Sustituye al orbe único entre las manos. |
 | 2026-11-17 | Las llamas flotan sobre la punta de los dedos, no delante de la palma. | Las manos son 2D por encima del 3D: lo que queda detrás de la palma no se ve. |
+| 2026-11-17 | Cada mano lleva un elemento (Q / E). Segundo elemento: Escarcha, que se despierta en el Grimorio (no al 10 % del Pilón todavía) para que Q/E y las combinaciones se puedan jugar ya. | Pedido del equipo (Q/E) y GDD 5.2; M2 pide 2 elementos y 1 combinación. |
+| 2026-11-17 | Efecto en el cristal por elemento: el fuego quema (marcas y fuego que sigue ardiendo con daño por quemadura), la Escarcha congela (x2 para los otros elementos 6 s) y el Choque Térmico deja la zona quebradiza (x3 al siguiente golpe). | Pedido del equipo ("afecte al cristal según elementos"); GDD 5.1 y 5.2. |
+| 2026-11-17 | Grimorio por elementos: una constelación por elemento en pestañas, más la del Mago (bolsa, telequinesis, resonancia). | Pedido del equipo. |
+| 2026-11-17 | Pantalla de carga que precalienta shaders y partículas apuntando la cámara a cada sitio. | Congelaciones la primera vez que se dibuja cada efecto (compilación de shaders). |
+| 2026-11-17 | Ciclo de día y noche (`DayNight`, 10 min) con parámetro global de shader `world_tint` para lo que no usa la luz del motor. | Pedido del equipo; GDD 3 ("de noche ilumina todo el valle"). |
 | 2026-11-17 | **HD-2D**: el mundo y las manos en pixel art (640x360) y la magia en una capa aparte a resolución nativa con resplandor HDR, compuesta con alfa premultiplicado (`MagicLayer`, capa visual `1 << 10`). Stretch del proyecto a `canvas_items`; el mundo en una SubViewport con filtro nearest. | Pedido del equipo: los hechizos deben verse espectaculares, con efectos de juegos modernos; con píxeles sólidos a 12 fps no se llegaba. Referencia: Octopath Traveler. |
 | 2026-11-17 | Cristal Madre a escala 2,3 y posiciones en `WorldLayout` (Pilón y Santuario a ~30 m). | Pedido del equipo: cristal más grande y máquinas menos pegadas; GDD 4.1 (30 veces el mago). |
 | 2026-11-17 | El hechizo en vuelo es el mismo `SpellOrb` de la mano + estela de píxeles sólidos (`SpellTrail`) + estallido de impacto pixel art; el rombo aditivo (`spark.gdshader`) deja de usarse. | Pedido del equipo: los hechizos tienen que resaltar mucho más; lo aditivo se perdía contra el cielo y el cristal. |

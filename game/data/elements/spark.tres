@@ -142,3 +142,4 @@ display_name = "Chispa"
 color = Color(1, 0.64705884, 0.22745098, 1)
 tiers = Array[ExtResource("2_qc2j2")]([SubResource("tier_1"), SubResource("tier_2"), SubResource("tier_3"), SubResource("tier_4"), SubResource("tier_5")])
 hand_visual = ExtResource("3_flame")
+power_stat = &"spark_tier"

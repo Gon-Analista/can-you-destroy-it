@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"frost_power"
+display_name = "Potencia"
+description = "La escarcha se endurece: más daño, más rápida y congela más grande. Cambia de forma."
+branch = 0
+element = &"frost"
+star_pos = Vector2i(118, 196)
+costs = PackedInt32Array(90, 500)
+prerequisites = Array[StringName]([&"awaken_frost"])
+stat = &"frost_tier"
+values = PackedFloat32Array(0, 1, 2)
+value_format = "%s"
+level_names = PackedStringArray("Escarcha", "Hielo", "Ventisca")

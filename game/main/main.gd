@@ -78,6 +78,14 @@ func _setup_autoplay() -> void:
 			for i: int in int(a.get_slice("=", 1)):
 				GameState.progression.collect_shard(&"splinter")
 			GameState.emit_all()
+		elif a.begins_with("--hands="):
+			# --hands=0,1: elemento de cada mano (0 Chispa, 1 Escarcha); despierta la Escarcha.
+			GameState.progression.upgrade_levels[&"awaken_frost"] = 1
+			var hs: PackedStringArray = a.get_slice("=", 1).split(",")
+			var caster: SpellCaster = _player.get_caster()
+			caster.hand_element[0] = int(hs[0])
+			caster.hand_element[1] = int(hs[1])
+			caster.set_tier(caster.tier_index)
 		elif a.begins_with("--time="):
 			_day_night.time_of_day = float(a.get_slice("=", 1))
 		elif a.begins_with("--warp="):

@@ -1,9 +1,10 @@
 class_name SpellCaster
 extends Node
-## Lanza los hechizos de las dos manos (GDD 5.2 y 10.1). Cada mano lleva un elemento y su
-## propio enfriamiento: clic izquierdo lanza la izquierda, clic derecho la derecha. Pulsar los
-## dos a la vez junta las manos y funde los dos elementos en un hechizo combinado (Chispa +
-## Chispa = Bola de Fuego), que se carga mientras se mantiene y sale al soltar.
+## Lanza los hechizos de las dos manos (GDD 5.2 y 10.1). Cada mano lleva un elemento (Q / E lo
+## cambian) y su propio enfriamiento: clic izquierdo lanza la izquierda, clic derecho la
+## derecha. Pulsar los dos a la vez junta las manos y funde los dos elementos en un hechizo
+## combinado si la pareja tiene receta (Chispa + Chispa = Bola de Fuego, Chispa + Escarcha =
+## Choque Térmico), que se carga mientras se mantiene y sale al soltar.
 ##
 ## Para no perder la combinación, un clic con las dos manos listas espera `combine_window_sec`
 ## por si llega el otro; si se suelta antes, sale en el acto. Enfriamiento con "buffer" (si
@@ -11,6 +12,10 @@ extends Node
 
 const ELEMENT: ElementDef = preload("res://data/elements/spark.tres")
 const RECIPE: SpellRecipe = preload("res://data/spells/recipe_fireball.tres")
+## Elementos que puede llevar una mano, en el orden en que se recorren con Q / E.
+const ELEMENTS: Array[ElementDef] = [ELEMENT, preload("res://data/elements/frost.tres")]
+const RECIPES: Array[SpellRecipe] = [RECIPE, preload("res://data/spells/recipe_thermal_shock.tres")]
+const SWITCH_SFX: AudioStream = preload("res://audio/sfx/sfx_spell_combine_01.ogg")
 const CAST_SFX: Array[AudioStream] = [
 	preload("res://audio/sfx/sfx_spark_cast_01.ogg"),
 	preload("res://audio/sfx/sfx_spark_cast_02.ogg"),
@@ -28,7 +33,14 @@ const BOTH_HANDS: int = 2
 @export var camera: Camera3D
 @export var hands: WizardHands
 
+## Nivel de la Chispa (lo da la Potencia; en debug, las teclas 1-5 lo fuerzan en todos).
 var tier_index: int = 0
+## Elemento de cada mano (índice en ELEMENTS). [izquierda, derecha]
+var hand_element: Array[int] = [0, 0]
+var _debug_tier: int = -1
+var _active_recipe: SpellRecipe = RECIPE
+var _cast_sounds: Dictionary[ElementDef, AudioStreamRandomizer] = {}
+var _combo_sounds: Dictionary[SpellRecipe, AudioStreamRandomizer] = {}
 var _cooldown: PackedFloat32Array = PackedFloat32Array([0.0, 0.0])
 ## Duración del último enfriamiento de cada mano (para la carga de 0 a 1).
 var _cooldown_total: PackedFloat32Array = PackedFloat32Array([1.0, 1.0])
@@ -57,6 +69,12 @@ func _ready() -> void:
 		_combo_projectiles.append(_make_projectile("Combo%d" % i))
 	_cast_random = _randomizer(CAST_SFX, 1.15)
 	_combo_cast_random = _randomizer(RECIPE.cast_sfx, 1.08)
+	for el: ElementDef in ELEMENTS:
+		_cast_sounds[el] = (
+			_randomizer(el.cast_sfx, 1.12) if not el.cast_sfx.is_empty() else _cast_random
+		)
+	for r: SpellRecipe in RECIPES:
+		_combo_sounds[r] = _randomizer(r.cast_sfx, 1.08)
 	_charge_player = AudioStreamPlayer.new()
 	_charge_player.name = "ComboChargeLoop"
 	_charge_player.bus = &"SFX"
@@ -65,11 +83,61 @@ func _ready() -> void:
 
 
 func current_tier() -> SpellTier:
-	return ELEMENT.tiers[tier_index]
+	return tier_for(0)
 
 
 func current_recipe() -> SpellRecipe:
-	return RECIPE
+	return _active_recipe
+
+
+func element_of(side: int) -> ElementDef:
+	return ELEMENTS[hand_element[side]]
+
+
+## Nivel del hechizo de una mano: según la mejora de Potencia de su elemento.
+func tier_for(side: int) -> SpellTier:
+	var el: ElementDef = element_of(side)
+	var idx: int = tier_index if el == ELEMENT else roundi(GameState.stat(el.power_stat, 0.0))
+	if _debug_tier >= 0:
+		idx = _debug_tier
+	return el.tiers[clampi(idx, 0, el.tiers.size() - 1)]
+
+
+## Receta para la pareja de elementos de las manos (el orden no importa), o null.
+func recipe_for_hands() -> SpellRecipe:
+	for r: SpellRecipe in RECIPES:
+		if r.matches(element_of(0).id, element_of(1).id):
+			return r
+	return null
+
+
+func is_unlocked(el: ElementDef) -> bool:
+	return el.unlock_upgrade == &"" or GameState.progression.get_level(el.unlock_upgrade) > 0
+
+
+## Q / E: la mano pasa al siguiente elemento que conozcas. Si sólo conoces uno, avisa.
+func cycle_element(side: int) -> void:
+	if _combining:
+		return
+	var n: int = ELEMENTS.size()
+	for step: int in range(1, n + 1):
+		var idx: int = (hand_element[side] + step) % n
+		if idx == hand_element[side]:
+			break
+		if is_unlocked(ELEMENTS[idx]):
+			hand_element[side] = idx
+			_refresh_hands(false, side)
+			if hands:
+				hands.play_switch(side)
+			AudioDirector.play_sfx(SWITCH_SFX, -8.0, 1.2 if idx > 0 else 1.0)
+			var which: String = tr("MANO IZQUIERDA") if side == 0 else tr("MANO DERECHA")
+			Events.hint.emit(
+				"%s: %s" % [which, tr(ELEMENTS[idx].display_name).to_upper()], ELEMENTS[idx].color
+			)
+			return
+	Events.hint.emit(
+		tr("AÚN NO CONOCES OTRO ELEMENTO: DESPIÉRTALO EN EL GRIMORIO"), Color("#a5dae5")
+	)
 
 
 ## Carga de una mano: 0 = recién lanzada, 1 = lista. Sin `side`, la media de las dos
@@ -83,7 +151,7 @@ func charge_ratio(side: int = -1) -> float:
 
 
 func combine_charge() -> float:
-	return clampf(_combine_time / maxf(RECIPE.charge_sec, 0.001), 0.0, 1.0)
+	return clampf(_combine_time / maxf(_active_recipe.charge_sec, 0.001), 0.0, 1.0)
 
 
 func is_combining() -> bool:
@@ -92,14 +160,29 @@ func is_combining() -> bool:
 
 ## `celebrate`: al subir de nivel comprando, las manos lo celebran (destello y chispas).
 func set_tier(index: int, celebrate: bool = false) -> void:
-	var changed: bool = index != tier_index
 	tier_index = clampi(index, 0, ELEMENT.tiers.size() - 1)
-	if hands:
-		hands.set_flame_visual(current_tier().visual, celebrate and changed)
+	_refresh_hands(celebrate)
+
+
+## Pone en cada mano la llama de su elemento y nivel (con `celebrate`, la transformación).
+## `only_side` >= 0 cambia sólo esa mano.
+func _refresh_hands(celebrate: bool, only_side: int = -1) -> void:
+	if hands == null:
+		return
+	for side: int in 2:
+		if only_side >= 0 and side != only_side:
+			continue
+		hands.set_flame_visual(tier_for(side).visual, celebrate, side)
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+		return
+	if event.is_action_pressed(&"cycle_element_left"):
+		cycle_element(0)
+		return
+	if event.is_action_pressed(&"cycle_element_right"):
+		cycle_element(1)
 		return
 	for side: int in 2:
 		if event.is_action_pressed(ACTIONS[side]):
@@ -126,7 +209,7 @@ func try_cast(side: int) -> void:
 
 ## Junta las manos como si se pulsaran los dos botones (modo demo). Devuelve si empezó.
 func try_begin_combine() -> bool:
-	if _combining or not (_hand_ready(0) and _hand_ready(1)):
+	if _combining or not (_hand_ready(0) and _hand_ready(1)) or recipe_for_hands() == null:
 		return false
 	_begin_combine()
 	return true
@@ -143,10 +226,15 @@ func _on_press(side: int) -> void:
 		return
 	var other: int = 1 - side
 	if _pending_side == other:
-		# Llegó el segundo clic a tiempo: combinación.
+		# Llegó el segundo clic a tiempo: combinación (si la pareja tiene receta; si no, las dos
+		# manos lanzan a la vez).
 		_pending_side = -1
-		_begin_combine()
-	elif _hand_ready(side) and _hand_ready(other):
+		if recipe_for_hands():
+			_begin_combine()
+		else:
+			_cast_single(other)
+			_cast_single(side)
+	elif _hand_ready(side) and _hand_ready(other) and recipe_for_hands() != null:
 		# Las dos manos listas: puede que el otro clic esté a punto de llegar.
 		_pending_side = side
 		_pending_time = GameState.BALANCE.combine_window_sec
@@ -210,7 +298,7 @@ func _on_hand_ready() -> void:
 	Events.spell_ready.emit()
 	if hands:
 		hands.play_ready()
-	if _cooldown_for(current_tier()) >= 0.6:
+	if _cooldown_for(tier_for(0)) >= 0.6:
 		AudioDirector.play_sfx(READY_SFX, -8.0)
 
 
@@ -225,7 +313,8 @@ func _resonant_chance() -> float:
 
 
 func _cast_single(side: int) -> void:
-	var tier: SpellTier = current_tier()
+	var tier: SpellTier = tier_for(side)
+	var el: ElementDef = element_of(side)
 	_start_cooldown(side, _cooldown_for(tier))
 	_buffered[side] = false
 	_buffer_time[side] = 0.0
@@ -236,26 +325,32 @@ func _cast_single(side: int) -> void:
 	hit.tier = tier
 	hit.resonant = _rng.randf() < _resonant_chance()
 	hit.damage = tier.damage * (GameState.BALANCE.resonant_damage_mult if hit.resonant else 1)
-	hit.element = ELEMENT.id
+	hit.element = el.id
+	hit.element_def = el
 	_launch(projectile, hit, side)
 	if hands:
 		hands.play_cast(side)
 	# GDD 10: el crepitar suena más grave (y más fuerte) al subir de nivel.
-	AudioDirector.play_sfx(_cast_random, -2.0 + tier_index * 0.8, 1.0 - tier_index * 0.07)
+	var lvl: int = el.tiers.find(tier)
+	AudioDirector.play_sfx(_cast_sounds[el], -2.0 + lvl * 0.8, el.cast_pitch * (1.0 - lvl * 0.07))
 	Events.spell_cast.emit(tier, side)
 
 
 func _begin_combine() -> void:
+	_active_recipe = recipe_for_hands()
+	if _active_recipe == null:
+		return
 	_combining = true
 	_combine_time = 0.0
 	_combine_full_announced = false
 	if hands:
-		hands.begin_combine()
-	AudioDirector.play_sfx(RECIPE.combine_sfx, -3.0)
+		hands.begin_combine(_active_recipe.visual)
+	AudioDirector.play_sfx(_active_recipe.combine_sfx, -3.0)
+	_charge_player.stream = _active_recipe.charge_loop_sfx
 	_charge_player.pitch_scale = 0.85
 	_charge_player.volume_db = -18.0
 	_charge_player.play()
-	Events.spell_combine_started.emit(RECIPE)
+	Events.spell_combine_started.emit(_active_recipe)
 
 
 func _update_combine(delta: float) -> void:
@@ -275,33 +370,35 @@ func _update_combine(delta: float) -> void:
 
 
 func _launch_combine() -> void:
+	var recipe: SpellRecipe = _active_recipe
 	var charge: float = combine_charge()
 	_combining = false
 	_charge_player.stop()
 	var cd: float = maxf(
-		RECIPE.cooldown_sec * GameState.stat(&"cooldown_mult", 1.0), _cooldown_for(current_tier())
+		recipe.cooldown_sec * GameState.stat(&"cooldown_mult", 1.0), _cooldown_for(tier_for(0))
 	)
 	_start_cooldown(0, cd)
 	_start_cooldown(1, cd)
 	if hands:
 		hands.release_combine()
-	var tier: SpellTier = RECIPE.tier
+	var tier: SpellTier = recipe.tier
 	var hit := SpellHit.new()
 	hit.tier = tier
-	hit.recipe = RECIPE
-	hit.element = RECIPE.elements[0] if not RECIPE.elements.is_empty() else ELEMENT.id
+	hit.recipe = recipe
+	hit.element = recipe.elements[0] if not recipe.elements.is_empty() else ELEMENT.id
 	hit.resonant = _rng.randf() < _resonant_chance()
-	var damage: int = RECIPE.damage_for(current_tier().damage, current_tier().damage, charge)
-	damage = roundi(float(damage) * GameState.stat(&"fireball_mult", 1.0))
+	var damage: int = recipe.damage_for(tier_for(0).damage, tier_for(1).damage, charge)
+	if recipe.power_stat != &"":
+		damage = roundi(float(damage) * GameState.stat(recipe.power_stat, 1.0))
 	hit.damage = damage * (GameState.BALANCE.resonant_damage_mult if hit.resonant else 1)
 	var projectile: SparkProjectile = _free_projectile(_combo_projectiles)
 	if projectile:
 		# Misma carga que el orbe entre las manos (ver WizardHands): sale sin cambiar de tamaño.
 		projectile.orb_charge = lerpf(0.15, 1.0, charge)
 		_launch(projectile, hit, BOTH_HANDS)
-	AudioDirector.play_sfx(_combo_cast_random, lerpf(-4.0, 0.0, charge))
+	AudioDirector.play_sfx(_combo_sounds[recipe], lerpf(-4.0, 0.0, charge))
 	Events.spell_cast.emit(tier, BOTH_HANDS)
-	GameState.register_recipe_cast(RECIPE)
+	GameState.register_recipe_cast(recipe)
 
 
 func _start_cooldown(side: int, seconds: float) -> void:
@@ -361,21 +458,25 @@ func _free_projectile(pool: Array[SparkProjectile]) -> SparkProjectile:
 func warm_up(target: Vector3) -> void:
 	var from: Vector3 = camera.global_position + camera.global_basis * Vector3(0.0, -0.3, -1.5)
 	var k: int = 0
-	for tier: SpellTier in ELEMENT.tiers:
-		var hit := SpellHit.new()
-		hit.tier = tier
-		hit.warmup = true
-		hit.position = target
-		hit.normal = Vector3.BACK
-		_projectiles[k].launch(from, target, hit, null)
-		k += 1
-	var combo := SpellHit.new()
-	combo.tier = RECIPE.tier
-	combo.recipe = RECIPE
-	combo.warmup = true
-	combo.position = target
-	combo.normal = Vector3.BACK
-	_combo_projectiles[0].launch(from, target, combo, null)
+	for el: ElementDef in ELEMENTS:
+		for tier: SpellTier in el.tiers:
+			if k >= _projectiles.size():
+				break
+			var hit := SpellHit.new()
+			hit.tier = tier
+			hit.warmup = true
+			hit.position = target
+			hit.normal = Vector3.BACK
+			_projectiles[k].launch(from, target, hit, null)
+			k += 1
+	for i: int in mini(RECIPES.size(), _combo_projectiles.size()):
+		var combo := SpellHit.new()
+		combo.tier = RECIPES[i].tier
+		combo.recipe = RECIPES[i]
+		combo.warmup = true
+		combo.position = target
+		combo.normal = Vector3.BACK
+		_combo_projectiles[i].launch(from, target, combo, null)
 
 
 func _on_projectile_arrived(projectile: SparkProjectile) -> void:

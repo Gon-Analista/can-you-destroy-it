@@ -37,6 +37,8 @@ var _bag: Label
 var _hint: Label
 var _prompt: Label
 var _pylon_tag: Label
+## Elemento de cada mano (sólo cuando conoces más de uno).
+var _hand_tags: Array[Label] = []
 var _sanctum_tag: Label
 var _shown_fill: float = 0.0
 var _bar_flash: float = 0.0
@@ -71,6 +73,8 @@ func _ready() -> void:
 	_hint.visible = false
 	_prompt = _label("", 8, C_GOLD, Rect2(120, 214, 400, 10), 1)
 	_pylon_tag = _label("", 8, C_PINK, Rect2(0, 0, 120, 10), 1)
+	_hand_tags.append(_label("", 8, C_TEXT, Rect2(8, 300, 160, 10), 0))
+	_hand_tags.append(_label("", 8, C_TEXT, Rect2(472, 300, 160, 10), 2))
 	_sanctum_tag = _label("", 8, C_GOLD, Rect2(0, 0, 120, 10), 1)
 	Events.shard_delivered.connect(_on_delivered)
 	Events.bag_changed.connect(func(_c: int, _cap: int) -> void: _bag_punch = 1.0)
@@ -175,6 +179,7 @@ func _process(delta: float) -> void:
 		if _hint_t <= 0.0:
 			_next_hint()
 	_update_markers(count, full)
+	_update_hand_tags()
 	# Mejora disponible: aviso y campanita una vez cuando aparece.
 	var available: bool = GameState.cheapest_affordable() != null
 	if available and not _had_available:
@@ -182,6 +187,26 @@ func _process(delta: float) -> void:
 		_push_hint(tr("¡MEJORA DISPONIBLE EN EL SANTUARIO!"), C_GOLD)
 	_had_available = available
 	queue_redraw()
+
+
+func _update_hand_tags() -> void:
+	var player: Player = get_tree().get_first_node_in_group(&"player") as Player
+	if player == null:
+		return
+	var caster: SpellCaster = player.get_caster()
+	var known: int = 0
+	for el: ElementDef in SpellCaster.ELEMENTS:
+		if caster.is_unlocked(el):
+			known += 1
+	for side: int in 2:
+		var l: Label = _hand_tags[side]
+		l.visible = known > 1
+		if not l.visible:
+			continue
+		var el: ElementDef = caster.element_of(side)
+		var name: String = tr(el.display_name).to_upper()
+		l.text = ("[Q] " + name) if side == 0 else (name + " [E]")
+		l.add_theme_color_override(&"font_color", el.color)
 
 
 func _update_markers(count: int, full: bool) -> void:

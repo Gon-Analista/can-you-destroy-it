@@ -242,6 +242,18 @@ func _on_impact(hit: SpellHit) -> void:
 	f.visible = true
 	if hit.resonant:
 		_show_banner(tr("¡GOLPE RESONANTE!"), C_GOLD)
+	elif hit.weakened:
+		f.text = "-%d  x%s" % [hit.damage, str(roundi(hit.weak_mult))]
+		f.add_theme_color_override(&"font_color", Color("#a5f0ff"))
+		f.add_theme_font_size_override(&"font_size", 16)
+		_show_banner(
+			(
+				tr("¡QUEBRADIZO! x%d") % roundi(hit.weak_mult)
+				if hit.weak_mult >= 3.0
+				else tr("¡CONGELADO! x%d") % roundi(hit.weak_mult)
+			),
+			Color("#a5f0ff")
+		)
 
 
 func _on_streak_changed(streak: int) -> void:

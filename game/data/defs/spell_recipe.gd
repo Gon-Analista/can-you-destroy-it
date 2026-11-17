@@ -21,6 +21,13 @@ extends Resource
 @export var burn_damage: int = 1
 @export var burn_tick_sec: float = 0.5
 
+@export_group("Efecto en el cristal")
+## La zona queda quebradiza: el siguiente golpe hace x`shatter_mult` (Choque Térmico). 1 = nada.
+@export var shatter_mult: float = 1.0
+@export var shatter_sec: float = 6.0
+## Estadística de mejora que multiplica su daño (p. ej. &"fireball_mult"); vacía = ninguna.
+@export var power_stat: StringName
+
 @export_group("Carga")
 ## Tiempo manteniendo las dos manos juntas hasta la carga completa (s).
 @export var charge_sec: float = 0.7

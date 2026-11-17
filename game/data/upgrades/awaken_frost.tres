@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"awaken_frost"
+display_name = "Despertar la Escarcha"
+description = "Aprendes el segundo elemento: lento, frío, y congela el cristal (los otros golpes hacen el doble allí). Cámbialo en cada mano con Q / E."
+branch = 2
+element = &"frost"
+star_pos = Vector2i(118, 96)
+costs = PackedInt32Array(60)
+prerequisites = Array[StringName]([])
+stat = &"frost_awake"
+values = PackedFloat32Array(0, 1)
+value_format = "%s"
+level_names = PackedStringArray("Dormida", "Despierta")

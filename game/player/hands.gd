@@ -51,6 +51,7 @@ var orb_enabled: bool = true:
 
 var _sprites: Array[Sprite2D] = []
 var _pending_flare: bool = false
+var _flare_side: Array[bool] = [false, false]
 var _night: float = 0.0
 var _grimoire_open: bool = false
 var _flames: Array[SpellOrb] = []
@@ -120,7 +121,16 @@ func play_cast(side: int) -> void:
 
 
 ## Las manos empiezan a juntarse: el orbe central aparece pequeño entre ellas.
-func begin_combine() -> void:
+## Las manos se juntan; `visual` es el aspecto del hechizo combinado de esta pareja de elementos.
+func begin_combine(visual: SpellVisualDef = null) -> void:
+	if visual and _combo_orb and _combo_orb.def != visual:
+		var old: SpellOrb = _combo_orb
+		_combo_orb = SpellOrb.new()
+		_combo_orb.name = "HandsComboOrb"
+		_combo_orb.def = visual
+		old.name = "OldComboOrb"
+		old.queue_free()
+		_camera.add_child(_combo_orb)
 	_combining = true
 	combine_charge = 0.0
 	if _combo_orb:
@@ -145,10 +155,15 @@ func release_combine() -> void:
 
 ## Cambia la llama de las dos manos (al subir de nivel la Chispa pasa a Llama, a Llama mágica...).
 ## Recrea los orbes sólo si el aspecto es otro: ocurre al comprar una mejora, no en caliente.
-func set_flame_visual(def: SpellVisualDef, celebrate: bool = false) -> void:
-	if def == null or _camera == null or (not _flames.is_empty() and _flames[0].def == def):
+func set_flame_visual(def: SpellVisualDef, celebrate: bool = false, only_side: int = -1) -> void:
+	if def == null or _camera == null:
 		return
+	var changed: bool = false
 	for side: int in _flames.size():
+		if only_side >= 0 and side != only_side:
+			continue
+		if _flames[side].def == def:
+			continue
 		var old: SpellOrb = _flames[side]
 		var flame := SpellOrb.new()
 		flame.name = "HandFlame%s" % ("L" if side == 0 else "R")
@@ -159,13 +174,23 @@ func set_flame_visual(def: SpellVisualDef, celebrate: bool = false) -> void:
 		_camera.add_child(flame)
 		_flames[side] = flame
 		_flame_spent[side] = false
+		_flare_side[side] = true
+		changed = true
 	_place_orbs()
 	# Al subir de nivel (no al empezar), la transformación se ve en cuanto se cierra el
 	# Grimorio: con el libro abierto quedaría tapada.
-	if celebrate:
+	if celebrate and changed:
 		_pending_flare = true
 		if not _grimoire_open:
 			_play_level_up.call_deferred()
+
+
+## Al cambiar de elemento con Q / E: la mano da un tirón y su llama nueva se enciende con un
+## destello pequeño.
+func play_switch(side: int) -> void:
+	_kick_vel[side] = -10.0
+	if side < _flames.size():
+		_flames[side].flare()
 
 
 ## Las llamas nuevas se encienden de golpe: las manos dan un tirón, destello, onda, chispas y
@@ -175,6 +200,9 @@ func _play_level_up() -> void:
 		return
 	_pending_flare = false
 	for side: int in _flames.size():
+		if not _flare_side[side]:
+			continue
+		_flare_side[side] = false
 		_flames[side].flare()
 		_kick_vel[side] = -14.0
 	_ready_pop = 1.0

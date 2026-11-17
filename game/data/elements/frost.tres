@@ -1,0 +1,97 @@
+[gd_resource type="Resource" script_class="ElementDef" format=3]
+
+[ext_resource type="Script" path="res://data/defs/element_def.gd" id="1"]
+[ext_resource type="Script" path="res://data/defs/spell_tier.gd" id="2"]
+[ext_resource type="Resource" path="res://data/spells/vfx_frost_1.tres" id="3"]
+[ext_resource type="Resource" path="res://data/spells/vfx_frost_2.tres" id="4"]
+[ext_resource type="Resource" path="res://data/spells/vfx_frost_3.tres" id="5"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_frost_cast_01.ogg" id="6"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_frost_cast_02.ogg" id="7"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_frost_impact_01.ogg" id="8"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_frost_impact_02.ogg" id="9"]
+
+[sub_resource type="Gradient" id="ramp_ice"]
+offsets = PackedFloat32Array(0, 0.2, 0.45, 0.72, 1)
+colors = PackedColorArray(1.5, 1.8, 2.1, 1, 0.45, 1.15, 1.75, 1, 0.22, 0.65, 1.3, 1, 0.12, 0.32, 0.9, 1, 0.06, 0.14, 0.45, 1)
+
+[sub_resource type="Resource" id="tier_1"]
+script = ExtResource("2")
+cooldown_sec = 1.8
+damage = 1
+speed = 18.0
+size = 0.2
+wobble = 0.3
+shards_min = 1
+shards_max = 1
+impact_particles = 20
+light_energy = 2.5
+crack_radius = 0.9
+shake = 0.07
+color_core = Color(0.9, 1, 1, 1)
+color_glow = Color(0.45, 0.85, 1, 1)
+impact_tint = Color(0.7, 0.95, 1, 1)
+visual = ExtResource("3")
+orb_scale = 5.0
+trail_ramp = SubResource("ramp_ice")
+trail_width = 0.14
+trail_length = 0.12
+
+[sub_resource type="Resource" id="tier_2"]
+script = ExtResource("2")
+cooldown_sec = 1.2
+damage = 3
+speed = 24.0
+size = 0.2
+wobble = 0.2
+shards_min = 1
+shards_max = 2
+impact_particles = 20
+light_energy = 2.5
+crack_radius = 1.2
+shake = 0.1
+color_core = Color(0.9, 1, 1, 1)
+color_glow = Color(0.45, 0.85, 1, 1)
+impact_tint = Color(0.7, 0.95, 1, 1)
+visual = ExtResource("4")
+orb_scale = 7.0
+trail_ramp = SubResource("ramp_ice")
+trail_width = 0.24
+trail_length = 0.18
+
+[sub_resource type="Resource" id="tier_3"]
+script = ExtResource("2")
+cooldown_sec = 0.7
+damage = 8
+speed = 30.0
+size = 0.2
+wobble = 0.12
+shards_min = 2
+shards_max = 3
+impact_particles = 20
+light_energy = 2.5
+crack_radius = 1.6
+shake = 0.14
+color_core = Color(0.9, 1, 1, 1)
+color_glow = Color(0.45, 0.85, 1, 1)
+impact_tint = Color(0.7, 0.95, 1, 1)
+visual = ExtResource("5")
+orb_scale = 9.0
+trail_ramp = SubResource("ramp_ice")
+trail_width = 0.38
+trail_length = 0.26
+
+[resource]
+script = ExtResource("1")
+id = &"frost"
+display_name = "Escarcha"
+color = Color(0.65, 0.88, 1, 1)
+unlock_pylon_ratio = 0.1
+tiers = Array[ExtResource("2")]([SubResource("tier_1"), SubResource("tier_2"), SubResource("tier_3")])
+hand_visual = ExtResource("3")
+power_stat = &"frost_tier"
+unlock_upgrade = &"awaken_frost"
+cast_sfx = Array[AudioStream]([ExtResource("6"), ExtResource("7")])
+cast_pitch = 1.0
+impact_sfx = Array[AudioStream]([ExtResource("8"), ExtResource("9")])
+weaken_mult = 2.0
+weaken_sec = 6.0

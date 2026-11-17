@@ -86,6 +86,32 @@ func _run() -> void:
 
 	progression.load_dict(state_before)
 	root.get_node(^"SaveSystem").call(&"save_game")
+	# Q / E: sin la Escarcha despierta no cambia; despierta, la mano izquierda pasa a Escarcha y
+	# Chispa + Escarcha se combinan en el Choque Térmico.
+	await _wait(2.5)
+	caster.call(&"cycle_element", 0)
+	_check(int((caster.get(&"hand_element") as Array)[0]) == 0, "sin Escarcha, Q no cambia")
+	progression.upgrade_levels[&"awaken_frost"] = 1
+	caster.call(&"cycle_element", 0)
+	_check(
+		int((caster.get(&"hand_element") as Array)[0]) == 1, "con Escarcha, Q la pone en la mano"
+	)
+	var recipe_now: SpellRecipe = caster.call(&"recipe_for_hands")
+	_check(
+		recipe_now != null and recipe_now.id == &"thermal_shock",
+		"Chispa + Escarcha: Choque Térmico"
+	)
+	caster.call(&"cycle_element", 1)
+	_check(caster.call(&"recipe_for_hands") == null, "Escarcha + Escarcha: sin receta")
+	casts.clear()
+	caster.call(&"_on_press", 0)
+	await process_frame
+	caster.call(&"_on_press", 1)
+	_check(
+		not caster.call(&"is_combining") and casts.size() == 2, "sin receta, las dos manos lanzan"
+	)
+	progression.upgrade_levels.erase(&"awaken_frost")
+
 	print("combine_input_smoke: %s" % ("OK" if _failures == 0 else "%d fallos" % _failures))
 	quit(1 if _failures > 0 else 0)
 

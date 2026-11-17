@@ -32,6 +32,14 @@ uniform float burn_radius[12];
 uniform vec4 col_lava : source_color = vec4(1.0, 0.45, 0.12, 1.0);
 uniform vec4 col_lava_hot : source_color = vec4(1.0, 0.85, 0.45, 1.0);
 uniform vec4 col_soot : source_color = vec4(0.2, 0.13, 0.2, 1.0);
+// Zonas debilitadas: xyz = centro, w = instante (en `now`); w < 0: vacío. `weak_kind`: 1 =
+// congelada (Escarcha), 2 = quebradiza (Choque Térmico). Duran `weak_sec[i]` segundos.
+uniform vec4 weak_zones[8];
+uniform float weak_radius[8];
+uniform float weak_kind[8];
+uniform float weak_sec[8];
+uniform vec4 col_frost : source_color = vec4(0.85, 0.97, 1.0, 1.0);
+uniform vec4 col_ice_line : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 
 varying vec3 world_pos;
 varying vec3 world_nrm;
@@ -119,6 +127,37 @@ void fragment() {
 		float vein = 1.0 - smoothstep(0.0, 0.12, e);
 		vec3 lava = mix(col_lava.rgb, col_lava_hot.rgb, burn_heat) * (1.0 + burn_heat * 1.6);
 		c = mix(c, lava, clamp(vein * burn_heat * 1.4 + burn_heat * 0.35, 0.0, 1.0));
+	}
+
+	// Escarcha: capa blanca azulada con vetas de hielo que brillan; quebradizo: grietas
+	// incandescentes entre el hielo (vapor del choque térmico).
+	float frost = 0.0;
+	float shatter = 0.0;
+	for (int i = 0; i < 8; i++) {
+		if (weak_zones[i].w >= 0.0) {
+			float age = now - weak_zones[i].w;
+			if (age < weak_sec[i]) {
+				float d = distance(world_pos, weak_zones[i].xyz);
+				float edge = hash33(floor(world_pos * 4.0)).y * 0.3;
+				float m = 1.0 - smoothstep(weak_radius[i] * 0.5, weak_radius[i] * (1.0 + edge), d);
+				// Aparece en un instante y se derrite al final.
+				m *= smoothstep(0.0, 0.15, age) * (1.0 - smoothstep(weak_sec[i] - 1.2, weak_sec[i], age));
+				if (weak_kind[i] > 1.5) {
+					shatter = max(shatter, m);
+				} else {
+					frost = max(frost, m);
+				}
+			}
+		}
+	}
+	if (frost + shatter > 0.01) {
+		float e = voronoi_edge(world_pos * 4.2);
+		float line = 1.0 - smoothstep(0.0, 0.06, e);
+		float k = max(frost, shatter);
+		c = mix(c, col_frost.rgb * mix(world_tint.rgb, vec3(1.0), 0.5), k * 0.65);
+		c = mix(c, col_ice_line.rgb * 1.4, line * frost * 0.9);
+		vec3 hot = mix(col_lava.rgb, col_lava_hot.rgb, 0.5) * 2.0;
+		c = mix(c, hot, line * shatter);
 	}
 
 	// Destellos y ondas de impacto.

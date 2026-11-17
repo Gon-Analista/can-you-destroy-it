@@ -2,6 +2,47 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-17 · Escarcha y Q/E, Grimorio por elementos, día y noche, movimiento y más
+
+**Qué hay nuevo**
+
+- **Arreglo: comprar con clic.** El Grimorio medía 0x0 (anclas sin márgenes) y los clics se iban al mundo. Test
+  nuevo `grimoire_click_smoke` (necesita ventana: `xvfb-run`).
+- **Un elemento en cada mano (Q / E).** Segundo elemento, la **Escarcha** (3 niveles: Escarcha, Hielo, Ventisca),
+  que se despierta en su constelación del Grimorio. Es lenta y **congela** la zona del cristal: los golpes de otros
+  elementos allí hacen x2 durante 6 s (escarcha con vetas de hielo en el cristal, aviso "¡CONGELADO! x2").
+  **Chispa + Escarcha = Choque Térmico** (combinación nueva por descubrir): deja la zona **quebradiza** y el
+  siguiente golpe hace x3 (vapor, grietas al rojo, "¡QUEBRADIZO! x3"). Sin receta (Escarcha + Escarcha), pulsar
+  las dos manos lanza ambas. El HUD muestra el elemento de cada mano.
+- **Grimorio por elementos**: pestañas Mago, Chispa, Escarcha, Rayo, Tierra y Arcano (Q/E o clic). Mejora nueva
+  **Bola de Fuego** (pide haberla descubierto).
+- **Subir de nivel se nota**: cada nivel de la Chispa tiene su aspecto (Chispa, Chispa ardiente, Llama, Llama
+  mágica, Fuego estelar) y al comprar Potencia las manos se transforman (destello, onda, chispas y acorde).
+- **Bola de Fuego más "bola de fuego"**: las llamas se arrastran tras la trayectoria, deja humo y ruge en vuelo;
+  quema el cristal (marcas al rojo que se enfrían a hollín) y deja fuego ardiendo que hace daño por quemadura.
+- **Movimiento**: Shift corre, Espacio salta (con margen y salto recordado), cabeceo, caída al aterrizar, pasos.
+- **Día y noche** (10 min por día): sol y luna, amanecer, atardecer y noche con estrellas; de noche faroles,
+  Pilón y Santuario iluminan. **Sonido ambiente**: pájaros de día (coro al amanecer), grillos y búhos de noche,
+  repartidos en 3D (`tools/sfx_ambience.py`). Mundo con más contraste (SSAO y ajustes de color).
+- **Sin congelaciones**: pantalla de carga que precalienta shaders y partículas (todos los hechizos, impactos,
+  quemaduras, entregas) antes de jugar.
+
+**Capturas**: `docs/capturas/magia_hd_dia_noche.gif`, `docs/capturas/bola_de_fuego_noche.png`,
+`docs/capturas/atardecer.png`, `docs/capturas/grimorio_elementos.png`.
+
+**Cómo se probó**
+
+- Tests: `progression_smoke` (requisito "recipe:"), `combine_input_smoke` (Q/E, Choque Térmico, sin receta),
+  `loop_smoke` (salto), `grimoire_click_smoke` (clic en INSCRIBIR y en pestaña), `hit_stop_smoke`,
+  `music_layers_smoke`: OK. `gdlint` y `gdformat` limpios.
+- Render fotograma a fotograma: niveles de la Chispa, Bola de Fuego de noche, atardecer, Escarcha y Choque Térmico.
+
+**Pendiente**
+
+- La llama de Escarcha en la mano se lee poco contra el cielo azul; más contraste.
+- Medir rendimiento en una GPU real (aquí sólo hay render por software).
+- Equilibrar costes y daños (Escarcha, Choque Térmico, quemadura).
+
 ## 2026-11-17 · Magia HD (HD-2D), cristal más grande y valle con más detalle
 
 **Qué hay nuevo**

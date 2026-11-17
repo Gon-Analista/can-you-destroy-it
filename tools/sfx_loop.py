@@ -15,7 +15,7 @@ from pathlib import Path
 import numpy as np
 
 from sfx_synth import (SR, bandpass, bell, fade, highpass, loopable, lowpass, normalize, note,
-                       reverb, t_axis, write)
+                       reverb, t_axis, write)  # noqa: F401
 
 
 def mana_drop(seed: int, n: int) -> np.ndarray:
@@ -192,6 +192,47 @@ def land_thud(seed: int) -> np.ndarray:
     return normalize(fade(thud + swish, 0.001, 0.06), -9)
 
 
+def frost_cast(seed: int) -> np.ndarray:
+    """Escarcha al lanzar: soplo helado que sube + campanitas de hielo (Mi y La agudos)."""
+    rng = np.random.default_rng(seed)
+    t = t_axis(0.6)
+    noise = rng.standard_normal(len(t))
+    breath = bandpass(noise, 2500, 9000, 2) * np.sin(np.pi * np.clip(t / 0.35, 0, 1)) ** 2 * 0.5
+    x = breath.copy()
+    for k, n in enumerate([7, 12, 19]):
+        s0 = int((0.03 + k * 0.04) * SR)
+        tt = t[: len(t) - s0]
+        x[s0:] += bell(tt, note(n), [1.0, 2.76, 5.4], [1.0, 0.4, 0.2], [0.25, 0.12, 0.06], rng) * 0.3
+    return normalize(fade(reverb(x, rng, 0.7, 0.3), 0.001, 0.08), -5)
+
+
+def frost_impact(seed: int) -> np.ndarray:
+    """Impacto helado: crujido de hielo que se agrieta + tintineo que se congela en el aire."""
+    rng = np.random.default_rng(seed)
+    t = t_axis(1.0)
+    grains = np.zeros_like(t)
+    for _ in range(26):
+        s0 = int(rng.uniform(0, 0.18) * SR)
+        n = int(rng.uniform(0.002, 0.01) * SR)
+        grains[s0:s0 + n] += rng.standard_normal(n) * np.hanning(n) * rng.uniform(0.4, 1.0)
+    grains = bandpass(grains, 1500, 10000)
+    chime = bell(t, note(rng.choice([12, 16, 19])), [1.0, 2.76, 5.4], [1.0, 0.35, 0.15], [0.6, 0.3, 0.1], rng)
+    x = grains + chime * 0.35
+    return normalize(fade(reverb(x, rng, 1.0, 0.3), 0.001, 0.1), -3)
+
+
+def steam_burst(seed: int) -> np.ndarray:
+    """Choque Térmico: siseo de vapor violento + crujido grave del cristal al romperse."""
+    rng = np.random.default_rng(seed)
+    t = t_axis(1.4)
+    hiss = highpass(rng.standard_normal(len(t)), 2500) * np.exp(-t / 0.35) * (1 - np.exp(-t / 0.01))
+    crack = lowpass(rng.standard_normal(len(t)), 600) * np.exp(-t / 0.08) * 2.0
+    sub = np.sin(2 * np.pi * (60 + 40 * np.exp(-t / 0.05)) * t) * np.exp(-t / 0.25)
+    shards = bell(t, note(7), [1.0, 2.76, 5.4], [1.0, 0.4, 0.2], [0.8, 0.4, 0.15], rng) * 0.3
+    x = hiss * 0.6 + crack + sub * 0.8 + shards
+    return normalize(fade(reverb(x, rng, 1.2, 0.25), 0.001, 0.2), -1)
+
+
 # Pentatónica de La (semitonos sobre A5) para la escala de gotas: cada entrega sube una nota.
 DROP_NOTES = [-12, -10, -8, -5, -3, 0, 2, 4, 7, 9, 12]
 
@@ -217,6 +258,10 @@ def main() -> None:
         write(out, f"sfx_step_grass_{i + 1:02d}", footstep_grass(790 + i))
     write(out, "sfx_jump_01", jump_whoosh(800))
     write(out, "sfx_land_01", land_thud(810))
+    for i in range(2):
+        write(out, f"sfx_frost_cast_{i + 1:02d}", frost_cast(820 + i))
+        write(out, f"sfx_frost_impact_{i + 1:02d}", frost_impact(830 + i))
+    write(out, "sfx_steam_burst_01", steam_burst(840))
 
 
 if __name__ == "__main__":

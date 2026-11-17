@@ -8,6 +8,7 @@ const CRYSTAL_SHADER: Shader = preload("res://crystal/crystal.gdshader")
 const MAX_HITS: int = 6
 const MAX_CRACKS: int = 16
 const MAX_BURNS: int = 12
+const MAX_WEAK: int = 8
 ## Escala pentatónica (semitonos) que recorre el "tink" a medida que crece la racha.
 const STREAK_LADDER: PackedInt32Array = [-5, -3, 0, 2, 4, 7, 9, 12, 14, 16]
 const TINKS: Array[AudioStream] = [
@@ -38,6 +39,18 @@ var _burns: PackedVector4Array = []
 var _burn_radius: PackedFloat32Array = []
 var _burn_index: int = 0
 var _burn_ticks: int = 0
+## Zonas debilitadas (congeladas o quebradizas): posición, radio, multiplicador, fin (en
+## `_now`), si se gastan con el siguiente golpe y qué elemento las hizo.
+var _weak_pos: PackedVector4Array = []
+var _weak_radius: PackedFloat32Array = []
+var _weak_kind: PackedFloat32Array = []
+var _weak_sec: PackedFloat32Array = []
+var _weak_mult: PackedFloat32Array = []
+var _weak_end: PackedFloat32Array = []
+var _weak_consume: Array[bool] = []
+var _weak_element: Array[StringName] = []
+var _weak_index: int = 0
+var _element_sounds: Dictionary[ElementDef, AudioStreamRandomizer] = {}
 var _streak: StreakTracker
 var _hits: PackedVector4Array = []
 var _hit_resonant: PackedFloat32Array = []
@@ -101,6 +114,16 @@ func _ready() -> void:
 		_burn_radius.append(0.0)
 	_material.set_shader_parameter("burns", _burns)
 	_material.set_shader_parameter("burn_radius", _burn_radius)
+	for i: int in MAX_WEAK:
+		_weak_pos.append(Vector4(0, 0, 0, -1))
+		_weak_radius.append(0.0)
+		_weak_kind.append(0.0)
+		_weak_sec.append(1.0)
+		_weak_mult.append(1.0)
+		_weak_end.append(-1.0)
+		_weak_consume.append(false)
+		_weak_element.append(&"")
+	_push_weak()
 	_setup_audio()
 	for i: int in MAX_HITS:
 		_hits.append(Vector4(0, 0, 0, -1))
@@ -163,6 +186,7 @@ func _setup_audio() -> void:
 func receive_hit(hit: SpellHit) -> void:
 	var balance: BalanceConfig = GameState.BALANCE
 	hit.streak = _streak.register_hit(_now)
+	_apply_weakness(hit)
 	GameState.hit_crystal(hit.damage, hit.position)
 	var tier: SpellTier = hit.tier
 
@@ -252,9 +276,88 @@ func warm_up(at: Vector3, normal: Vector3, tier: SpellTier, big_tier: SpellTier)
 	set_process(true)
 
 
+## Si el golpe cae en una zona debilitada por otro elemento, hace daño extra (y la zona
+## quebradiza se gasta).
+func _apply_weakness(hit: SpellHit) -> void:
+	for i: int in MAX_WEAK:
+		if _weak_end[i] < _now or _weak_element[i] == hit.element:
+			continue
+		var p: Vector4 = _weak_pos[i]
+		if Vector3(p.x, p.y, p.z).distance_to(hit.position) > _weak_radius[i]:
+			continue
+		hit.weak_mult = _weak_mult[i]
+		hit.damage = roundi(float(hit.damage) * _weak_mult[i])
+		hit.weakened = true
+		_global_flash = maxf(_global_flash, 0.2)
+		if _weak_consume[i]:
+			_weak_end[i] = _now + 0.4
+			_weak_sec[i] = (_now + 0.4) - _weak_pos[i].w
+			_push_weak()
+		return
+
+
+func _add_weak(
+	at: Vector3,
+	radius: float,
+	mult: float,
+	sec: float,
+	consume: bool,
+	kind: float,
+	element: StringName
+) -> void:
+	_weak_pos[_weak_index] = Vector4(at.x, at.y, at.z, _now)
+	_weak_radius[_weak_index] = radius
+	_weak_kind[_weak_index] = kind
+	_weak_sec[_weak_index] = sec
+	_weak_mult[_weak_index] = mult
+	_weak_end[_weak_index] = _now + sec
+	_weak_consume[_weak_index] = consume
+	_weak_element[_weak_index] = element
+	_weak_index = (_weak_index + 1) % MAX_WEAK
+	_push_weak()
+
+
+func _push_weak() -> void:
+	_material.set_shader_parameter("weak_zones", _weak_pos)
+	_material.set_shader_parameter("weak_radius", _weak_radius)
+	_material.set_shader_parameter("weak_kind", _weak_kind)
+	_material.set_shader_parameter("weak_sec", _weak_sec)
+
+
 ## Cada elemento deja su huella en el cristal. Fuego: quemadura al rojo (más grande cuanto más
 ## nivel) y, si el hechizo lo pide (Bola de Fuego), fuego que sigue ardiendo y quemando.
 func _apply_element(hit: SpellHit) -> void:
+	# Elementos que debilitan la zona (la Escarcha congela).
+	var el: ElementDef = hit.element_def
+	if el and el.weaken_mult > 1.0:
+		_add_weak(
+			hit.position,
+			hit.tier.crack_radius * 1.6,
+			el.weaken_mult,
+			el.weaken_sec,
+			false,
+			1.0,
+			el.id
+		)
+	if el and not el.impact_sfx.is_empty():
+		if not _element_sounds.has(el):
+			var r := AudioStreamRandomizer.new()
+			for st: AudioStream in el.impact_sfx:
+				r.add_stream(-1, st)
+			r.random_pitch = 1.1
+			_element_sounds[el] = r
+		_spell_player.stream = _element_sounds[el]
+		_spell_player.global_position = hit.position
+		_spell_player.volume_db = -6.0
+		_spell_player.play()
+	# Combinaciones que dejan la zona quebradiza (Choque Térmico): congelada y al rojo a la vez.
+	if hit.recipe and hit.recipe.shatter_mult > 1.0:
+		var r2: float = hit.tier.crack_radius * 2.0
+		_add_weak(
+			hit.position, r2, hit.recipe.shatter_mult, hit.recipe.shatter_sec, true, 2.0, &"shatter"
+		)
+		_add_burn(hit.position, r2 * 0.8)
+		return
 	if hit.element != &"spark":
 		return
 	var big: bool = hit.recipe != null
