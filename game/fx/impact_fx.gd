@@ -70,8 +70,9 @@ func play(pos: Vector3, normal: Vector3, tier: SpellTier, resonant: bool) -> voi
 	var power: float = 2.2 if resonant else 1.0
 	var sparkles: GPUParticles3D = _sparkles[i]
 	sparkles.amount = maxi(4, int(tier.impact_particles * power))
+	var tinted: bool = tier.impact_tint.a > 0.0
 	(sparkles.process_material as ParticleProcessMaterial).color = (
-		Color("#ffe7a3") if resonant else Color("#d8fbff")
+		Color("#ffe7a3") if resonant else (tier.impact_tint if tinted else Color("#d8fbff"))
 	)
 	sparkles.restart()
 	var chips: GPUParticles3D = _chips[i]
@@ -80,10 +81,15 @@ func play(pos: Vector3, normal: Vector3, tier: SpellTier, resonant: bool) -> voi
 	var ring: MeshInstance3D = _rings[i]
 	ring.scale = Vector3.ONE * (tier.crack_radius * 5.0 * (1.6 if resonant else 1.0))
 	ring.visible = true
-	_ring_mats[i].set_shader_parameter("color", Color("#ffd27a") if resonant else Color("#c9f6ff"))
+	_ring_mats[i].set_shader_parameter(
+		"color",
+		Color("#ffd27a") if resonant else (tier.impact_tint if tinted else Color("#c9f6ff"))
+	)
 	_ring_mats[i].set_shader_parameter("progress", 0.0)
 	var light: OmniLight3D = _lights[i]
-	light.light_color = Color("#ffd27a") if resonant else Color("#bff3ff")
+	light.light_color = (
+		Color("#ffd27a") if resonant else (tier.impact_tint if tinted else Color("#bff3ff"))
+	)
 	light.visible = true
 	_light_peak[i] = tier.light_energy * power
 	light.light_energy = _light_peak[i]

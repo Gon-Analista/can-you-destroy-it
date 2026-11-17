@@ -2,11 +2,21 @@ class_name SparkProjectile
 extends Node3D
 ## La chispa en vuelo: rombo brillante con estela de chispitas y una luz cálida.
 ## Vuela hacia un punto fijo con un bamboleo torpe (más torpe cuanto más débil).
+## Si tiene `visual`, en vez del rombo vuela un `SpellOrb` (p. ej. la Bola de Fuego) mirando
+## siempre a la cámara, que estalla al llegar.
 
 signal arrived(projectile: SparkProjectile)
 
 const SPARK_SHADER: Shader = preload("res://spells/spark.gdshader")
+## Distancia a la cámara a la que flotan los hechizos entre las manos.
+const HANDS_DEPTH: float = 0.85
 
+## Orbe que sustituye al rombo (opcional; se fija antes de añadir el nodo al árbol).
+var visual: SpellVisualDef
+## Escala del orbe en vuelo.
+var orb_scale: float = 1.0
+## Carga del orbe en vuelo (la que tenía entre las manos al soltarlo).
+var orb_charge: float = 1.0
 var active: bool = false
 var hit: SpellHit
 var target_collider: Object
@@ -15,6 +25,7 @@ var _quad: MeshInstance3D
 var _mat: ShaderMaterial
 var _trail: GPUParticles3D
 var _light: OmniLight3D
+var _orb: SpellOrb
 var _from: Vector3
 var _to: Vector3
 var _duration: float = 1.0
@@ -76,6 +87,12 @@ func _ready() -> void:
 	_light.omni_range = 4.0
 	_light.shadow_enabled = false
 	add_child(_light)
+	if visual:
+		_orb = SpellOrb.new()
+		_orb.name = "Orb"
+		_orb.def = visual
+		add_child(_orb)
+		_orb.scale = Vector3.ONE * orb_scale
 	_deactivate()
 
 
@@ -92,7 +109,11 @@ func launch(from: Vector3, to: Vector3, p_hit: SpellHit, collider: Object) -> vo
 	_linger = -1.0
 	global_position = from
 	_quad.scale = Vector3.ONE * tier.size * (1.5 if p_hit.resonant else 1.0)
-	_quad.visible = true
+	_quad.visible = _orb == null
+	if _orb:
+		_orb.appear()
+		_orb.charge = orb_charge
+		_face_camera()
 	_mat.set_shader_parameter("color_core", tier.color_core)
 	_mat.set_shader_parameter("color_glow", Color("#ffd27a") if p_hit.resonant else tier.color_glow)
 	_mat.set_shader_parameter("flicker_seed", randf() * 10.0)
@@ -107,8 +128,10 @@ func launch(from: Vector3, to: Vector3, p_hit: SpellHit, collider: Object) -> vo
 
 
 func _process(delta: float) -> void:
+	if _orb:
+		_face_camera()
 	if _linger >= 0.0:
-		# Ya llegó: dejamos morir la estela antes de devolver la chispa al pool.
+		# Ya llegó: dejamos morir la estela (y el estallido del orbe) antes de volver al pool.
 		_linger -= delta
 		if _linger < 0.0:
 			_deactivate()
@@ -131,7 +154,21 @@ func _process(delta: float) -> void:
 		_light.visible = false
 		_trail.emitting = false
 		_linger = _trail.lifetime
+		if _orb:
+			_orb.release()
+			_linger = maxf(_linger, visual.release_time + visual.sparkle_lifetime)
 		arrived.emit(self)
+
+
+## El orbe se diseñó para verse de frente (sus órbitas giran en el plano de la cámara).
+func _face_camera() -> void:
+	var cam: Camera3D = get_viewport().get_camera_3d()
+	if cam:
+		# Mismo tamaño en pantalla que entre las manos (a 0,85 m) hasta alcanzar `orb_scale`;
+		# a partir de ahí se aleja con perspectiva. Así la bola "sale" de las manos sin saltos.
+		var dist: float = cam.global_position.distance_to(global_position)
+		var s: float = clampf(dist / HANDS_DEPTH, 1.0, orb_scale)
+		_orb.global_basis = cam.global_basis.scaled(Vector3.ONE * s)
 
 
 func _deactivate() -> void:

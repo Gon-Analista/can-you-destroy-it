@@ -270,8 +270,12 @@ godot --path game --write-movie /tmp/captura/f.png --fixed-fps 60 --quit-after 1
 godot --headless --path game --script res://tests/smoke/progression_smoke.gd
 ```
 
-- `tests/smoke/progression_smoke.gd` cubre `Progression` y `StreakTracker`; `tests/smoke/hit_stop_smoke.gd`, que el tiempo
-  siempre vuelve a la normalidad tras un hit-stop.
+- `tests/smoke/progression_smoke.gd` cubre `Progression`, `SpellRecipe` y `StreakTracker`; `tests/smoke/hit_stop_smoke.gd`,
+  que el tiempo siempre vuelve a la normalidad tras un hit-stop; `tests/smoke/combine_input_smoke.gd`, la combinación
+  con las dos manos (carga la escena principal).
+- Ojo en los tests `--script`: los autoloads no existen al compilar el script, así que no se pueden nombrar
+  (`Events`, `GameState`) ni usar como tipo una clase cuyo script los use (`SpellCaster`, `Player`): se buscan con
+  `root.get_node(^"Events")` y se llama a los métodos por nombre.
 - Toda regla de juego nueva llega con su test.
 - Antes de cada commit, como mínimo: el proyecto abre sin errores en headless, `gdlint` limpio y tests en verde.
 

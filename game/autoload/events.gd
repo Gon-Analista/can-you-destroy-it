@@ -12,6 +12,8 @@ signal crystal_destroyed
 # --- Sensación del golpe (prototipo de la chispa) ---
 signal spell_cast(tier: SpellTier, hand_side: int)
 signal spell_ready
+signal spell_combine_started(recipe: SpellRecipe)
+signal recipe_discovered(recipe: SpellRecipe)
 signal spell_impacted(hit: SpellHit)
 signal spell_fizzled(position: Vector3)
 signal streak_changed(streak: int)

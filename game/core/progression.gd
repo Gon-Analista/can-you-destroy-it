@@ -13,6 +13,8 @@ var mana: int = 0
 var upgrade_levels: Dictionary[StringName, int] = {}
 ## Fragmentos recogidos y aún no entregados, por tipo (id de ShardType).
 var bag: Dictionary[StringName, int] = {}
+## Combinaciones de hechizos ya descubiertas (ids de SpellRecipe), en orden de descubrimiento.
+var discovered_recipes: Array[StringName] = []
 
 
 func _init(p_total_essence: int) -> void:
@@ -38,6 +40,14 @@ func deliver(value: int) -> void:
 func collect_shard(type_id: StringName) -> int:
 	bag[type_id] = bag.get(type_id, 0) + 1
 	return bag[type_id]
+
+
+## Registra una combinación lanzada. Devuelve true sólo la primera vez (descubrimiento).
+func discover_recipe(recipe_id: StringName) -> bool:
+	if recipe_id == &"" or discovered_recipes.has(recipe_id):
+		return false
+	discovered_recipes.append(recipe_id)
+	return true
 
 
 func can_afford(cost: int) -> bool:
@@ -83,6 +93,7 @@ func to_dict() -> Dictionary:
 		"mana": mana,
 		"upgrade_levels": upgrade_levels.duplicate(),
 		"bag": bag.duplicate(),
+		"discovered_recipes": discovered_recipes.map(func(r: StringName) -> String: return str(r)),
 	}
 
 
@@ -98,3 +109,7 @@ func load_dict(data: Dictionary) -> void:
 	var saved_bag: Dictionary = data.get("bag", {})
 	for key: Variant in saved_bag:
 		bag[StringName(str(key))] = maxi(int(saved_bag[key]), 0)
+	discovered_recipes.clear()
+	var saved_recipes: Array = data.get("discovered_recipes", [])
+	for r: Variant in saved_recipes:
+		discover_recipe(StringName(str(r)))

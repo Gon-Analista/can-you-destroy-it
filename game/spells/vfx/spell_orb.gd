@@ -279,7 +279,7 @@ func _build_sparkles() -> void:
 	pm.spread = 180.0
 	pm.initial_velocity_min = 0.01
 	pm.initial_velocity_max = 0.05
-	pm.gravity = Vector3.ZERO
+	pm.gravity = Vector3(0.0, def.sparkle_rise, 0.0)
 	pm.anim_speed_min = 1.0
 	pm.anim_speed_max = 1.0
 	pm.color_initial_ramp = colors

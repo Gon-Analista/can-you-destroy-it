@@ -118,8 +118,11 @@ Todos estos números viven en recursos de datos (`.tres`), nunca hardcodeados (v
   violeta, brillo que recorre las facetas, grietas persistentes (voronoi 3D) y destellos/ondas de impacto.
   `ShardPool` con 64 fragmentos físicos reciclados en 3 tamaños según el daño (astilla, fragmento, fragmento
   grande), que se congelan al quedarse quietos, se resaltan al apuntarlos y vuelan a la mano al recogerlos.
-- **Mago** (`player/`): primera persona (ratón + WASD), manos 2D de Sprite AI que se juntan con la carga
-  sujetando el `SpellOrb` (Orbe Arcano) del sistema de hechizos por capas,
+- **Mago** (`player/`): primera persona (ratón + WASD), manos 2D de Sprite AI; cada mano lleva una llamita de
+  Chispa (`SpellOrb`) y recarga por separado (clic izquierdo / derecho). **Combinar** (GDD 5.2): los dos clics a la
+  vez juntan las manos, las llamas se funden en la **Bola de Fuego** (`data/spells/recipe_fireball.tres`), que se
+  carga manteniendo y sale al soltar como orbe volador con explosión en área; la primera vez se celebra
+  (`Events.recipe_discovered`: pausa breve, nombre en grande y fanfarria) y queda guardada,
   recogida de fragmentos con F (apuntando o el más cercano delante), `SpellCaster` con
   enfriamiento, buffer, golpe resonante y pool de 12 chispas; `CameraRig` con sacudida por trauma y golpe de FOV.
 - **Chispa** (`spells/`, `data/elements/spark.tres`): 5 niveles de poder (`SpellTier`) que cambian daño, cadencia,
@@ -133,13 +136,16 @@ Todos estos números viven en recursos de datos (`.tres`), nunca hardcodeados (v
 - **Audio** (`audio/sfx/`): 20 OGG sintetizados (tink ×4, fragmentos, chispa, campanitas, acorde resonante,
   ambiente del valle y zumbido del cristal en bucle).
 - **Debug** (sólo builds de desarrollo): teclas 1-5 cambian el nivel de la chispa; modo demo para grabar:
-  `godot --path game -- --autoplay --tier=N` (añadir `--report` para imprimir draw calls y física).
-- `tests/smoke/progression_smoke.gd`: reglas de `Progression` y `StreakTracker` (pasa).
+  `godot --path game -- --autoplay --tier=N` (añadir `--report` para imprimir draw calls y física;
+  `--combo [--hold=s]` para lanzar Bolas de Fuego; `--delay=s` para esperar antes de empezar).
+- `tests/smoke/progression_smoke.gd`: reglas de `Progression`, `SpellRecipe` y `StreakTracker` (pasa).
+- `tests/smoke/combine_input_smoke.gd`: clic a la vez = combinación, clic suelto = una mano (pasa).
 - **Hechizos por capas** (`spells/vfx/`): `SpellOrb` + `SpellVisualDef` (núcleo en espiral, cintas orbitales,
   destellos y luz; `charge`, `release()`, `appear()`). Primer hechizo: Orbe Arcano (`data/spells/vfx_arcane_orb.tres`).
   Galería para verlo y grabarlo: `godot --path game res://tests/vfx_gallery/vfx_gallery.tscn` (ver `CHANGELOG.md`).
 
-**Aún no hay**: entregar fragmentos, Pilón físico, Santuario ni mejoras compradas (M1b). Los fragmentos recogidos
+**Aún no hay**: entregar fragmentos, Pilón físico, Santuario ni mejoras compradas (M1b); cambiar el elemento de cada mano
+(Q / E) ni más elementos que la Chispa (M2). Los fragmentos recogidos
 van a la bolsa (sin límite de capacidad por ahora; el GDD pide empezar con 1).
 
 ## 8. Hitos
@@ -180,6 +186,9 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-15 | Animación de VFX escalonada a 12 fps (`anim_fps`). | Lo procedural se lee como pixel art animado a mano. |
 | 2026-11-15 | Manos que se juntan (animación de Sprite AI guiada por la carga) con el `SpellOrb` entre las palmas; la chispa sale del orbe. Sustituye a las 4 poses con la palma hacia la cámara. | Las anteriores se veían en diagonal hacia fuera; así coincide con la referencia. |
 | 2026-11-15 | Manos en vertical que suben y se juntan desde su posición de reposo (no en horizontal desde los lados). | Pedido del equipo: juntar el hechizo verticalmente. |
+| 2026-11-17 | Cada mano lleva su llama (elemento) y recarga por separado; los dos clics a la vez (ventana de 0,09 s, `combine_window_sec`) juntan las manos y funden las llamas en la Bola de Fuego, que se carga manteniendo y sale al soltar. Con las dos manos listas, un clic suelto espera esa ventana o sale al soltar el botón. | GDD 5.2 y 10.1; pedido del equipo ("juntar 2 hechizos de fuego, uno en cada mano, en uno grande"). Sustituye al orbe único entre las manos. |
+| 2026-11-17 | Las llamas flotan sobre la punta de los dedos, no delante de la palma. | Las manos son 2D por encima del 3D: lo que queda detrás de la palma no se ve. |
+| 2026-11-17 | Bola de Fuego: daño = (mano izq. + mano der.) x 2,5 x potencia (50-100 % según la carga), enfriamiento de 2 s en las dos manos, 3 golpes secundarios en área que sólo agrietan y sueltan astillas. | Mejor que dos chispas sueltas (≈1,85 frente a 1,33 de daño por segundo con la Chispa 1) pero pide comprometerse; valores en el `.tres`, a balancear en M1b. |
 
 ## 10. Preguntas abiertas
 

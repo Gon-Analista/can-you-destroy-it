@@ -34,9 +34,27 @@ func _init() -> void:
 		p.collect_shard(&"splinter") == 2 and p.bag[&"splinter"] == 2, "la bolsa cuenta por tipo"
 	)
 
+	_check(p.discover_recipe(&"fireball"), "primera Bola de Fuego: descubrimiento")
+	_check(not p.discover_recipe(&"fireball"), "la segunda vez ya no es descubrimiento")
+
 	var restored := Progression.new(1000)
 	restored.load_dict(p.to_dict())
 	_check(restored.to_dict() == p.to_dict(), "guardar y cargar conserva el estado")
+
+	_check(
+		restored.discovered_recipes == ([&"fireball"] as Array[StringName]),
+		"las combinaciones descubiertas se guardan"
+	)
+
+	var recipe := SpellRecipe.new()
+	recipe.elements = [&"spark", &"spark"] as Array[StringName]
+	recipe.damage_multiplier = 2.5
+	recipe.min_power = 0.4
+	_check(recipe.matches(&"spark", &"spark"), "Chispa + Chispa forma la receta")
+	_check(not recipe.matches(&"spark", &"frost"), "Chispa + Escarcha no")
+	_check(recipe.damage_for(1, 1, 1.0) == 5, "carga completa: (1 + 1) x 2,5")
+	_check(recipe.damage_for(1, 1, 0.0) == 2, "sin carga: potencia mínima")
+	_check(recipe.damage_for(0, 0, 0.0) == 1, "nunca menos de 1")
 
 	var streak := StreakTracker.new(2.0)
 	_check(streak.register_hit(0.0) == 1, "primer golpe: racha 1")

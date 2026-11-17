@@ -53,6 +53,8 @@ extends Resource
 @export var sparkle_lifetime: float = 0.9
 ## Tamaño de un texel de la textura en el mundo (m): 1 texel ≈ 1 píxel a la distancia de las manos.
 @export var sparkle_texel: float = 0.0019
+## Aceleración vertical de los destellos (m/s²): > 0 suben como brasas de fuego.
+@export var sparkle_rise: float = 0.0
 @export var burst_amount: int = 40
 @export var burst_speed: float = 1.2
 

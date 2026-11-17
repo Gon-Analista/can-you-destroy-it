@@ -13,6 +13,9 @@ extends Resource
 ## Si se pulsa durante el enfriamiento, el lanzamiento se guarda este tiempo
 ## y sale en cuanto se pueda.
 @export var cast_buffer_sec: float = 0.3
+## Margen para pulsar las dos manos "a la vez" y combinar. Un clic con las dos manos listas
+## espera como mucho esto por el otro (si se suelta antes, sale en el acto).
+@export var combine_window_sec: float = 0.09
 ## Tiempo máximo entre golpes para mantener la racha.
 @export var streak_window_sec: float = 2.6
 ## Rachas que disparan campanilla y celebración.

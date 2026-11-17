@@ -30,7 +30,9 @@ func _ready() -> void:
 
 
 ## Modo demo para grabar capturas sin ratón (sólo debug):
-## godot --path game -- --autoplay [--tier=N] [--yaw=grados] [--pitch=grados]
+## godot --path game -- --autoplay [--tier=N] [--yaw=grados] [--pitch=grados] [--combo]
+## --delay=s espera antes de empezar. Con --combo junta las manos, carga la Bola de Fuego
+## `--hold=s` segundos y la suelta.
 func _setup_autoplay() -> void:
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	if not args.has("--autoplay"):
@@ -49,13 +51,38 @@ func _setup_autoplay() -> void:
 	_hud.force_captured_look = true
 	var timer := Timer.new()
 	timer.wait_time = 0.05
-	timer.autostart = true
+	# --delay=s: unos segundos quieto antes de empezar (para ver las manos en reposo).
+	var delay: float = 0.0
+	for a: String in args:
+		if a.begins_with("--delay="):
+			delay = float(a.get_slice("=", 1))
+	if delay > 0.0:
+		get_tree().create_timer(delay).timeout.connect(timer.start)
+	else:
+		timer.autostart = true
 	var side: Array[int] = [0]
-	timer.timeout.connect(
-		func() -> void:
-			_player.get_caster().try_cast(side[0])
-			side[0] = 1 - side[0]
-	)
+	if args.has("--combo"):
+		var hold: float = 0.9
+		for a: String in args:
+			if a.begins_with("--hold="):
+				hold = float(a.get_slice("=", 1))
+		var held: Array[float] = [0.0]
+		timer.timeout.connect(
+			func() -> void:
+				var caster: SpellCaster = _player.get_caster()
+				if caster.is_combining():
+					held[0] += timer.wait_time
+					if held[0] >= hold:
+						caster.try_release_combine()
+				elif caster.try_begin_combine():
+					held[0] = 0.0
+		)
+	else:
+		timer.timeout.connect(
+			func() -> void:
+				_player.get_caster().try_cast(side[0])
+				side[0] = 1 - side[0]
+		)
 	add_child(timer)
 	if args.has("--collect"):
 		# Tras unos golpes: camina hacia el cristal y mantiene F para recoger.

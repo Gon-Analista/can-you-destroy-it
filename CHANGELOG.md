@@ -2,6 +2,49 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-17 · Bola de Fuego: una llama en cada mano que se funden en una grande
+
+Retoma lo que quedó a medias: los sonidos de la Bola de Fuego estaban en la rama `claude/keen-lovelace-7haa9v` sin
+integrar ni usar (ver su entrada más abajo). Se integran y se implementa la combinación del GDD 5.2.
+
+**Qué hay nuevo**
+
+- **Una llama en cada mano.** Cada mano lleva su elemento (Chispa) como una llamita (`SpellOrb` con
+  `data/spells/vfx_fire_spark.tres`) sobre la punta de los dedos, y recarga por separado. Clic izquierdo lanza la
+  izquierda y clic derecho la derecha; la chispa sale de su llama, que estalla y se vuelve a encender al recargar.
+- **Combinar (GDD 5.2 y 10.1).** Los dos clics a la vez juntan las manos: las dos llamas viajan al centro, se
+  encogen y se funden en la **Bola de Fuego** (`data/spells/vfx_fireball.tres`), que crece mientras se mantiene
+  (0,7 s a carga completa, con el rugido en bucle subiendo de tono). Al soltar sale volando como orbe de fuego
+  (el mismo orbe, sin saltos de tamaño) y estalla contra el cristal: explosión en área con 3 golpes secundarios
+  (grietas, destellos, partículas naranjas y astillas), sonido de explosión, hit-stop y sacudida.
+- **Combinación descubierta (GDD 10).** La primera vez: pausa breve, "¡COMBINACIÓN NUEVA! BOLA DE FUEGO" en grande
+  y fanfarria. Queda registrada en `Progression.discovered_recipes` y en el guardado.
+- **Todo en datos**: `SpellRecipe` (`data/spells/recipe_fireball.tres`) lleva daño, área, carga, enfriamiento,
+  orbe, proyectil y sonidos; `ElementDef.hand_visual` la llama de cada elemento; `SpellTier.impact_tint` el color
+  del impacto; `SpellVisualDef.sparkle_rise` hace que los destellos suban como brasas;
+  `BalanceConfig.combine_window_sec` (0,09 s) el margen para pulsar "a la vez".
+- Para no perder la combinación, con las dos manos listas un clic suelto espera esa ventana, o sale en el acto al
+  soltar el botón (un clic normal dura menos).
+- Modo demo: `-- --autoplay --combo [--hold=s]` lanza Bolas de Fuego; `--delay=s` espera antes de empezar.
+
+**Capturas**: `docs/capturas/bola_de_fuego_combinacion.gif`, `docs/capturas/bola_de_fuego_combinacion.png`.
+
+**Cómo se probó**
+
+- Godot 4.7 (Forward+, Vulkan por software): render frame a frame de disparos sueltos y de combinaciones; las
+  llamas se ven en cada mano, se funden en el centro y la bola sale sin saltos.
+- `combine_input_smoke` (nuevo): clic a la vez = combinación con un solo lanzamiento y un solo descubrimiento,
+  clic suelto = una mano, clic corto sale en el acto, sin las dos manos listas no se combina. OK.
+- `progression_smoke` (recetas, descubrimientos y su guardado), `hit_stop_smoke`, `music_layers_smoke`: OK.
+- Galería de VFX y modo demo sin errores de script. `gdlint` y `gdformat --check` limpios.
+- Rendimiento (modo demo con combos, `--report`): 85 draw calls, 6 fragmentos en movimiento.
+
+**Pendiente**
+
+- Balance de la Bola de Fuego (valores en el `.tres`) cuando haya entrega de fragmentos y maná (M1b).
+- Cambiar el elemento de cada mano con Q / E y la página del Grimorio que se escribe sola al descubrir (M2).
+- Escuchar con oídos humanos los sonidos de la Bola de Fuego en el juego.
+
 ## 2026-11-15 · Sonidos de la Bola de Fuego
 
 **Qué hay nuevo** (sólo audio; la integración en el juego la hace la sesión de las manos)

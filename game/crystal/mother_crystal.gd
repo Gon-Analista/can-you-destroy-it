@@ -46,6 +46,9 @@ var _tink_next: int = 0
 var _tink_random: AudioStreamRandomizer
 var _break_player: AudioStreamPlayer3D
 var _accent_player: AudioStreamPlayer
+## Explosiones de los hechizos combinados (Bola de Fuego...).
+var _spell_player: AudioStreamPlayer3D
+var _spell_impacts: Dictionary[SpellRecipe, AudioStreamRandomizer] = {}
 var _rng := RandomNumberGenerator.new()
 
 
@@ -121,6 +124,11 @@ func _setup_audio() -> void:
 	_accent_player.bus = &"SFX"
 	_accent_player.max_polyphony = 2
 	add_child(_accent_player)
+	_spell_player = AudioStreamPlayer3D.new()
+	_spell_player.bus = &"SFX"
+	_spell_player.unit_size = 40.0
+	_spell_player.max_polyphony = 2
+	add_child(_spell_player)
 	var hum := AudioStreamPlayer3D.new()
 	hum.name = "Hum"
 	hum.bus = &"Ambience"
@@ -149,6 +157,8 @@ func receive_hit(hit: SpellHit) -> void:
 		tier.crack_radius * (1.6 if hit.resonant else 1.0) * _rng.randf_range(0.85, 1.15)
 	)
 	_crack_index = (_crack_index + 1) % MAX_CRACKS
+	if hit.recipe and hit.recipe.area_radius > 0.0:
+		_area_blast(hit)
 	_material.set_shader_parameter("hits", _hits)
 	_material.set_shader_parameter("hit_resonant", _hit_resonant)
 	_material.set_shader_parameter("cracks", _cracks)
@@ -162,11 +172,16 @@ func receive_hit(hit: SpellHit) -> void:
 	_shards.spawn(hit.position, hit.normal, shard_type, count, 1.25 if hit.resonant else 1.0)
 	_fx.play(hit.position, hit.normal, tier, hit.resonant)
 	_play_tink(hit)
+	if hit.recipe:
+		_play_spell_impact(hit)
 	if hit.resonant:
 		HitStop.trigger(get_tree(), 0.09)
 		_accent_player.stream = RESONANT_SFX
 		_accent_player.volume_db = -3.0
 		_accent_player.play()
+	elif hit.recipe:
+		HitStop.trigger(get_tree(), 0.06)
+		_global_flash = maxf(_global_flash, 0.3)
 	elif tier.damage >= 5:
 		HitStop.trigger(get_tree(), 0.025)
 	if balance.streak_milestones.has(hit.streak):
@@ -177,6 +192,45 @@ func receive_hit(hit: SpellHit) -> void:
 	Events.streak_changed.emit(hit.streak)
 	Events.spell_impacted.emit(hit)
 	set_process(true)
+
+
+## Explosión en área de un hechizo combinado: golpes secundarios alrededor del impacto, cada uno
+## con su grieta, su destello, sus partículas y una astilla. El daño ya va en el golpe principal.
+func _area_blast(hit: SpellHit) -> void:
+	var recipe: SpellRecipe = hit.recipe
+	var n: Vector3 = hit.normal if hit.normal.length_squared() > 0.01 else Vector3.BACK
+	var side: Vector3 = n.cross(Vector3.UP if absf(n.y) < 0.95 else Vector3.RIGHT).normalized()
+	var up: Vector3 = side.cross(n).normalized()
+	var splinter: ShardType = ShardPool.type_for_hit(1, false)
+	var phase: float = _rng.randf() * TAU
+	for i: int in recipe.area_hits:
+		var a: float = phase + TAU * float(i) / float(maxi(recipe.area_hits, 1))
+		var r: float = recipe.area_radius * _rng.randf_range(0.55, 1.0)
+		var p: Vector3 = hit.position + (side * cos(a) + up * sin(a)) * r
+		_cracks[_crack_index] = Vector4(
+			p.x, p.y, p.z, hit.tier.crack_radius * _rng.randf_range(0.45, 0.7)
+		)
+		_crack_index = (_crack_index + 1) % MAX_CRACKS
+		_hits[_hit_index] = Vector4(p.x, p.y, p.z, _now)
+		_hit_resonant[_hit_index] = 0.0
+		_hit_index = (_hit_index + 1) % MAX_HITS
+		_shards.spawn(p, n, splinter, 1, 1.15)
+		_fx.play(p, n, hit.tier, false)
+
+
+func _play_spell_impact(hit: SpellHit) -> void:
+	if hit.recipe.impact_sfx.is_empty():
+		return
+	if not _spell_impacts.has(hit.recipe):
+		var r := AudioStreamRandomizer.new()
+		for s: AudioStream in hit.recipe.impact_sfx:
+			r.add_stream(-1, s)
+		r.random_pitch = 1.08
+		_spell_impacts[hit.recipe] = r
+	_spell_player.stream = _spell_impacts[hit.recipe]
+	_spell_player.global_position = hit.position
+	_spell_player.volume_db = 0.0 if hit.resonant else -2.0
+	_spell_player.play()
 
 
 func _play_tink(hit: SpellHit) -> void:

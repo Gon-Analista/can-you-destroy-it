@@ -16,6 +16,7 @@ func _ready() -> void:
 	_autosave.timeout.connect(save_game)
 	add_child(_autosave)
 	Events.upgrade_bought.connect(func(_id: StringName, _lvl: int) -> void: save_game())
+	Events.recipe_discovered.connect(func(_r: SpellRecipe) -> void: save_game())
 
 
 func _notification(what: int) -> void:

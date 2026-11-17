@@ -28,6 +28,14 @@ func collect_shard(type: ShardType, at: Vector3) -> void:
 	Events.shard_collected.emit(type, count, at)
 
 
+## Llamar cada vez que se lanza una combinación: la primera vez se celebra el descubrimiento.
+func register_recipe_cast(recipe: SpellRecipe) -> bool:
+	if not progression.discover_recipe(recipe.id):
+		return false
+	Events.recipe_discovered.emit(recipe)
+	return true
+
+
 func buy_upgrade(node: UpgradeNode) -> bool:
 	if not progression.buy_upgrade(node):
 		return false

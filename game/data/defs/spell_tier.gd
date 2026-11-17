@@ -20,3 +20,5 @@ extends Resource
 @export var shake: float = 0.08
 @export var color_core: Color = Color("#fff4c2")
 @export var color_glow: Color = Color("#ffa53a")
+## Color de las partículas, anillo y luz del impacto. Alfa 0 = los de siempre (cian / oro).
+@export var impact_tint: Color = Color(0, 0, 0, 0)

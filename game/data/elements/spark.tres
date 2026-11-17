@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://data/defs/element_def.gd" id="1_yc431"]
 [ext_resource type="Script" path="res://data/defs/spell_tier.gd" id="2_qc2j2"]
+[ext_resource type="Resource" path="res://data/spells/vfx_fire_spark.tres" id="3_flame"]
 
 [sub_resource type="Resource" id="Resource_xp1r5"]
 script = ExtResource("2_qc2j2")
@@ -86,3 +87,4 @@ id = &"spark"
 display_name = "Chispa"
 color = Color(1, 0.64705884, 0.22745098, 1)
 tiers = Array[ExtResource("2_qc2j2")]([SubResource("Resource_xp1r5"), SubResource("Resource_tsire"), SubResource("Resource_3fciw"), SubResource("Resource_7rtbe"), SubResource("Resource_me742")])
+hand_visual = ExtResource("3_flame")

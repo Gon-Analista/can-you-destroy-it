@@ -8,3 +8,5 @@ var damage: int
 var resonant: bool
 var tier: SpellTier
 var streak: int = 0
+## Si el golpe viene de una combinación (Bola de Fuego...), su receta: área y sonido propios.
+var recipe: SpellRecipe
