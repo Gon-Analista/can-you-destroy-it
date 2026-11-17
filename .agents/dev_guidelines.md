@@ -290,6 +290,7 @@ godot --headless --path game --script res://tests/smoke/progression_smoke.gd
   que el tiempo siempre vuelve a la normalidad tras un hit-stop; `tests/smoke/combine_input_smoke.gd`, la combinación
   con las dos manos (carga la escena principal); `tests/smoke/loop_smoke.gd`, el bucle bolsa -> Pilón -> Grimorio;
   `tests/smoke/localization_smoke.gd`, que todos los idiomas cargan, están completos y conservan los `%d`/`%s`;
+  `tests/smoke/spell_levels_smoke.gd`, los niveles 6 a 10 y los círculos mágicos;
   `tests/smoke/movement_smoke.gd`, el doble salto y la levitación (no toca la partida guardada);
   `tests/smoke/crystal_volume_smoke.gd`, que el volumen del cristal reparte el 1.000.000, se excava, respeta el
   Núcleo, se malla y se guarda.

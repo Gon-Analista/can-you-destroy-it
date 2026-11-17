@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"thermal_power"
+display_name = "Choque profundo"
+description = "El Choque Térmico golpea más fuerte. Desde el nivel 6, al cargarlo se abren círculos mágicos hacia donde apuntas."
+branch = 0
+element = &"frost"
+star_pos = Vector2i(56, 240)
+costs = PackedInt32Array(60, 300, 1200, 2500, 5000, 10000, 20000, 40000, 75000)
+prerequisites = Array[StringName]([&"recipe:thermal_shock"])
+stat = &"thermal_mult"
+values = PackedFloat32Array(1, 1.4, 1.9, 2.6, 3.4, 4.4, 5.7, 7.3, 9.4, 12)
+value_format = "daño x%.1f"

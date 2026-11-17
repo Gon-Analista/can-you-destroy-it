@@ -146,6 +146,9 @@ func _setup_autoplay() -> void:
 			tree.create_timer(t0 + 5.5).timeout.connect(
 				func() -> void: Input.action_release(&"jump")
 			)
+		elif a.begins_with("--spell-level="):
+			# --spell-level=N: todos los hechizos a nivel N (1..10), con sus efectos.
+			_player.get_caster().set_debug_level(int(a.get_slice("=", 1)))
 		elif a.begins_with("--time="):
 			_day_night.time_of_day = float(a.get_slice("=", 1))
 		elif a.begins_with("--warp="):

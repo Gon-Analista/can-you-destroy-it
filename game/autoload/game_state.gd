@@ -21,6 +21,7 @@ const UPGRADES: Array[UpgradeNode] = [
 	preload("res://data/upgrades/fireball_size.tres"),
 	preload("res://data/upgrades/frost_size.tres"),
 	preload("res://data/upgrades/thermal_size.tres"),
+	preload("res://data/upgrades/thermal_power.tres"),
 ]
 
 ## Capas del Cristal Madre, de fuera a dentro (GDD 6).

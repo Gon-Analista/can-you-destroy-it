@@ -29,6 +29,8 @@ extends Resource
 @export var power_stat: StringName
 ## Estadística de mejora del tamaño del hechizo (multiplicador, 1 = el de siempre).
 @export var size_stat: StringName
+## Mejora de Potencia que da su nivel (1 + nivel comprado, hasta 10); vacía = siempre nivel 1.
+@export var power_upgrade: StringName
 
 @export_group("Carga")
 ## Tiempo manteniendo las dos manos juntas hasta la carga completa (s).

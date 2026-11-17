@@ -87,6 +87,8 @@ var _arcs: CrystalArcs
 var _arc_player: AudioStreamPlayer3D
 var _surge_acc: float = 0.0
 var _last_tink: float = -1.0
+## Último estallido HD: con mucha cadencia no se encadenan (la pantalla se volvía blanca).
+var _last_hd: float = -1.0
 var _layer: int = 0
 var _next_surge: float = FIRST_SURGE
 var _burn_fire: CrystalBurn
@@ -367,7 +369,9 @@ func receive_hit(hit: SpellHit) -> void:
 	)
 	_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.size)
 	_crystal_reacts(hit)
-	_hd_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.recipe != null, hit.size)
+	if hit.resonant or hit.recipe != null or _now - _last_hd >= 0.12:
+		_last_hd = _now
+		_hd_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.recipe != null, hit.size)
 	_play_tink(hit)
 	if hit.recipe:
 		_play_spell_impact(hit)

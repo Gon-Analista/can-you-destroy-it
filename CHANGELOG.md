@@ -2,6 +2,37 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-17 · Hechizos hasta nivel 10 y círculos mágicos
+
+**Qué hay nuevo** (pedido del equipo: "que los hechizos lleguen a nivel 10 y que desde ahí, según el tipo, pasen
+cosas; por ejemplo, a la Bola de Fuego que se carga le salen círculos mágicos cada vez más grandes, girando y con
+runas, hacia donde la vas a lanzar")
+
+- **Todos los hechizos llegan a nivel 10.** Chispa y Escarcha completan sus niveles a partir del último escrito
+  (`ElementDef.ensure_levels`): cada nivel dobla el daño y es algo más rápido, grande y de más área; el color tira
+  hacia el violeta arcano. Nombres nuevos (Corona solar, Llama arcana, Supernova, Fuego primigenio, Sol del mago;
+  Glaciar ... Era glacial). Las Potencias de Chispa, Escarcha y Bola de Fuego suben a 9 niveles y el Choque Térmico
+  estrena la suya (Choque profundo). Los niveles 6 a 10 cuestan 5.000 / 10.000 / 20.000 / 40.000 / 75.000.
+- **Desde el nivel 6, efectos según el tipo de hechizo** (`spells/vfx/magic_circles.gd`, `fx/hd/hd_magic_circle.gdshader`):
+  - **De carga** (Bola de Fuego, Choque Térmico): mientras cargas se abren `nivel - 5` círculos mágicos (hasta 5 a
+    nivel 10) que aparecen uno a uno con la carga, dibujándose en barrido; se alinean desde las manos hacia donde
+    apuntas, cada uno más grande, girando en sentidos alternos, con anillos, marcas, una banda de runas inventadas,
+    un hexagrama y un sello. Al lanzar, destellan en blanco y se abren mientras el hechizo los cruza.
+  - **De toque** (Chispa, Escarcha): cada disparo sale por círculos de runas que giran rápido en la mano (uno a
+    nivel 6, dos a nivel 8, tres a nivel 10).
+- Con mucha cadencia el cristal ya no encadena estallidos HD (como mucho uno cada 0,12 s salvo resonantes y
+  combinados): a nivel alto la pantalla se quedaba en blanco.
+- Demo: `--spell-level=N` pone todos los hechizos a nivel N.
+
+**Capturas**: `docs/capturas/bola_de_fuego_nivel10.gif` (carga a nivel 10 y lanzamiento),
+`docs/capturas/circulos_magicos.png`.
+
+**Cómo se probó**: nuevo `spell_levels_smoke` (Chispa y Escarcha llegan a 10 con daño creciente, las Potencias a 10,
+los círculos salen según nivel y carga, destellan y se apagan al lanzar, círculos de toque) y el resto en verde.
+
+**Pendiente**: a nivel 5 o más, de cerca, la magia sigue siendo muy blanca (ya pasaba antes); toca una pasada de
+brillo. Más efectos de nivel alto por tipo (p. ej. los combinados de mantener cuando existan).
+
 ## 2026-11-17 · Hechizos que crecen y levitación hasta la punta del cristal
 
 **Qué hay nuevo** (pedidos del equipo: "que todos los hechizos tengan mejoras para hacerlos más grandes; en la mano

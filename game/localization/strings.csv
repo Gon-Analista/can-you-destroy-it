@@ -137,15 +137,22 @@ Doble salto,Doble salto,Double jump
 Un segundo impulso de aire mágico en pleno salto. Llega más alto y cae donde quieras.,Un segundo impulso de aire mágico en pleno salto. Llega más alto y cae donde quieras.,A second burst of magic air mid-jump. Reach higher and land wherever you like.
 Un salto,Un salto,One jump
 Dos saltos,Dos saltos,Two jumps
-La bola de fuego arde más: más daño en la explosión y en el fuego que deja en el cristal.,La bola de fuego arde más: más daño en la explosión y en el fuego que deja en el cristal.,The fireball burns hotter: more damage from the blast and from the fire it leaves on the crystal.
+"La bola de fuego arde más. Desde el nivel 6, al cargarla se abren círculos mágicos con runas hacia donde apuntas: uno más por nivel.","La bola de fuego arde más. Desde el nivel 6, al cargarla se abren círculos mágicos con runas hacia donde apuntas: uno más por nivel.","The fireball burns hotter. From level 6, magic circles with runes open toward your aim while you charge it: one more per level."
 daño x%.1f,daño x%.1f,damage x%.1f
 Bola colosal,Bola colosal,Colossal fireball
 "La Bola de Fuego se hincha al salir de las manos: explosión, cráter y fuego mucho más grandes.","La Bola de Fuego se hincha al salir de las manos: explosión, cráter y fuego mucho más grandes.","The Fireball swells as it leaves your hands: a much bigger blast, crater and fire."
 tamaño x%.2f,tamaño x%.2f,size x%.2f
 Potencia,Potencia,Power
-"La escarcha se endurece: más daño, más rápida y congela más grande. Cambia de forma.","La escarcha se endurece: más daño, más rápida y congela más grande. Cambia de forma.","Frost hardens: more damage, faster, and it freezes a bigger area. It changes shape."
+"La escarcha se endurece: más daño, más rápida y congela más grande. Desde el nivel 6 sale de la mano con círculos de runas.","La escarcha se endurece: más daño, más rápida y congela más grande. Desde el nivel 6 sale de la mano con círculos de runas.","Frost hardens: more damage, faster and a bigger freeze. From level 6 it leaves your hand through rune circles."
 Hielo,Hielo,Ice
 Ventisca,Ventisca,Blizzard
+Glaciar,Glaciar,Glacier
+Escarcha eterna,Escarcha eterna,Eternal frost
+Cero absoluto,Cero absoluto,Absolute zero
+Invierno arcano,Invierno arcano,Arcane winter
+Tormenta polar,Tormenta polar,Polar storm
+Corazón de hielo,Corazón de hielo,Heart of ice
+Era glacial,Era glacial,Ice age
 Granizo gigante,Granizo gigante,Giant hail
 La escarcha crece en el aire: hiela una zona mucho más grande y arranca más cristal.,La escarcha crece en el aire: hiela una zona mucho más grande y arranca más cristal.,Frost grows in the air: it freezes a much bigger area and tears off more crystal.
 Engranajes,Engranajes,Gears
@@ -158,16 +165,23 @@ Sin levitar,Sin levitar,No levitation
 Resonancia,Resonancia,Resonance
 Más golpes resonantes: triple de daño y el doble de fragmentos.,Más golpes resonantes: triple de daño y el doble de fragmentos.,More resonant hits: triple damage and twice the shards.
 %d %% resonantes,%d %% resonantes,%d %% resonant
-"La chispa arde más: más daño, más rápida y fragmentos más grandes. Cambia de forma.","La chispa arde más: más daño, más rápida y fragmentos más grandes. Cambia de forma.","The spark burns hotter: more damage, faster, and bigger shards. It changes shape."
+"La chispa arde más: más daño, más rápida y fragmentos más grandes. Desde el nivel 6 sale de la mano con círculos de runas.","La chispa arde más: más daño, más rápida y fragmentos más grandes. Desde el nivel 6 sale de la mano con círculos de runas.","The spark burns hotter: more damage, faster and bigger shards. From level 6 it leaves your hand through rune circles."
 Chispa ardiente,Chispa ardiente,Blazing spark
 Llama,Llama,Flame
 Llama mágica,Llama mágica,Magic flame
 Fuego estelar,Fuego estelar,Starfire
+Corona solar,Corona solar,Solar corona
+Llama arcana,Llama arcana,Arcane flame
+Supernova,Supernova,Supernova
+Fuego primigenio,Fuego primigenio,Primordial fire
+Sol del mago,Sol del mago,Wizard's sun
 Chispa enorme,Chispa enorme,Huge spark
 "La chispa sale de la mano como siempre y crece en el aire: estalla más ancha, arranca más cristal y suelta más fragmentos.","La chispa sale de la mano como siempre y crece en el aire: estalla más ancha, arranca más cristal y suelta más fragmentos.","The spark leaves your hand as always and grows in the air: it bursts wider, tears off more crystal and drops more shards."
 Telequinesis,Telequinesis,Telekinesis
 Los fragmentos cercanos vuelan solos a tus manos si te cabe alguno.,Los fragmentos cercanos vuelan solos a tus manos si te cabe alguno.,Nearby shards fly to your hands on their own if you have room.
 atrae a %d m,atrae a %d m,pulls from %d m
 Sin telequinesis,Sin telequinesis,No telekinesis
+Choque profundo,Choque profundo,Deep shock
+"El Choque Térmico golpea más fuerte. Desde el nivel 6, al cargarlo se abren círculos mágicos hacia donde apuntas.","El Choque Térmico golpea más fuerte. Desde el nivel 6, al cargarlo se abren círculos mágicos hacia donde apuntas.","Thermal Shock hits harder. From level 6, magic circles open toward your aim while you charge it."
 Choque descomunal,Choque descomunal,Massive shock
 El Choque Térmico crece al salir: deja quebradiza una zona enorme del cristal.,El Choque Térmico crece al salir: deja quebradiza una zona enorme del cristal.,Thermal Shock grows as it flies: it leaves a huge patch of the crystal brittle.

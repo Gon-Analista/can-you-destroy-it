@@ -37,6 +37,8 @@ const BOTH_HANDS: int = 2
 var tier_index: int = 0
 ## Elemento de cada mano (índice en ELEMENTS). [izquierda, derecha]
 var hand_element: Array[int] = [0, 0]
+## Demo/depuración: fuerza el nivel de los combinados (1..10); -1 = el comprado.
+var debug_recipe_level: int = -1
 var _debug_tier: int = -1
 var _active_recipe: SpellRecipe = RECIPE
 var _cast_sounds: Dictionary[ElementDef, AudioStreamRandomizer] = {}
@@ -59,10 +61,17 @@ var _cast_random: AudioStreamRandomizer
 var _combo_cast_random: AudioStreamRandomizer
 var _charge_player: AudioStreamPlayer
 var _rng := RandomNumberGenerator.new()
+## Círculos mágicos de los niveles 6 a 10.
+var _circles: MagicCircles
 
 
 func _ready() -> void:
 	_rng.randomize()
+	for el: ElementDef in ELEMENTS:
+		el.ensure_levels()
+	_circles = MagicCircles.new()
+	_circles.name = "MagicCircles"
+	add_child(_circles)
 	for i: int in PROJECTILE_POOL:
 		_projectiles.append(_make_projectile("Spark%d" % i))
 	for i: int in COMBO_PROJECTILE_POOL:
@@ -101,6 +110,47 @@ func tier_for(side: int) -> SpellTier:
 	if _debug_tier >= 0:
 		idx = _debug_tier
 	return el.tiers[clampi(idx, 0, el.tiers.size() - 1)]
+
+
+## Demo: todos los hechizos a nivel `level` (1..10) sin comprar nada.
+func set_debug_level(level: int) -> void:
+	_debug_tier = level - 1
+	debug_recipe_level = level
+	_refresh_hands(false)
+
+
+## Nivel (1..10) del hechizo de una mano.
+func level_of(side: int) -> int:
+	return element_of(side).tiers.find(tier_for(side)) + 1
+
+
+## Nivel (1..10) de un combinado: 1 + niveles comprados de su Potencia.
+func recipe_level(recipe: SpellRecipe) -> int:
+	if debug_recipe_level > 0:
+		return debug_recipe_level
+	if recipe == null or recipe.power_upgrade == &"":
+		return 1
+	return 1 + GameState.progression.get_level(recipe.power_upgrade)
+
+
+## Punto al que se apunta (rayo por el centro de la pantalla), y su colisionador.
+func _aim() -> Dictionary:
+	var from_cam: Vector3 = camera.global_position
+	var forward: Vector3 = -camera.global_basis.z
+	var query := PhysicsRayQueryParameters3D.create(
+		from_cam, from_cam + forward * RAY_LENGTH, 1 | (1 << 1)
+	)
+	var result: Dictionary = camera.get_world_3d().direct_space_state.intersect_ray(query)
+	if result.is_empty():
+		return {"position": from_cam + forward * 40.0, "normal": -forward, "collider": null}
+	return result
+
+
+## Origen de un hechizo: la palma de la mano `side` (o las dos juntas) a 0,85 m de la cámara.
+func _hand_origin(side: int) -> Vector3:
+	if hands:
+		return camera.project_position(hands.palm_screen_position(side), 0.85)
+	return camera.global_position + camera.global_basis * Vector3(0, -0.17, -0.6)
 
 
 ## Receta para la pareja de elementos de las manos (el orden no importa), o null.
@@ -332,6 +382,13 @@ func _cast_single(side: int) -> void:
 	hit.element = el.id
 	hit.element_def = el
 	_launch(projectile, hit, side)
+	# Nivel 6+: círculos de runas que salen de la mano (uno más a nivel 8 y a nivel 10).
+	var lvl_now: int = level_of(side)
+	if lvl_now >= ElementDef.ASCENDED_LEVEL:
+		var n: int = 1 + int(lvl_now >= 8) + int(lvl_now >= 10)
+		_circles.muzzle(
+			_hand_origin(side), hit.position, n, tier.color_glow * 1.6, tier.color_core * 1.8
+		)
 	if hands:
 		hands.play_cast(side)
 	# GDD 10: el crepitar suena más grave (y más fuerte) al subir de nivel.
@@ -366,6 +423,18 @@ func _update_combine(delta: float) -> void:
 	# El mundo vibra un poco mientras se concentra el poder (pasa por Settings.screen_shake).
 	if camera is CameraRig:
 		(camera as CameraRig).add_trauma(delta * 0.35 * k)
+	# Nivel 6+: círculos mágicos que se abren hacia donde apuntas mientras cargas.
+	var lvl: int = recipe_level(_active_recipe)
+	if lvl >= ElementDef.ASCENDED_LEVEL:
+		var t: SpellTier = _active_recipe.tier
+		_circles.charging(
+			k,
+			lvl - ElementDef.ASCENDED_LEVEL + 1,
+			_hand_origin(BOTH_HANDS),
+			_aim()["position"],
+			t.color_glow * 1.5,
+			t.color_core * 1.8
+		)
 	if k >= 1.0 and not _combine_full_announced:
 		_combine_full_announced = true
 		Events.spell_ready.emit()
@@ -402,6 +471,7 @@ func _launch_combine() -> void:
 		# Misma carga que el orbe entre las manos (ver WizardHands): sale sin cambiar de tamaño.
 		projectile.orb_charge = lerpf(0.15, 1.0, charge)
 		_launch(projectile, hit, BOTH_HANDS)
+	_circles.release()
 	AudioDirector.play_sfx(_combo_sounds[recipe], lerpf(-4.0, 0.0, charge))
 	Events.spell_cast.emit(tier, BOTH_HANDS)
 	GameState.register_recipe_cast(recipe)
@@ -420,23 +490,12 @@ func _start_cooldown(side: int, seconds: float) -> void:
 
 ## Apunta por el centro de la pantalla y lanza el proyectil desde la mano `side`.
 func _launch(projectile: SparkProjectile, hit: SpellHit, side: int) -> void:
-	var from_cam: Vector3 = camera.global_position
-	var forward: Vector3 = -camera.global_basis.z
-	var query := PhysicsRayQueryParameters3D.create(
-		from_cam, from_cam + forward * RAY_LENGTH, 1 | (1 << 1)
-	)
-	var result: Dictionary = camera.get_world_3d().direct_space_state.intersect_ray(query)
-	var target: Vector3 = from_cam + forward * 40.0
-	var collider: Object = null
-	if not result.is_empty():
-		target = result["position"]
-		hit.normal = result["normal"]
-		collider = result["collider"]
+	var result: Dictionary = _aim()
+	var target: Vector3 = result["position"]
+	hit.normal = result["normal"]
+	var collider: Object = result["collider"]
 	hit.position = target
-	var origin: Vector3 = camera.global_position + camera.global_basis * Vector3(0, -0.17, -0.6)
-	if hands:
-		origin = camera.project_position(hands.palm_screen_position(side), 0.85)
-	projectile.launch(origin, target, hit, collider)
+	projectile.launch(_hand_origin(side), target, hit, collider)
 
 
 func _make_projectile(node_name: String) -> SparkProjectile:

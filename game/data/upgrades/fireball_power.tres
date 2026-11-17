@@ -6,13 +6,13 @@
 script = ExtResource("1")
 id = &"fireball_power"
 display_name = "Bola de Fuego"
-description = "La bola de fuego arde más: más daño en la explosión y en el fuego que deja en el cristal."
+description = "La bola de fuego arde más. Desde el nivel 6, al cargarla se abren círculos mágicos con runas hacia donde apuntas: uno más por nivel."
 branch = 0
 element = &"spark"
 star_pos = Vector2i(116, 192)
-costs = PackedInt32Array(40, 220, 1000)
+costs = PackedInt32Array(40, 220, 1000, 2500, 5000, 10000, 20000, 40000, 75000)
 prerequisites = Array[StringName]([&"recipe:fireball"])
 stat = &"fireball_mult"
-values = PackedFloat32Array(1, 1.4, 1.9, 2.6)
+values = PackedFloat32Array(1, 1.4, 1.9, 2.6, 3.4, 4.4, 5.7, 7.3, 9.4, 12)
 value_format = "daño x%.1f"
 level_names = PackedStringArray()

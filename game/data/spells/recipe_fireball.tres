@@ -50,6 +50,7 @@ damage_multiplier = 2.5
 area_radius = 1.3
 area_hits = 3
 power_stat = &"fireball_mult"
+power_upgrade = &"fireball_power"
 size_stat = &"fireball_size"
 burn_sec = 4.0
 burn_damage = 1
