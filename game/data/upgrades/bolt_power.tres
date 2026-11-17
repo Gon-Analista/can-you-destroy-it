@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"bolt_power"
+display_name = "Potencia"
+description = "El rayo golpea más fuerte, sale antes y salta más. Desde el nivel 6 sale de la mano con círculos de runas."
+branch = 0
+element = &"bolt"
+star_pos = Vector2i(118, 196)
+costs = PackedInt32Array(120, 600, 1800, 3000, 5000, 10000, 20000, 40000, 75000)
+prerequisites = Array[StringName]([&"awaken_bolt"])
+stat = &"bolt_tier"
+values = PackedFloat32Array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+value_format = "%s"
+level_names = PackedStringArray("Chispazo", "Descarga", "Relámpago", "Rayo", "Centella", "Tormenta", "Rayo arcano", "Trueno eterno", "Furia del cielo", "Juicio")

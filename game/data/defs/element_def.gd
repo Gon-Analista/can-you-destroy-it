@@ -34,6 +34,12 @@ const ASCENDED_LEVEL: int = 6
 ## `weaken_sec` (la Escarcha congela). 1 = nada.
 @export var weaken_mult: float = 1.0
 @export var weaken_sec: float = 0.0
+## Rayos que saltan desde el impacto a otros puntos del cristal (Rayo).
+@export var chain_count: int = 0
+## Fragmentos un tamaño más grandes (Tierra).
+@export var shard_bonus: int = 0
+## Color de sus círculos de toque (nivel 6+).
+@export var circle_color: Color = Color(1.0, 0.6, 0.2)
 
 
 ## Completa `tiers` hasta el nivel 10 a partir del último escrito a mano: cada nivel nuevo dobla

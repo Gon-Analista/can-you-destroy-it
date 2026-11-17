@@ -1,0 +1,74 @@
+[gd_resource type="Resource" script_class="SpellRecipe" format=3]
+
+[ext_resource type="Script" path="res://data/defs/spell_recipe.gd" id="main"]
+[ext_resource type="Script" path="res://data/defs/spell_tier.gd" id="tier"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_spell_combine_01.ogg" id="combine"]
+[ext_resource type="Resource" path="res://data/spells/vfx_quake.tres" id="vis"]
+[ext_resource type="AudioStream" path="res://audio/sfx/amb_sky_charge_loop.ogg" id="loop"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_quake_01.ogg" id="sfx_quake_01"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_earth_impact_01.ogg" id="sfx_earth_impact_01"]
+
+[sub_resource type="Gradient" id="ramp"]
+offsets = PackedFloat32Array(0, 0.2, 0.45, 0.72, 1)
+colors = PackedColorArray(2, 1.7, 1, 1, 1.3, 0.85, 0.35, 1, 0.7, 0.45, 0.18, 1, 0.38, 0.24, 0.1, 1, 0.16, 0.1, 0.05, 1)
+
+[sub_resource type="Resource" id="t"]
+script = ExtResource("tier")
+damage = 8
+speed = 26.0
+wobble = 0.0
+shards_min = 3
+shards_max = 5
+shard_scale = 1.3
+impact_particles = 60
+light_energy = 3.0
+crack_radius = 2.4
+shake = 0.5
+orb_scale = 9.0
+trail_width = 1.4
+trail_length = 0.4
+trail_smoke = 1.0
+color_core = Color(1, 0.9, 0.7, 1)
+color_glow = Color(0.9, 0.6, 0.25, 1)
+impact_tint = Color(0.95, 0.75, 0.45, 1)
+size = 0.5
+cooldown_sec = 3.6
+visual = ExtResource("vis")
+trail_ramp = SubResource("ramp")
+flight_sfx = ExtResource("loop")
+
+[resource]
+script = ExtResource("main")
+id = &"earthquake"
+display_name = "Terremoto"
+elements = Array[StringName]([&"earth", &"earth"])
+description = "Golpeas el suelo: una onda corre hasta el cristal y su base revienta desde abajo."
+riddle = "Piedra contra piedra no vuela: hace temblar."
+delivery = 5
+damage_multiplier = 3.4
+area_radius = 3.5
+area_hits = 8
+burn_sec = 0.0
+burn_damage = 2
+burn_tick_sec = 0.4
+sky_height = 40.0
+fall_sec = 1.0
+sky_circles = 3
+rain_count = 0
+rain_radius = 4.0
+pierce_depth = 0.0
+freeze_trail = false
+chain_count = 0
+beam_sec = 0.0
+shard_bonus = 0
+circle_color = Color(1.3, 0.9, 0.4, 1)
+circle_hot = Color(1.7, 1.4, 0.9, 1)
+charge_sec = 1.2
+min_power = 0.5
+cooldown_sec = 3.6
+tier = SubResource("t")
+visual = ExtResource("vis")
+combine_sfx = ExtResource("combine")
+charge_loop_sfx = ExtResource("loop")
+cast_sfx = Array[AudioStream]([ExtResource("sfx_quake_01")])
+impact_sfx = Array[AudioStream]([ExtResource("sfx_earth_impact_01")])

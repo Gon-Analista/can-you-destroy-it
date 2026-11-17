@@ -1,0 +1,72 @@
+[gd_resource type="Resource" script_class="SpellRecipe" format=3]
+
+[ext_resource type="Script" path="res://data/defs/spell_recipe.gd" id="main"]
+[ext_resource type="Script" path="res://data/defs/spell_tier.gd" id="tier"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_spell_combine_01.ogg" id="combine"]
+[ext_resource type="Resource" path="res://data/spells/vfx_magnet.tres" id="vis"]
+[ext_resource type="AudioStream" path="res://audio/sfx/amb_storm_charge_loop.ogg" id="loop"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_magnet_01.ogg" id="sfx_magnet_01"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_bolt_impact_01.ogg" id="sfx_bolt_impact_01"]
+
+[sub_resource type="Gradient" id="ramp"]
+offsets = PackedFloat32Array(0, 0.2, 0.45, 0.72, 1)
+colors = PackedColorArray(2.2, 2.2, 2.6, 1, 1.8, 0.6, 0.6, 1, 0.6, 0.6, 1.8, 1, 0.35, 0.3, 0.9, 1, 0.12, 0.1, 0.35, 1)
+
+[sub_resource type="Resource" id="t"]
+script = ExtResource("tier")
+damage = 1
+speed = 40.0
+wobble = 0.0
+shards_min = 0
+shards_max = 0
+impact_particles = 10
+light_energy = 2.0
+crack_radius = 0.6
+shake = 0.1
+orb_scale = 6.0
+trail_width = 0.3
+trail_length = 0.2
+color_core = Color(1, 1, 1, 1)
+color_glow = Color(0.6, 0.6, 1, 1)
+impact_tint = Color(0.8, 0.8, 1, 1)
+size = 0.5
+cooldown_sec = 6.0
+visual = ExtResource("vis")
+trail_ramp = SubResource("ramp")
+flight_sfx = ExtResource("loop")
+
+[resource]
+script = ExtResource("main")
+id = &"magnetism"
+display_name = "Magnetismo"
+elements = Array[StringName]([&"earth", &"bolt"])
+description = "Utilidad: un pulso magnético atrae hacia ti todos los fragmentos del suelo que te quepan."
+riddle = "El rayo empuja, la tierra atrae. ¿Y si atraen lo que has roto?"
+delivery = 6
+damage_multiplier = 0.0
+area_radius = 0.0
+area_hits = 0
+burn_sec = 0.0
+burn_damage = 2
+burn_tick_sec = 0.4
+sky_height = 40.0
+fall_sec = 1.0
+sky_circles = 3
+rain_count = 0
+rain_radius = 4.0
+pierce_depth = 0.0
+freeze_trail = false
+chain_count = 0
+beam_sec = 0.0
+shard_bonus = 0
+circle_color = Color(1.4, 0.5, 0.5, 1)
+circle_hot = Color(0.7, 0.8, 1.6, 1)
+charge_sec = 0.6
+min_power = 0.5
+cooldown_sec = 6.0
+tier = SubResource("t")
+visual = ExtResource("vis")
+combine_sfx = ExtResource("combine")
+charge_loop_sfx = ExtResource("loop")
+cast_sfx = Array[AudioStream]([ExtResource("sfx_magnet_01")])
+impact_sfx = Array[AudioStream]([ExtResource("sfx_bolt_impact_01")])

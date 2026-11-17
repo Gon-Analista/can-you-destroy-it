@@ -1,0 +1,97 @@
+[gd_resource type="Resource" script_class="ElementDef" format=3]
+
+[ext_resource type="Script" path="res://data/defs/element_def.gd" id="main"]
+[ext_resource type="Script" path="res://data/defs/spell_tier.gd" id="tier"]
+[ext_resource type="Resource" path="res://data/spells/vfx_earth.tres" id="vis"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_earth_cast_01.ogg" id="sfx_earth_cast_01"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_earth_cast_02.ogg" id="sfx_earth_cast_02"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_earth_impact_01.ogg" id="sfx_earth_impact_01"]
+
+[sub_resource type="Gradient" id="ramp"]
+offsets = PackedFloat32Array(0, 0.2, 0.45, 0.72, 1)
+colors = PackedColorArray(2, 1.5, 0.8, 1, 1.2, 0.65, 0.25, 1, 0.6, 0.35, 0.14, 1, 0.3, 0.18, 0.08, 1, 0.12, 0.07, 0.04, 1)
+
+[sub_resource type="Resource" id="tier_1"]
+script = ExtResource("tier")
+cooldown_sec = 2.4
+damage = 3
+speed = 15.0
+wobble = 0.1
+shards_min = 1
+shards_max = 2
+impact_particles = 30
+light_energy = 2.0
+crack_radius = 1.2
+shake = 0.16
+orb_scale = 6.0
+trail_width = 0.3
+trail_length = 0.25
+trail_smoke = 0.6
+color_core = Color(1, 0.85, 0.6, 1)
+color_glow = Color(0.95, 0.5, 0.2, 1)
+impact_tint = Color(0.9, 0.65, 0.35, 1)
+size = 0.2
+visual = ExtResource("vis")
+trail_ramp = SubResource("ramp")
+
+[sub_resource type="Resource" id="tier_2"]
+script = ExtResource("tier")
+cooldown_sec = 2.0
+damage = 8
+speed = 17.0
+wobble = 0.08
+shards_min = 2
+shards_max = 3
+impact_particles = 36
+light_energy = 2.2
+crack_radius = 1.5
+shake = 0.2
+orb_scale = 7.5
+trail_width = 0.4
+trail_length = 0.3
+trail_smoke = 0.7
+color_core = Color(1, 0.85, 0.6, 1)
+color_glow = Color(0.95, 0.5, 0.2, 1)
+impact_tint = Color(0.9, 0.65, 0.35, 1)
+size = 0.2
+visual = ExtResource("vis")
+trail_ramp = SubResource("ramp")
+
+[sub_resource type="Resource" id="tier_3"]
+script = ExtResource("tier")
+cooldown_sec = 1.6
+damage = 20
+speed = 19.0
+wobble = 0.06
+shards_min = 2
+shards_max = 4
+impact_particles = 44
+light_energy = 2.4
+crack_radius = 1.9
+shake = 0.25
+orb_scale = 9.0
+trail_width = 0.5
+trail_length = 0.35
+trail_smoke = 0.8
+color_core = Color(1, 0.85, 0.6, 1)
+color_glow = Color(0.95, 0.5, 0.2, 1)
+impact_tint = Color(0.9, 0.65, 0.35, 1)
+size = 0.2
+visual = ExtResource("vis")
+trail_ramp = SubResource("ramp")
+
+[resource]
+script = ExtResource("main")
+id = &"earth"
+display_name = "Tierra"
+color = Color(0.85, 0.62, 0.36, 1)
+tiers = Array[ExtResource("tier")]([SubResource("tier_1"), SubResource("tier_2"), SubResource("tier_3")])
+hand_visual = ExtResource("vis")
+power_stat = &"earth_tier"
+unlock_upgrade = &"awaken_earth"
+cast_sfx = Array[AudioStream]([ExtResource("sfx_earth_cast_01"), ExtResource("sfx_earth_cast_02")])
+cast_pitch = 0.9
+impact_sfx = Array[AudioStream]([ExtResource("sfx_earth_impact_01")])
+chain_count = 0
+shard_bonus = 1
+circle_color = Color(1.2, 0.8, 0.35, 1)

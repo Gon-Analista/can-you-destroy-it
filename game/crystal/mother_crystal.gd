@@ -80,6 +80,8 @@ var _volume_dirty: bool = false
 var _hit_layer: int = 0
 var _hard_hint_at: float = -10.0
 var _geode_nodes: Dictionary[int, Geode] = {}
+## Efectos de las combinaciones (lanzas, rayos que saltan, reacciones, Trueno, Magnetismo).
+var _combos: CrystalCombos
 var _shards: ShardPool
 var _fx: ImpactFx
 var _hd_fx: HdImpact
@@ -163,6 +165,10 @@ func _ready() -> void:
 	_arcs = CrystalArcs.new()
 	_arcs.name = "Arcs"
 	add_child(_arcs)
+	_combos = CrystalCombos.new()
+	_combos.name = "Combos"
+	add_child(_combos)
+	_combos.setup(self, _arcs, _shards, _hd_fx, _fx)
 	_arcs.setup_ambient(
 		global_position + Vector3(0.0, volume.top * 0.4, 0.0),
 		Vector3(
@@ -326,6 +332,7 @@ func receive_hit(hit: SpellHit) -> void:
 	var balance: BalanceConfig = GameState.BALANCE
 	hit.streak = _streak.register_hit(_now)
 	_apply_weakness(hit)
+	_combos.check_temper(hit)
 	_check_geodes(hit)
 	var removed: float = _dig(
 		hit.position, hit.normal, float(hit.damage), hit.recipe != null, hit.size
@@ -348,12 +355,24 @@ func receive_hit(hit: SpellHit) -> void:
 	_crack_index = (_crack_index + 1) % MAX_CRACKS
 	if hit.recipe and hit.recipe.area_radius > 0.0:
 		_area_blast(hit)
+	if hit.recipe and hit.recipe.pierce_depth > 0.0:
+		_combos.pierce(hit)
+	var chains: int = (
+		hit.recipe.chain_count
+		if hit.recipe
+		else (hit.element_def.chain_count if hit.element_def else 0)
+	)
+	if chains > 0:
+		_combos.chain(hit, chains)
 	_apply_element(hit)
 	_material.set_shader_parameter("hits", _hits)
 	_material.set_shader_parameter("hit_resonant", _hit_resonant)
 	_material.set_shader_parameter("cracks", _cracks)
 
-	_shudder = minf(1.0, _shudder + 0.35 + tier.shake * 2.0 + (0.5 if hit.resonant else 0.0))
+	_shudder = minf(
+		1.0,
+		_shudder + (0.1 if hit.minor else 0.35 + tier.shake * 2.0) + (0.5 if hit.resonant else 0.0)
+	)
 	_core_pulse = 1.0
 	if hit.resonant:
 		_global_flash = 0.55
@@ -364,6 +383,15 @@ func receive_hit(hit: SpellHit) -> void:
 		)
 	)
 	var shard_type: ShardType = ShardPool.type_for_hit(hit.damage, hit.resonant)
+	# Tierra y Lanza Cargada: fragmentos un tamaño más grandes.
+	var bonus: int = (
+		hit.recipe.shard_bonus
+		if hit.recipe
+		else (hit.element_def.shard_bonus if hit.element_def else 0)
+	)
+	if bonus > 0:
+		var ti: int = mini(ShardPool.TYPES.find(shard_type) + bonus, ShardPool.TYPES.size() - 1)
+		shard_type = ShardPool.TYPES[ti]
 	_shards.spawn(
 		hit.position, hit.normal, shard_type, count, 1.25 if hit.resonant else 1.0, _hit_layer
 	)
@@ -372,10 +400,17 @@ func receive_hit(hit: SpellHit) -> void:
 	if hit.resonant or hit.recipe != null or _now - _last_hd >= 0.12:
 		_last_hd = _now
 		_hd_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.recipe != null, hit.size)
+	if hit.recipe and hit.recipe.delivery == SpellRecipe.Delivery.SKY:
+		# Lo que cae del cielo estalla dos veces: el golpe y la onda que se abre.
+		_hd_fx.play(hit.position, hit.normal, tier, false, true, hit.size * 2.0)
+		_arcs.storm(hit.position - Vector3.UP * 2.0, 18.0, 6.0, hit.recipe.circle_color * 1.2)
+		_global_flash = maxf(_global_flash, 0.25)
 	_play_tink(hit)
-	if hit.recipe:
+	if hit.recipe and (not hit.minor or _rng.randf() < 0.3):
 		_play_spell_impact(hit)
-	if hit.resonant:
+	if hit.minor:
+		pass
+	elif hit.resonant:
 		HitStop.trigger(get_tree(), 0.09)
 		_accent_player.stream = RESONANT_SFX
 		_accent_player.volume_db = -3.0
@@ -429,55 +464,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		and (event as InputEventKey).physical_keycode == KEY_L
 	):
 		# Debug: L excava un túnel hasta la capa siguiente.
-		jump_to_layer(_layer + 1)
-
-
-## Demo: excava un túnel recto hasta la geoda más cercana a `from` (global) y la abre.
-## Devuelve [boca del túnel, centro de la geoda] (global), para ponerse a mirarla.
-func tunnel_to_geode(from: Vector3) -> Array[Vector3]:
-	var best: int = -1
-	var best_d: float = INF
-	var p0: Vector3 = to_local(from)
-	for i: int in volume.geodes.size():
-		var d: float = (volume.geodes[i]["center"] as Vector3).distance_to(p0)
-		if d < best_d:
-			best_d = d
-			best = i
-	if best < 0:
-		return [from, from]
-	var c: Vector3 = volume.geodes[best]["center"]
-	# Rampa desde el suelo de fuera hasta la bolsa, para poder mirar dentro desde la boca.
-	var flat: Vector3 = Vector3(p0.x - c.x, 0.0, p0.z - c.z).normalized()
-	var out: Vector3 = c + flat * 14.0
-	out.y = 1.4
-	var mouth: Vector3 = out
-	for k: int in 60:
-		var q: Vector3 = c.lerp(out, float(k) / 59.0)
-		_apply_carve(volume.carve_sphere(q, 2.0, (1 << 4) - 1), q, 2.0)
-		if not volume.is_solid(q) and volume.sample(volume.depth, q, 0.0) <= 0.0 and k > 6:
-			mouth = q
-			break
-	return [to_global(mouth + flat * 2.0), to_global(c)]
-
-
-## Debug y demo: excava un túnel desde el lado del claro (hacia el jugador) hasta la capa
-## `idx`, quitando la esencia que corresponda.
-func jump_to_layer(idx: int) -> void:
-	if idx >= GameState.LAYERS.size() - 1:
-		idx = GameState.LAYERS.size() - 2
-	var target: float = volume.layer_min_depth[idx] + 1.0
-	var from: Vector3 = Vector3(0.0, 2.6, WorldLayout.CRYSTAL_FOOTPRINT + 4.0)
-	var dir := Vector3(0.0, 0.0, -1.0)
-	var t: float = 0.0
-	while t < WorldLayout.CRYSTAL_FOOTPRINT + 4.0:
-		var p: Vector3 = from + dir * t
-		t += 0.8
-		if not volume.is_solid(p):
-			continue
-		var depth: float = volume.sample(volume.depth, p, 0.0)
-		_apply_carve(volume.carve_sphere(p, 2.6, (1 << 4) - 1), p, 2.6)
-		if depth >= target:
-			break
+		CrystalDemo.tunnel_to_layer(self, _layer + 1)
 
 
 ## Primer punto de la superficie yendo de `from` (global) hacia el eje del cristal a su altura.
@@ -539,10 +526,10 @@ func _dig(at: Vector3, normal: Vector3, damage: float, combo: bool, size: float 
 
 ## Erosiona de verdad en `p` (local), cuenta la esencia, rehace los trozos y descubre geodas.
 func _dig_local(p: Vector3, radius: float, amount: float, allowed: int) -> float:
-	return _apply_carve(volume.carve(p, radius, amount, allowed), p, radius)
+	return apply_carve(volume.carve(p, radius, amount, allowed), p, radius)
 
 
-func _apply_carve(r: Dictionary, p: Vector3, radius: float) -> float:
+func apply_carve(r: Dictionary, p: Vector3, radius: float) -> float:
 	var removed: float = r["essence"]
 	_chunks.mark_dirty(r["chunks"])
 	_volume_dirty = true
@@ -559,6 +546,71 @@ func _apply_carve(r: Dictionary, p: Vector3, radius: float) -> float:
 			break
 	_check_pockets(p, radius)
 	return removed
+
+
+## Juicio del Trueno: el rayo baja del cielo al blanco.
+func sky_bolt(from: Vector3, to: Vector3, col: Color) -> void:
+	_combos.sky_bolt(from, to, col)
+
+
+## Un rayo de un punto a otro (Rayo).
+func draw_bolt(from: Vector3, to: Vector3, width: float, col: Color, life: float) -> void:
+	_arcs.bolt_between(from, to, width, col * 1.6, life)
+
+
+## Haz de Plasma: vaina rosa gruesa casi recta y un núcleo blanco fino.
+func draw_beam(from: Vector3, to: Vector3, col: Color) -> void:
+	_arcs.bolt_between(from, to, 0.32, Color(col.r, col.g, col.b) * 0.75, 0.08, 0.06, false)
+	_arcs.bolt_between(from, to, 0.08, Color(1.3, 1.1, 1.3), 0.08, 0.03, false)
+
+
+## Magnetismo: rayos desde el mago hacia lo que atrae.
+func magnet_pulse(at: Vector3, pulled: int) -> void:
+	_combos.magnet_pulse(at, pulled)
+
+
+## Para CrystalCombos: arranca cristal en `at` como un golpe (ver `_dig`).
+func dig(at: Vector3, normal: Vector3, damage: float, combo: bool, size: float = 1.0) -> float:
+	return _dig(at, normal, damage, combo, size)
+
+
+## Para CrystalCombos: zona debilitada (congelada) en `at`.
+func add_weak_zone(at: Vector3, radius: float, mult: float, sec: float) -> void:
+	_add_weak(at, radius, mult, sec, false, 1.0, &"frost")
+
+
+## Para CrystalCombos: grieta persistente.
+func add_crack(at: Vector3, radius: float) -> void:
+	_cracks[_crack_index] = Vector4(at.x, at.y, at.z, radius)
+	_crack_index = (_crack_index + 1) % MAX_CRACKS
+	_material.set_shader_parameter("cracks", _cracks)
+
+
+## Para CrystalCombos: destello de todo el cristal (0..1).
+func flash(amount: float) -> void:
+	_global_flash = maxf(_global_flash, amount)
+	set_process(true)
+
+
+## Capa del último golpe (para el color de los fragmentos).
+func hit_layer() -> int:
+	return _hit_layer
+
+
+## Quemadura reciente (< 3 s) cerca de `at`, o -1. La apaga si `consume`.
+func hot_burn_near(at: Vector3, slack: float, consume: bool) -> Vector4:
+	for i: int in MAX_BURNS:
+		var b: Vector4 = _burns[i]
+		if b.w < 0.0 or _now - b.w > 3.0:
+			continue
+		if Vector3(b.x, b.y, b.z).distance_to(at) > _burn_radius[i] + slack:
+			continue
+		var out := Vector4(b.x, b.y, b.z, _burn_radius[i])
+		if consume:
+			_burns[i].w = _now - 30.0
+			_material.set_shader_parameter("burns", _burns)
+		return out
+	return Vector4(0, 0, 0, -1)
 
 
 ## Capas que cede este golpe (bit = índice de capa).
@@ -610,6 +662,11 @@ func _apply_weakness(hit: SpellHit) -> void:
 		hit.damage = roundi(float(hit.damage) * _weak_mult[i])
 		hit.weakened = true
 		_global_flash = maxf(_global_flash, 0.2)
+		# Reacción: fuego sobre cristal congelado -> Explosión de Vapor.
+		if _weak_kind[i] < 1.5 and hit.element == &"spark":
+			_combos.steam(hit, Vector3(p.x, p.y, p.z))
+			_weak_end[i] = _now + 0.3
+			_push_weak()
 		if _weak_consume[i]:
 			_weak_end[i] = _now + 0.4
 			_weak_sec[i] = (_now + 0.4) - _weak_pos[i].w

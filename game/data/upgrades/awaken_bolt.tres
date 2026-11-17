@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"awaken_bolt"
+display_name = "Despertar el Rayo"
+description = "Aprendes el Rayo: casi instantáneo y salta a otro punto del cristal. Combínalo con los demás y descubre qué pasa."
+branch = 2
+element = &"bolt"
+star_pos = Vector2i(118, 96)
+costs = PackedInt32Array(250)
+prerequisites = Array[StringName]([&"awaken_frost"])
+stat = &"bolt_awake"
+values = PackedFloat32Array(0, 1)
+value_format = "%s"
+level_names = PackedStringArray("Dormido", "Despierto")

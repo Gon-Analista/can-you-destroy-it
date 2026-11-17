@@ -48,6 +48,8 @@ Tecnologías ya previstas (validar la versión al integrarlas):
 | Mallas del prototipo | `core/mesh_kit.gd` (prismas, conos, cajas con normales planas y color por vértice) | Corrige el orden de vértices solo. |
 | Contorno pixel art | `fx/outline.gdshader`: post-proceso de profundidad + normales | Técnica estándar de "3D pixel art" en Godot 4. |
 | SFX del prototipo | `tools/sfx_synth.py` y `tools/sfx_loop.py` (numpy + scipy + ffmpeg) | Reproducible con semillas fijas; afinado en La mayor. |
+| Elementos y combinaciones | `tools/gen_spells.py` -> `game/data/elements/{bolt,earth}.tres`, `game/data/spells/{vfx_*,recipe_*}.tres` | Números, textos, colores y sonidos de Rayo, Tierra y sus combinaciones; Chispa, Escarcha, Bola de Fuego y Choque Térmico siguen a mano. |
+| SFX de combinaciones | `tools/sfx_combos.py` (rayo, roca, trueno, meteoro, terremoto, magnetismo, lanza, plasma, cargas) | Semillas fijas. |
 | SFX de movimiento | `tools/sfx_move.py` (doble salto, levitación en bucle, carga agotada) | Semillas fijas. |
 | SFX de la casucha | `tools/sfx_hut.py` (puerta, viento, revelación, ambiente de dentro) | Igual que el resto: semillas fijas. |
 | Música | `tools/music_synth.py` (valle por capas) y `tools/music_title.py` (vals del título) | Mismos instrumentos sintetizados; bucles sin costura. |
@@ -290,6 +292,8 @@ godot --headless --path game --script res://tests/smoke/progression_smoke.gd
   que el tiempo siempre vuelve a la normalidad tras un hit-stop; `tests/smoke/combine_input_smoke.gd`, la combinación
   con las dos manos (carga la escena principal); `tests/smoke/loop_smoke.gd`, el bucle bolsa -> Pilón -> Grimorio;
   `tests/smoke/localization_smoke.gd`, que todos los idiomas cargan, están completos y conservan los `%d`/`%s`;
+  `tests/smoke/combos_smoke.gd`, que cada pareja de elementos tiene combinación y que las diez se lanzan,
+  se descubren y dañan el cristal (carga la escena; ~1 min);
   `tests/smoke/spell_levels_smoke.gd`, los niveles 6 a 10 y los círculos mágicos;
   `tests/smoke/movement_smoke.gd`, el doble salto y la levitación (no toca la partida guardada);
   `tests/smoke/crystal_volume_smoke.gd`, que el volumen del cristal reparte el 1.000.000, se excava, respeta el

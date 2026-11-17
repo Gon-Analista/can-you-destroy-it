@@ -2,6 +2,51 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-17 · Rayo, Tierra y diez combinaciones para descubrir (Meteoro, Trueno...)
+
+**Qué hay nuevo** (pedidos del equipo: "que las combinaciones sean entretenidas de descubrir", "un meteoro desde
+arriba cargando fuego con tierra con círculos mágicos hacia abajo, tipo Megumin", "lo mismo con un trueno",
+"que se vean espectaculares manteniendo la calidad")
+
+- **Dos elementos nuevos del GDD**: **Rayo** (casi instantáneo; se ve el rayo de la mano al blanco y salta a
+  otro punto del cristal) y **Tierra** (roca fundida, lenta y pesada; fragmentos un tamaño más grandes). Se
+  despiertan en sus constelaciones (250 y 500 de maná, tras la Escarcha) y tienen su Potencia hasta nivel 10.
+- **Una combinación por cada pareja** (diez), cada una con su manera de llegar al cristal:
+  - **Meteoro** (Chispa + Tierra): al cargar se abren círculos mágicos encima del blanco, uno sobre otro por el
+    camino de la caída; al soltar, una roca ardiendo cae del cielo atravesándolos y abre un cráter enorme (doble
+    estallido, tormenta de rayos, fuego que queda).
+  - **Juicio del Trueno** (Rayo + Rayo): círculos en el cielo y tres descargas seguidas que bajan del cielo al
+    blanco; luego el rayo salta a cuatro puntos de alrededor.
+  - **Lluvia de Estalactitas** (Tierra + Escarcha): un círculo en el cielo y 14 estalactitas que caen escalonadas
+    sobre la zona.
+  - **Lanza de Hielo** (Escarcha + Escarcha): perfora un túnel de 7 m y deja sus paredes congeladas.
+  - **Lanza Cargada** (Escarcha + Rayo): perfora 11 m, con chispas que saltan por el túnel y fragmentos mayores.
+  - **Haz de Plasma** (Chispa + Rayo): un haz continuo de 1,6 s que sigue la mirilla (se barre el cristal).
+  - **Terremoto** (Tierra + Tierra): una onda corre por el suelo hasta la base del cristal y la revienta.
+  - **Magnetismo** (Tierra + Rayo): utilidad; atrae a la bolsa los fragmentos de 45 m a la redonda.
+  - Bola de Fuego y Choque Térmico, como antes.
+- **Reacciones** que se descubren jugando: **Explosión de Vapor** (fuego sobre cristal congelado: +50 % y lluvia
+  de fragmentos) y **Temple** (escarcha sobre cristal ardiendo: se parte en fragmentos grandes).
+- **Libro de Combinaciones** (tecla **B**): las 12 entradas con sus iconos de elementos; lo descubierto con
+  nombre, cómo se lanza y qué hace; lo que no, como "???" con un **acertijo** de pista ("El fuego solo vuela.
+  Dale un cuerpo de piedra y caerá del cielo."); lo que pide un elemento dormido, con candado. Contador de
+  descubiertas y aviso al despertar un elemento ("júntalo con los otros").
+- El aviso de combinación nueva dice cuántas llevas ("3 / 12 · B LIBRO").
+- Los círculos mágicos nunca son más finos que píxel y medio en pantalla (los grandes del cielo no se pierden).
+- Datos generados con `tools/gen_spells.py` (aspectos, elementos y recetas) y sonidos con `tools/sfx_combos.py`
+  (rayo, roca, trueno, meteoro cayendo y estallando, terremoto, magnetismo, lanza, plasma, cargas del cielo).
+- `MotherCrystal` delega los efectos de las combinaciones en `CrystalCombos` y los túneles de demo en
+  `CrystalDemo` (el archivo pasaba de 1.000 líneas).
+
+**Capturas**: `docs/capturas/meteoro.gif`, `docs/capturas/meteoro_circulos.png`, `docs/capturas/trueno.gif`,
+`docs/capturas/libro_combinaciones.png`, `docs/capturas/haz_plasma.png`, `docs/capturas/estalactitas.png`.
+
+**Cómo se probó**: nuevo `combos_smoke` (cada pareja de elementos tiene una combinación; las reacciones no se
+lanzan; las diez se lanzan de verdad contra el cristal, se descubren y quitan esencia) y el resto de tests en verde.
+
+**Pendiente**: oscurecer el cielo mientras se cargan los hechizos del cielo; Arcano y las combinaciones triples
+(Tormenta Elemental, Gran Convergencia); variantes por forma de lanzar (en el aire, sobrecarga).
+
 ## 2026-11-17 · Hechizos hasta nivel 10 y círculos mágicos
 
 **Qué hay nuevo** (pedido del equipo: "que los hechizos lleguen a nivel 10 y que desde ahí, según el tipo, pasen

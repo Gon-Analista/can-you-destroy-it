@@ -107,14 +107,14 @@ func _setup_autoplay() -> void:
 		elif a.begins_with("--layer="):
 			# --layer=N: empieza en esa capa del cristal (1 = Manto Geódico...).
 			var crystal: MotherCrystal = _world.get_node(^"MotherCrystal")
-			crystal.jump_to_layer(int(a.get_slice("=", 1)))
+			CrystalDemo.tunnel_to_layer(crystal, int(a.get_slice("=", 1)))
 		elif a.begins_with("--dig="):
 			# --dig=N: N golpes de 30 de daño donde apunta la cámara (cráter sin efectos).
 			_demo_dig.call_deferred(int(a.get_slice("=", 1)))
 		elif a == "--geode":
 			# --geode: túnel hasta la geoda más cercana y el jugador mirándola desde la boca.
 			var mc: MotherCrystal = _world.get_node(^"MotherCrystal")
-			var spots: Array[Vector3] = mc.tunnel_to_geode(_player.global_position)
+			var spots: Array[Vector3] = CrystalDemo.tunnel_to_geode(mc, _player.global_position)
 			var mouth: Vector3 = spots[0]
 			_player.global_position = Vector3(mouth.x, maxf(mouth.y - 1.2, 0.2), mouth.z)
 			var to_geode: Vector3 = spots[1] - (_player.global_position + Vector3.UP * 1.6)
@@ -149,6 +149,14 @@ func _setup_autoplay() -> void:
 		elif a.begins_with("--spell-level="):
 			# --spell-level=N: todos los hechizos a nivel N (1..10), con sus efectos.
 			_player.get_caster().set_debug_level(int(a.get_slice("=", 1)))
+		elif a.begins_with("--discover="):
+			# --discover=fireball,meteor: combinaciones ya descubiertas (Libro de Combinaciones).
+			for id: String in a.get_slice("=", 1).split(","):
+				GameState.progression.discover_recipe(StringName(id))
+		elif a == "--book":
+			get_tree().create_timer(0.8).timeout.connect(
+				func() -> void: (_hud.get_node(^"SpellBook") as SpellBook).open()
+			)
 		elif a.begins_with("--time="):
 			_day_night.time_of_day = float(a.get_slice("=", 1))
 		elif a.begins_with("--warp="):

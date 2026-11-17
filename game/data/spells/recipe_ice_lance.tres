@@ -1,0 +1,73 @@
+[gd_resource type="Resource" script_class="SpellRecipe" format=3]
+
+[ext_resource type="Script" path="res://data/defs/spell_recipe.gd" id="main"]
+[ext_resource type="Script" path="res://data/defs/spell_tier.gd" id="tier"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_spell_combine_01.ogg" id="combine"]
+[ext_resource type="Resource" path="res://data/spells/vfx_ice_lance.tres" id="vis"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_fireball_charge_loop.ogg" id="loop"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_ice_lance_01.ogg" id="sfx_ice_lance_01"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_frost_impact_01.ogg" id="sfx_frost_impact_01"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_frost_impact_02.ogg" id="sfx_frost_impact_02"]
+
+[sub_resource type="Gradient" id="ramp"]
+offsets = PackedFloat32Array(0, 0.2, 0.45, 0.72, 1)
+colors = PackedColorArray(2, 2.3, 2.6, 1, 0.7, 1.5, 2.1, 1, 0.3, 0.85, 1.6, 1, 0.14, 0.4, 1, 1, 0.06, 0.15, 0.5, 1)
+
+[sub_resource type="Resource" id="t"]
+script = ExtResource("tier")
+damage = 5
+speed = 70.0
+wobble = 0.0
+shards_min = 2
+shards_max = 3
+impact_particles = 40
+light_energy = 4.0
+crack_radius = 1.2
+shake = 0.18
+orb_scale = 6.0
+trail_width = 0.5
+trail_length = 0.3
+color_core = Color(0.9, 1, 1, 1)
+color_glow = Color(0.45, 0.85, 1, 1)
+impact_tint = Color(0.7, 0.95, 1, 1)
+size = 0.5
+cooldown_sec = 2.2
+visual = ExtResource("vis")
+trail_ramp = SubResource("ramp")
+flight_sfx = ExtResource("loop")
+
+[resource]
+script = ExtResource("main")
+id = &"ice_lance"
+display_name = "Lanza de Hielo"
+elements = Array[StringName]([&"frost", &"frost"])
+description = "Una lanza de hielo que perfora un túnel hondo en el cristal y deja sus paredes congeladas."
+riddle = "El frío que se junta con el frío no rompe: atraviesa."
+delivery = 3
+damage_multiplier = 2.2
+area_radius = 0.0
+area_hits = 0
+burn_sec = 0.0
+burn_damage = 2
+burn_tick_sec = 0.4
+sky_height = 40.0
+fall_sec = 1.0
+sky_circles = 3
+rain_count = 0
+rain_radius = 4.0
+pierce_depth = 7.0
+freeze_trail = true
+chain_count = 0
+beam_sec = 0.0
+shard_bonus = 0
+circle_color = Color(0.6, 0.9, 1.4, 1)
+circle_hot = Color(1.2, 1.4, 1.6, 1)
+charge_sec = 0.8
+min_power = 0.5
+cooldown_sec = 2.2
+tier = SubResource("t")
+visual = ExtResource("vis")
+combine_sfx = ExtResource("combine")
+charge_loop_sfx = ExtResource("loop")
+cast_sfx = Array[AudioStream]([ExtResource("sfx_ice_lance_01")])
+impact_sfx = Array[AudioStream]([ExtResource("sfx_frost_impact_01"), ExtResource("sfx_frost_impact_02")])

@@ -2,9 +2,25 @@ class_name SpellRecipe
 extends Resource
 ## Combinación de elementos que produce un hechizo (p. ej. Chispa + Chispa = Bola de Fuego).
 ## Se lanza pulsando las dos manos a la vez y manteniendo para cargar (GDD 5.2 y 10.1).
+## También describe las reacciones (un elemento sobre la huella de otro en el cristal): ésas no se
+## lanzan, se descubren al provocarlas (`is_reaction`).
+
+## Cómo llega al cristal:
+## FRONT: proyectil desde las manos. SKY: círculos en el cielo sobre el blanco y cae desde arriba
+## (Meteoro, Trueno). RAIN: lluvia desde el cielo sobre una zona. LANCE: perfora un túnel hondo.
+## BEAM: rayo continuo que sigue la mirilla. GROUND: onda por el suelo que hace estallar la base.
+## MAGNET: utilidad, atrae los fragmentos.
+enum Delivery { FRONT, SKY, RAIN, LANCE, BEAM, GROUND, MAGNET }
 
 @export var id: StringName
 @export var display_name: String
+## Qué hace (Libro de Combinaciones, cuando ya se ha descubierto).
+@export_multiline var description: String
+## Pista antes de descubrirla (un acertijo).
+@export var riddle: String
+## Reacción: no se lanza; se descubre al golpear con un elemento la huella de otro.
+@export var is_reaction: bool = false
+@export var delivery: Delivery = Delivery.FRONT
 ## Ids de ElementDef. El orden no importa.
 @export var elements: Array[StringName] = []
 ## Daño = (daño mano izquierda + daño mano derecha) x multiplicador x potencia de la carga.
@@ -31,6 +47,29 @@ extends Resource
 @export var size_stat: StringName
 ## Mejora de Potencia que da su nivel (1 + nivel comprado, hasta 10); vacía = siempre nivel 1.
 @export var power_upgrade: StringName
+
+@export_group("Entrega")
+## SKY / RAIN: altura (m) sobre el blanco de la que cae y donde se abren los círculos.
+@export var sky_height: float = 40.0
+## SKY: segundos de caída desde el cielo.
+@export var fall_sec: float = 1.0
+## Círculos mágicos (en el cielo para SKY/RAIN) a nivel 1; suben con el nivel.
+@export var sky_circles: int = 3
+## RAIN: proyectiles que caen y radio de la zona (m).
+@export var rain_count: int = 0
+@export var rain_radius: float = 4.0
+## LANCE: profundidad del túnel (m); `freeze_trail` congela las paredes.
+@export var pierce_depth: float = 0.0
+@export var freeze_trail: bool = false
+## Rayos que saltan del impacto a otros puntos del cristal.
+@export var chain_count: int = 0
+## BEAM: segundos que dura el haz.
+@export var beam_sec: float = 0.0
+## Fragmentos un tamaño más grandes (Tierra, Lanza Cargada).
+@export var shard_bonus: int = 0
+## Color de sus círculos mágicos.
+@export var circle_color: Color = Color(1.0, 0.6, 0.2)
+@export var circle_hot: Color = Color(1.0, 0.95, 0.75)
 
 @export_group("Carga")
 ## Tiempo manteniendo las dos manos juntas hasta la carga completa (s).
@@ -62,7 +101,7 @@ func damage_for(left_damage: int, right_damage: int, charge: float) -> int:
 
 ## True si estos dos elementos (en cualquier orden) forman esta receta.
 func matches(element_a: StringName, element_b: StringName) -> bool:
-	if elements.size() != 2:
+	if is_reaction or elements.size() != 2:
 		return false
 	return (
 		(elements[0] == element_a and elements[1] == element_b)

@@ -25,3 +25,7 @@ var layer: int = 0
 ## Tamaño del hechizo (mejora de Tamaño): crece al salir de la mano y agranda el impacto, el
 ## cráter, la quemadura, la zona helada y los fragmentos. 1 = el de siempre.
 var size: float = 1.0
+## Dirección de vuelo al llegar (las lanzas perforan por ella).
+var direction: Vector3 = Vector3.FORWARD
+## Golpe menor de un hechizo múltiple (lluvia, haz): sin pausa de impacto ni destello global.
+var minor: bool = false

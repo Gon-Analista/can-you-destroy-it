@@ -1,5 +1,6 @@
 keys,es,en
 LANGUAGE_NAME,ESPAÑOL,ENGLISH
+NO HAY FRAGMENTOS CERCA,NO HAY FRAGMENTOS CERCA,NO SHARDS NEARBY
 ¡DEMASIADO DURO!,¡DEMASIADO DURO!,TOO HARD!
 NUEVA CAPA: %s,NUEVA CAPA: %s,NEW LAYER: %s
 ¡UNA GEODA! REVIÉNTALA,¡UNA GEODA! REVIÉNTALA,A GEODE! BURST IT
@@ -60,6 +61,7 @@ CONSTELACIÓN DE LA TIERRA,CONSTELACIÓN DE LA TIERRA,EARTH CONSTELLATION
 CONSTELACIÓN DEL ARCANO,CONSTELACIÓN DEL ARCANO,ARCANE CONSTELLATION
 ESENCIA DEL CRISTAL,ESENCIA DEL CRISTAL,CRYSTAL ESSENCE
 ¡COMBINACIÓN NUEVA!,¡COMBINACIÓN NUEVA!,NEW COMBINATION!
+¡ELEMENTO NUEVO! JÚNTALO CON LOS OTROS  ·  B LIBRO,¡ELEMENTO NUEVO! JÚNTALO CON LOS OTROS  ·  B LIBRO,NEW ELEMENT! COMBINE IT WITH THE OTHERS  ·  B BOOK
 CLIC PARA EMPEZAR  ·  WASD MOVERSE  ·  SHIFT CORRER  ·  ESPACIO SALTAR,CLIC PARA EMPEZAR  ·  WASD MOVERSE  ·  SHIFT CORRER  ·  ESPACIO SALTAR,CLICK TO START  ·  WASD MOVE  ·  SHIFT RUN  ·  SPACE JUMP
 CLIC IZQ / DER: CADA MANO  ·  LOS DOS A LA VEZ: COMBINAR  ·  F RECOGER  ·  TAB GRIMORIO,CLIC IZQ / DER: CADA MANO  ·  LOS DOS A LA VEZ: COMBINAR  ·  F RECOGER  ·  TAB GRIMORIO,LEFT / RIGHT CLICK: EACH HAND  ·  BOTH AT ONCE: COMBINE  ·  F PICK UP  ·  TAB GRIMOIRE
 %s  ·  ESENCIA DEL CRISTAL,%s  ·  ESENCIA DEL CRISTAL,%s  ·  CRYSTAL ESSENCE
@@ -70,6 +72,7 @@ CLIC IZQ / DER: CADA MANO  ·  LOS DOS A LA VEZ: COMBINAR  ·  F RECOGER  ·  TA
 ¡QUEBRADIZO! x%d,¡QUEBRADIZO! x%d,BRITTLE! x%d
 ¡CONGELADO! x%d,¡CONGELADO! x%d,FROZEN! x%d
 ¡RACHA x%d!,¡RACHA x%d!,STREAK x%d!
+%d / %d  ·  B LIBRO,%d / %d  ·  B LIBRO,%d / %d  ·  B BOOK
 DEBUG  1-5: NIVEL DE CHISPA (%d)  ·  G: +100 MANÁ,DEBUG  1-5: NIVEL DE CHISPA (%d)  ·  G: +100 MANÁ,DEBUG  1-5: SPARK LEVEL (%d)  ·  G: +100 MANA
 PILÓN DE MANÁ,PILÓN DE MANÁ,MANA PYLON
 ¡RECOGE LOS FRAGMENTOS CON [F]!,¡RECOGE LOS FRAGMENTOS CON [F]!,PICK UP THE SHARDS WITH [F]!
@@ -84,6 +87,19 @@ TRITURADORA  %d M,TRITURADORA  %d M,CRUSHER  %d M
 [F] ABRIR EL GRIMORIO,[F] ABRIR EL GRIMORIO,[F] OPEN THE GRIMOIRE
 CAN YOU DESTROY IT?,CAN YOU DESTROY IT?,CAN YOU DESTROY IT?
 PREPARANDO LA MAGIA,PREPARANDO LA MAGIA,PREPARING THE MAGIC
+LIBRO DE COMBINACIONES,LIBRO DE COMBINACIONES,BOOK OF COMBINATIONS
+%d / %d DESCUBIERTAS,%d / %d DESCUBIERTAS,%d / %d DISCOVERED
+Reacción: no se lanza. Pasa en el cristal cuando un elemento toca la huella de otro.,Reacción: no se lanza. Pasa en el cristal cuando un elemento toca la huella de otro.,Reaction: it isn't cast. It happens on the crystal when one element touches another's mark.
+Pide un elemento que aún duerme. Despiértalo en el Grimorio.,Pide un elemento que aún duerme. Despiértalo en el Grimorio.,It needs an element that still sleeps. Awaken it in the Grimoire.
+PISTA: %s,PISTA: %s,HINT: %s
+W/S ELEGIR  ·  B / ESC CERRAR,W/S ELEGIR  ·  B / ESC CERRAR,W/S SELECT  ·  B / ESC CLOSE
+"Junta las manos, carga y suelta: sale hacia delante.","Junta las manos, carga y suelta: sale hacia delante.","Join your hands, charge and release: it flies forward."
+Carga mirando el blanco: se abren círculos en el cielo y cae desde arriba.,Carga mirando el blanco: se abren círculos en el cielo y cae desde arriba.,Charge while looking at the target: circles open in the sky and it falls from above.
+Carga mirando el blanco: llueve del cielo sobre toda la zona.,Carga mirando el blanco: llueve del cielo sobre toda la zona.,Charge while looking at the target: it rains from the sky over the whole area.
+Carga y suelta: atraviesa el cristal y perfora un túnel hondo.,Carga y suelta: atraviesa el cristal y perfora un túnel hondo.,Charge and release: it goes through the crystal and drills a deep tunnel.
+Carga y suelta: un haz continuo que sigue tu mirilla.,Carga y suelta: un haz continuo que sigue tu mirilla.,Charge and release: a continuous beam that follows your crosshair.
+Carga y suelta: una onda corre por el suelo hasta el cristal.,Carga y suelta: una onda corre por el suelo hasta el cristal.,Charge and release: a wave runs along the ground to the crystal.
+Carga y suelta: un pulso que atrae los fragmentos.,Carga y suelta: un pulso que atrae los fragmentos.,Charge and release: a pulse that pulls in the shards.
 UN APRENDIZ. UNA CHISPITA. UN CRISTAL DEL TAMAÑO DE UNA MONTAÑA.,UN APRENDIZ. UNA CHISPITA. UN CRISTAL DEL TAMAÑO DE UNA MONTAÑA.,ONE APPRENTICE. ONE TINY SPARK. ONE MOUNTAIN-SIZED CRYSTAL.
 SPOILER: PROBABLEMENTE.,SPOILER: PROBABLEMENTE.,SPOILER: PROBABLY.
 TU MAESTRO DICE QUE NO. TU MAESTRO NO ESTÁ AQUÍ.,TU MAESTRO DICE QUE NO. TU MAESTRO NO ESTÁ AQUÍ.,YOUR MASTER SAYS NO. YOUR MASTER ISN'T HERE.
@@ -105,6 +121,8 @@ Corazón Cristalino,Corazón Cristalino,Crystal Heart
 ¡DEMASIADO DURO! EL CORAZÓN SÓLO CEDE ANTE UNA COMBINACIÓN,¡DEMASIADO DURO! EL CORAZÓN SÓLO CEDE ANTE UNA COMBINACIÓN,TOO HARD! THE HEART ONLY YIELDS TO A COMBINATION
 Manto Geódico,Manto Geódico,Geode Mantle
 Venas Resonantes,Venas Resonantes,Resonant Veins
+Rayo,Rayo,Lightning
+Tierra,Tierra,Earth
 Escarcha,Escarcha,Frost
 Chispa,Chispa,Spark
 Fragmento grande,Fragmento grande,Big shard
@@ -113,15 +131,66 @@ Fragmento,Fragmento,Shard
 fragmentos,fragmentos,shards
 Astilla,Astilla,Splinter
 astillas,astillas,splinters
+Lanza Cargada,Lanza Cargada,Charged Lance
+"Hielo cargado de rayo: perfora muy hondo, salta en chispas por el túnel y suelta fragmentos mayores.","Hielo cargado de rayo: perfora muy hondo, salta en chispas por el túnel y suelta fragmentos mayores.","Ice charged with lightning: it drills very deep, sparks jump along the tunnel and it drops bigger shards."
+"Si el hielo atraviesa, ¿qué hará con un rayo dentro?","Si el hielo atraviesa, ¿qué hará con un rayo dentro?","If ice pierces, what will it do with lightning inside?"
+Terremoto,Terremoto,Earthquake
+Golpeas el suelo: una onda corre hasta el cristal y su base revienta desde abajo.,Golpeas el suelo: una onda corre hasta el cristal y su base revienta desde abajo.,You strike the ground: a wave runs to the crystal and its base bursts from below.
+Piedra contra piedra no vuela: hace temblar.,Piedra contra piedra no vuela: hace temblar.,Stone against stone doesn't fly: it makes things shake.
 Bola de Fuego,Bola de Fuego,Fireball
+Dos llamas fundidas en una bola que estalla en área y deja el cristal ardiendo. El primer hechizo de verdad.,Dos llamas fundidas en una bola que estalla en área y deja el cristal ardiendo. El primer hechizo de verdad.,Two flames fused into a ball that bursts over an area and leaves the crystal burning. Your first real spell.
+Una chispa sola es tímida. ¿Y si juntas dos y esperas?,Una chispa sola es tímida. ¿Y si juntas dos y esperas?,One spark alone is shy. What if you join two and wait?
+Lanza de Hielo,Lanza de Hielo,Ice Lance
+Una lanza de hielo que perfora un túnel hondo en el cristal y deja sus paredes congeladas.,Una lanza de hielo que perfora un túnel hondo en el cristal y deja sus paredes congeladas.,A lance of ice that drills a deep tunnel into the crystal and leaves its walls frozen.
+El frío que se junta con el frío no rompe: atraviesa.,El frío que se junta con el frío no rompe: atraviesa.,Cold joined with cold doesn't break: it pierces.
+Magnetismo,Magnetismo,Magnetism
+Utilidad: un pulso magnético atrae hacia ti todos los fragmentos del suelo que te quepan.,Utilidad: un pulso magnético atrae hacia ti todos los fragmentos del suelo que te quepan.,"Utility: a magnetic pulse pulls every shard on the ground toward you, as many as you can carry."
+"El rayo empuja, la tierra atrae. ¿Y si atraen lo que has roto?","El rayo empuja, la tierra atrae. ¿Y si atraen lo que has roto?","Lightning pushes, earth pulls. What if they pull in what you broke?"
+Meteoro,Meteoro,Meteor
+"Círculos mágicos se abren en el cielo, uno sobre otro. Al soltar, una roca ardiendo cae del cielo y abre un cráter enorme.","Círculos mágicos se abren en el cielo, uno sobre otro. Al soltar, una roca ardiendo cae del cielo y abre un cráter enorme.","Magic circles open in the sky, one above another. On release, a burning rock falls from the sky and opens a huge crater."
+El fuego solo vuela. Dale un cuerpo de piedra y caerá del cielo.,El fuego solo vuela. Dale un cuerpo de piedra y caerá del cielo.,Fire alone just flies. Give it a body of stone and it will fall from the sky.
+Haz de Plasma,Haz de Plasma,Plasma Beam
+Un haz continuo de plasma que sigue tu mirilla durante un segundo y medio: barre el cristal.,Un haz continuo de plasma que sigue tu mirilla durante un segundo y medio: barre el cristal.,A continuous plasma beam that follows your crosshair for a second and a half: sweep the crystal.
+El fuego que no se apaga y el rayo que no se va: mantenlos y no sueltes la mirada.,El fuego que no se apaga y el rayo que no se va: mantenlos y no sueltes la mirada.,The fire that won't go out and the lightning that won't leave: hold them and keep your eyes on it.
+Lluvia de Estalactitas,Lluvia de Estalactitas,Stalactite Rain
+Un círculo en el cielo y del cielo cae una lluvia de estalactitas de hielo sobre toda la zona.,Un círculo en el cielo y del cielo cae una lluvia de estalactitas de hielo sobre toda la zona.,"A circle in the sky, and from the sky a rain of ice stalactites falls over the whole area."
+"La piedra pesa, el hielo corta. Juntos, llueven.","La piedra pesa, el hielo corta. Juntos, llueven.","Stone is heavy, ice cuts. Together, they rain."
+Explosión de Vapor,Explosión de Vapor,Steam Explosion
+Reacción: el fuego sobre cristal congelado lo hace estallar en vapor: más daño y una lluvia de fragmentos.,Reacción: el fuego sobre cristal congelado lo hace estallar en vapor: más daño y una lluvia de fragmentos.,Reaction: fire on frozen crystal makes it burst into steam: more damage and a shower of shards.
+"Reacción: lo que hiela, el fuego lo hace explotar.","Reacción: lo que hiela, el fuego lo hace explotar.","Reaction: what frost freezes, fire makes explode."
+Temple,Temple,Tempering
+Reacción: la escarcha sobre cristal ardiendo lo templa de golpe y se parte en fragmentos grandes.,Reacción: la escarcha sobre cristal ardiendo lo templa de golpe y se parte en fragmentos grandes.,Reaction: frost on burning crystal tempers it at once and it splits into big shards.
+"Reacción: lo que arde, enfríalo de golpe.","Reacción: lo que arde, enfríalo de golpe.","Reaction: what burns, cool it down at once."
 Choque Térmico,Choque Térmico,Thermal Shock
-Despertar la Escarcha,Despertar la Escarcha,Awaken Frost
-"Aprendes el segundo elemento: lento, frío, y congela el cristal (los otros golpes hacen el doble allí). Cámbialo en cada mano con Q / E.","Aprendes el segundo elemento: lento, frío, y congela el cristal (los otros golpes hacen el doble allí). Cámbialo en cada mano con Q / E.","You learn the second element: slow, cold, and it freezes the crystal (other hits deal double damage there). Switch it on each hand with Q / E."
+Fuego y hielo a la vez: el cristal se resquebraja y el siguiente golpe en esa zona hace el triple.,Fuego y hielo a la vez: el cristal se resquebraja y el siguiente golpe en esa zona hace el triple.,Fire and ice at once: the crystal cracks and the next hit on that spot deals triple damage.
+"Lo caliente y lo frío, de la mano, rompen lo que no rompe nada.","Lo caliente y lo frío, de la mano, rompen lo que no rompe nada.","Hot and cold, hand in hand, break what nothing breaks."
+Juicio del Trueno,Juicio del Trueno,Thunder Judgment
+Abre círculos en el cielo sobre el blanco y descarga un rayo colosal que salta a su alrededor.,Abre círculos en el cielo sobre el blanco y descarga un rayo colosal que salta a su alrededor.,Opens circles in the sky above the target and unleashes a colossal bolt that jumps all around it.
+"Dos chispas del cielo, si las sostienes, llaman a su madre.","Dos chispas del cielo, si las sostienes, llaman a su madre.","Two sparks of the sky, if you hold them, call their mother."
+Despertar el Rayo,Despertar el Rayo,Awaken Lightning
+Aprendes el Rayo: casi instantáneo y salta a otro punto del cristal. Combínalo con los demás y descubre qué pasa.,Aprendes el Rayo: casi instantáneo y salta a otro punto del cristal. Combínalo con los demás y descubre qué pasa.,"You learn Lightning: almost instant, and it jumps to another spot on the crystal. Combine it with the others and see what happens."
+Dormido,Dormido,Dormant
+Despierto,Despierto,Awake
+Despertar la Tierra,Despertar la Tierra,Awaken Earth
+"Aprendes la Tierra: lenta y pesada, arranca fragmentos más grandes. Con fuego... mira al cielo.","Aprendes la Tierra: lenta y pesada, arranca fragmentos más grandes. Con fuego... mira al cielo.","You learn Earth: slow and heavy, it tears off bigger shards. With fire... look at the sky."
 Dormida,Dormida,Dormant
 Despierta,Despierta,Awake
+Despertar la Escarcha,Despertar la Escarcha,Awaken Frost
+"Aprendes el segundo elemento: lento, frío, y congela el cristal (los otros golpes hacen el doble allí). Cámbialo en cada mano con Q / E.","Aprendes el segundo elemento: lento, frío, y congela el cristal (los otros golpes hacen el doble allí). Cámbialo en cada mano con Q / E.","You learn the second element: slow, cold, and it freezes the crystal (other hits deal double damage there). Switch it on each hand with Q / E."
 Bolsa de aprendiz,Bolsa de aprendiz,Apprentice's bag
 Una bolsita encantada: llevas más fragmentos en cada viaje al Pilón.,Una bolsita encantada: llevas más fragmentos en cada viaje al Pilón.,A small enchanted bag: carry more shards on each trip to the Pylon.
 caben %d,caben %d,holds %d
+Potencia,Potencia,Power
+"El rayo golpea más fuerte, sale antes y salta más. Desde el nivel 6 sale de la mano con círculos de runas.","El rayo golpea más fuerte, sale antes y salta más. Desde el nivel 6 sale de la mano con círculos de runas.","Lightning hits harder, comes out sooner and jumps further. From level 6 it leaves your hand through rune circles."
+Chispazo,Chispazo,Zap
+Descarga,Descarga,Discharge
+Relámpago,Relámpago,Flash
+Centella,Centella,Spark bolt
+Tormenta,Tormenta,Storm
+Rayo arcano,Rayo arcano,Arcane bolt
+Trueno eterno,Trueno eterno,Eternal thunder
+Furia del cielo,Furia del cielo,Fury of the sky
+Juicio,Juicio,Judgment
 Cadencia,Cadencia,Cadence
 Las manos recargan antes: lanzas más a menudo.,Las manos recargan antes: lanzas más a menudo.,Your hands recharge sooner: you cast more often.
 recarga x%.2f,recarga x%.2f,recharge x%.2f
@@ -137,12 +206,22 @@ Doble salto,Doble salto,Double jump
 Un segundo impulso de aire mágico en pleno salto. Llega más alto y cae donde quieras.,Un segundo impulso de aire mágico en pleno salto. Llega más alto y cae donde quieras.,A second burst of magic air mid-jump. Reach higher and land wherever you like.
 Un salto,Un salto,One jump
 Dos saltos,Dos saltos,Two jumps
+Rocas más grandes y más pesadas. Desde el nivel 6 salen de la mano con círculos de runas.,Rocas más grandes y más pesadas. Desde el nivel 6 salen de la mano con círculos de runas.,"Bigger, heavier rocks. From level 6 they leave your hand through rune circles."
+Guijarro,Guijarro,Pebble
+Piedra,Piedra,Stone
+Roca,Roca,Rock
+Peñasco,Peñasco,Boulder
+Monolito,Monolito,Monolith
+Montaña,Montaña,Mountain
+Roca arcana,Roca arcana,Arcane rock
+Corazón de piedra,Corazón de piedra,Heart of stone
+Titán,Titán,Titan
+Planeta,Planeta,Planet
 "La bola de fuego arde más. Desde el nivel 6, al cargarla se abren círculos mágicos con runas hacia donde apuntas: uno más por nivel.","La bola de fuego arde más. Desde el nivel 6, al cargarla se abren círculos mágicos con runas hacia donde apuntas: uno más por nivel.","The fireball burns hotter. From level 6, magic circles with runes open toward your aim while you charge it: one more per level."
 daño x%.1f,daño x%.1f,damage x%.1f
 Bola colosal,Bola colosal,Colossal fireball
 "La Bola de Fuego se hincha al salir de las manos: explosión, cráter y fuego mucho más grandes.","La Bola de Fuego se hincha al salir de las manos: explosión, cráter y fuego mucho más grandes.","The Fireball swells as it leaves your hands: a much bigger blast, crater and fire."
 tamaño x%.2f,tamaño x%.2f,size x%.2f
-Potencia,Potencia,Power
 "La escarcha se endurece: más daño, más rápida y congela más grande. Desde el nivel 6 sale de la mano con círculos de runas.","La escarcha se endurece: más daño, más rápida y congela más grande. Desde el nivel 6 sale de la mano con círculos de runas.","Frost hardens: more damage, faster and a bigger freeze. From level 6 it leaves your hand through rune circles."
 Hielo,Hielo,Ice
 Ventisca,Ventisca,Blizzard

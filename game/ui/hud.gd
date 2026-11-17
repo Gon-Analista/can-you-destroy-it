@@ -112,6 +112,12 @@ func _ready() -> void:
 	Events.shard_collected.connect(_on_shard_collected)
 	Events.shard_targeted.connect(_on_shard_targeted)
 	Events.recipe_discovered.connect(_on_recipe_discovered)
+	# Un elemento nuevo invita a probar combinaciones.
+	Events.upgrade_bought.connect(
+		func(id: StringName, _l: int) -> void:
+			if String(id).begins_with("awaken_"):
+				Events.hint.emit(tr("¡ELEMENTO NUEVO! JÚNTALO CON LOS OTROS  ·  B LIBRO"), C_GOLD)
+	)
 	Events.shard_delivered.connect(_on_shard_delivered)
 	Events.crystal_burned.connect(_on_burned)
 	_set_layer_title(GameState.LAYERS[0])
@@ -120,6 +126,9 @@ func _ready() -> void:
 	_grimoire = Grimoire.new()
 	_grimoire.name = "Grimoire"
 	add_child(_grimoire)
+	var book := SpellBook.new()
+	book.name = "SpellBook"
+	add_child(book)
 	menu = GameMenu.new()
 	menu.name = "GameMenu"
 	add_child(menu)
@@ -319,6 +328,12 @@ func _on_recipe_discovered(recipe: SpellRecipe) -> void:
 	_discovery_title.visible = true
 	_discovery_name.visible = true
 	_discovery_time = DISCOVERY_SEC
+	var found: int = GameState.progression.discovered_recipes.size()
+	_discovery_title.text = (
+		tr("¡COMBINACIÓN NUEVA!")
+		+ "   "
+		+ tr("%d / %d  ·  B LIBRO") % [found, SpellCaster.RECIPES.size()]
+	)
 	AudioDirector.play_sfx(DISCOVERY_SFX, -2.0)
 	HitStop.trigger(get_tree(), 0.22, 0.15)
 

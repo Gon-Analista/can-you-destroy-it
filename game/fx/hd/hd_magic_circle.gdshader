@@ -103,7 +103,8 @@ void fragment() {
 	if (r > 1.04) {
 		discard;
 	}
-	float w = 0.016 * (1.0 + flash * 0.6);
+	// Nunca más fino que ~1,5 píxeles en pantalla (los círculos grandes y lejanos no se pierden).
+	float w = max(0.016, fwidth(r) * 1.6) * (1.0 + flash * 0.6);
 	float core = circle_lines(p, r, w);
 	float outline = circle_lines(p, r, w * 2.6);
 	// Aparece barriendo el ángulo desde arriba.

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="SpellRecipe" format=3]
+
+[ext_resource type="Script" path="res://data/defs/spell_recipe.gd" id="main"]
+
+[resource]
+script = ExtResource("main")
+id = &"temper"
+display_name = "Temple"
+elements = Array[StringName]([&"frost", &"spark"])
+description = "Reacción: la escarcha sobre cristal ardiendo lo templa de golpe y se parte en fragmentos grandes."
+riddle = "Reacción: lo que arde, enfríalo de golpe."
+is_reaction = true

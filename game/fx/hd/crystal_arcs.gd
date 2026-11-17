@@ -77,6 +77,24 @@ func strike(at: Vector3, normal: Vector3, power: float, color: Color) -> void:
 
 
 ## La tormenta de rayos de un "resquebrajo": rayos largos que trepan por todo el cristal.
+## Un rayo quebrado de `from` a `to` (Trueno, rayos que saltan). Con `jag` pequeño y sin ramas
+## sale casi recto (el Haz de Plasma).
+func bolt_between(
+	from: Vector3,
+	to: Vector3,
+	width: float,
+	color: Color,
+	life: float,
+	jag: float = 0.45,
+	branch: bool = true
+) -> void:
+	var d: Vector3 = to - from
+	if d.length() < 0.05:
+		return
+	_bolt(from, d.normalized(), d.length(), width, color, life, jag, branch)
+	set_process(true)
+
+
 func storm(base: Vector3, height: float, radius: float, color: Color) -> void:
 	for k: int in 16:
 		var a: float = _rng.randf() * TAU
@@ -98,7 +116,14 @@ func storm(base: Vector3, height: float, radius: float, color: Color) -> void:
 
 
 func _bolt(
-	from: Vector3, dir: Vector3, length: float, width: float, color: Color, life: float
+	from: Vector3,
+	dir: Vector3,
+	length: float,
+	width: float,
+	color: Color,
+	life: float,
+	jag: float = 0.45,
+	branch: bool = true
 ) -> void:
 	var i: int = _next
 	_next = (_next + 1) % MAX_BOLTS
@@ -110,7 +135,7 @@ func _bolt(
 	var seg: float = length / float(SEGMENTS)
 	for s: int in SEGMENTS:
 		var jitter: Vector3 = (
-			(side * _rng.randf_range(-1, 1) + up * _rng.randf_range(-1, 1)) * seg * 0.45
+			(side * _rng.randf_range(-1, 1) + up * _rng.randf_range(-1, 1)) * seg * jag
 		)
 		p += dir * seg + jitter
 		pts.append(p)
@@ -120,7 +145,7 @@ func _bolt(
 	_width[i] = width
 	_color[i] = color
 	# A veces el rayo se ramifica desde la mitad.
-	if _rng.randf() < 0.45 and length > 1.0:
+	if branch and _rng.randf() < 0.45 and length > 1.0:
 		var j: int = _next
 		_next = (_next + 1) % MAX_BOLTS
 		var bpts := PackedVector3Array()

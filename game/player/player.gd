@@ -129,6 +129,25 @@ func _on_spell_impacted(_hit: SpellHit) -> void:
 		refill_flash = 1.0
 
 
+## Magnetismo (combinación Tierra + Rayo): atrae los fragmentos del suelo en `radius` mientras
+## quepan en la bolsa (o los manda a la tolva con Envío directo). Devuelve cuántos.
+func magnet_pull(radius: float) -> int:
+	if _shards == null:
+		return 0
+	var n: int = 0
+	for k: int in 40:
+		if not GameState.has_direct_send() and GameState.is_bag_full():
+			break
+		var i: int = _shards.nearest(global_position, radius)
+		if i < 0:
+			break
+		_collect(i)
+		n += 1
+	if n > 0:
+		AudioDirector.play_sfx(TELEKINESIS_SFX, -4.0, 0.8)
+	return n
+
+
 ## Carga de levitación (0..1) para el HUD.
 func fuel_ratio() -> float:
 	return levitation_fuel / levitation_max if levitation_max > 0.0 else 0.0

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="SpellRecipe" format=3]
+
+[ext_resource type="Script" path="res://data/defs/spell_recipe.gd" id="main"]
+
+[resource]
+script = ExtResource("main")
+id = &"steam"
+display_name = "Explosión de Vapor"
+elements = Array[StringName]([&"spark", &"frost"])
+description = "Reacción: el fuego sobre cristal congelado lo hace estallar en vapor: más daño y una lluvia de fragmentos."
+riddle = "Reacción: lo que hiela, el fuego lo hace explotar."
+is_reaction = true

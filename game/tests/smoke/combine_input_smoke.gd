@@ -102,13 +102,9 @@ func _run() -> void:
 		"Chispa + Escarcha: Choque Térmico"
 	)
 	caster.call(&"cycle_element", 1)
-	_check(caster.call(&"recipe_for_hands") == null, "Escarcha + Escarcha: sin receta")
-	casts.clear()
-	caster.call(&"_on_press", 0)
-	await process_frame
-	caster.call(&"_on_press", 1)
+	var frost_pair: SpellRecipe = caster.call(&"recipe_for_hands")
 	_check(
-		not caster.call(&"is_combining") and casts.size() == 2, "sin receta, las dos manos lanzan"
+		frost_pair != null and frost_pair.id == &"ice_lance", "Escarcha + Escarcha: Lanza de Hielo"
 	)
 	progression.upgrade_levels.erase(&"awaken_frost")
 

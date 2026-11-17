@@ -1,0 +1,72 @@
+[gd_resource type="Resource" script_class="SpellRecipe" format=3]
+
+[ext_resource type="Script" path="res://data/defs/spell_recipe.gd" id="main"]
+[ext_resource type="Script" path="res://data/defs/spell_tier.gd" id="tier"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_spell_combine_01.ogg" id="combine"]
+[ext_resource type="Resource" path="res://data/spells/vfx_thunder.tres" id="vis"]
+[ext_resource type="AudioStream" path="res://audio/sfx/amb_storm_charge_loop.ogg" id="loop"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_thunder_01.ogg" id="sfx_thunder_01"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_bolt_impact_01.ogg" id="sfx_bolt_impact_01"]
+
+[sub_resource type="Gradient" id="ramp"]
+offsets = PackedFloat32Array(0, 0.2, 0.45, 0.72, 1)
+colors = PackedColorArray(2.6, 2.6, 2.8, 1, 2, 1.8, 0.8, 1, 1.2, 0.9, 0.4, 1, 0.6, 0.4, 1.2, 1, 0.2, 0.1, 0.5, 1)
+
+[sub_resource type="Resource" id="t"]
+script = ExtResource("tier")
+damage = 8
+speed = 400.0
+wobble = 0.0
+shards_min = 3
+shards_max = 5
+impact_particles = 60
+light_energy = 8.0
+crack_radius = 2.2
+shake = 0.45
+orb_scale = 10.0
+trail_width = 1.6
+trail_length = 0.12
+color_core = Color(1, 1, 0.9, 1)
+color_glow = Color(1, 0.85, 0.4, 1)
+impact_tint = Color(1, 0.95, 0.6, 1)
+size = 0.5
+cooldown_sec = 3.0
+visual = ExtResource("vis")
+trail_ramp = SubResource("ramp")
+flight_sfx = ExtResource("loop")
+
+[resource]
+script = ExtResource("main")
+id = &"thunder"
+display_name = "Juicio del Trueno"
+elements = Array[StringName]([&"bolt", &"bolt"])
+description = "Abre círculos en el cielo sobre el blanco y descarga un rayo colosal que salta a su alrededor."
+riddle = "Dos chispas del cielo, si las sostienes, llaman a su madre."
+delivery = 1
+damage_multiplier = 3.0
+area_radius = 0.0
+area_hits = 0
+burn_sec = 0.0
+burn_damage = 2
+burn_tick_sec = 0.4
+sky_height = 46.0
+fall_sec = 0.12
+sky_circles = 3
+rain_count = 0
+rain_radius = 4.0
+pierce_depth = 0.0
+freeze_trail = false
+chain_count = 4
+beam_sec = 0.0
+shard_bonus = 0
+circle_color = Color(1.5, 1.4, 0.6, 1)
+circle_hot = Color(1.8, 1.8, 1.6, 1)
+charge_sec = 1.1
+min_power = 0.5
+cooldown_sec = 3.0
+tier = SubResource("t")
+visual = ExtResource("vis")
+combine_sfx = ExtResource("combine")
+charge_loop_sfx = ExtResource("loop")
+cast_sfx = Array[AudioStream]([ExtResource("sfx_thunder_01")])
+impact_sfx = Array[AudioStream]([ExtResource("sfx_bolt_impact_01")])
