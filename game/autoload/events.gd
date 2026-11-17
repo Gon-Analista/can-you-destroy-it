@@ -38,6 +38,8 @@ signal shard_sent_to_pylon(type: ShardType)
 signal grimoire_requested(at_sanctum: bool)
 signal menu_opened
 signal menu_closed
+## El jugador cambió de idioma en Opciones: los textos fijos se rehacen.
+signal locale_changed
 signal grimoire_opened
 signal grimoire_closed
 ## Mensaje para el HUD ("¡BOLSA LLENA!", "¡MEJORA DISPONIBLE!"...).

@@ -9,6 +9,7 @@ enum Mode { HIDDEN, TITLE, PAUSE }
 
 const FONT_SMALL: FontFile = preload("res://ui/fonts/silkscreen_regular.woff2")
 const FONT_BOLD: FontFile = preload("res://ui/fonts/pixelify_sans_bold.woff2")
+const TITLE_MUSIC: AudioStream = preload("res://audio/music/music_title.ogg")
 const TICK_SFX: AudioStream = preload("res://audio/sfx/sfx_ui_tick_01.ogg")
 const OK_SFX: AudioStream = preload("res://audio/sfx/sfx_book_open_01.ogg")
 const C_BG := Color("#14183a")
@@ -27,9 +28,7 @@ var mode: Mode = Mode.HIDDEN
 
 var _main_box: VBoxContainer
 var _options_box: VBoxContainer
-var _logo: Label
-var _subtitle: Label
-var _t: float = 0.0
+var _logo: TitleLogo
 var _theme: Theme
 
 
@@ -39,14 +38,9 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_theme = _make_theme()
 	theme = _theme
-	_logo = _label("CAN YOU DESTROY IT?", FONT_BOLD, 32, C_GOLD_LIGHT)
-	_logo.position = Vector2(0, 58)
-	_logo.size = Vector2(640, 40)
-	_subtitle = _label(
-		"UN APRENDIZ, UNA CHISPITA Y UN CRISTAL DEL TAMAÑO DE UNA MONTAÑA", FONT_SMALL, 8, C_CYAN
-	)
-	_subtitle.position = Vector2(0, 100)
-	_subtitle.size = Vector2(640, 10)
+	_logo = TitleLogo.new()
+	_logo.name = "TitleLogo"
+	add_child(_logo)
 	_main_box = VBoxContainer.new()
 	_main_box.position = Vector2(240, 150)
 	_main_box.size = Vector2(160, 120)
@@ -64,10 +58,8 @@ func _ready() -> void:
 
 ## Pantalla de título (al arrancar el juego).
 func show_title() -> void:
-	if skip_title_once:
-		skip_title_once = false
-		return
 	mode = Mode.TITLE
+	AudioDirector.play_theme(TITLE_MUSIC)
 	_open()
 
 
@@ -83,6 +75,8 @@ func _open() -> void:
 
 
 func _close() -> void:
+	if mode == Mode.TITLE:
+		AudioDirector.stop_theme()
 	visible = false
 	mode = Mode.HIDDEN
 	get_tree().paused = false
@@ -118,7 +112,6 @@ func _rebuild_main() -> void:
 	for c: Node in _main_box.get_children():
 		c.queue_free()
 	_logo.visible = mode == Mode.TITLE
-	_subtitle.visible = mode == Mode.TITLE
 	if mode == Mode.TITLE:
 		var has_save: bool = (
 			GameState.progression.pylon_progress > 0
@@ -135,7 +128,7 @@ func _rebuild_main() -> void:
 		_main_box.add_child(pause)
 		_button("REANUDAR", _close, true)
 	_button("OPCIONES", _show_options)
-	_button("GUARDAR Y SALIR" if mode == Mode.PAUSE else "SALIR", _quit)
+	_button(tr("GUARDAR Y SALIR") if mode == Mode.PAUSE else tr("SALIR"), _quit)
 	await get_tree().process_frame
 	if _main_box.get_child_count() > 0:
 		for c: Node in _main_box.get_children():
@@ -180,7 +173,6 @@ func _show_options() -> void:
 	_main_box.visible = false
 	_options_box.visible = true
 	_logo.visible = false
-	_subtitle.visible = false
 	for c: Node in _options_box.get_children():
 		if c is HSlider:
 			(c as HSlider).grab_focus()
@@ -199,11 +191,12 @@ func _build_options() -> void:
 	remove_child(title)
 	title.custom_minimum_size = Vector2(260, 22)
 	_options_box.add_child(title)
+	_language_button()
 	for bus: Array in [
-		["VOLUMEN GENERAL", "Master"],
-		["MÚSICA", "Music"],
-		["EFECTOS", "SFX"],
-		["AMBIENTE", "Ambience"]
+		[tr("VOLUMEN GENERAL"), "Master"],
+		[tr("MÚSICA"), "Music"],
+		[tr("EFECTOS"), "SFX"],
+		[tr("AMBIENTE"), "Ambience"]
 	]:
 		var bus_name: String = bus[1]
 		_slider(
@@ -239,6 +232,40 @@ func _build_options() -> void:
 	_options_box.add_child(back)
 
 
+## "IDIOMA: ESPAÑOL": cada clic pasa al siguiente idioma cargado y rehace los menús.
+func _language_button() -> void:
+	var codes: PackedStringArray = Settings.locales()
+	if codes.size() < 2:
+		return
+	var lang := Button.new()
+	lang.text = tr("IDIOMA: %s") % Settings.language_name(Settings.current_locale())
+	lang.custom_minimum_size = Vector2(260, 20)
+	lang.add_theme_color_override(&"font_color", C_GOLD_LIGHT)
+	lang.pressed.connect(
+		func() -> void:
+			var i: int = codes.find(Settings.current_locale())
+			Settings.set_locale(codes[wrapi(i + 1, 0, codes.size())])
+			AudioDirector.play_sfx(OK_SFX, -10.0)
+			_relocalize()
+	)
+	_options_box.add_child(lang)
+
+
+## Rehace los textos de los menús con el idioma nuevo y avisa al resto (HUD, Grimorio...).
+func _relocalize() -> void:
+	for c: Node in _options_box.get_children():
+		_options_box.remove_child(c)
+		c.queue_free()
+	_build_options()
+	_rebuild_main()
+	_logo.relocalize()
+	Events.locale_changed.emit()
+	for c: Node in _options_box.get_children():
+		if c is Button:
+			(c as Button).grab_focus()
+			break
+
+
 func _slider(text: String, value: float, on_change: Callable) -> void:
 	var l: Label = _label(text, FONT_SMALL, 8, C_CYAN)
 	remove_child(l)
@@ -258,20 +285,7 @@ func _slider(text: String, value: float, on_change: Callable) -> void:
 	_options_box.add_child(s)
 
 
-func _process(delta: float) -> void:
-	_t += delta
-	if visible and _logo.visible:
-		# El título late y brilla a saltos, como pixel art.
-		var k: float = floor(_t * 6.0) / 6.0
-		_logo.position.y = 58 + roundi(sin(k * 1.4) * 2.0)
-		_logo.add_theme_color_override(
-			&"font_color",
-			(
-				C_GOLD_LIGHT.lerp(C_PINK, 0.5 + 0.5 * sin(k * 0.9))
-				if fmod(k, 3.0) < 0.5
-				else C_GOLD_LIGHT
-			)
-		)
+func _process(_delta: float) -> void:
 	queue_redraw()
 
 
@@ -280,8 +294,11 @@ func _draw() -> void:
 		return
 	if mode == Mode.TITLE:
 		# Velo suave arriba y abajo para que el título se lea sobre el valle.
-		draw_rect(Rect2(0, 0, 640, 130), Color(C_BG, 0.55))
-		draw_rect(Rect2(0, 300, 640, 60), Color(C_BG, 0.45))
+		for y: int in range(0, 160, 2):
+			var a: float = 0.6 * pow(1.0 - y / 160.0, 1.5)
+			draw_rect(Rect2(0, y, 640, 2), Color(C_BG, a))
+		for y: int in range(290, 360, 2):
+			draw_rect(Rect2(0, y, 640, 2), Color(C_BG, 0.5 * pow((y - 290) / 70.0, 1.5)))
 	else:
 		draw_rect(Rect2(Vector2.ZERO, size), Color(C_BG, 0.7))
 	# Marco del panel.

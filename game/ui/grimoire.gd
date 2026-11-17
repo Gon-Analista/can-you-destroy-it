@@ -22,6 +22,7 @@ const RIGHT_PAGE := Rect2i(324, 42, 236, 276)
 ## Páginas del Grimorio: una constelación por elemento (y la del Mago, con lo general).
 ## [id del elemento ("" = Mago), nombre, color del título, cielo, cielo profundo, se abre con
 ## el Pilón al...].
+# i18n
 const PAGES: Array[Array] = [
 	[&"", "MAGO", "#ffd27a", "#1b2a6b", "#141c4d", 0.0],
 	[&"spark", "CHISPA", "#ff9a3a", "#3a1840", "#26102e", 0.0],
@@ -30,6 +31,7 @@ const PAGES: Array[Array] = [
 	[&"earth", "TIERRA", "#c9a26b", "#2e2a24", "#1f1c18", 0.5],
 	[&"arcane", "ARCANO", "#c79bff", "#24164a", "#170e33", 0.75],
 ]
+# i18n
 const PAGE_TITLES: PackedStringArray = [
 	"CONSTELACIÓN DEL MAGO",
 	"CONSTELACIÓN DE LA CHISPA",
@@ -260,16 +262,15 @@ func _ready() -> void:
 	_cost = _label("", 16, C_INK, Rect2(rx + 36, ry + 176, 160, 20), 0, true)
 	_button = _label("", 8, C_INK, Rect2(rx + 18, ry + 214, 200, 10), 1)
 	_mana = _label("", 8, C_GOLD_LIGHT, Rect2(rx + 120, ry - 2 - 10 + 2, 112, 10), 2)
-	_footer = _label(
-		"Q/E ELEMENTO  ·  W/S ESTRELLA  ·  CLIC O ESPACIO: INSCRIBIR  ·  TAB / ESC CERRAR",
-		8,
-		C_CYAN,
-		Rect2(70, 330, 500, 10),
-		1
-	)
+	_footer = _label(_footer_text(), 8, C_CYAN, Rect2(70, 330, 500, 10), 1)
 	Events.grimoire_requested.connect(open)
 	Events.mana_changed.connect(func(_m: int) -> void: _refresh())
+	Events.locale_changed.connect(func() -> void: _footer.text = _footer_text())
 	set_process(false)
+
+
+func _footer_text() -> String:
+	return tr("Q/E ELEMENTO  ·  W/S ESTRELLA  ·  CLIC O ESPACIO: INSCRIBIR  ·  TAB / ESC CERRAR")
 
 
 func open(at_sanctum: bool) -> void:

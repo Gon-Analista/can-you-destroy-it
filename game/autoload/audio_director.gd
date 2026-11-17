@@ -13,6 +13,10 @@ var _music: AudioStreamPlayer
 var _music_stream: AudioStreamSynchronized
 var _music_layers: int = 0
 var _music_tween: Tween
+## Tema aparte (el del título) que suena por encima de la música del valle, que se silencia.
+var _theme: AudioStreamPlayer
+var _theme_tween: Tween
+var _music_base_db: float = -8.0
 
 
 func _ready() -> void:
@@ -64,7 +68,8 @@ func play_music(
 		_music_stream.set_sync_stream(i, layers[i])
 		_music_stream.set_sync_stream_volume(i, 0.0 if i < _music_layers else MUTED_DB)
 	_music.stream = _music_stream
-	_music.volume_db = volume_db
+	_music_base_db = volume_db
+	_music.volume_db = volume_db if _theme == null or not _theme.playing else -60.0
 	_music.play()
 
 
@@ -96,3 +101,35 @@ func get_music_layers() -> int:
 
 func _set_layer_volume(db: float, index: int) -> void:
 	_music_stream.set_sync_stream_volume(index, db)
+
+
+## Tema propio (p. ej. el del título): suena solo y la música del valle se calla mientras.
+func play_theme(stream: AudioStream, volume_db: float = -6.0) -> void:
+	if _theme == null:
+		_theme = AudioStreamPlayer.new()
+		_theme.bus = &"Music"
+		_theme.process_mode = Node.PROCESS_MODE_ALWAYS
+		add_child(_theme)
+	if _theme_tween:
+		_theme_tween.kill()
+	if _theme.playing and _theme.stream == stream:
+		_theme.volume_db = volume_db
+		return
+	_theme.stream = stream  # bucle activado en la importación
+	_theme.volume_db = volume_db
+	_theme.play()
+	if _music:
+		_music.volume_db = -60.0
+
+
+## Funde el tema con la música del valle.
+func stop_theme(fade_sec: float = 2.5) -> void:
+	if _theme == null or not _theme.playing:
+		return
+	if _theme_tween:
+		_theme_tween.kill()
+	_theme_tween = create_tween().set_parallel(true)
+	_theme_tween.tween_property(_theme, "volume_db", -60.0, fade_sec)
+	if _music:
+		_theme_tween.tween_property(_music, "volume_db", _music_base_db, fade_sec * 1.2)
+	_theme_tween.chain().tween_callback(_theme.stop)

@@ -82,15 +82,7 @@ func _ready() -> void:
 	_place(_banner, Control.PRESET_CENTER, Rect2(-150, -62, 300, 20))
 	_banner.pivot_offset = Vector2(150, 10)
 	_banner.visible = false
-	_prompt = _label(
-		(
-			"CLIC PARA EMPEZAR  ·  WASD MOVERSE  ·  SHIFT CORRER  ·  ESPACIO SALTAR\n"
-			+ "CLIC IZQ / DER: CADA MANO  ·  LOS DOS A LA VEZ: COMBINAR  ·  F RECOGER  ·  TAB GRIMORIO"
-		),
-		8,
-		C_TEXT,
-		HORIZONTAL_ALIGNMENT_CENTER
-	)
+	_prompt = _label(_controls_text(), 8, C_TEXT, HORIZONTAL_ALIGNMENT_CENTER)
 	_place(_prompt, Control.PRESET_CENTER, Rect2(-310, 30, 620, 22))
 	_discovery_title = _label("¡COMBINACIÓN NUEVA!", 8, C_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	_place(_discovery_title, Control.PRESET_CENTER_TOP, Rect2(-150, 62, 300, 10))
@@ -124,6 +116,7 @@ func _ready() -> void:
 		func(layer: CrystalLayerDef, _i: int) -> void: _set_layer_title(layer)
 	)
 	_set_layer_title(GameState.current_layer())
+	Events.locale_changed.connect(_relocalize)
 	# El Grimorio, por encima de todo el HUD, y el menú (título y pausa) encima de todo.
 	_grimoire = Grimoire.new()
 	_grimoire.name = "Grimoire"
@@ -140,6 +133,23 @@ func bind(camera: Camera3D, caster: SpellCaster) -> void:
 	_camera = camera
 	_caster = caster
 	_loop.bind(camera)
+
+
+func _controls_text() -> String:
+	return (
+		tr("CLIC PARA EMPEZAR  ·  WASD MOVERSE  ·  SHIFT CORRER  ·  ESPACIO SALTAR")
+		+ "\n"
+		+ tr(
+			"CLIC IZQ / DER: CADA MANO  ·  LOS DOS A LA VEZ: COMBINAR  ·  F RECOGER  ·  TAB GRIMORIO"
+		)
+	)
+
+
+## Textos fijos del HUD con el idioma nuevo (los que cambian solos se rehacen al actualizarse).
+func _relocalize() -> void:
+	_prompt.text = _controls_text()
+	_discovery_title.text = tr("¡COMBINACIÓN NUEVA!")
+	_set_layer_title(GameState.current_layer())
 
 
 ## "CORTEZA · ESENCIA DEL CRISTAL": la capa en la que se está golpeando.

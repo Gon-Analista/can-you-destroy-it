@@ -44,6 +44,9 @@ func _ready() -> void:
 	)
 	if OS.is_debug_build():
 		_setup_autoplay()
+	# La música del título suena ya durante la pantalla de carga.
+	if _shows_title():
+		AudioDirector.play_theme(GameMenu.TITLE_MUSIC)
 	_warm_up()
 
 
@@ -279,9 +282,20 @@ func _warm_up() -> void:
 	await _frames(10)
 	cam.transform = saved
 	await _frames(2)
-	if get_tree().current_scene == self and not OS.get_cmdline_user_args().has("--autoplay"):
+	if _shows_title():
 		_hud.menu.show_title()
+	GameMenu.skip_title_once = false
 	cover.finish()
+
+
+## El título sólo sale en el juego de verdad (no en el modo demo ni en los tests) y no al volver
+## de "Nueva partida".
+func _shows_title() -> bool:
+	return (
+		get_tree().current_scene == self
+		and not OS.get_cmdline_user_args().has("--autoplay")
+		and not GameMenu.skip_title_once
+	)
 
 
 func _aim(cam: Camera3D, target: Vector3) -> void:

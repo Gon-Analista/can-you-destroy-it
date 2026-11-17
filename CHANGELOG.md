@@ -2,6 +2,36 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-17 · Español e inglés, título con humor y su propia música
+
+**Qué hay nuevo**
+
+- **Idiomas**: todo el juego en **español e inglés** (menús, HUD, Grimorio, mejoras, capas, avisos y frases del
+  título). Se elige en *Opciones → Idioma* y cambia al momento; la primera vez se usa el idioma del sistema.
+  **Añadir otro idioma es añadir una columna** a `game/localization/strings.csv`: el juego carga todos los que haya
+  (ver `game/localization/README.md`). `tools/extract_strings.py` añade al CSV los textos nuevos del código.
+- **Título gracioso**: "CAN YOU / DESTROY IT" con las letras ondulando y un brillo que las recorre, y un **"?" de
+  cristal gigante** que flota y destella. Si le haces clic se queja ("¡EH!", "¡OYE, QUE DUELE!"...), se agrieta y al
+  quinto golpe estalla en esquirlas y se convierte en "!" (luego se recompone). Debajo rotan frases con humor
+  ("SPOILER: PROBABLEMENTE.", "RECOMENDADO POR 9 DE CADA 10 MAGOS SIN CEJAS."...).
+- **Música del título**: un vals mágico a 3/4 (caja de música, arpa, flauta, coro y celesta, 40 s en bucle) cuya
+  melodía se queda "colgada" como una pregunta. Al empezar a jugar se funde con la música del valle.
+- Pruebas sin tocar las opciones: `-- --lang en`.
+
+**Capturas**: `docs/capturas/titulo.png` (español), `docs/capturas/titulo_en.png` y `docs/capturas/grimorio_en.png`.
+
+**Cómo se probó**
+
+- Tests: `progression_smoke`, `combine_input_smoke`, `loop_smoke`, `grimoire_click_smoke`, `hit_stop_smoke`,
+  `music_layers_smoke` y el nuevo `localization_smoke` (idiomas completos y con los mismos `%d`/`%s`): OK.
+  `gdlint` y `gdformat` limpios.
+- Cambio de idioma en vivo desde Opciones (menú, HUD y pistas pasan a inglés); render del título y del Grimorio en
+  inglés.
+
+**Pendiente**
+
+- Revisión del inglés por un hablante nativo.
+
 ## 2026-11-17 · Pasada de calidad: título y pausa, capas del cristal, geodas y entrega más vistosa
 
 **Qué hay nuevo**

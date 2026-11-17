@@ -80,6 +80,7 @@ func _ready() -> void:
 	Events.bag_changed.connect(func(_c: int, _cap: int) -> void: _bag_punch = 1.0)
 	Events.bag_full.connect(_on_bag_full)
 	Events.hint.connect(_push_hint)
+	Events.locale_changed.connect(func() -> void: _pylon_title.text = tr("PILÓN DE MANÁ"))
 	# Primera partida: avisos que enseñan el bucle paso a paso (GDD 8: los 5 primeros minutos).
 	if GameState.progression.pylon_progress == 0:
 		Events.spell_impacted.connect(_on_first_impact, CONNECT_ONE_SHOT)
@@ -164,7 +165,7 @@ func _process(delta: float) -> void:
 	_bag_full_t = maxf(0.0, _bag_full_t - delta)
 	_bag_full_cooldown = maxf(0.0, _bag_full_cooldown - delta)
 	var full: bool = count >= cap
-	_bag.text = (tr("BOLSA  %d / %d") % [count, cap]) + ("  ¡LLENA!" if full else "")
+	_bag.text = (tr("BOLSA  %d / %d") % [count, cap]) + (("  " + tr("¡LLENA!")) if full else "")
 	var bag_col: Color = C_TEXT.lerp(C_CYAN, _bag_punch)
 	if full:
 		bag_col = C_GOLD if fmod(_t, 0.6) < 0.35 else C_PINK

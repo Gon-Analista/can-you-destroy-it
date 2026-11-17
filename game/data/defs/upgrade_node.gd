@@ -52,8 +52,9 @@ func value_at(level: int) -> float:
 ## Texto del valor en un nivel, para el Grimorio.
 func describe_level(level: int) -> String:
 	if level < level_names.size() and level_names[level] != "":
-		return level_names[level]
+		return tr(level_names[level])
 	var v: float = value_at(level)
-	if value_format.contains("%d"):
-		return value_format % roundi(v)
-	return value_format % v
+	var fmt: String = tr(value_format)
+	if fmt.contains("%d"):
+		return fmt % roundi(v)
+	return fmt % v

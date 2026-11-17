@@ -48,6 +48,8 @@ Tecnologías ya previstas (validar la versión al integrarlas):
 | Mallas del prototipo | `core/mesh_kit.gd` (prismas, conos, cajas con normales planas y color por vértice) | Corrige el orden de vértices solo. |
 | Contorno pixel art | `fx/outline.gdshader`: post-proceso de profundidad + normales | Técnica estándar de "3D pixel art" en Godot 4. |
 | SFX del prototipo | `tools/sfx_synth.py` y `tools/sfx_loop.py` (numpy + scipy + ffmpeg) | Reproducible con semillas fijas; afinado en La mayor. |
+| Música | `tools/music_synth.py` (valle por capas) y `tools/music_title.py` (vals del título) | Mismos instrumentos sintetizados; bucles sin costura. |
+| Textos e idiomas | `tools/extract_strings.py` -> `game/localization/strings.csv` | Conserva las traducciones; prueba: `localization_smoke.gd`. |
 | Estelas de hechizos | `spells/vfx/spell_trail.gd` (`ImmediateMesh` orientada a cámara + `spell_trail.gdshader`) | Píxeles sólidos con bandas; se estrecha cerca de la cámara. |
 | Fuentes | Silkscreen (8 px) y Pixelify Sans, OFL | Importadas sin antialiasing, hinting ni subpíxel. |
 | Sprites pixel art (manos, efectos) | **Sprite AI** (MCP `sprite-ai` en `.mcp.json`, o `tools/sprite_ai/sai.py`) | No hay artista: es la fuente de arte 2D. Ver sección 15 y `docs/sprite_ai.md`. |
@@ -256,7 +258,10 @@ godot --path game --write-movie /tmp/captura/f.png --fixed-fps 60 --quit-after 1
 
 ## 9. UI, accesibilidad y localización
 
-- Todos los textos con `tr()` desde el día 1. Idiomas iniciales: **español e inglés** (CSV en `game/localization/`).
+- Todos los textos con `tr()` desde el día 1. Idiomas: **español e inglés** en `game/localization/strings.csv`
+  (clave = texto en español, una columna por idioma; ver `game/localization/README.md`). Tras añadir textos:
+  `python3 tools/extract_strings.py`. Las constantes con listas de textos llevan `# i18n` encima. Un texto que se
+  pinta una vez y no se rehace solo escucha `Events.locale_changed` para traducirse al cambiar de idioma.
 - Opciones de accesibilidad: intensidad de sacudida de cámara (0 a 100 %), reducir destellos, remapeo de teclas,
   carga de hechizo por mantener o alternar, tamaño de UI.
 - Los elementos se distinguen por **forma y animación**, no sólo por color.
@@ -273,7 +278,8 @@ godot --headless --path game --script res://tests/smoke/progression_smoke.gd
 
 - `tests/smoke/progression_smoke.gd` cubre `Progression`, `SpellRecipe` y `StreakTracker`; `tests/smoke/hit_stop_smoke.gd`,
   que el tiempo siempre vuelve a la normalidad tras un hit-stop; `tests/smoke/combine_input_smoke.gd`, la combinación
-  con las dos manos (carga la escena principal); `tests/smoke/loop_smoke.gd`, el bucle bolsa -> Pilón -> Grimorio.
+  con las dos manos (carga la escena principal); `tests/smoke/loop_smoke.gd`, el bucle bolsa -> Pilón -> Grimorio;
+  `tests/smoke/localization_smoke.gd`, que todos los idiomas cargan, están completos y conservan los `%d`/`%s`.
 - Ojo en los tests `--script`: los autoloads no existen al compilar el script, así que no se pueden nombrar
   (`Events`, `GameState`) ni usar como tipo una clase cuyo script los use (`SpellCaster`, `Player`): se buscan con
   `root.get_node(^"Events")` y se llama a los métodos por nombre.
