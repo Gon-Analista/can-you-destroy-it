@@ -15,3 +15,5 @@ col_dark = Color(0.42, 0.52, 0.82, 1)
 col_core = Color(0.62, 0.42, 0.92, 1)
 hit_pitch = 0.84
 geode_count = 2
+needs_combo = true
+too_hard_hint = "¡DEMASIADO DURO! EL CORAZÓN SÓLO CEDE ANTE UNA COMBINACIÓN"

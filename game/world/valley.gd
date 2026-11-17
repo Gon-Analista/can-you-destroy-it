@@ -41,9 +41,9 @@ func _ready() -> void:
 ## Altura del terreno: llano en el claro del cristal, sube hacia los bordes del valle.
 static func ground_height(x: float, z: float) -> float:
 	var r: float = Vector2(x, z).length()
-	var rise: float = smoothstep(38.0, 150.0, r) * 22.0
+	var rise: float = smoothstep(62.0, 170.0, r) * 22.0
 	var waves: float = sin(x * 0.045) * cos(z * 0.05) * 2.2 + sin(x * 0.11 + z * 0.07) * 0.8
-	return rise + waves * smoothstep(20.0, 60.0, r)
+	return rise + waves * smoothstep(40.0, 80.0, r)
 
 
 func _build() -> void:
@@ -306,13 +306,13 @@ func _add_forest(rng: RandomNumberGenerator) -> void:
 	while xforms.size() < tree_count and attempts < tree_count * 8:
 		attempts += 1
 		var ang: float = rng.randf() * TAU
-		var r: float = rng.randf_range(38.0, 165.0)
+		var r: float = rng.randf_range(60.0, 170.0)
 		var x: float = cos(ang) * r
 		var z: float = sin(ang) * r
 		# El bosque se agrupa en manchas y deja libre la vista hacia el castillo y el cristal.
 		if noise.get_noise_2d(x, z) < -0.05:
 			continue
-		if z > 10.0 and absf(x) < 30.0:
+		if z > 10.0 and absf(x) < 45.0:
 			continue
 		# Ni encima del Pilón ni del Santuario.
 		if (

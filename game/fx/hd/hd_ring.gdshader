@@ -1,6 +1,6 @@
 shader_type spatial;
 // Onda de choque HD: anillo suave que se abre (aditivo) con borde de ruido.
-render_mode unshaded, blend_premul_alpha, depth_draw_never, depth_test_disabled, cull_disabled, fog_disabled, shadows_disabled;
+render_mode unshaded, blend_premul_alpha, depth_draw_never, cull_disabled, fog_disabled, shadows_disabled;
 
 #include "res://fx/hd/hd_noise.gdshaderinc"
 

@@ -26,6 +26,8 @@ var menu: GameMenu
 ## Muestra el HUD de juego aunque el ratón no esté capturado (modo demo).
 var force_captured_look: bool = false
 
+## Capa del último golpe (la que nombra el título de la esencia).
+var _shown_layer: int = 0
 var _camera: Camera3D
 var _caster: SpellCaster
 var _essence_title: Label
@@ -112,10 +114,7 @@ func _ready() -> void:
 	Events.recipe_discovered.connect(_on_recipe_discovered)
 	Events.shard_delivered.connect(_on_shard_delivered)
 	Events.crystal_burned.connect(_on_burned)
-	Events.crystal_layer_changed.connect(
-		func(layer: CrystalLayerDef, _i: int) -> void: _set_layer_title(layer)
-	)
-	_set_layer_title(GameState.current_layer())
+	_set_layer_title(GameState.LAYERS[0])
 	Events.locale_changed.connect(_relocalize)
 	# El Grimorio, por encima de todo el HUD, y el menú (título y pausa) encima de todo.
 	_grimoire = Grimoire.new()
@@ -149,7 +148,7 @@ func _controls_text() -> String:
 func _relocalize() -> void:
 	_prompt.text = _controls_text()
 	_discovery_title.text = tr("¡COMBINACIÓN NUEVA!")
-	_set_layer_title(GameState.current_layer())
+	_set_layer_title(GameState.LAYERS[_shown_layer])
 
 
 ## "CORTEZA · ESENCIA DEL CRISTAL": la capa en la que se está golpeando.
@@ -256,6 +255,10 @@ func _on_shard_collected(type: ShardType, _count: int, at: Vector3) -> void:
 
 
 func _on_impact(hit: SpellHit) -> void:
+	# El título dice en qué capa del cristal se está golpeando (se llega a ellas excavando).
+	if hit.layer != _shown_layer:
+		_shown_layer = hit.layer
+		_set_layer_title(GameState.LAYERS[hit.layer])
 	var i: int = _floater_next
 	_floater_next = (_floater_next + 1) % FLOATERS
 	var f: Label = _floaters[i]

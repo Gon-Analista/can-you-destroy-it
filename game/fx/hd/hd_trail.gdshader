@@ -2,7 +2,7 @@ shader_type spatial;
 // Estela HD de un hechizo en vuelo: cinta de cara a la cámara (la malla la hace SpellTrail).
 // Cuerpo de color con ruido que corre hacia la cola, núcleo HDR en el eje y fundido suave.
 // UV.x = edad (0 cabeza, 1 cola); UV.y = través.
-render_mode unshaded, blend_premul_alpha, depth_draw_never, depth_test_disabled, cull_disabled, fog_disabled, shadows_disabled;
+render_mode unshaded, blend_premul_alpha, depth_draw_never, cull_disabled, fog_disabled, shadows_disabled;
 
 #include "res://fx/hd/hd_noise.gdshaderinc"
 

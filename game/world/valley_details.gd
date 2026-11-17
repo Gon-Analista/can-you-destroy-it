@@ -364,7 +364,7 @@ func _build_grass() -> void:
 		while xforms.size() < target and attempts < target * 6:
 			attempts += 1
 			# Más densa cerca del claro y en manchas.
-			var r: float = lerpf(WorldLayout.CRYSTAL_FOOTPRINT, 75.0, pow(_rng.randf(), 1.6))
+			var r: float = lerpf(WorldLayout.CRYSTAL_FOOTPRINT, 95.0, pow(_rng.randf(), 1.6))
 			var ang: float = _rng.randf() * TAU
 			var x: float = cos(ang) * r
 			var z: float = sin(ang) * r
@@ -410,7 +410,7 @@ func _build_flowers() -> void:
 		while xforms.size() < target and attempts < target * 8:
 			attempts += 1
 			# En corros: un centro y varias flores alrededor.
-			var r: float = _rng.randf_range(WorldLayout.CRYSTAL_FOOTPRINT + 3.0, 60.0)
+			var r: float = _rng.randf_range(WorldLayout.CRYSTAL_FOOTPRINT + 3.0, 75.0)
 			var ang: float = _rng.randf() * TAU
 			var cx: float = cos(ang) * r
 			var cz: float = sin(ang) * r

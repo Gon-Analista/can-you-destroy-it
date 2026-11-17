@@ -52,12 +52,24 @@ var _highlighted: int = -1
 var _collect_target: Node3D
 var _time: float = 0.0
 var _material: ShaderMaterial
+## Un material por capa del cristal: cada fragmento lleva el color de la capa de la que sale.
+var _layer_materials: Array[ShaderMaterial] = []
 
 
 ## Los fragmentos llevan el color de la capa de la que salen.
 func set_palette_color(key: String, c: Color) -> void:
 	if _material:
 		_material.set_shader_parameter(key, c)
+
+
+## Prepara un material por capa con su paleta (lo llama MotherCrystal).
+func set_layer_palettes(layers: Array[CrystalLayerDef]) -> void:
+	_layer_materials.clear()
+	for layer: CrystalLayerDef in layers:
+		var m: ShaderMaterial = _material.duplicate()
+		for key: String in ["col_highlight", "col_light", "col_mid", "col_dark", "col_core"]:
+			m.set_shader_parameter(key, layer.get(key))
+		_layer_materials.append(m)
 
 
 func _ready() -> void:
@@ -145,8 +157,13 @@ static func type_for_hit(damage: int, resonant: bool) -> ShardType:
 
 
 ## Lanza `count` fragmentos de tipo `type` desde `origin`, saliendo según `normal`.
-func spawn(origin: Vector3, normal: Vector3, type: ShardType, count: int, power: float) -> void:
+func spawn(
+	origin: Vector3, normal: Vector3, type: ShardType, count: int, power: float, layer: int = -1
+) -> void:
 	var t_index: int = TYPES.find(type)
+	var mat: ShaderMaterial = _material
+	if layer >= 0 and layer < _layer_materials.size():
+		mat = _layer_materials[layer]
 	for n: int in count:
 		var i: int = _next
 		_next = (_next + 1) % pool_size
@@ -155,6 +172,7 @@ func spawn(origin: Vector3, normal: Vector3, type: ShardType, count: int, power:
 		var variant: int = randi() % MESH_VARIANTS
 		_types[i] = type
 		_meshes[i].mesh = _type_meshes[t_index][variant]
+		_meshes[i].material_override = mat
 		_cols[i].shape = _type_shapes[t_index][variant]
 		_meshes[i].scale = Vector3.ONE
 		body.global_transform = Transform3D(

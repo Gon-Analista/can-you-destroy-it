@@ -2,6 +2,49 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-17 · El Cristal Madre se rompe de verdad y se entra en él por capas
+
+**Qué hay nuevo** (pedido del equipo: "destruible de verdad de a poco, y que las capas sean entrar en el cristal")
+
+- **El cristal es un volumen que se excava.** Cada golpe arranca un trozo del tamaño de su daño: la chispita
+  inicial hace una muesca; los hechizos fuertes, cráteres. La malla se rehace al momento por trozos (en otros
+  hilos, sin tirones) y la colisión también: **se puede entrar caminando** en lo excavado.
+- **Mucho más grande y con otra forma**: un racimo de 63 m (punta principal hexagonal, 8 puntas secundarias,
+  racimos al pie y un zócalo ancho que se puede excavar a pie de suelo). Por fuera, placas de cristal, estrías y
+  escarcha que centellea. El claro se ha abierto: Pilón y Santuario a ~50 m, el bosque más lejos.
+- **Las capas están dentro, por profundidad**: Corteza (los primeros 1,6 m), Manto Geódico (motas de amatista),
+  Venas Resonantes (vetas que brillan con el color de cada elemento según el lado), Corazón Cristalino (blanco
+  y luminoso) y el Núcleo violeta en la base. Lo excavado se ve "por dentro": más oscuro, centelleante y las capas
+  hondas brillan solas. "NUEVA CAPA" la primera vez que llegas a cada una; el HUD dice en qué capa golpeas.
+- **Reglas por capa (GDD 6)**: el Corazón sólo cede ante combinaciones (Bola de Fuego, Choque Térmico) y el Núcleo
+  no cede todavía; el golpe rebota con un "clonk" y un aviso.
+- **Geodas de verdad**: 26 bolsas huecas tapizadas de amatista escondidas en el Manto. Al excavar hasta una se
+  abre ("¡UNA GEODA!") y se ve la geoda brillando dentro; un golpe la revienta en 8 fragmentos grandes.
+- **La esencia es el cristal que queda**: cada capa tiene su densidad (más dura cuanto más dentro) para que el
+  1.000.000 se reparta como en el GDD (Corteza 10 %, Manto 35 %, Venas 35 %, Corazón 19 %, Núcleo 1 %).
+- Los fragmentos salen con el color de la capa de la que vienen. El fuego que queda ardiendo también excava.
+- Los destellos de la magia ya no se ven a través de las paredes del cristal.
+- La excavación se guarda y se recupera con la partida. Demo: `--layer=N`, `--geode`, `--dig=N`.
+
+**Capturas**: `docs/capturas/cristal_gigante.png`, `docs/capturas/tunel_capas.png` (túnel por Manto y Venas hasta
+el Corazón), `docs/capturas/geoda_abierta.png`.
+
+**Cómo se probó**
+
+- Tests: los de siempre y el nuevo `crystal_volume_smoke` (reparte 1.000.000 entre capas, se excava y quita
+  esencia, la prueba en seco no toca nada, el Núcleo no cede, malla por trozos, guardar y cargar): OK.
+  `gdlint` y `gdformat` limpios.
+- Golpes repetidos en un punto: cada uno quita ≈ su daño en esencia hasta llegar al Corazón, donde rebotan.
+  Geoda: túnel, aviso, golpe y 8 fragmentos grandes. Coste de excavar: 0,2 ms (daño 1) a 2 ms (daño 150).
+- Render: cristal desde el inicio, título, túnel por dentro, geoda abierta.
+
+**Pendiente**
+
+- Puntas que se caen enteras al cortarles la base (islas sueltas).
+- Mecánica propia de las Venas Resonantes (cada vena, débil a su elemento).
+- Golpes enormes del final (miles de daño) cuestan ~20 ms: pasar la excavación a un hilo.
+- Ajustar el balance con el simulador: ahora se puede hacer un túnel hasta el Corazón con relativamente poco.
+
 ## 2026-11-17 · Español e inglés, título con humor y su propia música
 
 **Qué hay nuevo**

@@ -15,6 +15,10 @@ var upgrade_levels: Dictionary[StringName, int] = {}
 var bag: Dictionary[StringName, int] = {}
 ## Combinaciones de hechizos ya descubiertas (ids de SpellRecipe), en orden de descubrimiento.
 var discovered_recipes: Array[StringName] = []
+## Capa más profunda a la que se ha llegado excavando (0 = Corteza). Sólo sube.
+var deepest_layer: int = 0
+## Estado de cada geoda del Manto (índice en el volumen horneado): 1 = abierta, 2 = reventada.
+var geodes: Dictionary[int, int] = {}
 
 
 func _init(p_total_essence: int) -> void:
@@ -140,6 +144,8 @@ func to_dict() -> Dictionary:
 		"upgrade_levels": upgrade_levels.duplicate(),
 		"bag": bag.duplicate(),
 		"discovered_recipes": discovered_recipes.map(func(r: StringName) -> String: return str(r)),
+		"deepest_layer": deepest_layer,
+		"geodes": geodes.duplicate(),
 	}
 
 
@@ -155,6 +161,11 @@ func load_dict(data: Dictionary) -> void:
 	var saved_bag: Dictionary = data.get("bag", {})
 	for key: Variant in saved_bag:
 		bag[StringName(str(key))] = maxi(int(saved_bag[key]), 0)
+	deepest_layer = maxi(int(data.get("deepest_layer", 0)), 0)
+	geodes.clear()
+	var saved_geodes: Dictionary = data.get("geodes", {})
+	for key: Variant in saved_geodes:
+		geodes[int(str(key))] = int(saved_geodes[key])
 	discovered_recipes.clear()
 	var saved_recipes: Array = data.get("discovered_recipes", [])
 	for r: Variant in saved_recipes:

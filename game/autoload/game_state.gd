@@ -33,13 +33,9 @@ func destroyed_ratio() -> float:
 	return 1.0 - float(progression.essence) / float(progression.total_essence)
 
 
-## Índice de la capa en la que se está golpeando.
+## Capa más profunda a la que se ha llegado excavando el cristal.
 func layer_index() -> int:
-	var r: float = destroyed_ratio()
-	for i: int in range(LAYERS.size() - 1, -1, -1):
-		if r >= LAYERS[i].from_ratio:
-			return i
-	return 0
+	return clampi(progression.deepest_layer, 0, LAYERS.size() - 1)
 
 
 func current_layer() -> CrystalLayerDef:

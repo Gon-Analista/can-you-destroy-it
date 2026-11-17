@@ -49,6 +49,7 @@ Tecnologías ya previstas (validar la versión al integrarlas):
 | Contorno pixel art | `fx/outline.gdshader`: post-proceso de profundidad + normales | Técnica estándar de "3D pixel art" en Godot 4. |
 | SFX del prototipo | `tools/sfx_synth.py` y `tools/sfx_loop.py` (numpy + scipy + ffmpeg) | Reproducible con semillas fijas; afinado en La mayor. |
 | Música | `tools/music_synth.py` (valle por capas) y `tools/music_title.py` (vals del título) | Mismos instrumentos sintetizados; bucles sin costura. |
+| Cristal destructible | `tools/crystal_volume.py` (numpy + scipy) -> `game/crystal/data/crystal_volume.bin`; en el juego `CrystalVolume` + `CrystalChunks` | La forma, las capas, las geodas y las densidades se cambian en el script y se vuelve a hornear. |
 | Textos e idiomas | `tools/extract_strings.py` -> `game/localization/strings.csv` | Conserva las traducciones; prueba: `localization_smoke.gd`. |
 | Estelas de hechizos | `spells/vfx/spell_trail.gd` (`ImmediateMesh` orientada a cámara + `spell_trail.gdshader`) | Píxeles sólidos con bandas; se estrecha cerca de la cámara. |
 | Fuentes | Silkscreen (8 px) y Pixelify Sans, OFL | Importadas sin antialiasing, hinting ni subpíxel. |
@@ -188,6 +189,13 @@ sonido y HUD) y la de racha y golpe resonante (GDD 10.4). Si falta una capa, no 
 - **Render sin GPU (agentes).** Para capturas en contenedores: instalar `mesa-vulkan-drivers` y ejecutar con
   `xvfb-run`; sin Vulkan, Godot cae a OpenGL y el contorno (Forward+) no compila.
 - **Bucle de audio.** Activarlo en la importación del OGG (`loop=true`), no duplicando el recurso en código.
+- **Magia HD y paredes.** La capa de magia (`MagicLayer`) es otra SubViewport: no ve la profundidad del valle. Lo
+  único que la tapa son los oclusores del cristal (`crystal/crystal_occluder.gdshader`). Un shader de magia nuevo
+  no debe usar `depth_test_disabled` (o se verá a través del cristal) ni escribir profundidad.
+- **Exportar.** `crystal/data/crystal_volume.bin` no es un recurso de Godot: en cada preset de exportación hay que
+  añadir `crystal/data/*.bin` a "Filtros para exportar archivos que no son recursos", o el cristal no carga.
+- **Rejilla del cristal y otros hilos.** `CrystalVolume.mesh_chunk` es estática y recibe una copia (COW) de la
+  rejilla; nunca tocar nodos ni `volume.sdf` desde el hilo. El resultado se aplica con `call_deferred`.
 - **Aviso al salir en headless.** Un `AudioStreamPlayer` con un OGG en bucle deja avisos de "leaked instances" al
   cerrar con `--quit-after`; es del motor y también ocurre en un proyecto vacío. Ignorarlo.
 
@@ -279,7 +287,9 @@ godot --headless --path game --script res://tests/smoke/progression_smoke.gd
 - `tests/smoke/progression_smoke.gd` cubre `Progression`, `SpellRecipe` y `StreakTracker`; `tests/smoke/hit_stop_smoke.gd`,
   que el tiempo siempre vuelve a la normalidad tras un hit-stop; `tests/smoke/combine_input_smoke.gd`, la combinación
   con las dos manos (carga la escena principal); `tests/smoke/loop_smoke.gd`, el bucle bolsa -> Pilón -> Grimorio;
-  `tests/smoke/localization_smoke.gd`, que todos los idiomas cargan, están completos y conservan los `%d`/`%s`.
+  `tests/smoke/localization_smoke.gd`, que todos los idiomas cargan, están completos y conservan los `%d`/`%s`;
+  `tests/smoke/crystal_volume_smoke.gd`, que el volumen del cristal reparte el 1.000.000, se excava, respeta el
+  Núcleo, se malla y se guarda.
 - Ojo en los tests `--script`: los autoloads no existen al compilar el script, así que no se pueden nombrar
   (`Events`, `GameState`) ni usar como tipo una clase cuyo script los use (`SpellCaster`, `Player`): se buscan con
   `root.get_node(^"Events")` y se llama a los métodos por nombre.

@@ -32,7 +32,7 @@
 | Término | Significado | Nombre en código |
 |---|---|---|
 | Cristal Madre | El objeto gigante que se destruye. 1.000.000 de Esencia. | `MotherCrystal` |
-| Faceta | Pieza física del cristal que se desprende (≈ 4.000). | `CrystalFacet` |
+| Faceta | Cara plana del cristal; al excavar quedan facetas nuevas. (El GDD hablaba de ≈ 4.000 piezas físicas; se cambió a un volumen excavable, ver decisiones.) | `CrystalVolume` |
 | Capa | Corteza, Manto Geódico, Venas Resonantes, Corazón Cristalino, Núcleo. | `CrystalLayer` |
 | Esencia | Vida restante del cristal. Sólo baja. | `essence` |
 | Fragmento | Pedazo que cae al golpear. Por tamaño según el daño: **Astilla** (pequeña, `splinter`), **Fragmento** (mediano, `shard`), **Fragmento grande** (`chunk`). Especiales futuros: Geoda, Resonante, Lágrima del Núcleo. | `Shard`, `ShardType` (`data/shards/`) |
@@ -117,8 +117,16 @@ en el Grimorio del Santuario mejoras que cambian los hechizos. Lo que hay:
 - **Valle** procedural (`world/valley.gd`): suelo ondulado con colisión, ~900 pinos en `MultiMesh`, montañas
   nevadas, colina con castillo de tejados azules y aldea de tejados rojos; cielo pixel art con tramado y nubes
   (`world/sky.gdshader`); niebla de profundidad para la perspectiva atmosférica.
-- **Cristal Madre** (`crystal/`): racimo de 15 prismas según la referencia, shader con bandas de paleta, corazón
-  violeta, brillo que recorre las facetas, grietas persistentes (voronoi 3D) y destellos/ondas de impacto.
+- **Cristal Madre** (`crystal/`): **destructible de verdad**. Un volumen (rejilla de distancias de 0,7 m,
+  `crystal/data/crystal_volume.bin`, horneado por `tools/crystal_volume.py`) con forma de racimo de 63 m: punta
+  principal, 8 puntas secundarias, racimos al pie y un zócalo ancho. Cada golpe lo erosiona (`CrystalVolume.carve`)
+  y la malla se rehace por trozos de 16^3 celdas en otros hilos (`CrystalChunks`, surface nets, caras planas).
+  Las **capas están por profundidad**: Corteza, Manto Geódico (con 26 bolsas de geoda dentro), Venas Resonantes,
+  Corazón (sólo cede ante combinaciones) y Núcleo (no cede); se llega a ellas excavando. La esencia que quita un
+  golpe es el volumen que arranca por la densidad de su capa (las densidades reparten el 1.000.000 como el GDD 6).
+  Shader con paleta y dibujo por capa, placas y estrías por fuera, interior que centellea, corazón
+  violeta, grietas persistentes (voronoi 3D) y destellos/ondas de impacto. La excavación se guarda aparte
+  (`user://crystal_volume.bin`).
   `ShardPool` con 64 fragmentos físicos reciclados en 3 tamaños según el daño (astilla, fragmento, fragmento
   grande), que se congelan al quedarse quietos, se resaltan al apuntarlos y vuelan a la mano al recogerlos.
 - **Mago** (`player/`): primera persona (ratón + WASD), manos 2D de Sprite AI; cada mano lleva una llamita de
@@ -168,8 +176,9 @@ en el Grimorio del Santuario mejoras que cambian los hechizos. Lo que hay:
 - Debug: G da 100 de maná; demo con `--no-cast`, `--mana=N`, `--bag=N`, `--warp=x,z`, `--grimoire [--buy --select=N]`.
   En modo demo no se carga ni se guarda la partida.
 
-- **Título y pausa** (`ui/game_menu.gd`) con opciones. **Capas del cristal** y **geodas** (`crystal/geode.gd`,
-  `data/crystal/`).
+- **Título y pausa** (`ui/game_menu.gd`) con opciones. **Capas del cristal** por profundidad y **geodas** dentro
+  (`crystal/geode.gd`, `data/crystal/`). Demo: `--layer=N` (túnel hasta la capa N), `--geode` (túnel hasta una
+  geoda), `--dig=N` (N golpes de 30 donde se apunta).
 - **Trituradora** (`pylon/crystal_crusher.gd`): tolva (mantener F), palanca (tocar F) y rodillos; el maná llega al
   Pilón por la tubería. **Reacción del cristal** (`fx/hd/crystal_arcs.gd`): rayos, destellos y resquebrajos.
 - **Elementos por mano** (Q / E): Chispa y Escarcha (`data/elements/`); combinaciones Bola de Fuego y Choque
@@ -177,8 +186,8 @@ en el Grimorio del Santuario mejoras que cambian los hechizos. Lo que hay:
 - **Movimiento**: correr (Shift), saltar (Espacio), pasos y aterrizaje. **Día y noche** (`world/day_night.gd`) con
   paisaje sonoro (`tools/sfx_ambience.py`). **Pantalla de carga** que precalienta efectos (`Main._warm_up`).
 
-**Aún no hay**: Rayo, Tierra y Arcano, capas del cristal, geodas,
-familiares, telequinesis de entrega directa ni simulador de balance (M2).
+**Aún no hay**: Rayo, Tierra y Arcano, familiares, simulador de balance (M2), trozos de cristal que caen al
+quedarse sueltos (cortar la base de una punta) ni la mecánica propia de las Venas Resonantes.
 
 ## 8. Hitos
 
@@ -221,7 +230,10 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-17 | Cada mano lleva su llama (elemento) y recarga por separado; los dos clics a la vez (ventana de 0,09 s, `combine_window_sec`) juntan las manos y funden las llamas en la Bola de Fuego, que se carga manteniendo y sale al soltar. Con las dos manos listas, un clic suelto espera esa ventana o sale al soltar el botón. | GDD 5.2 y 10.1; pedido del equipo ("juntar 2 hechizos de fuego, uno en cada mano, en uno grande"). Sustituye al orbe único entre las manos. |
 | 2026-11-17 | Las llamas flotan sobre la punta de los dedos, no delante de la palma. | Las manos son 2D por encima del 3D: lo que queda detrás de la palma no se ve. |
 | 2026-11-17 | Bolsa inicial de 3 (no 1): con el Pilón a ~30 m del cristal, 1 por viaje hacía la primera mejora demasiado lenta. | GDD 8.1: primera mejora en menos de 30 s. |
-| 2026-11-17 | Capas del cristal por esencia destruida con paleta, tono y geodas (`data/crystal/layer_*.tres`). | GDD 6; progreso siempre visible. |
+| 2026-11-17 | Capas del cristal por esencia destruida con paleta, tono y geodas (`data/crystal/layer_*.tres`). | GDD 6; progreso siempre visible. (Sustituida: ver "destructible de verdad".) |
+| 2026-11-17 | **Cristal destructible de verdad**: volumen excavable (rejilla de distancias horneada + erosión por golpe + malla por trozos en otros hilos) en vez de ≈ 4.000 piezas físicas (GDD 6). Cristal mucho más grande (63 m, base de ~42 m) y layout más abierto (Pilón y Santuario a ~50 m). Las capas van por profundidad: se entra en el cristal excavando. Cada capa tiene densidad de esencia propia para repartir el 1.000.000 como el GDD (Corteza 6,4/m3, Manto 22, Venas 55, Corazón 89). | Pedido del equipo: que se rompa de verdad poco a poco y que las capas sean ir entrando. Con piezas físicas no se puede entrar ni ver el interior, y 4.000 cuerpos son caros. |
+| 2026-11-17 | El Corazón Cristalino sólo cede ante hechizos combinados y el Núcleo ante nada (por ahora): el golpe rebota con aviso. Geodas: 26 bolsas huecas en el Manto; al abrirlas se ven y un golpe las revienta (8 fragmentos grandes). | GDD 6 ("facetas duras que exigen combinados", "inmune salvo la Gran Convergencia", "geodas"). |
+| 2026-11-17 | La capa de magia HD queda tapada por el cristal: copias de sus trozos en esa capa que sólo escriben profundidad, metidas 1 m hacia dentro; los efectos HD dejan de ignorar la profundidad. | Con túneles y geodas dentro, los destellos se veían a través de las paredes. |
 | 2026-11-17 | Pantalla de título y pausa (`ui/game_menu.gd`) con opciones guardadas en Settings. | Pasada de calidad pedida por el equipo. |
 | 2026-11-17 | Idiomas: un solo `localization/strings.csv` con el texto español como clave y una columna por idioma; `Settings` carga en ejecución todos los `.translation` de la carpeta, elige el del sistema la primera vez (si no, inglés) y se cambia en Opciones (en vivo, con `Events.locale_changed`). `tools/extract_strings.py` añade las claves nuevas. | Pedido del equipo: español e inglés, y que añadir otro idioma sea sólo añadir una columna, sin tocar código. |
 | 2026-11-17 | Título con humor: "CAN YOU / DESTROY IT" letra a letra y un "?" de cristal enorme que se puede romper a clics (se queja, se agrieta y se vuelve "!"); frases que rotan. Música propia: vals a 3/4 en La mayor (`tools/music_title.py`) que siempre termina "preguntando"; se funde con la del valle al empezar. | Pedido del equipo: menú gracioso pero de calidad, con su propia música. |
@@ -248,6 +260,9 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 
 - Confirmar 3D a baja resolución frente a 2D puro tras jugar el prototipo M1a.
 - Arte 3D (valle, cristal): seguir procedural y pulir; el arte 2D sale de Sprite AI.
+- ¿Puntas que se caen enteras al cortarles la base (islas sueltas del volumen)? Sería muy vistoso; pide detectar
+  conectividad en una rejilla gruesa en otro hilo.
+- Golpes enormes del final (miles de daño): excavar cuesta ~20 ms en el hilo principal; habrá que pasarlo a un hilo.
 - Resolución interna final (640x360 propuesta) tras probarla en 1440p y Steam Deck.
 - ¿Modo infinito o New Game+ tras el final?
 - Precio y fecha objetivo en Steam.

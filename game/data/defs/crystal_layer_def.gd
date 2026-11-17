@@ -1,7 +1,8 @@
 class_name CrystalLayerDef
 extends Resource
-## Capa del Cristal Madre (GDD 6), definida por el rango de esencia destruida (0.0 a 1.0).
-## Al entrar en ella el cristal cambia de color, de voz y de lo que suelta.
+## Capa del Cristal Madre (GDD 6). Las capas están por profundidad dentro del volumen del
+## cristal (las horneó tools/crystal_volume.py, que reparte la esencia con `from_ratio` y
+## `to_ratio`): se llega a ellas excavando. Cada una tiene su color, su voz y sus reglas.
 
 @export var id: StringName
 @export var display_name: String
@@ -9,6 +10,12 @@ extends Resource
 @export_range(0.0, 1.0) var to_ratio: float = 0.1
 @export var tint: Color = Color.WHITE
 @export var hardness: float = 1.0
+## Sólo cede ante hechizos combinados (Corazón Cristalino, GDD 6).
+@export var needs_combo: bool = false
+## No cede ante nada (el Núcleo, hasta la Gran Convergencia).
+@export var immune: bool = false
+## Aviso cuando un golpe rebota en esta capa.
+@export var too_hard_hint: String = ""
 
 @export_group("Paleta")
 @export var col_highlight: Color = Color(0.91, 0.99, 1.0)

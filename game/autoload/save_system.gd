@@ -33,6 +33,10 @@ func _notification(what: int) -> void:
 func save_game() -> bool:
 	if not enabled:
 		return false
+	# El cristal excavado va en su propio archivo binario (sólo si ha cambiado).
+	var crystal: Node = get_tree().get_first_node_in_group(&"mother_crystal")
+	if crystal:
+		crystal.call("save_state")
 	var payload: Dictionary = {
 		"version": SAVE_VERSION, "progression": GameState.progression.to_dict()
 	}

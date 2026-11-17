@@ -15,3 +15,5 @@ col_dark = Color(0.22, 0.11, 0.42, 1)
 col_core = Color(0.32, 0.1, 0.52, 1)
 hit_pitch = 0.75
 geode_count = 0
+immune = true
+too_hard_hint = "EL NÚCLEO NI SE INMUTA. AÚN NO."

@@ -20,3 +20,5 @@ var element_def: ElementDef
 var weakened: bool = false
 ## Multiplicador que se aplicó por la zona debilitada.
 var weak_mult: float = 1.0
+## Capa del cristal en la que cayó (0 = Corteza); la pone MotherCrystal.
+var layer: int = 0

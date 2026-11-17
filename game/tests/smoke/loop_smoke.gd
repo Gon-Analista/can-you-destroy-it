@@ -72,7 +72,7 @@ func _run() -> void:
 
 	# Lejos del Pilón no se entrega.
 	prog.collect_shard(&"splinter")
-	player.global_position = Vector3(0, 0.3, 22)
+	player.global_position = Vector3(0, 0.3, 46)
 	await create_timer(1.0).timeout
 	_check(prog.bag_count() == 1, "lejos de la trituradora la bolsa no se toca")
 
@@ -100,7 +100,7 @@ func _run() -> void:
 
 	grimoire.call(&"close")
 	# Saltar: con el jugador en el suelo, Espacio lo levanta y vuelve a caer.
-	player.global_position = Vector3(0, 0.5, 32)
+	player.global_position = Vector3(0, 0.5, 46)
 	await create_timer(0.8).timeout
 	var y0: float = player.global_position.y
 	Input.action_press(&"jump")

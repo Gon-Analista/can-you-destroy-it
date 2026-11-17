@@ -3,6 +3,10 @@ extends Node3D
 ## El Cristal Madre. Recibe impactos y reacciona: destello y onda en la faceta, grieta que se
 ## queda, temblor, pulso del corazón violeta, fragmentos que saltan, partículas, luz y sonido
 ## ("tink") que sube de tono con la racha. Ver GDD 10.3.
+##
+## Es destructible de verdad: un volumen (`CrystalVolume`) que cada golpe erosiona, y su malla
+## se rehace por trozos. Las capas (GDD 6) están por profundidad: se llega a ellas excavando.
+## La esencia que quita un golpe es el volumen sólido que arranca por la densidad de su capa.
 
 const CRYSTAL_SHADER: Shader = preload("res://crystal/crystal.gdshader")
 const MAX_HITS: int = 6
@@ -44,20 +48,38 @@ const ARC_SFX: Array[AudioStream] = [
 const ARC_COLORS: Array[Color] = [
 	Color(0.25, 0.75, 2.0), Color(1.2, 0.3, 1.9), Color(0.4, 0.5, 2.0)
 ]
-## Daño acumulado para el primer "resquebrajo"; cada siguiente pide un 60 % más.
 ## La geoda suena como el resquebrajo, más aguda (ver _break_geode).
 const GEODE_SFX: AudioStream = SURGE_SFX
-const MAX_GEODES: int = 4
-## Segundos hasta que aparece otra geoda tras reventar una.
-const GEODE_RESPAWN_SEC: float = 14.0
+## Partida guardada del volumen excavado (ver SaveSystem).
+const STATE_PATH: String = "user://crystal_volume.bin"
+## Colores de las Venas Resonantes por elemento (Chispa, Escarcha, Rayo, Tierra, Arcano).
+const VEIN_COLORS: PackedColorArray = [
+	Color(1.0, 0.55, 0.2),
+	Color(0.6, 0.92, 1.0),
+	Color(1.0, 0.92, 0.35),
+	Color(0.8, 0.62, 0.36),
+	Color(0.8, 0.55, 1.0)
+]
+## Cuánto oscurece lo excavado y cuánto brilla cada capa por dentro.
+const LAYER_SHADE: PackedFloat32Array = [0.32, 0.3, 0.22, 0.05, 0.1]
+const LAYER_GLOW: PackedFloat32Array = [0.0, 0.1, 0.35, 0.7, 0.9]
+## Daño acumulado para el primer "resquebrajo"; cada siguiente pide un 60 % más.
 const FIRST_SURGE: float = 15.0
 const SURGE_GROWTH: float = 1.6
 
-@export var crystal_scale: float = WorldLayout.CRYSTAL_SCALE
-@export var seed_value: int = 11
+## El volumen excavable (rejilla de distancias) y sus mallas por trozos.
+var volume: CrystalVolume
 
 var _material: ShaderMaterial
-var _mesh_instance: MeshInstance3D
+var _chunks: CrystalChunks
+var _body: StaticBody3D
+## Esencia arrancada que aún no llega a un punto entero.
+var _essence_acc: float = 0.0
+var _volume_dirty: bool = false
+## Capa del último golpe (la que se ve en el HUD).
+var _hit_layer: int = 0
+var _hard_hint_at: float = -10.0
+var _geode_nodes: Dictionary[int, Geode] = {}
 var _shards: ShardPool
 var _fx: ImpactFx
 var _hd_fx: HdImpact
@@ -66,11 +88,6 @@ var _arc_player: AudioStreamPlayer3D
 var _surge_acc: float = 0.0
 var _last_tink: float = -1.0
 var _layer: int = 0
-## Paleta mostrada (se funde hacia la de la capa nueva) y de qué capa venimos.
-var _palette_from: CrystalLayerDef
-var _palette_t: float = 1.0
-var _geodes: Array[Geode] = []
-var _geode_timer: float = -1.0
 var _next_surge: float = FIRST_SURGE
 var _burn_fire: CrystalBurn
 var _burns: PackedVector4Array = []
@@ -111,32 +128,30 @@ var _rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
+	add_to_group(&"mother_crystal")
 	_rng.randomize()
 	_streak = StreakTracker.new(GameState.BALANCE.streak_window_sec)
-	var builder := CrystalClusterBuilder.new()
-	builder.build(crystal_scale, seed_value)
+	volume = CrystalVolume.new()
+	volume.load_baked()
+	var resumed: bool = _load_state()
 	_material = ShaderMaterial.new()
 	_material.shader = CRYSTAL_SHADER
-	_mesh_instance = MeshInstance3D.new()
-	_mesh_instance.name = "Mesh"
-	_mesh_instance.mesh = builder.mesh
-	_mesh_instance.material_override = _material
-	add_child(_mesh_instance)
-	var body := StaticBody3D.new()
-	body.name = "Body"
-	body.collision_layer = 1 << 1
-	body.collision_mask = 0
-	body.set_meta(&"mother_crystal", self)
-	for hull: PackedVector3Array in builder.hulls:
-		var shape := ConvexPolygonShape3D.new()
-		shape.points = hull
-		var col := CollisionShape3D.new()
-		col.shape = shape
-		body.add_child(col)
-	add_child(body)
+	_setup_material()
+	_body = StaticBody3D.new()
+	_body.name = "Body"
+	_body.collision_layer = 1 << 1
+	_body.collision_mask = 0
+	_body.set_meta(&"mother_crystal", self)
+	add_child(_body)
+	_chunks = CrystalChunks.new()
+	_chunks.name = "Chunks"
+	add_child(_chunks)
+	_chunks.setup(volume, _material, _body)
+	_chunks.build_all(_chunks.all_chunks() if resumed else volume.surface_chunks)
 	_shards = ShardPool.new()
 	_shards.name = "Shards"
 	add_child(_shards)
+	_shards.set_layer_palettes(GameState.LAYERS)
 	_fx = ImpactFx.new()
 	_fx.name = "ImpactFx"
 	add_child(_fx)
@@ -147,19 +162,18 @@ func _ready() -> void:
 	_arcs.name = "Arcs"
 	add_child(_arcs)
 	_arcs.setup_ambient(
-		global_position + Vector3(0.0, 9.0 * crystal_scale, 0.0),
-		Vector3(9.0, 18.0, 9.0) * crystal_scale
+		global_position + Vector3(0.0, volume.top * 0.4, 0.0),
+		Vector3(
+			WorldLayout.CRYSTAL_FOOTPRINT * 1.4,
+			volume.top * 0.75,
+			WorldLayout.CRYSTAL_FOOTPRINT * 1.4
+		)
 	)
-	for i: int in MAX_GEODES:
-		var g := Geode.new()
-		g.name = "Geode%d" % i
-		add_child(g)
-		_geodes.append(g)
 	_layer = GameState.layer_index()
-	_palette_from = GameState.LAYERS[_layer]
-	_apply_palette(GameState.LAYERS[_layer], GameState.LAYERS[_layer], 1.0)
-	Events.essence_changed.connect(_on_essence_changed)
-	_spawn_geodes.call_deferred()
+	_hit_layer = 0
+	for i: int in volume.geodes.size():
+		if GameState.progression.geodes.get(i, 0) == 1:
+			_reveal_geode(i, false)
 	_burn_fire = CrystalBurn.new()
 	_burn_fire.name = "Burn"
 	_burn_fire.burned.connect(_on_burn_tick)
@@ -188,8 +202,65 @@ func _ready() -> void:
 	_material.set_shader_parameter("hits", _hits)
 	_material.set_shader_parameter("hit_resonant", _hit_resonant)
 	_material.set_shader_parameter("cracks", _cracks)
-	_material.set_shader_parameter("core_top", 4.5 * crystal_scale)
+
+
+## Paletas por capa, profundidades, Núcleo, geodas y venas para el shader.
+func _setup_material() -> void:
+	var keys: Array[String] = ["col_highlight", "col_light", "col_mid", "col_dark"]
+	var params: Array[String] = ["pal_highlight", "pal_light", "pal_mid", "pal_dark"]
+	for k: int in keys.size():
+		var cols := PackedColorArray()
+		for layer: CrystalLayerDef in GameState.LAYERS:
+			cols.append(layer.get(keys[k]) as Color)
+		_material.set_shader_parameter(params[k], cols)
+	for key: String in ["col_highlight", "col_light", "col_mid", "col_dark", "col_core"]:
+		_material.set_shader_parameter(key, GameState.LAYERS[0].get(key) as Color)
+	_material.set_shader_parameter("layer_depth", volume.layer_min_depth)
+	_material.set_shader_parameter("layer_shade", LAYER_SHADE)
+	_material.set_shader_parameter("layer_glow", LAYER_GLOW)
+	_material.set_shader_parameter(
+		"core_sphere",
+		Vector4(
+			volume.core_center.x, volume.core_center.y, volume.core_center.z, volume.core_radius
+		)
+	)
+	_material.set_shader_parameter("core_top", volume.core_center.y + volume.core_radius * 2.5)
 	_material.set_shader_parameter("core_bottom", -0.5)
+	_material.set_shader_parameter("vein_colors", VEIN_COLORS)
+	var gs := PackedVector4Array()
+	for g: Dictionary in volume.geodes:
+		var c: Vector3 = g["center"]
+		gs.append(Vector4(c.x, c.y, c.z, float(g["radius"])))
+	while gs.size() < 32:
+		gs.append(Vector4.ZERO)
+	_material.set_shader_parameter("geodes", gs)
+
+
+## Retoma el cristal excavado de la partida guardada (si la hay y no es una partida nueva).
+func _load_state() -> bool:
+	var prog: Progression = GameState.progression
+	if not SaveSystem.enabled or prog.essence >= prog.total_essence:
+		return false
+	if not FileAccess.file_exists(STATE_PATH):
+		return false
+	var bytes: PackedByteArray = FileAccess.get_file_as_bytes(STATE_PATH)
+	return volume.load_state(bytes)
+
+
+## Lo llama SaveSystem: guarda la rejilla sólo si ha cambiado (y la borra en partida nueva).
+func save_state() -> void:
+	var prog: Progression = GameState.progression
+	if prog.essence >= prog.total_essence:
+		if FileAccess.file_exists(STATE_PATH):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(STATE_PATH))
+		_volume_dirty = false
+		return
+	if not _volume_dirty:
+		return
+	var f := FileAccess.open(STATE_PATH, FileAccess.WRITE)
+	if f:
+		f.store_buffer(volume.state_bytes())
+		_volume_dirty = false
 
 
 func _setup_audio() -> void:
@@ -254,7 +325,11 @@ func receive_hit(hit: SpellHit) -> void:
 	hit.streak = _streak.register_hit(_now)
 	_apply_weakness(hit)
 	_check_geodes(hit)
-	GameState.hit_crystal(hit.damage, hit.position)
+	var removed: float = _dig(hit.position, hit.normal, float(hit.damage), hit.recipe != null)
+	if removed < 0.0:
+		_too_hard(hit)
+		return
+	hit.layer = _hit_layer
 	var tier: SpellTier = hit.tier
 
 	_hits[_hit_index] = Vector4(hit.position.x, hit.position.y, hit.position.z, _now)
@@ -280,7 +355,9 @@ func receive_hit(hit: SpellHit) -> void:
 		_global_flash = 0.55
 	var count: int = _rng.randi_range(tier.shards_min, tier.shards_max) * (2 if hit.resonant else 1)
 	var shard_type: ShardType = ShardPool.type_for_hit(hit.damage, hit.resonant)
-	_shards.spawn(hit.position, hit.normal, shard_type, count, 1.25 if hit.resonant else 1.0)
+	_shards.spawn(
+		hit.position, hit.normal, shard_type, count, 1.25 if hit.resonant else 1.0, _hit_layer
+	)
 	_fx.play(hit.position, hit.normal, tier, hit.resonant)
 	_crystal_reacts(hit)
 	_hd_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.recipe != null)
@@ -332,8 +409,6 @@ func _area_blast(hit: SpellHit) -> void:
 		_hd_fx.play(p, n, hit.tier, false)
 
 
-## Pantalla de carga: dispara una vez cada efecto de impacto y de fuego en `at` (sin daño ni
-## fragmentos que recoger) para compilar shaders y partículas antes de jugar.
 func _unhandled_input(event: InputEvent) -> void:
 	if (
 		OS.is_debug_build()
@@ -342,21 +417,73 @@ func _unhandled_input(event: InputEvent) -> void:
 		and not (event as InputEventKey).echo
 		and (event as InputEventKey).physical_keycode == KEY_L
 	):
-		# Debug: L salta a la capa siguiente.
+		# Debug: L excava un túnel hasta la capa siguiente.
 		jump_to_layer(_layer + 1)
 
 
-## Debug y demo: destruye lo justo para entrar en la capa `idx`.
+## Demo: excava un túnel recto hasta la geoda más cercana a `from` (global) y la abre.
+## Devuelve [boca del túnel, centro de la geoda] (global), para ponerse a mirarla.
+func tunnel_to_geode(from: Vector3) -> Array[Vector3]:
+	var best: int = -1
+	var best_d: float = INF
+	var p0: Vector3 = to_local(from)
+	for i: int in volume.geodes.size():
+		var d: float = (volume.geodes[i]["center"] as Vector3).distance_to(p0)
+		if d < best_d:
+			best_d = d
+			best = i
+	if best < 0:
+		return [from, from]
+	var c: Vector3 = volume.geodes[best]["center"]
+	# Rampa desde el suelo de fuera hasta la bolsa, para poder mirar dentro desde la boca.
+	var flat: Vector3 = Vector3(p0.x - c.x, 0.0, p0.z - c.z).normalized()
+	var out: Vector3 = c + flat * 14.0
+	out.y = 1.4
+	var mouth: Vector3 = out
+	for k: int in 60:
+		var q: Vector3 = c.lerp(out, float(k) / 59.0)
+		_apply_carve(volume.carve_sphere(q, 2.0, (1 << 4) - 1), q, 2.0)
+		if not volume.is_solid(q) and volume.sample(volume.depth, q, 0.0) <= 0.0 and k > 6:
+			mouth = q
+			break
+	return [to_global(mouth + flat * 2.0), to_global(c)]
+
+
+## Debug y demo: excava un túnel desde el lado del claro (hacia el jugador) hasta la capa
+## `idx`, quitando la esencia que corresponda.
 func jump_to_layer(idx: int) -> void:
-	if idx >= GameState.LAYERS.size():
-		return
-	var prog: Progression = GameState.progression
-	var target: int = int(float(prog.total_essence) * (1.0 - GameState.LAYERS[idx].from_ratio)) - 1
-	var dmg: int = prog.essence - target
-	if dmg > 0:
-		GameState.hit_crystal(dmg, global_position)
+	if idx >= GameState.LAYERS.size() - 1:
+		idx = GameState.LAYERS.size() - 2
+	var target: float = volume.layer_min_depth[idx] + 1.0
+	var from: Vector3 = Vector3(0.0, 2.6, WorldLayout.CRYSTAL_FOOTPRINT + 4.0)
+	var dir := Vector3(0.0, 0.0, -1.0)
+	var t: float = 0.0
+	while t < WorldLayout.CRYSTAL_FOOTPRINT + 4.0:
+		var p: Vector3 = from + dir * t
+		t += 0.8
+		if not volume.is_solid(p):
+			continue
+		var depth: float = volume.sample(volume.depth, p, 0.0)
+		_apply_carve(volume.carve_sphere(p, 2.6, (1 << 4) - 1), p, 2.6)
+		if depth >= target:
+			break
 
 
+## Primer punto de la superficie yendo de `from` (global) hacia el eje del cristal a su altura.
+## {"position", "normal"} en global, o {} si no lo cruza.
+func surface_toward(from: Vector3) -> Dictionary:
+	var p0: Vector3 = to_local(from)
+	var p1 := Vector3(0.0, p0.y, 0.0)
+	var steps: int = ceili(p0.distance_to(p1) / (volume.cell * 0.5))
+	for k: int in steps + 1:
+		var p: Vector3 = p0.lerp(p1, float(k) / float(maxi(steps, 1)))
+		if volume.is_solid(p):
+			return {"position": to_global(p), "normal": global_basis * volume.normal_at(p)}
+	return {}
+
+
+## Pantalla de carga: dispara una vez cada efecto de impacto y de fuego en `at` (sin daño ni
+## fragmentos que recoger) para compilar shaders y partículas antes de jugar.
 func warm_up(at: Vector3, normal: Vector3, tier: SpellTier, big_tier: SpellTier) -> void:
 	_fx.play(at, normal, tier, true)
 	_arcs.strike(at, normal, 1.0, ARC_COLORS[0])
@@ -365,6 +492,96 @@ func warm_up(at: Vector3, normal: Vector3, tier: SpellTier, big_tier: SpellTier)
 	_burn_fire.ignite(at, normal, 1.0, 0.6, 0.3, 0)
 	_add_burn(at, 0.01)
 	_shards.warm_up(at + normal * 1.5)
+	set_process(true)
+
+
+## Arranca cristal donde da el golpe: tanto volumen como esencia lleva el daño en la capa que
+## toca. Devuelve la esencia arrancada, o -1 si esa capa no cede ante este golpe (el Corazón
+## sólo con combinaciones; el Núcleo, con nada todavía).
+func _dig(at: Vector3, normal: Vector3, damage: float, combo: bool) -> float:
+	var n: Vector3 = (global_basis.inverse() * normal).normalized()
+	var p: Vector3 = to_local(at)
+	var layer: int = volume.layer_at(p - n * 0.35)
+	var allowed: int = _allowed_mask(combo)
+	_hit_layer = layer
+	if (allowed >> layer) & 1 == 0:
+		return -1.0
+	if damage <= 0.0:
+		return 0.0
+	# Volumen que se lleva el daño en esta capa; el cráter, una cazoleta de ese tamaño con el
+	# centro un poco dentro (la malla queda unos centímetros por fuera en lo cóncavo).
+	var vol: float = damage / volume.layer_density[layer]
+	var radius: float = clampf(pow(vol / 0.3, 1.0 / 3.0), 0.85, 14.0)
+	var center: Vector3 = p - n * radius * 0.25
+	var amount: float = radius * 0.2
+	# Ajuste en seco: la esencia sale de las celdas que dejan de estar llenas, así que hay que
+	# probar cuánto quitaría (y apretar más si se queda corto) antes de excavar.
+	var stride: int = 2 if radius > volume.cell * 5.0 else 1
+	for attempt: int in 4:
+		var dry: float = volume.carve(center, radius, amount, allowed, false, stride)["essence"]
+		if (dry >= damage * 0.8 and dry <= damage * 1.25) or attempt == 3:
+			break
+		amount *= clampf(damage / maxf(dry, damage * 0.25), 0.25, 4.0)
+	return _dig_local(center, radius, amount, allowed)
+
+
+## Erosiona de verdad en `p` (local), cuenta la esencia, rehace los trozos y descubre geodas.
+func _dig_local(p: Vector3, radius: float, amount: float, allowed: int) -> float:
+	return _apply_carve(volume.carve(p, radius, amount, allowed), p, radius)
+
+
+func _apply_carve(r: Dictionary, p: Vector3, radius: float) -> float:
+	var removed: float = r["essence"]
+	_chunks.mark_dirty(r["chunks"])
+	_volume_dirty = true
+	_essence_acc += removed
+	var whole: int = floori(_essence_acc)
+	if whole > 0:
+		_essence_acc -= whole
+		GameState.hit_crystal(whole, to_global(p))
+	var by_layer: PackedFloat32Array = r["by_layer"]
+	for li: int in range(by_layer.size() - 1, -1, -1):
+		if by_layer[li] > 0.0 and li > GameState.progression.deepest_layer:
+			GameState.progression.deepest_layer = li
+			_enter_layer(li)
+			break
+	_check_pockets(p, radius)
+	return removed
+
+
+## Capas que cede este golpe (bit = índice de capa).
+func _allowed_mask(combo: bool) -> int:
+	var mask: int = 0
+	for i: int in GameState.LAYERS.size():
+		var layer: CrystalLayerDef = GameState.LAYERS[i]
+		if layer.immune or (layer.needs_combo and not combo):
+			continue
+		mask |= 1 << i
+	return mask
+
+
+## El golpe rebota: chispazo, "clonk" grave y, de vez en cuando, por qué.
+func _too_hard(hit: SpellHit) -> void:
+	var layer: CrystalLayerDef = GameState.LAYERS[_hit_layer]
+	_hits[_hit_index] = Vector4(hit.position.x, hit.position.y, hit.position.z, _now)
+	_hit_resonant[_hit_index] = 0.0
+	_hit_index = (_hit_index + 1) % MAX_HITS
+	_material.set_shader_parameter("hits", _hits)
+	_hd_fx.play(hit.position, hit.normal, hit.tier, false)
+	_arcs.strike(hit.position, hit.normal, 0.4, ARC_COLORS[1])
+	var p: AudioStreamPlayer3D = _tink_players[_tink_next]
+	_tink_next = (_tink_next + 1) % _tink_players.size()
+	p.global_position = hit.position
+	p.pitch_scale = layer.hit_pitch * 0.6
+	p.volume_db = -8.0
+	p.play()
+	_shudder = minf(1.0, _shudder + 0.2)
+	if _now - _hard_hint_at > 5.0:
+		_hard_hint_at = _now
+		Events.hint.emit(
+			tr(layer.too_hard_hint) if layer.too_hard_hint != "" else tr("¡DEMASIADO DURO!"),
+			layer.col_light.lightened(0.3)
+		)
 	set_process(true)
 
 
@@ -474,19 +691,19 @@ func _add_burn(at: Vector3, radius: float) -> void:
 	_material.set_shader_parameter("burn_radius", _burn_radius)
 
 
-## Golpe de quemadura: quita esencia, mantiene caliente la marca y, uno de cada tres, suelta
-## una astilla fundida.
+## Golpe de quemadura: arranca esencia (el fuego también excava), mantiene caliente la marca y,
+## uno de cada tres, suelta una astilla fundida.
 func _on_burn_tick(damage: int, at: Vector3) -> void:
 	if damage <= 0:
 		return
-	GameState.hit_crystal(damage, at)
+	var n: Vector3 = global_basis * volume.normal_at(to_local(at))
+	if _dig(at, n, float(damage), true) < 0.0:
+		return
 	Events.crystal_burned.emit(damage, at)
 	_burn_ticks += 1
 	_core_pulse = maxf(_core_pulse, 0.4)
 	if _burn_ticks % 3 == 0:
-		var n: Vector3 = at - global_position
-		n.y = 0.0
-		_shards.spawn(at, n.normalized(), ShardPool.type_for_hit(1, false), 1, 0.8)
+		_shards.spawn(at, n, ShardPool.type_for_hit(1, false), 1, 0.8, _hit_layer)
 	set_process(true)
 
 
@@ -505,25 +722,11 @@ func _play_spell_impact(hit: SpellHit) -> void:
 	_spell_player.play()
 
 
-## Capas (GDD 6): al destruir lo bastante, el cristal pasa a la capa siguiente.
-func _on_essence_changed(_essence: int, _total: int) -> void:
-	var idx: int = GameState.layer_index()
-	if idx != _layer:
-		_enter_layer(idx)
-
-
-## Capa nueva: la paleta se funde a la de dentro, tormenta de rayos, retumbe y aviso.
+## Capa nueva (se ha excavado hasta ella por primera vez): tormenta de rayos, retumbe y aviso.
 func _enter_layer(idx: int) -> void:
-	_palette_from = GameState.LAYERS[_layer]
 	_layer = idx
-	_palette_t = 0.0
 	var layer: CrystalLayerDef = GameState.LAYERS[idx]
-	_arcs.storm(
-		global_position,
-		30.0 * crystal_scale / 2.3 * 2.0,
-		WorldLayout.CRYSTAL_FOOTPRINT,
-		ARC_COLORS[1]
-	)
+	_arcs.storm(global_position, volume.top, WorldLayout.CRYSTAL_FOOTPRINT, ARC_COLORS[1])
 	_global_flash = 1.0
 	_core_pulse = 1.0
 	_shudder = 1.0
@@ -538,71 +741,60 @@ func _enter_layer(idx: int) -> void:
 		tr("NUEVA CAPA: %s") % tr(layer.display_name).to_upper(), layer.col_light.lightened(0.3)
 	)
 	Events.crystal_layer_changed.emit(layer, idx)
-	for g: Geode in _geodes:
-		g.break_open()
-	_spawn_geodes()
 	set_process(true)
 
 
-func _apply_palette(a: CrystalLayerDef, b: CrystalLayerDef, k: float) -> void:
-	for key: String in ["col_highlight", "col_light", "col_mid", "col_dark", "col_core"]:
-		var c: Color = (a.get(key) as Color).lerp(b.get(key) as Color, k)
-		_material.set_shader_parameter(key, c)
-		_shards.set_palette_color(key, c)
-
-
-## Pone las geodas de la capa en la superficie del cristal, por el lado del claro.
-func _spawn_geodes() -> void:
-	await get_tree().physics_frame
-	var layer: CrystalLayerDef = GameState.LAYERS[_layer]
-	var wanted: int = mini(layer.geode_count, MAX_GEODES)
-	var active: int = 0
-	for g: Geode in _geodes:
-		if g.active:
-			active += 1
-	for g: Geode in _geodes:
-		if active >= wanted:
-			break
-		if g.active:
+## Una excavación que llega a una bolsa de geoda la abre: se ve la amatista y la geoda dentro.
+func _check_pockets(p: Vector3, radius: float) -> void:
+	for i: int in volume.geodes.size():
+		if GameState.progression.geodes.has(i):
 			continue
-		var hit: Dictionary = _find_surface_spot()
-		if hit.is_empty():
-			continue
-		g.place(hit["position"], hit["normal"])
-		active += 1
+		var g: Dictionary = volume.geodes[i]
+		if (g["center"] as Vector3).distance_to(p) < float(g["radius"]) + radius * 0.6:
+			GameState.progression.geodes[i] = 1
+			_reveal_geode(i, true)
 
 
-## Un punto de la superficie del cristal: rayo desde fuera hacia el eje, a una altura al azar.
-func _find_surface_spot() -> Dictionary:
-	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
-	for attempt: int in 8:
-		var a: float = _rng.randf_range(-1.2, 1.2) + PI * 0.5
-		var y: float = _rng.randf_range(1.0, 14.0)
-		var from: Vector3 = global_position + Vector3(cos(a), 0.0, sin(a)) * 40.0 + Vector3.UP * y
-		var to: Vector3 = global_position + Vector3.UP * y
-		var q := PhysicsRayQueryParameters3D.create(from, to, 1 << 1)
-		var r: Dictionary = space.intersect_ray(q)
-		if not r.is_empty():
-			return r
-	return {}
+func _reveal_geode(i: int, announce: bool) -> void:
+	var g: Dictionary = volume.geodes[i]
+	var r: float = g["radius"]
+	var node := Geode.new()
+	node.name = "Geode%d" % i
+	add_child(node)
+	node.place(to_global((g["center"] as Vector3) - Vector3(0.0, r * 0.7, 0.0)), Vector3.UP)
+	node.scale = Vector3.ONE * r * 1.4
+	_geode_nodes[i] = node
+	if not announce:
+		return
+	_accent_player.stream = STREAK_SFX
+	_accent_player.pitch_scale = 1.25
+	_accent_player.volume_db = -4.0
+	_accent_player.play()
+	_global_flash = maxf(_global_flash, 0.3)
+	Events.hint.emit(tr("¡UNA GEODA! REVIÉNTALA"), Color("#e9a5ff"))
 
 
-## Un golpe cerca de una geoda la revienta.
+## Un golpe cerca de una geoda abierta la revienta.
 func _check_geodes(hit: SpellHit) -> void:
-	var reach: float = 1.5 + hit.tier.crack_radius * 0.5
-	for g: Geode in _geodes:
-		if g.active and g.global_position.distance_to(hit.position) <= reach:
-			_break_geode(g, hit)
+	var reach: float = 2.0 + hit.tier.crack_radius * 0.5
+	for i: int in _geode_nodes:
+		var g: Geode = _geode_nodes[i]
+		if g.active and g.global_position.distance_to(hit.position) <= reach + g.scale.x * 0.4:
+			_break_geode(i, hit)
 			return
 
 
-func _break_geode(g: Geode, hit: SpellHit) -> void:
+func _break_geode(i: int, hit: SpellHit) -> void:
+	var g: Geode = _geode_nodes[i]
 	var at: Vector3 = g.global_position
-	var n: Vector3 = g.global_basis.y
+	var n: Vector3 = g.global_basis.y.normalized()
 	g.break_open()
-	var layer: CrystalLayerDef = GameState.LAYERS[_layer]
+	_geode_nodes.erase(i)
+	g.queue_free.call_deferred()
+	GameState.progression.geodes[i] = 2
+	var layer: CrystalLayerDef = GameState.LAYERS[1]
 	var chunk: ShardType = ShardPool.TYPES[ShardPool.TYPES.size() - 1]
-	_shards.spawn(at, n, chunk, layer.geode_shards, 1.5)
+	_shards.spawn(at + n * 0.5, n, chunk, layer.geode_shards, 1.5, 1)
 	_hd_fx.play(at, n, hit.tier, true, true)
 	_arcs.strike(at, n, 1.6, Color(1.6, 0.5, 2.0))
 	_accent_player.stream = GEODE_SFX
@@ -616,7 +808,6 @@ func _break_geode(g: Geode, hit: SpellHit) -> void:
 	HitStop.trigger(get_tree(), 0.07)
 	Events.hint.emit(tr("¡GEODA! +%d FRAGMENTOS GRANDES") % layer.geode_shards, Color("#e9a5ff"))
 	Events.geode_broken.emit(at)
-	_geode_timer = GEODE_RESPAWN_SEC
 	set_process(true)
 
 
@@ -647,12 +838,7 @@ func _crystal_reacts(hit: SpellHit) -> void:
 ## ¡El cristal se resquebraja!: tormenta de rayos por todo el cristal, destello desde el
 ## corazón, retumbe grave, sacudida y una grieta grande que se queda.
 func _surge(hit: SpellHit) -> void:
-	_arcs.storm(
-		global_position,
-		30.0 * crystal_scale / 2.3 * 2.0,
-		WorldLayout.CRYSTAL_FOOTPRINT,
-		ARC_COLORS[0]
-	)
+	_arcs.storm(global_position, volume.top, WorldLayout.CRYSTAL_FOOTPRINT, ARC_COLORS[0])
 	_global_flash = 0.85
 	_core_pulse = 1.0
 	_shudder = 1.0
@@ -685,7 +871,7 @@ func _play_tink(hit: SpellHit) -> void:
 	p.pitch_scale = (
 		pow(2.0, float(step) / 12.0)
 		* _rng.randf_range(0.99, 1.01)
-		* GameState.LAYERS[_layer].hit_pitch
+		* GameState.LAYERS[_hit_layer].hit_pitch
 	)
 	p.volume_db = -4.0 if hit.resonant else -10.0
 	p.play()
@@ -695,13 +881,6 @@ func _play_tink(hit: SpellHit) -> void:
 
 func _process(delta: float) -> void:
 	_now += delta
-	if _palette_t < 1.0:
-		_palette_t = minf(1.0, _palette_t + delta / 2.5)
-		_apply_palette(_palette_from, GameState.LAYERS[_layer], _palette_t)
-	if _geode_timer > 0.0:
-		_geode_timer -= delta
-		if _geode_timer <= 0.0:
-			_spawn_geodes()
 	_material.set_shader_parameter("now", _now)
 	if _streak.expire(_now):
 		Events.streak_broken.emit(_streak.streak)
@@ -710,11 +889,11 @@ func _process(delta: float) -> void:
 	if _shudder > 0.0:
 		_shudder = maxf(0.0, _shudder - delta * 4.0)
 		var a: float = _shudder * _shudder * 0.09
-		_mesh_instance.position = Vector3(
+		_chunks.position = Vector3(
 			_rng.randf_range(-a, a), _rng.randf_range(-a, a) * 0.5, _rng.randf_range(-a, a)
 		)
 	else:
-		_mesh_instance.position = Vector3.ZERO
+		_chunks.position = Vector3.ZERO
 	_core_pulse = maxf(0.0, _core_pulse - delta * 2.5)
 	_material.set_shader_parameter("core_pulse", 0.5 + 0.5 * sin(_now * 1.4) + _core_pulse * 2.0)
 	_global_flash = maxf(0.0, _global_flash - delta * 5.0)

@@ -93,6 +93,20 @@ func _setup_autoplay() -> void:
 			# --layer=N: empieza en esa capa del cristal (1 = Manto Geódico...).
 			var crystal: MotherCrystal = _world.get_node(^"MotherCrystal")
 			crystal.jump_to_layer(int(a.get_slice("=", 1)))
+		elif a.begins_with("--dig="):
+			# --dig=N: N golpes de 30 de daño donde apunta la cámara (cráter sin efectos).
+			_demo_dig.call_deferred(int(a.get_slice("=", 1)))
+		elif a == "--geode":
+			# --geode: túnel hasta la geoda más cercana y el jugador mirándola desde la boca.
+			var mc: MotherCrystal = _world.get_node(^"MotherCrystal")
+			var spots: Array[Vector3] = mc.tunnel_to_geode(_player.global_position)
+			var mouth: Vector3 = spots[0]
+			_player.global_position = Vector3(mouth.x, maxf(mouth.y - 1.2, 0.2), mouth.z)
+			var to_geode: Vector3 = spots[1] - (_player.global_position + Vector3.UP * 1.6)
+			_player.rotation.y = atan2(-to_geode.x, -to_geode.z)
+			(_player.get_node(^"Head") as Node3D).rotation.x = atan2(
+				to_geode.y, Vector2(to_geode.x, to_geode.z).length()
+			)
 		elif a.begins_with("--time="):
 			_day_night.time_of_day = float(a.get_slice("=", 1))
 		elif a.begins_with("--warp="):
@@ -259,7 +273,10 @@ func _warm_up() -> void:
 	var hands: WizardHands = _player.get_node(^"Hands")
 	await get_tree().process_frame
 	# 1) El cristal: impactos, fuego, fragmentos y todos los hechizos en vuelo y en la mano.
-	var front := Vector3(0.0, 4.0, WorldLayout.CRYSTAL_FOOTPRINT * 0.55)
+	var front := Vector3(0.0, 4.0, WorldLayout.CRYSTAL_FOOTPRINT * 0.8)
+	var surf: Dictionary = crystal.surface_toward(Vector3(0.0, 4.0, WorldLayout.PLAYER_START.z))
+	if not surf.is_empty():
+		front = surf["position"]
 	_aim(cam, front)
 	var defs: Array[SpellVisualDef] = [caster.current_recipe().visual]
 	for t: SpellTier in SpellCaster.ELEMENT.tiers:
@@ -315,6 +332,23 @@ func _place(node: Node3D, at: Vector3) -> void:
 
 func _rank_layers() -> int:
 	return maxi(_arg_int("--music-layers=", 1), 1 + GameState.total_upgrade_levels() / 3)
+
+
+func _demo_dig(hits: int) -> void:
+	await get_tree().physics_frame
+	var crystal: MotherCrystal = _world.get_node(^"MotherCrystal")
+	var cam: Camera3D = _player.get_viewport().get_camera_3d()
+	for i: int in hits:
+		var space: PhysicsDirectSpaceState3D = crystal.get_world_3d().direct_space_state
+		var from: Vector3 = cam.global_position
+		var q := PhysicsRayQueryParameters3D.create(from, from - cam.global_basis.z * 200.0, 1 << 1)
+		var r: Dictionary = space.intersect_ray(q)
+		if r.is_empty():
+			return
+		var jitter := Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)) * 0.8
+		crystal.call("_dig", r["position"] + jitter, r["normal"], 30.0, false)
+		for k: int in 3:
+			await get_tree().physics_frame
 
 
 func _arg_int(prefix: String, fallback: int) -> int:

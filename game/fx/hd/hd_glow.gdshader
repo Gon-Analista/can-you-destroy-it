@@ -1,7 +1,7 @@
 shader_type spatial;
 // Halo de luz HD: brillo radial suave que se suma con rayos opcionales. Alfa premultiplicado
 // con ALPHA = 0: suma luz sin tapar el fondo (la capa de magia se compone premultiplicada).
-render_mode unshaded, blend_premul_alpha, depth_draw_never, depth_test_disabled, cull_disabled, fog_disabled, shadows_disabled;
+render_mode unshaded, blend_premul_alpha, depth_draw_never, cull_disabled, fog_disabled, shadows_disabled;
 
 #include "res://fx/hd/hd_noise.gdshaderinc"
 

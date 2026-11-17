@@ -3,7 +3,7 @@ shader_type spatial;
 // Núcleo blanco ardiente y borde del color del rayo, sumando luz (alfa premultiplicado con
 // algo de cuerpo opaco para que se lea sobre el cielo claro). El alfa del color de vértice es
 // la vida que le queda (se apaga parpadeando).
-render_mode unshaded, blend_premul_alpha, depth_draw_never, depth_test_disabled, cull_disabled, fog_disabled, shadows_disabled;
+render_mode unshaded, blend_premul_alpha, depth_draw_never, cull_disabled, fog_disabled, shadows_disabled;
 
 uniform float intensity = 2.4;
 

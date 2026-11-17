@@ -3,7 +3,7 @@ shader_type spatial;
 // blanco ardiente (HDR, florece con el glow) y borde oscuro de color que se recorta contra el
 // fondo. `style` 0 = fuego (lenguas hacia arriba), 1 = arcano (remolino en espiral).
 // Alfa normal (cuerpo opaco con color) en una capa premultiplicada: no se lava sobre el cielo.
-render_mode unshaded, blend_premul_alpha, depth_draw_never, depth_test_disabled, cull_disabled, fog_disabled, shadows_disabled;
+render_mode unshaded, blend_premul_alpha, depth_draw_never, cull_disabled, fog_disabled, shadows_disabled;
 
 #include "res://fx/hd/hd_noise.gdshaderinc"
 
