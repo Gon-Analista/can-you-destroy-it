@@ -45,10 +45,10 @@ func _init() -> void:
 	_check(not bag.take_from_bag(&"splinter"), "no se saca lo que no hay")
 
 	var bag_node: UpgradeNode = load("res://data/upgrades/bag.tres")
-	_check(bag.stat_of(bag_node) == 3.0, "sin comprar, la bolsa lleva 3")
+	_check(bag.stat_of(bag_node) == 5.0, "sin comprar, la bolsa lleva 5")
 	_check(bag.purchase_block(bag_node) == &"mana", "sin maná no se puede")
 	bag.deliver(12)
-	_check(bag.buy_upgrade(bag_node) and bag.stat_of(bag_node) == 10.0, "la bolsa sube a 10")
+	_check(bag.buy_upgrade(bag_node) and bag.stat_of(bag_node) == 15.0, "la bolsa sube a 15")
 	_check(bag_node.cost_for_level(1) == 60, "el coste sale del .tres")
 	var tk: UpgradeNode = load("res://data/upgrades/telekinesis.tres")
 	var fresh := Progression.new(1000)
@@ -86,6 +86,28 @@ func _init() -> void:
 	_check(recipe.damage_for(1, 1, 1.0) == 5, "carga completa: (1 + 1) x 2,5")
 	_check(recipe.damage_for(1, 1, 0.0) == 2, "sin carga: potencia mínima")
 	_check(recipe.damage_for(0, 0, 0.0) == 1, "nunca menos de 1")
+
+	# Fragmentos por valor del daño (ShardPool.pieces_for): el maná que suelta un golpe cuadra con
+	# la esencia que quita, con pocas piezas y más grandes cuanto más fuerte.
+	for dmg: int in [1, 2, 7, 11, 49, 50, 333, 999, 1000, 4321, 12000]:
+		var pieces: Array[Vector2i] = ShardPool.pieces_for(float(dmg))
+		var worth: int = 0
+		var count: int = 0
+		for pc: Vector2i in pieces:
+			worth += ShardPool.TYPES[pc.x].value * pc.y
+			count += pc.y
+		_check(worth <= dmg, "un golpe de %d no da más de lo que vale" % dmg)
+		_check(
+			worth >= dmg * 0.75 or dmg < 4,
+			"un golpe de %d da casi todo su valor (%d)" % [dmg, worth]
+		)
+		_check(
+			count <= 2 * ShardPool.MAX_PIECES + ShardPool.MAX_EXTRA, "piezas acotadas (%d)" % dmg
+		)
+	_check(
+		ShardPool.pieces_for(1.0) == ([Vector2i(0, 1)] as Array[Vector2i]), "1 de daño: una astilla"
+	)
+	_check(ShardPool.pieces_for(60.0)[0].x == 2, "60 de daño: fragmentos grandes")
 
 	var streak := StreakTracker.new(2.0)
 	_check(streak.register_hit(0.0) == 1, "primer golpe: racha 1")

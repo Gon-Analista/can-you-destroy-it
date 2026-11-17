@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ShardType" format=3]
+
+[ext_resource type="Script" path="res://data/defs/shard_type.gd" id="1_5c4od"]
+
+[resource]
+script = ExtResource("1_5c4od")
+id = &"boulder"
+display_name = "Pedrusco de maná"
+display_name_plural = "pedruscos de maná"
+min_damage = 1000
+value = 500
+radius = 1.05
+height = 1.45
+tip = 0.75
+sides = 7
+pickup_pitch = 0.5
+launch_speed = 0.55

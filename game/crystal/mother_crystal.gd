@@ -380,27 +380,20 @@ func receive_hit(hit: SpellHit) -> void:
 	_core_pulse = 1.0
 	if hit.resonant:
 		_global_flash = 0.55
-	var count: int = ceili(
-		(
-			float(_rng.randi_range(tier.shards_min, tier.shards_max) * (2 if hit.resonant else 1))
-			* (1.0 + (hit.size - 1.0) * 0.6)
-		)
-	)
-	if weak:
-		count = 1
-	var shard_type: ShardType = ShardPool.type_for_hit(hit.damage, hit.resonant)
-	# Tierra y Lanza Cargada: fragmentos un tamaño más grandes.
+	# Fragmentos por valor del daño (el maná que da el cristal es la esencia que pierde). Tierra y
+	# Lanza Cargada: +25 % de valor. El golpe flojo del tutorial: una astilla.
 	var bonus: int = (
 		hit.recipe.shard_bonus
 		if hit.recipe
 		else (hit.element_def.shard_bonus if hit.element_def else 0)
 	)
-	if bonus > 0:
-		var ti: int = mini(ShardPool.TYPES.find(shard_type) + bonus, ShardPool.TYPES.size() - 1)
-		shard_type = ShardPool.TYPES[ti]
-	_shards.spawn(
-		hit.position, hit.normal, shard_type, count, 1.25 if hit.resonant else 1.0, _hit_layer
-	)
+	var power: float = 1.25 if hit.resonant else 1.0
+	if weak:
+		_shards.spawn(hit.position, hit.normal, ShardPool.TYPES[0], 1, power, _hit_layer)
+	else:
+		_shards.spawn_worth(
+			hit.position, hit.normal, float(hit.damage) * (1.0 + 0.25 * bonus), power, _hit_layer
+		)
 	_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.size)
 	_crystal_reacts(hit)
 	if hit.resonant or hit.recipe != null or _now - _last_hd >= 0.12:

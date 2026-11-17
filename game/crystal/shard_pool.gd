@@ -1,8 +1,10 @@
 class_name ShardPool
 extends Node3D
-## Pool de fragmentos físicos en tres tamaños (Astilla, Fragmento, Fragmento grande; ver
-## data/shards/). Nada se instancia durante el juego: se reciclan (el más antiguo primero) y
-## tras unos segundos quietos se congelan para no gastar física.
+## Pool de fragmentos físicos en cinco tamaños (Astilla, Fragmento, Fragmento grande, Bloque
+## de cristal y Pedrusco de maná; ver data/shards/). Un golpe suelta fragmentos por valor de su
+## daño (`pieces_for`): el maná que da el cristal es la esencia que pierde, y el Pilón va con él.
+## Nada se instancia durante el juego: se reciclan (el más antiguo primero) y tras unos segundos
+## quietos se congelan para no gastar física.
 ## Recoger: el fragmento se vuelve intangible y vuela hacia la mano encogiéndose.
 ## Gravedad (Arcano + Tierra): los fragmentos sueltos giran en espiral hasta un pozo y, al
 ## llegar, avisan con `swallowed` (quien abrió el pozo decide si van a la bolsa o a la tolva).
@@ -15,7 +17,13 @@ const TYPES: Array[ShardType] = [
 	preload("res://data/shards/splinter.tres"),
 	preload("res://data/shards/shard.tres"),
 	preload("res://data/shards/chunk.tres"),
+	preload("res://data/shards/block.tres"),
+	preload("res://data/shards/boulder.tres"),
 ]
+## Piezas grandes por golpe como mucho (si no caben, un tamaño más; del mayor, hasta el doble) y
+## trocitos para el resto.
+const MAX_PIECES: int = 10
+const MAX_EXTRA: int = 3
 const CLINK_STREAMS: Array[AudioStream] = [
 	preload("res://audio/sfx/sfx_shard_clink_01.ogg"),
 	preload("res://audio/sfx/sfx_shard_clink_02.ogg"),
@@ -30,7 +38,7 @@ const SHARD_LAYER: int = 1 << 3
 const MESH_VARIANTS: int = 4
 const COLLECT_SEC: float = 0.22
 
-@export var pool_size: int = 64
+@export var pool_size: int = 128
 @export var freeze_after_sec: float = 5.0
 @export var clink_players: int = 8
 ## Separación mínima entre dos tintineos (evita un muro de sonido).
@@ -159,6 +167,42 @@ func _setup_audio() -> void:
 	_pickup_player.stream = pickup
 	_pickup_player.max_polyphony = 4
 	add_child(_pickup_player)
+
+
+## Fragmentos que suelta un golpe que vale `worth` (su daño): el tipo es el mayor cuyo
+## `min_damage` se alcanza (el doble de su valor, así salen de 2 a 9 piezas), la cuenta es
+## worth / valor y lo que sobra sale en hasta MAX_EXTRA trocitos más pequeños. Devuelve pares
+## (índice en TYPES, cuántos). Ver tools/balance_sim.py.
+static func pieces_for(worth: float) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	if worth < 1.0:
+		return out
+	var idx: int = 0
+	for i: int in TYPES.size():
+		if worth >= TYPES[i].min_damage:
+			idx = i
+	while idx < TYPES.size() - 1 and floori(worth / TYPES[idx].value) > MAX_PIECES:
+		idx += 1
+	var top: int = MAX_PIECES * (2 if idx == TYPES.size() - 1 else 1)
+	var count: int = clampi(floori(worth / TYPES[idx].value), 1, top)
+	out.append(Vector2i(idx, count))
+	var rest: float = worth - float(count * TYPES[idx].value)
+	var extra: int = 0
+	for j: int in range(idx - 1, -1, -1):
+		var n: int = 0
+		while rest >= TYPES[j].value and extra < MAX_EXTRA:
+			rest -= TYPES[j].value
+			n += 1
+			extra += 1
+		if n > 0:
+			out.append(Vector2i(j, n))
+	return out
+
+
+## Lanza los fragmentos de un golpe que vale `worth` (ver `pieces_for`).
+func spawn_worth(origin: Vector3, normal: Vector3, worth: float, power: float, layer: int) -> void:
+	for piece: Vector2i in pieces_for(worth):
+		spawn(origin, normal, TYPES[piece.x], piece.y, power, layer)
 
 
 ## Tipo de fragmento para un golpe: el mayor cuyo daño mínimo se alcance; resonante sube uno.

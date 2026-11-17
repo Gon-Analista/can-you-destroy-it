@@ -13,8 +13,8 @@ colors = PackedColorArray(2, 1.5, 0.8, 1, 1.2, 0.65, 0.25, 1, 0.6, 0.35, 0.14, 1
 
 [sub_resource type="Resource" id="tier_1"]
 script = ExtResource("tier")
-cooldown_sec = 2.4
-damage = 3
+cooldown_sec = 2.25
+damage = 7
 speed = 15.0
 wobble = 0.1
 shards_min = 1
@@ -36,8 +36,8 @@ trail_ramp = SubResource("ramp")
 
 [sub_resource type="Resource" id="tier_2"]
 script = ExtResource("tier")
-cooldown_sec = 2.0
-damage = 8
+cooldown_sec = 1.5
+damage = 14
 speed = 17.0
 wobble = 0.08
 shards_min = 2
@@ -59,8 +59,8 @@ trail_ramp = SubResource("ramp")
 
 [sub_resource type="Resource" id="tier_3"]
 script = ExtResource("tier")
-cooldown_sec = 1.6
-damage = 20
+cooldown_sec = 1.28
+damage = 21
 speed = 19.0
 wobble = 0.06
 shards_min = 2

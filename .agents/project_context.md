@@ -62,9 +62,9 @@ Lanzar hechizo -> cae fragmento -> entregar al Pilón -> ganar maná -> mejorar 
 |---|---|
 | Esencia total del Cristal | 1.000.000 (cabe en `int`, no hace falta BigNumber) |
 | Daño inicial de la chispa | 0 (tutorial: "deshonra de mago"); juntar las dos manos hace 1; la primera Potencia (5 maná) sube a 2 |
-| Capacidad inicial | 1 fragmento en la mano |
+| Capacidad inicial | Bolsa de 5 (sube a 15, 40 y 100) |
 | Distancia Cristal -> Pilón | ≈ 10 m (≈ 4 s caminando) |
-| Primera mejora | 5 maná, debe llegar en < 30 s |
+| Primera mejora | 5 maná; con el tutorial llega hacia el minuto 1 |
 | Coste por nivel | base x 1,15 a 1,25 según rama |
 | Regla de ritmo | algo comprable cada < 60 s en la 1.ª hora; nunca > 3 min sin mejora |
 
@@ -264,6 +264,10 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-17 | Bola de Fuego: daño = (mano izq. + mano der.) x 2,5 x potencia (50-100 % según la carga), enfriamiento de 2 s en las dos manos, 3 golpes secundarios en área que sólo agrietan y sueltan astillas. | Mejor que dos chispas sueltas (≈1,85 frente a 1,33 de daño por segundo con la Chispa 1) pero pide comprometerse; valores en el `.tres`, a balancear en M1b. |
 | 2026-11-17 | Tutorial exprés al salir de la casucha (`ui/tutorial.gd`, paso guardado en `Progression.tutorial_step`): clic izq. y der. no hacen daño (chispa que se apaga con "clink"), juntar hace 1 y suelta un pedacito, recoger, triturar, juntar 5 y comprar la Potencia (2 de daño). La esencia acreditada por golpe es igual al daño. | Pedido del equipo: empezar siendo un mago lamentable y sentir la primera mejora; enseña las dos manos, la combinación y el bucle en menos de un minuto. |
 | 2026-11-17 | Arcano (5.º elemento) con ecos genéricos (`SpellRecipe.echo_of/echo_count/echo_delay/echo_damage`, `SpellEchoes`); Gravedad recoge todo el valle (`ShardPool.gravity_pull`); Resonancia Arcana vuelve resonantes los golpes 5 s (8 s de espera). | GDD 5.1/5.2: el Arcano "repite" y abre las combinaciones raras; la Gravedad es la utilidad de recogida de mitad de partida. |
+| 2026-11-17 | Los fragmentos de un golpe valen su daño (`ShardPool.pieces_for`): el tipo sale del daño (umbral = doble de su valor: Astilla 1, Fragmento 5 desde 10, Grande 25 desde 50, Bloque 100 desde 200, Pedrusco 500 desde 1000), de 2 a 9 piezas y hasta 3 trocitos para el resto. Tierra y Lanza Cargada: +25 %. | El maná sale de la esencia que pierde el cristal, así el Pilón y el cristal avanzan juntos; golpes más fuertes = piezas más grandes y números más grandes (y menos viajes). Antes, a nivel alto, el Pilón se quedaba en el 47 %. |
+| 2026-11-17 | El maná no se corta con el Pilón lleno (`Progression.deliver`); sólo la barra tiene tope. | Los bonus de valor pueden adelantar un poco el Pilón al cristal y no se debe quedar el jugador sin comprar. |
+| 2026-11-17 | Balance con `tools/balance_sim.py`: todos los elementos siguen la misma curva por nivel (x1,38 de daño y x0,92 de enfriamiento por nivel desde el último escrito a mano, `ElementDef.damage_growth`) escalada por elemento (Chispa 1, Escarcha 1,6, Rayo 3, Tierra 7, Arcano ~10); el multiplicador de cada combinación es K x su ciclo (carga + enfriamiento), con K mayor en cada generación (fuego/hielo < rayo < tierra < arcano); las Potencias de Bola de Fuego y Choque Térmico llegan a x2. | Antes cada nivel doblaba el daño y la Chispa sola a nivel 10 rompía el cristal en 40 min; ahora cada elemento nuevo empieza flojo, se pone al día con niveles baratos y sus combinaciones superan a las viejas (el final lo mandan Ecos, Resonancia y Terremoto). |
+| 2026-11-17 | Tras la primera mejora la Chispa hace 2 de daño (lo que dice el tutorial) y juntar las manos, 11. | Pedido del equipo ("la primera mejora te hace hacer 2 puntos de daño") y un salto que se nota al salir del tutorial. |
 
 ## 10. Preguntas abiertas
 

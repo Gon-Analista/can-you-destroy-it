@@ -2,6 +2,36 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-17 · Balance: el Pilón va con el cristal, piezas más grandes y cada elemento nuevo manda
+
+**Qué hay nuevo** (pedido del equipo: "de ahí en adelante debes balancearlo para hacerlo divertido con buena
+progresión, dopamina y gratificante")
+
+- **Simulador de balance** (`tools/balance_sim.py`): juega la partida entera con los datos reales y dos jugadores
+  (eficiente y normal) y dice cuánto dura, cómo va el Pilón, cada cuánto se compra algo y para qué se ahorraba.
+  Antes del cambio: la Chispa sola a nivel 10 (960 de daño cada 0,1 s) rompía el cristal en 40 minutos, el
+  Pilón se quedaba en el 47 % y había ratos de 5 minutos sin poder comprar nada.
+- **Los fragmentos valen lo que arranca el golpe**: el maná que da el cristal es la esencia que pierde, así que
+  el Pilón y el cristal avanzan juntos. Cuanto más fuerte el golpe, **más grandes las piezas**: Astilla (1),
+  Fragmento (5), Fragmento grande (25) y dos nuevas, **Bloque de cristal (100)** y **Pedrusco de maná (500)**. Más
+  daño también significa menos viajes, porque la bolsa cuenta piezas.
+- **Curva de niveles nueva**: todos los elementos crecen igual por nivel (x1,38) con su propio tamaño (Chispa <
+  Escarcha < Rayo < Tierra < Arcano). Al despertar un elemento empieza flojo, pero sus primeros niveles son
+  baratos y en pocos minutos se pone por delante.
+- **Cada combinación nueva supera a las viejas**: el daño de cada una va con lo que tarda (carga + enfriamiento)
+  y sube con cada generación (fuego y hielo < rayo < tierra < arcano). El final lo mandan el Eco de Hielo, la
+  Resonancia Arcana y el Terremoto, y ya no el Choque Térmico.
+- **Precios** repartidos para que en la primera hora casi siempre haya algo que comprar en menos de un minuto;
+  la bolsa empieza en 5 (luego 15, 40 y 100); tras el tutorial la Chispa hace 2 y juntar las manos, 11.
+- El maná ya no se corta si el Pilón se llena antes que el cristal.
+
+**Cómo queda (simulador)**: jugador normal, unos 110 min hasta el Núcleo con el Pilón al 97 %; eficiente, unos 80
+min. Faltan por sumar los familiares y la rama del Pilón (oleada 1 del GDD), que alargarán la mitad de la partida
+hacia las 2 a 3 horas del GDD.
+
+**Pruebas**: `progression_smoke` comprueba que los fragmentos de un golpe valen su daño; `loop_smoke`,
+`tutorial_smoke` y `progression_smoke` siguen la bolsa y los daños nuevos. Todas en verde.
+
 ## 2026-11-17 · El Arcano: el quinto elemento, sus ecos y la Gravedad
 
 **Qué hay nuevo** (GDD 5.1 y 5.2, oleada 1 del GDD)

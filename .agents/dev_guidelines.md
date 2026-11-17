@@ -48,7 +48,8 @@ Tecnologías ya previstas (validar la versión al integrarlas):
 | Mallas del prototipo | `core/mesh_kit.gd` (prismas, conos, cajas con normales planas y color por vértice) | Corrige el orden de vértices solo. |
 | Contorno pixel art | `fx/outline.gdshader`: post-proceso de profundidad + normales | Técnica estándar de "3D pixel art" en Godot 4. |
 | SFX del prototipo | `tools/sfx_synth.py` y `tools/sfx_loop.py` (numpy + scipy + ffmpeg) | Reproducible con semillas fijas; afinado en La mayor. |
-| Elementos y combinaciones | `tools/gen_spells.py` -> `game/data/elements/{bolt,earth}.tres`, `game/data/spells/{vfx_*,recipe_*}.tres` | Números, textos, colores y sonidos de Rayo, Tierra y sus combinaciones; Chispa, Escarcha, Bola de Fuego y Choque Térmico siguen a mano. |
+| Elementos y combinaciones | `tools/gen_spells.py` -> `game/data/elements/{bolt,earth,arcane}.tres`, `game/data/spells/{vfx_*,recipe_*}.tres` | Números, textos, colores y sonidos de Rayo, Tierra, Arcano y sus combinaciones; Chispa, Escarcha, Bola de Fuego y Choque Térmico siguen a mano. |
+| Balance | `tools/balance_sim.py` | Simula la partida con los datos reales; ver sección 8. |
 | SFX de combinaciones | `tools/sfx_combos.py` (rayo, roca, trueno, meteoro, terremoto, magnetismo, lanza, plasma, cargas) | Semillas fijas. |
 | SFX de movimiento | `tools/sfx_move.py` (doble salto, levitación en bucle, carga agotada) | Semillas fijas. |
 | SFX de la casucha | `tools/sfx_hut.py` (puerta, viento, revelación, ambiente de dentro) | Igual que el resto: semillas fijas. |
@@ -266,8 +267,13 @@ godot --path game --write-movie /tmp/captura/f.png --fixed-fps 60 --quit-after 1
 ## 8. Diseño de juego en el código
 
 - Ningún cambio de balance sin actualizar los recursos de `game/data/` (y el GDD si cambia una regla).
-- Herramienta de **simulación de balance** (script headless) que simule la partida con jugador "medio" y reporte
-  el tiempo a cada hito; objetivo total 2 a 3 h y nunca > 3 min sin mejora comprable.
+- **Simulador de balance**: `python3 tools/balance_sim.py` (añade `--log` para ver cada compra). Lee los `.tres` de
+  `game/data/` y juega la partida entera con dos jugadores ("eficiente", cota optimista, y "normal", el que manda
+  para las reglas del GDD): daño por nivel, combinaciones, ecos, resonancia, fragmentos por valor del daño, bolsa,
+  telequinesis, viajes a la trituradora y al Santuario. Informa de la duración, el Pilón al final, los huecos
+  entre compras (y para qué se ahorraba) y una nota; objetivo: 2 a 3 h, algo comprable cada < 60 s la primera
+  hora y nunca > 3 min sin mejora. Si cambias una regla de juego que toque la economía (daño, fragmentos,
+  logística), cópiala también en el simulador. Para probar números sin tocar los datos: `--tuning archivo.py`.
 - **Modo debug** (sólo en builds de desarrollo): multiplicador de tiempo, dar maná, saltar a capa, mostrar FPS y contadores.
 
 ## 9. UI, accesibilidad y localización

@@ -46,7 +46,7 @@ trail_length = 0.1
 [sub_resource type="Resource" id="tier_2"]
 script = ExtResource("2_qc2j2")
 cooldown_sec = 1.0
-damage = 1
+damage = 2
 speed = 28
 size = 0.22
 wobble = 0.38
@@ -68,8 +68,8 @@ trail_length = 0.14
 
 [sub_resource type="Resource" id="tier_3"]
 script = ExtResource("2_qc2j2")
-cooldown_sec = 0.6
-damage = 5
+cooldown_sec = 0.85
+damage = 3
 speed = 36
 size = 0.3
 wobble = 0.22
@@ -91,8 +91,8 @@ trail_length = 0.2
 
 [sub_resource type="Resource" id="tier_4"]
 script = ExtResource("2_qc2j2")
-cooldown_sec = 0.35
-damage = 12
+cooldown_sec = 0.74
+damage = 5
 speed = 46
 size = 0.4
 wobble = 0.12
@@ -114,8 +114,8 @@ trail_length = 0.26
 
 [sub_resource type="Resource" id="tier_5"]
 script = ExtResource("2_qc2j2")
-cooldown_sec = 0.18
-damage = 30
+cooldown_sec = 0.66
+damage = 7
 speed = 58
 size = 0.55
 wobble = 0.06

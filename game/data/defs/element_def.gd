@@ -15,6 +15,10 @@ const ASCENDED_LEVEL: int = 6
 @export var unlock_pylon_ratio: float = 0.0
 ## Niveles de poder del elemento (el índice 0 es el inicial).
 @export var tiers: Array[SpellTier] = []
+## Cuánto crece el daño en cada nivel que `ensure_levels` añade (x1,38: de nivel 5 a 10, x5).
+@export var damage_growth: float = 1.38
+## Y el enfriamiento (x0,92 por nivel).
+@export var cooldown_growth: float = 0.92
 ## Lo que flota sobre la palma de la mano que lleva este elemento.
 @export var hand_visual: SpellVisualDef
 ## Estadística de mejora que da su nivel (índice en `tiers`), p. ej. &"spark_tier".
@@ -52,15 +56,16 @@ const ASCENDED_LEVEL: int = 6
 @export var resonant_bonus: float = 0.0
 
 
-## Completa `tiers` hasta el nivel 10 a partir del último escrito a mano: cada nivel nuevo dobla
-## el daño, es algo más rápido, más grande y de más área, y el color tira hacia el violeta arcano.
+## Completa `tiers` hasta el nivel 10 a partir del último escrito a mano: cada nivel nuevo pega
+## más (`damage_growth`), es algo más rápido, más grande y de más área, y el color tira hacia el
+## violeta arcano. Los números salen del simulador de balance (tools/balance_sim.py).
 func ensure_levels() -> void:
 	while tiers.size() < MAX_LEVEL and not tiers.is_empty():
 		var prev: SpellTier = tiers[tiers.size() - 1]
 		var t: SpellTier = prev.duplicate()
 		var k: float = float(tiers.size() - 4) / float(MAX_LEVEL - 5)
-		t.damage = prev.damage * 2
-		t.cooldown_sec = maxf(0.1, prev.cooldown_sec * 0.9)
+		t.damage = maxi(prev.damage + 1, roundi(float(prev.damage) * damage_growth))
+		t.cooldown_sec = maxf(0.1, prev.cooldown_sec * cooldown_growth)
 		t.speed = prev.speed + 4.0
 		t.orb_scale = prev.orb_scale + 0.5
 		t.crack_radius = prev.crack_radius * 1.04

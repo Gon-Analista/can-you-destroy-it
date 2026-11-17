@@ -77,9 +77,9 @@ func _initialize() -> void:
 	await process_frame
 	_check(int(tut.get(&"step")) == 8, "tutorial terminado")
 	var tier: Resource = caster.call(&"tier_for", 0)
-	_check(int(tier.get(&"damage")) == 1, "ahora la chispa hace 1")
+	_check(int(tier.get(&"damage")) == 2, "ahora la chispa hace 2")
 	var recipe: Resource = caster.call(&"recipe_for_hands")
-	_check(int(recipe.call(&"damage_for", 1, 1, 1.0)) == 2, "y juntas hacen 2")
+	_check(int(recipe.call(&"damage_for", 2, 2, 1.0)) > 4, "y juntas, mucho más que por separado")
 	print("tutorial_smoke: ", "OK" if _ok else "FALLO")
 	quit(0 if _ok else 1)
 

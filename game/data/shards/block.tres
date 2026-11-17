@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ShardType" format=3]
+
+[ext_resource type="Script" path="res://data/defs/shard_type.gd" id="1_5c4od"]
+
+[resource]
+script = ExtResource("1_5c4od")
+id = &"block"
+display_name = "Bloque de cristal"
+display_name_plural = "bloques de cristal"
+min_damage = 200
+value = 100
+radius = 0.78
+height = 1.1
+tip = 0.6
+sides = 6
+pickup_pitch = 0.6
+launch_speed = 0.65

@@ -37,11 +37,12 @@ func damage_crystal(amount: int) -> int:
 	return removed
 
 
-## Entrega fragmentos al Pilón. El progreso del Pilón nunca supera la esencia total.
+## Entrega fragmentos al Pilón. El progreso del Pilón nunca supera la esencia total; el maná sí.
 func deliver(value: int) -> void:
-	var accepted: int = clampi(value, 0, total_essence - pylon_progress)
-	pylon_progress += accepted
-	mana += accepted
+	var v: int = maxi(value, 0)
+	pylon_progress = mini(pylon_progress + v, total_essence)
+	# El maná no se corta con el Pilón lleno (los bonus de valor pueden adelantarlo un poco).
+	mana += v
 
 
 ## Guarda en la bolsa un fragmento recogido del suelo. Con `capacity` >= 0 no se pasa de ahí:

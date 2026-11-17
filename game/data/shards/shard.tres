@@ -7,6 +7,6 @@ script = ExtResource("1_nmw23")
 id = &"shard"
 display_name = "Fragmento"
 display_name_plural = "fragmentos"
-min_damage = 3
+min_damage = 10
 value = 5
 radius = 0.26
