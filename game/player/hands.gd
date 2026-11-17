@@ -35,6 +35,7 @@ const JOIN_SPEED: float = 9.0
 const MERGED_AT: float = 0.8
 ## Tinte de las manos cuando el hechizo las ilumina (HDR suave).
 const HAND_GLOW := Color(1.35, 1.08, 0.82)
+const NIGHT_TINT := Color(0.5, 0.55, 0.85)
 const LEVEL_UP_SFX: AudioStream = preload("res://audio/sfx/sfx_spell_combine_01.ogg")
 
 ## Carga de cada mano (0 = recién lanzada, 1 = lista). [izquierda, derecha]
@@ -50,6 +51,7 @@ var orb_enabled: bool = true:
 
 var _sprites: Array[Sprite2D] = []
 var _pending_flare: bool = false
+var _night: float = 0.0
 var _grimoire_open: bool = false
 var _flames: Array[SpellOrb] = []
 var _flame_spent: Array[bool] = [false, false]
@@ -67,6 +69,7 @@ var _walk_phase: float = 0.0
 
 
 func _ready() -> void:
+	add_to_group(&"night_listeners")
 	Events.grimoire_opened.connect(func() -> void: _grimoire_open = true)
 	Events.grimoire_closed.connect(
 		func() -> void:
@@ -178,6 +181,10 @@ func _play_level_up() -> void:
 	AudioDirector.play_sfx(LEVEL_UP_SFX, -2.0)
 
 
+func set_night(k: float) -> void:
+	_night = k
+
+
 ## Pantalla de carga: enciende un momento cada aspecto posible de las llamas (con su destello
 ## y su estallido) delante de la cámara, para compilarlos antes de jugar.
 func warm_up(defs: Array[SpellVisualDef]) -> void:
@@ -246,7 +253,9 @@ func _process(delta: float) -> void:
 		# La luz del hechizo baña las manos: cálidas al cargar la Bola de Fuego y un poco al
 		# sostener su llama (las manos son 2D y no reciben la luz 3D del orbe).
 		var warm: float = 0.25 * _ease(charges[side]) + combine_charge * join_eased * 0.9
-		sprite.modulate = Color.WHITE.lerp(HAND_GLOW, clampf(warm, 0.0, 1.0))
+		# De noche las manos se oscurecen (son 2D: no reciben luz), salvo lo que ilumina el hechizo.
+		var base: Color = Color.WHITE.lerp(NIGHT_TINT, _night)
+		sprite.modulate = base.lerp(HAND_GLOW, clampf(warm + _night * 0.25, 0.0, 1.0))
 	_update_orbs()
 
 

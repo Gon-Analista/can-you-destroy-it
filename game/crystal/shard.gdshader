@@ -10,6 +10,7 @@ instance uniform float spawn_flash = 0.0;
 // 1 cuando el jugador apunta al fragmento y puede recogerlo.
 instance uniform float highlight = 0.0;
 uniform vec4 col_glint : source_color = vec4(1.0, 1.0, 1.0, 1.0);
+global uniform vec4 world_tint;
 
 varying vec3 world_nrm;
 varying vec3 world_pos;
@@ -36,5 +37,6 @@ void fragment() {
 		float pulse = 0.5 + 0.5 * sin(TIME * 10.0);
 		c = mix(c, col_highlight.rgb, 0.35 + 0.25 * pulse);
 	}
-	ALBEDO = c;
+	// De noche se oscurecen pero conservan un poco de brillo propio (se ven en la hierba).
+	ALBEDO = c * mix(world_tint.rgb, vec3(1.0), 0.35);
 }

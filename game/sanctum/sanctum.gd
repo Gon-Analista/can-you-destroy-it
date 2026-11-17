@@ -51,11 +51,13 @@ var _shown: int = 0
 var _runes: Node3D
 var _poof: GPUParticles3D
 var _t: float = 0.0
+var _night: float = 0.0
 var _rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
 	add_to_group(&"sanctum")
+	add_to_group(&"night_listeners")
 	_rng.seed = 33
 	_toon = ShaderMaterial.new()
 	_toon.shader = TOON_SHADER
@@ -68,6 +70,10 @@ func _ready() -> void:
 	for i: int in PROPS.size():
 		_props[PROPS[i]].visible = i < _shown
 	Events.upgrade_bought.connect(_on_upgrade_bought)
+
+
+func set_night(k: float) -> void:
+	_night = k
 
 
 ## True si el jugador está lo bastante cerca del atril para comprar.
@@ -107,7 +113,9 @@ func _process(delta: float) -> void:
 	var step: float = floor(_t * 12.0) / 12.0
 	_book.position.y = 1.55 + sin(step * 1.6) * 0.06
 	_book.rotation.y = sin(step * 0.7) * 0.15
-	_book_light.light_energy = 1.2 + sin(step * 3.0) * 0.25 + (0.8 if player_in_range() else 0.0)
+	_book_light.light_energy = (
+		(1.2 + sin(step * 3.0) * 0.25 + (0.8 if player_in_range() else 0.0)) * (1.0 + _night)
+	)
 	var cam: Camera3D = get_viewport().get_camera_3d()
 	if cam:
 		_book_orb.global_basis = cam.global_basis.scaled(Vector3.ONE * 2.2)

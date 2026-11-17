@@ -2,8 +2,6 @@ extends Node3D
 ## Escena del prototipo "El golpe": el valle, el Cristal Madre, el mago y el HUD.
 ## Captura el ratón al hacer clic y lo suelta con Esc.
 
-const SUN_DIR := Vector3(0.55, -0.65, -0.52)
-const AMBIENCE: AudioStream = preload("res://audio/sfx/amb_valley_loop.ogg")
 ## Música del valle por capas (tools/music_synth.py): 1 Aprendiz ... 5 Archimago.
 const MUSIC_LAYERS: Array[AudioStream] = [
 	preload("res://audio/music/music_valley_1_aprendiz.ogg"),
@@ -19,6 +17,8 @@ const MUSIC_LAYERS: Array[AudioStream] = [
 @onready var _hud: Hud = $HUDLayer/Hud
 @onready var _magic: MagicLayer = $MagicView
 
+var _day_night: DayNight
+
 
 func _ready() -> void:
 	# Todo en su sitio según WorldLayout (y a ras del suelo ondulado).
@@ -27,9 +27,13 @@ func _ready() -> void:
 	_place(_world.get_node(^"Sanctum") as Node3D, WorldLayout.SANCTUM)
 	(_world.get_node(^"Sanctum") as Node3D).rotation.y = deg_to_rad(WorldLayout.SANCTUM_YAW_DEG)
 	_player.global_position = WorldLayout.PLAYER_START
-	_sun.look_at_from_position(Vector3.ZERO, SUN_DIR.normalized(), Vector3.UP)
+	# El día y la noche mueven el sol, el cielo y el sonido ambiente.
+	_day_night = DayNight.new()
+	_day_night.name = "DayNight"
+	_world.add_child(_day_night)
+	var env: Environment = (_world.get_node(^"WorldEnvironment") as WorldEnvironment).environment
+	_day_night.setup(_sun, env)
 	_hud.bind(_player.get_camera(), _player.get_caster())
-	AudioDirector.play_ambience(AMBIENCE, -10.0)
 	# Hasta que exista el sistema de rangos, se empieza en Aprendiz (1 capa).
 	AudioDirector.play_music(MUSIC_LAYERS, _arg_int("--music-layers=", 1))
 	GameState.emit_all()
@@ -74,6 +78,8 @@ func _setup_autoplay() -> void:
 			for i: int in int(a.get_slice("=", 1)):
 				GameState.progression.collect_shard(&"splinter")
 			GameState.emit_all()
+		elif a.begins_with("--time="):
+			_day_night.time_of_day = float(a.get_slice("=", 1))
 		elif a.begins_with("--warp="):
 			var xz: PackedStringArray = a.get_slice("=", 1).split(",")
 			_player.global_position = Vector3(float(xz[0]), 0.2, float(xz[1]))

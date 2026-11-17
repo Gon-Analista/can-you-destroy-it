@@ -22,6 +22,8 @@ uniform float hit_radius = 1.5;
 uniform vec4 cracks[16];
 uniform float crack_scale = 1.7;
 uniform float global_flash = 0.0;
+// Luz del momento del día (DayNight): el cristal no usa la iluminación del motor.
+global uniform vec4 world_tint;
 // Quemaduras del fuego: xyz = centro, w = instante (en `now`); w < 0: vacío.
 uniform vec4 burns[12];
 // Radio de cada quemadura (m).
@@ -92,6 +94,10 @@ void fragment() {
 		c = mix(c, col_crack.rgb, line);
 		c = mix(c, col_dark.rgb, step(e, 0.16 * crack_mask) * (1.0 - line) * 0.35);
 	}
+
+	// Luz del día o de la noche (el corazón y lo que brilla, encima, no se apagan).
+	c *= world_tint.rgb;
+	c = mix(c, col_core.rgb * 1.2, core * (1.0 - world_tint.g) * 0.5);
 
 	// Quemaduras (elemento fuego): la zona se pone al rojo con vetas de lava que brillan (HDR,
 	// florecen con el glow), se enfrían en unos segundos y dejan hollín que se va borrando.

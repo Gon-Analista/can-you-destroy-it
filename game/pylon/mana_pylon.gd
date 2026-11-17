@@ -58,6 +58,7 @@ var _chain: int = 0
 var _chain_timer: float = 0.0
 var _t: float = 0.0
 var _last_ratio: float = 0.0
+var _night: float = 0.0
 ## Fragmentos en vuelo hacia la boca.
 var _motes: Array[MeshInstance3D] = []
 var _mote_trails: Array[SpellTrail] = []
@@ -71,6 +72,7 @@ var _mote_meshes: Dictionary[ShardType, ArrayMesh] = {}
 
 func _ready() -> void:
 	add_to_group(&"mana_pylon")
+	add_to_group(&"night_listeners")
 	_build_body()
 	_build_glass()
 	_build_crown()
@@ -84,6 +86,10 @@ func _ready() -> void:
 	_shown_fill = display_fill(_last_ratio)
 	_apply_fill()
 	_update_marks(_last_ratio)
+
+
+func set_night(k: float) -> void:
+	_night = k
 
 
 ## Altura visible del maná (0..1) para un progreso real (0..1): raíz cuadrada, con un charco
@@ -112,7 +118,9 @@ func _process(delta: float) -> void:
 	_crown_crystal.position.y = GLASS_BASE + GLASS_HEIGHT + 1.55 + sin(_t * 1.3) * 0.12
 	_crown_crystal.rotation.y = floor(_t * 12.0) / 12.0 * 0.6
 	_crown_crystal.scale = Vector3.ONE * (1.0 + _pulse * 0.25)
-	_light.light_energy = 0.8 + _shown_fill * 2.5 + _pulse * 3.0
+	# De noche el Pilón alumbra el valle (GDD 4.2).
+	_light.light_energy = (0.8 + _shown_fill * 2.5 + _pulse * 3.0) * (1.0 + _night * 1.5)
+	_light.omni_range = lerpf(9.0, 22.0, _night)
 	_chain_timer = maxf(0.0, _chain_timer - delta)
 	if _chain_timer <= 0.0:
 		_chain = 0

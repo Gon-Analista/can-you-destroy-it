@@ -33,9 +33,12 @@ var _toon: ShaderMaterial
 var _rng := RandomNumberGenerator.new()
 ## Tramos de camino (pares de puntos) para no plantar hierba encima.
 var _paths: Array[PackedVector2Array] = []
+var _lamp_mat: StandardMaterial3D
+var _lamp_lights: Array[OmniLight3D] = []
 
 
 func _ready() -> void:
+	add_to_group(&"night_listeners")
 	_rng.seed = seed_value
 	_toon = ShaderMaterial.new()
 	_toon.shader = TOON_SHADER
@@ -46,6 +49,14 @@ func _ready() -> void:
 	_build_grass()
 	_build_flowers()
 	_build_motes()
+
+
+## De noche los faroles brillan más y alumbran el camino.
+func set_night(k: float) -> void:
+	_lamp_mat.albedo_color = Color(1.5, 1.3, 0.9) * (1.0 + k * 1.2)
+	for l: OmniLight3D in _lamp_lights:
+		l.light_energy = k * 1.6
+		l.visible = k > 0.05
 
 
 ## Puntos del claro.
@@ -248,6 +259,7 @@ func _build_rocks_and_props() -> void:
 			)
 	# Faroles a lo largo de los caminos (de piedra, con la luz pintada: sin coste de luces).
 	var lamp_mat := StandardMaterial3D.new()
+	_lamp_mat = lamp_mat
 	lamp_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	lamp_mat.vertex_color_use_as_albedo = true
 	lamp_mat.albedo_color = Color(1.5, 1.3, 0.9)
@@ -281,6 +293,16 @@ func _build_rocks_and_props() -> void:
 				_rng
 			)
 			MeshKit.add_box(glow, p + Vector3.UP * 1.72, Vector3(0.24, 0.42, 0.24), C_LANTERN)
+			# Luz cálida que sólo se enciende de noche (ver set_night).
+			var l := OmniLight3D.new()
+			l.light_color = Color("#ffc46b")
+			l.omni_range = 7.0
+			l.light_energy = 0.0
+			l.shadow_enabled = false
+			l.visible = false
+			l.position = p + Vector3.UP * 1.75
+			add_child(l)
+			_lamp_lights.append(l)
 			d += 6.5
 			k += 1
 	var props := MeshInstance3D.new()
