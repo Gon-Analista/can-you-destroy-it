@@ -45,7 +45,8 @@ const ARC_COLORS: Array[Color] = [
 	Color(0.25, 0.75, 2.0), Color(1.2, 0.3, 1.9), Color(0.4, 0.5, 2.0)
 ]
 ## Daño acumulado para el primer "resquebrajo"; cada siguiente pide un 60 % más.
-const GEODE_SFX: AudioStream = preload("res://audio/sfx/sfx_crystal_surge_01.ogg")
+## La geoda suena como el resquebrajo, más aguda (ver _break_geode).
+const GEODE_SFX: AudioStream = SURGE_SFX
 const MAX_GEODES: int = 4
 ## Segundos hasta que aparece otra geoda tras reventar una.
 const GEODE_RESPAWN_SEC: float = 14.0
@@ -63,6 +64,7 @@ var _hd_fx: HdImpact
 var _arcs: CrystalArcs
 var _arc_player: AudioStreamPlayer3D
 var _surge_acc: float = 0.0
+var _last_tink: float = -1.0
 var _layer: int = 0
 ## Paleta mostrada (se funde hacia la de la capa nueva) y de qué capa venimos.
 var _palette_from: CrystalLayerDef
@@ -213,8 +215,8 @@ func _setup_audio() -> void:
 	_break_player.bus = &"SFX"
 	_break_player.stream = breaks
 	_break_player.unit_size = 30.0
-	_break_player.volume_db = -12.0
-	_break_player.max_polyphony = 3
+	_break_player.volume_db = -15.0
+	_break_player.max_polyphony = 2
 	add_child(_break_player)
 	_accent_player = AudioStreamPlayer.new()
 	_accent_player.bus = &"SFX"
@@ -671,6 +673,11 @@ func _surge(hit: SpellHit) -> void:
 
 
 func _play_tink(hit: SpellHit) -> void:
+	# Con mucha cadencia, un golpe audible cada poco (los demás se ven pero no suenan): sin
+	# muro de sonido.
+	if _now - _last_tink < 0.06 and not hit.resonant and hit.recipe == null:
+		return
+	_last_tink = _now
 	var step: int = STREAK_LADDER[(hit.streak - 1) % STREAK_LADDER.size()]
 	var p: AudioStreamPlayer3D = _tink_players[_tink_next]
 	_tink_next = (_tink_next + 1) % _tink_players.size()
@@ -680,7 +687,7 @@ func _play_tink(hit: SpellHit) -> void:
 		* _rng.randf_range(0.99, 1.01)
 		* GameState.LAYERS[_layer].hit_pitch
 	)
-	p.volume_db = -3.0 if hit.resonant else -8.0
+	p.volume_db = -4.0 if hit.resonant else -10.0
 	p.play()
 	_break_player.global_position = hit.position
 	_break_player.play()

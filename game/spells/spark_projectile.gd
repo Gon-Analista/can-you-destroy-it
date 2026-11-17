@@ -22,6 +22,7 @@ var hit: SpellHit
 var target_collider: Object
 
 var _orb: SpellOrb
+var _light_peak: float = 1.0
 var _orb_def: SpellVisualDef
 var _orb_scale: float = 1.0
 var _trail: SpellTrail
@@ -83,7 +84,8 @@ func launch(from: Vector3, to: Vector3, p_hit: SpellHit, collider: Object) -> vo
 		_trail.set_ramp(tier.trail_ramp)
 	_trail.start(from)
 	_light.light_color = tier.color_glow
-	_light.light_energy = tier.light_energy * 0.6
+	_light_peak = tier.light_energy * 0.6
+	_light.light_energy = 0.0
 	_light.omni_range = 3.0 + tier.orb_scale * 0.4
 	_light.visible = true
 	var ember_cols := PackedColorArray([tier.color_core * 2.0, tier.color_glow * 1.4])
@@ -127,6 +129,8 @@ func _process(delta: float) -> void:
 	global_position = pos
 	# Las brasas sólo cuando ya va lejos: pegadas a la cámara se verían como manchas enormes.
 	_embers.emitting = k < 1.0 and _from.distance_to(pos) > EMBERS_FROM
+	# La luz se enciende al alejarse: pegada al mago teñía el suelo a sus pies.
+	_light.light_energy = _light_peak * smoothstep(2.0, 7.0, _from.distance_to(pos))
 	_sparks.emitting = _embers.emitting
 	_smoke.emitting = _embers.emitting and hit.tier.trail_smoke > 0.0
 	_update_flow()

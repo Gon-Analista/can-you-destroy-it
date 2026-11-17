@@ -39,7 +39,7 @@ const C_GOLD := Color("#d8a23a")
 const C_GOLD_DARK := Color("#9c6b25")
 const C_WOOD := Color("#7a4e33")
 const C_RED := Color("#c8423a")
-const PILE_MAX: int = 64
+const PILE_MAX: int = 36
 ## Pulsación más corta que esto = tocar (palanca); más larga = mantener (echar cristales).
 const TAP_SEC: float = 0.2
 const BEADS: int = 10
@@ -52,13 +52,13 @@ static var demo_input: bool = false
 ## Distancia a la que se puede usar la máquina (m).
 @export var use_radius: float = 3.8
 ## Intervalo entre cristales al empezar a mantener F, y el mínimo al que acelera.
-@export var feed_interval_start: float = 0.32
-@export var feed_interval_min: float = 0.03
+@export var feed_interval_start: float = 0.4
+@export var feed_interval_min: float = 0.09
 ## Segundos manteniendo F hasta llegar a la velocidad máxima.
 @export var feed_ramp_sec: float = 2.4
 ## Cristales triturados por segundo al arrancar y a tope.
 @export var crush_rate_start: float = 4.0
-@export var crush_rate_max: float = 26.0
+@export var crush_rate_max: float = 14.0
 ## Segundos del maná viajando por la tubería hasta el Pilón.
 @export var pipe_sec: float = 0.35
 
@@ -71,6 +71,8 @@ var _player: Node3D
 var _hold_t: float = 0.0
 ## Tiempo que lleva pulsada F (-1: no se está pulsando junto a la máquina).
 var _press_t: float = -1.0
+var _clink_gap: float = 0.0
+var _crunch_gap: float = 0.0
 var _was_pressed: bool = false
 var _feed_timer: float = 0.0
 var _clink_chain: int = 0
@@ -187,8 +189,11 @@ func add_to_hopper(type: ShardType) -> void:
 	var step: int = CLINK_LADDER[mini(_clink_chain, CLINK_LADDER.size() - 1)]
 	_clink_chain += 1
 	_clink_timer = 0.7
-	_clink_player.pitch_scale = pow(2.0, float(step) / 12.0) * type.pickup_pitch
-	_clink_player.play()
+	# Un tintineo cada poco (si llegan muy seguidos se saltan: así no se acoplan).
+	if _clink_gap <= 0.0:
+		_clink_gap = 0.11
+		_clink_player.pitch_scale = pow(2.0, float(step) / 12.0) * type.pickup_pitch
+		_clink_player.play()
 	_dust.global_position = hopper_mouth() + Vector3.DOWN * 0.3
 	_dust.amount_ratio = 0.3
 	_dust.restart()
@@ -207,6 +212,8 @@ func pull_lever() -> bool:
 
 
 func _process(delta: float) -> void:
+	_clink_gap = maxf(0.0, _clink_gap - delta)
+	_crunch_gap = maxf(0.0, _crunch_gap - delta)
 	_update_input(delta)
 	_update_machine(delta)
 	_update_beads(delta)
@@ -342,8 +349,10 @@ func _crush_one() -> void:
 	var type: ShardType = _hopper.pop_back()
 	_crushed_count += 1
 	_update_pile()
-	_crunch_player.pitch_scale = _rng.randf_range(0.9, 1.15) * lerpf(1.0, 0.8, type.radius)
-	_crunch_player.play()
+	if _crunch_gap <= 0.0:
+		_crunch_gap = 0.1
+		_crunch_player.pitch_scale = _rng.randf_range(0.9, 1.15) * lerpf(1.0, 0.8, type.radius)
+		_crunch_player.play()
 	_shake = 1.0
 	_dust.global_position = global_position + Vector3(0.85, 0.95, 0.0)
 	_dust.amount_ratio = 1.0
@@ -399,7 +408,7 @@ func _layout_pile() -> void:
 	rng.seed = 7
 	for i: int in PILE_MAX:
 		var f: float = float(i) / float(PILE_MAX)
-		var y: float = HOPPER_BOTTOM + 0.05 + f * (HOPPER_TOP - HOPPER_BOTTOM - 0.1)
+		var y: float = HOPPER_BOTTOM + 0.05 + f * (HOPPER_TOP - HOPPER_BOTTOM) * 0.55
 		var r: float = lerpf(0.2, 0.62, (y - HOPPER_BOTTOM) / (HOPPER_TOP - HOPPER_BOTTOM))
 		var a: float = rng.randf() * TAU
 		var p := Vector3(cos(a), 0.0, sin(a)) * r * sqrt(rng.randf()) + Vector3.UP * y
@@ -541,7 +550,7 @@ func _build_hopper() -> void:
 	_pile.name = "Pile"
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = CrystalClusterBuilder.build_shard_mesh(ShardPool.TYPES[1], 5)
+	mm.mesh = CrystalClusterBuilder.build_shard_mesh(ShardPool.TYPES[0], 5)
 	mm.instance_count = PILE_MAX
 	_pile.multimesh = mm
 	var pm := ShaderMaterial.new()
@@ -696,8 +705,8 @@ func _build_audio() -> void:
 				for s: AudioStream in CLINK_SFX:
 					r.add_stream(-1, s)
 				a.stream = r
-				a.max_polyphony = 4
-				a.volume_db = -4.0
+				a.max_polyphony = 2
+				a.volume_db = -11.0
 			"Crunch":
 				_crunch_player = a
 				var r2 := AudioStreamRandomizer.new()
@@ -705,8 +714,8 @@ func _build_audio() -> void:
 					r2.add_stream(-1, s)
 				r2.random_volume_offset_db = 2.0
 				a.stream = r2
-				a.max_polyphony = 6
-				a.volume_db = -2.0
+				a.max_polyphony = 2
+				a.volume_db = -8.0
 			"Fx":
 				_fx_player = a
 				a.max_polyphony = 2

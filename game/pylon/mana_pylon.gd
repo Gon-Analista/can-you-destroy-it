@@ -64,6 +64,14 @@ var _mote_type: Array[ShardType] = []
 ## Motas de la pantalla de carga: no entregan nada.
 var _mote_warm: Array[bool] = []
 var _mote_to: Array[Vector3] = []
+## Vuelo de cada cristal: punto de control del arco, dónde cae en el borde de la tolva,
+## giro propio y duración (todos distintos: salen en abanico y caen separándose).
+var _mote_ctrl: Array[Vector3] = []
+var _mote_land: Array[Vector3] = []
+var _mote_spin: Array[Vector3] = []
+var _mote_dur: PackedFloat32Array = []
+var _mote_rng := RandomNumberGenerator.new()
+var _drop_gap: float = 0.0
 var _mote_target: Array[CrystalCrusher] = []
 var _mote_meshes: Dictionary[ShardType, ArrayMesh] = {}
 
@@ -161,15 +169,37 @@ func launch_mote(
 				_player = get_tree().get_first_node_in_group(&"player") as Node3D
 			var from: Vector3 = _player.global_position + Vector3.UP * 1.1
 			if cam:
-				from = cam.global_position + cam.global_basis * Vector3(0.0, -0.45, -1.1)
+				from = cam.global_position + cam.global_basis * Vector3(0.0, -0.5, -1.6)
 			if from_override is Vector3:
 				from = from_override
+			else:
+				# Salen en abanico de las manos, no todos del mismo punto.
+				from += (
+					cam.global_basis.x * _mote_rng.randf_range(-0.35, 0.35) if cam else Vector3.ZERO
+				)
 			_mote_from[i] = from
 			_mote_t[i] = 0.0
 			_mote_type[i] = type
 			_mote_warm[i] = warm
 			_mote_to[i] = to
 			_mote_target[i] = target
+			# Cada uno cae en un punto distinto del borde de la tolva, con su arco y su giro.
+			var land_a: float = _mote_rng.randf() * TAU
+			_mote_land[i] = (
+				to + Vector3(cos(land_a), 0.0, sin(land_a)) * _mote_rng.randf_range(0.2, 0.55)
+			)
+			var side: Vector3 = (to - from).cross(Vector3.UP).normalized()
+			_mote_ctrl[i] = (
+				(from + _mote_land[i]) * 0.5
+				+ Vector3.UP * _mote_rng.randf_range(1.2, 2.8)
+				+ side * _mote_rng.randf_range(-1.4, 1.4)
+			)
+			_mote_spin[i] = Vector3(
+				_mote_rng.randf_range(-9, 9),
+				_mote_rng.randf_range(-12, 12),
+				_mote_rng.randf_range(-6, 6)
+			)
+			_mote_dur[i] = _mote_rng.randf_range(0.75, 1.05)
 			var mote: MeshInstance3D = _motes[i]
 			mote.mesh = _mesh_for(type)
 			mote.global_position = from
@@ -182,23 +212,31 @@ func launch_mote(
 
 
 func _update_motes(delta: float) -> void:
+	_drop_gap = maxf(0.0, _drop_gap - delta)
 	for i: int in MOTES:
 		if _mote_t[i] < 0.0:
 			continue
-		_mote_t[i] += delta / flight_sec
-		var k: float = clampf(_mote_t[i], 0.0, 1.0)
-		var from: Vector3 = _mote_from[i]
-		var mouth: Vector3 = _mote_to[i]
-		# Curva de Bézier: sube en arco por encima de la tolva y cae dentro.
-		var ctrl: Vector3 = (from + mouth) * 0.5 + Vector3.UP * 1.6
-		var a: Vector3 = from.lerp(ctrl, k)
-		var b: Vector3 = ctrl.lerp(mouth, k)
+		# Dos fases: vuelo en arco hasta el borde (0..1) y caída al fondo de la tolva (1..1,3).
+		_mote_t[i] += delta / _mote_dur[i]
 		var mote: MeshInstance3D = _motes[i]
-		mote.global_position = a.lerp(b, k)
-		mote.rotation = Vector3(k * 9.0, k * 13.0, 0.0)
-		# Sale pequeño de la mano (pegado a la cámara se vería enorme) y crece al alejarse.
-		mote.scale = Vector3.ONE * lerpf(0.3, 1.0, smoothstep(0.0, 0.5, k))
-		if k >= 1.0:
+		var t: float = _mote_t[i]
+		if t <= 1.0:
+			var k: float = t
+			var from: Vector3 = _mote_from[i]
+			var a: Vector3 = from.lerp(_mote_ctrl[i], k)
+			var b: Vector3 = _mote_ctrl[i].lerp(_mote_land[i], k)
+			mote.global_position = a.lerp(b, k)
+			mote.rotation = _mote_spin[i] * k
+			# Sale pequeño de la mano (pegado a la cámara se vería enorme) y crece al alejarse.
+			mote.scale = Vector3.ONE * lerpf(0.2, 1.0, smoothstep(0.0, 0.5, k))
+		else:
+			# Resbala hacia el centro de la tolva y se hunde.
+			var d: float = clampf((t - 1.0) / 0.3, 0.0, 1.0)
+			var sink: Vector3 = _mote_to[i] + Vector3.DOWN * 0.6
+			mote.global_position = _mote_land[i].lerp(sink, d * d)
+			mote.rotation = _mote_spin[i] * (1.0 + d * 0.3)
+			mote.scale = Vector3.ONE * lerpf(1.0, 0.5, d)
+		if t >= 1.3:
 			_mote_t[i] = -1.0
 			mote.visible = false
 			_mote_trails[i].stop()
@@ -217,8 +255,11 @@ func receive_mana(type: ShardType) -> void:
 	var step: int = DROP_LADDER[mini(_chain, DROP_LADDER.size() - 1)]
 	_chain += 1
 	_chain_timer = 0.6
-	_drop_player.pitch_scale = pow(2.0, float(step) / 12.0) * type.pickup_pitch / 1.0
-	_drop_player.play()
+	# Con la trituradora a tope llegan muchas gotas: una nota cada poco, no un muro de sonido.
+	if _drop_gap <= 0.0:
+		_drop_gap = 0.09
+		_drop_player.pitch_scale = pow(2.0, float(step) / 12.0) * type.pickup_pitch / 1.0
+		_drop_player.play()
 
 
 func _on_pylon_changed(_progress: int, ratio: float) -> void:
@@ -414,7 +455,8 @@ func _build_motes() -> void:
 		mote.material_override = mat
 		mote.visible = false
 		mote.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		mote.set_instance_shader_parameter("spawn_flash", 1.0)
+		mote.set_instance_shader_parameter("spawn_flash", 0.0)
+		mote.set_instance_shader_parameter("glint_seed", float(i) / float(MOTES))
 		add_child(mote)
 		var trail := SpellTrail.new()
 		trail.length_sec = 0.16
@@ -430,6 +472,10 @@ func _build_motes() -> void:
 		_mote_type.append(null)
 		_mote_warm.append(false)
 		_mote_to.append(Vector3.ZERO)
+		_mote_ctrl.append(Vector3.ZERO)
+		_mote_land.append(Vector3.ZERO)
+		_mote_spin.append(Vector3.ZERO)
+		_mote_dur.append(1.0)
 		_mote_target.append(null)
 
 
@@ -492,7 +538,8 @@ func _build_audio() -> void:
 	_drop_player.bus = &"SFX"
 	_drop_player.stream = _drop_random
 	_drop_player.unit_size = 14.0
-	_drop_player.max_polyphony = 4
+	_drop_player.max_polyphony = 2
+	_drop_player.volume_db = -8.0
 	_drop_player.position.y = GLASS_BASE + GLASS_HEIGHT
 	add_child(_drop_player)
 	_accent = AudioStreamPlayer.new()

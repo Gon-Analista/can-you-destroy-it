@@ -31,15 +31,14 @@ func _run() -> void:
 	var full_events: Array[int] = [0]
 	events.connect(&"bag_full", func() -> void: full_events[0] += 1)
 
-	# Bolsa de 1: el segundo no cabe.
-	_check(gs.call(&"collect_shard", splinter, Vector3.ZERO), "cabe el primero")
-	_check(not gs.call(&"collect_shard", splinter, Vector3.ZERO), "el segundo no cabe")
+	# Bolsa de 3 al empezar: el cuarto no cabe.
+	for k: int in 3:
+		_check(gs.call(&"collect_shard", splinter, Vector3.ZERO), "cabe el %d" % (k + 1))
+	_check(not gs.call(&"collect_shard", splinter, Vector3.ZERO), "el cuarto no cabe")
 	_check(full_events[0] == 1, "avisa de bolsa llena")
 
 	# Junto a la trituradora, mantener F echa los cristales a la tolva; la palanca los tritura
-	# y su maná entra en el Pilón.
-	prog.collect_shard(&"splinter")
-	prog.collect_shard(&"splinter")
+	# y su maná entra en el Pilón. (La bolsa ya lleva 3 de antes.)
 	var crusher: Node3D = pylon.call(&"crusher")
 	player.global_position = crusher.global_position + Vector3(2.2, 0.3, 0.0)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -48,6 +47,8 @@ func _run() -> void:
 		Input.action_press(&"interact")
 		await create_timer(1.8).timeout
 		Input.action_release(&"interact")
+		# El vuelo hasta la tolva dura hasta 1,4 s.
+		await create_timer(1.6).timeout
 	else:
 		# Sin ventana no se captura el ratón: se echan a mano por la misma vía.
 		for k: int in 3:
@@ -57,7 +58,7 @@ func _run() -> void:
 				crusher.call(&"hopper_mouth"),
 				crusher
 			)
-		await create_timer(1.0).timeout
+		await create_timer(1.8).timeout
 	_check(prog.bag_count() == 0, "mantener F vacía la bolsa en la tolva")
 	_check(int(crusher.call(&"hopper_count")) == 3, "los cristales caen en la tolva")
 	_check(prog.mana == 0, "en la tolva todavía no dan maná")
@@ -94,7 +95,7 @@ func _run() -> void:
 	grimoire.set(&"_at_sanctum", true)
 	grimoire.call(&"try_buy")
 	_check(prog.get_level(&"bag") == 1, "junto al atril se inscribe")
-	_check(gs.call(&"bag_capacity") == 5, "la bolsa sube a 5")
+	_check(gs.call(&"bag_capacity") == 10, "la bolsa sube a 10")
 	_check(bag.cost_for_level(0) == 5, "la primera mejora cuesta 5 (GDD 8.1)")
 
 	grimoire.call(&"close")

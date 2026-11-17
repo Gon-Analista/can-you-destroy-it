@@ -45,10 +45,10 @@ func _init() -> void:
 	_check(not bag.take_from_bag(&"splinter"), "no se saca lo que no hay")
 
 	var bag_node: UpgradeNode = load("res://data/upgrades/bag.tres")
-	_check(bag.stat_of(bag_node) == 1.0, "sin comprar, la bolsa lleva 1")
+	_check(bag.stat_of(bag_node) == 3.0, "sin comprar, la bolsa lleva 3")
 	_check(bag.purchase_block(bag_node) == &"mana", "sin maná no se puede")
 	bag.deliver(5)
-	_check(bag.buy_upgrade(bag_node) and bag.stat_of(bag_node) == 5.0, "la bolsa sube a 5")
+	_check(bag.buy_upgrade(bag_node) and bag.stat_of(bag_node) == 10.0, "la bolsa sube a 10")
 	_check(bag_node.cost_for_level(1) == 40, "el coste sale del .tres")
 	var tk: UpgradeNode = load("res://data/upgrades/telekinesis.tres")
 	var fresh := Progression.new(1000)
