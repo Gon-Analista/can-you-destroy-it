@@ -31,3 +31,5 @@ var direction: Vector3 = Vector3.FORWARD
 var minor: bool = false
 ## Eco fantasma del Arcano (repite otro golpe).
 var echo: bool = false
+## Lo lanza un familiar: no cuenta para la racha ni sacude la cámara del mago.
+var familiar: bool = false

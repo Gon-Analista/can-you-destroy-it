@@ -6,6 +6,10 @@ NUEVA CAPA: %s,NUEVA CAPA: %s,NEW LAYER: %s
 ¡UNA GEODA! REVIÉNTALA,¡UNA GEODA! REVIÉNTALA,A GEODE! BURST IT
 ¡GEODA! +%d FRAGMENTOS GRANDES,¡GEODA! +%d FRAGMENTOS GRANDES,GEODE! +%d BIG SHARDS
 ¡EL CRISTAL SE RESQUEBRAJA!,¡EL CRISTAL SE RESQUEBRAJA!,THE CRYSTAL IS CRACKING!
+¡FAMILIAR HECHICERO! LANZA CHISPAS AL CRISTAL,¡FAMILIAR HECHICERO! LANZA CHISPAS AL CRISTAL,SORCERER FAMILIAR! IT SHOOTS SPARKS AT THE CRYSTAL
+¡TU PRIMER FAMILIAR! VIVE JUNTO AL PILÓN,¡TU PRIMER FAMILIAR! VIVE JUNTO AL PILÓN,YOUR FIRST FAMILIAR! IT LIVES BY THE PYLON
+RECOGE FRAGMENTOS Y LOS ECHA A LA TOLVA,RECOGE FRAGMENTOS Y LOS ECHA A LA TOLVA,IT GATHERS SHARDS AND DROPS THEM IN THE HOPPER
+¡OTRO FAMILIAR! YA SON %d,¡OTRO FAMILIAR! YA SON %d,ANOTHER FAMILIAR! THAT MAKES %d
 MANO IZQUIERDA,MANO IZQUIERDA,LEFT HAND
 MANO DERECHA,MANO DERECHA,RIGHT HAND
 AÚN NO CONOCES OTRO ELEMENTO: DESPIÉRTALO EN EL GRIMORIO,AÚN NO CONOCES OTRO ELEMENTO: DESPIÉRTALO EN EL GRIMORIO,YOU DON'T KNOW ANOTHER ELEMENT YET: AWAKEN IT IN THE GRIMOIRE
@@ -154,6 +158,8 @@ Rayo,Rayo,Lightning
 Tierra,Tierra,Earth
 Escarcha,Escarcha,Frost
 Chispa,Chispa,Spark
+Familiar hechicero,Familiar hechicero,Sorcerer familiar
+Familiar recolector,Familiar recolector,Gatherer familiar
 Bloque de cristal,Bloque de cristal,Crystal block
 bloques de cristal,bloques de cristal,crystal blocks
 Pedrusco de maná,Pedrusco de maná,Mana boulder
@@ -278,6 +284,20 @@ Roca arcana,Roca arcana,Arcane rock
 Corazón de piedra,Corazón de piedra,Heart of stone
 Titán,Titán,Titan
 Planeta,Planeta,Planet
+Familiar,Familiar,Familiar
+"Un buhito de luz anida junto al Pilón: recoge los fragmentos del suelo, los echa a la tolva y tira de la palanca. Cada nivel, uno más.","Un buhito de luz anida junto al Pilón: recoge los fragmentos del suelo, los echa a la tolva y tira de la palanca. Cada nivel, uno más.","A little owl of light nests by the Pylon: it picks shards off the ground, drops them in the hopper and pulls the lever. One more per level."
+Sin familiares,Sin familiares,No familiars
+1 familiar,1 familiar,1 familiar
+2 familiares,2 familiares,2 familiars
+3 familiares,3 familiares,3 familiars
+4 familiares,4 familiares,4 familiars
+"Un familiar de fuego revolotea junto al cristal y le lanza chispas él solo, cada una con su círculo mágico.","Un familiar de fuego revolotea junto al cristal y le lanza chispas él solo, cada una con su círculo mágico.","A fire familiar flutters by the crystal and shoots sparks at it on its own, each through its own magic circle."
+Sin hechicero,Sin hechicero,No sorcerer
+1 hechicero,1 hechicero,1 sorcerer
+2 hechiceros,2 hechiceros,2 sorcerers
+Alas ligeras,Alas ligeras,Light wings
+Tus familiares vuelan más deprisa y cargan un fragmento más en cada viaje.,Tus familiares vuelan más deprisa y cargan un fragmento más en cada viaje.,Your familiars fly faster and carry one more shard on each trip.
+vuelo x%.1f,vuelo x%.1f,flight x%.1f
 "La bola de fuego arde más. Desde el nivel 6, al cargarla se abren círculos mágicos con runas hacia donde apuntas: uno más por nivel.","La bola de fuego arde más. Desde el nivel 6, al cargarla se abren círculos mágicos con runas hacia donde apuntas: uno más por nivel.","The fireball burns hotter. From level 6, magic circles with runes open toward your aim while you charge it: one more per level."
 daño x%.1f,daño x%.1f,damage x%.1f
 Bola colosal,Bola colosal,Colossal fireball

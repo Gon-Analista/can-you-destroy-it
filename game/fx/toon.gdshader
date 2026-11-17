@@ -8,6 +8,8 @@ uniform float bands = 3.0;
 // Cuánto aclara el borde iluminado (rim) para separar siluetas.
 uniform float rim = 0.0;
 uniform vec4 rim_color : source_color = vec4(1.0, 0.96, 0.85, 1.0);
+// Luz propia (0 = nada): las criaturas mágicas (familiares) conservan su color en la sombra.
+uniform float self_light = 0.0;
 
 void fragment() {
 	vec3 c = albedo.rgb;
@@ -17,6 +19,7 @@ void fragment() {
 		c *= mix(pow((v + 0.055) / 1.055, vec3(2.4)), v / 12.92, lessThan(v, vec3(0.04045)));
 	}
 	ALBEDO = c;
+	EMISSION = c * self_light;
 	ROUGHNESS = 1.0;
 	SPECULAR = 0.0;
 }

@@ -2,6 +2,24 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-17 · Familiares: buhitos que recogen, trituran y lanzan chispas
+
+**Qué hay nuevo** (GDD 2.2, 4.3 y 7: "familiares que recogen, entregan o lanzan"; oleada 1 del GDD)
+
+- **Jaula de Familiares** detrás del Pilón: una pajarera con perchas en espiral, cúpula dorada y un cristal que
+  late; aparece con salto, estrellas y sonido al comprar el primer familiar.
+- **Familiar recolector** (hasta 4): buhitos de luz que buscan fragmentos sueltos por todo el claro, cargan
+  hasta 3 (uno más por nivel de **Alas ligeras**), los echan a la tolva y tiran de la palanca. Es el primer paso
+  de la entrega automática del GDD.
+- **Familiar hechicero** (hasta 2): revolotea a los lados de la mira, abre su círculo mágico y lanza chispas
+  reales al cristal (no cuentan para la racha ni sacuden la cámara).
+- Mejoras nuevas en la constelación del Mago: Familiar (1-4), Alas ligeras (3) y Familiar hechicero (2).
+- Revisión: los últimos cristales de la tolva ya no se quedan para siempre, un familiar no se lleva un
+  fragmento reciclado, el familiar comprado con el Grimorio abierto aparece al cerrarlo delante del mago y los
+  búhos se leen bien contra el cristal.
+
+**Pruebas**: nueva `tests/smoke/familiars_smoke.gd`.
+
 ## 2026-11-17 · Balance: el Pilón va con el cristal, piezas más grandes y cada elemento nuevo manda
 
 **Qué hay nuevo** (pedido del equipo: "de ahí en adelante debes balancearlo para hacerlo divertido con buena

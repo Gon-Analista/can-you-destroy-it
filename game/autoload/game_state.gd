@@ -28,6 +28,9 @@ const UPGRADES: Array[UpgradeNode] = [
 	preload("res://data/upgrades/earth_power.tres"),
 	preload("res://data/upgrades/awaken_arcane.tres"),
 	preload("res://data/upgrades/arcane_power.tres"),
+	preload("res://data/upgrades/familiar.tres"),
+	preload("res://data/upgrades/familiar_wings.tres"),
+	preload("res://data/upgrades/familiar_caster.tres"),
 ]
 
 ## Capas del Cristal Madre, de fuera a dentro (GDD 6).

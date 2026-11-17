@@ -13,6 +13,7 @@ const MUSIC_LAYERS: Array[AudioStream] = [
 
 var _day_night: DayNight
 var _hut: ApprenticeHut
+var _flock: FamiliarFlock
 
 @onready var _world: SubViewport = $WorldView/WorldViewport
 @onready var _sun: DirectionalLight3D = $WorldView/WorldViewport/Sun
@@ -27,6 +28,10 @@ func _ready() -> void:
 	_place(_world.get_node(^"ManaPylon") as Node3D, WorldLayout.PYLON)
 	_place(_world.get_node(^"Sanctum") as Node3D, WorldLayout.SANCTUM)
 	(_world.get_node(^"Sanctum") as Node3D).rotation.y = deg_to_rad(WorldLayout.SANCTUM_YAW_DEG)
+	# Los familiares y su jaula (aparecen con la primera mejora de Familiar).
+	_flock = FamiliarFlock.new()
+	_flock.name = "FamiliarFlock"
+	_world.add_child(_flock)
 	# Se empieza dentro de la casucha, mirando a la puerta: el cristal no se ve hasta abrirla.
 	_hut = ApprenticeHut.new()
 	_hut.name = "ApprenticeHut"
@@ -166,6 +171,17 @@ func _setup_autoplay() -> void:
 		elif a == "--book":
 			get_tree().create_timer(0.8).timeout.connect(
 				func() -> void: (_hud.get_node(^"SpellBook") as SpellBook).open()
+			)
+		elif a.begins_with("--scatter="):
+			# --scatter=N: N fragmentos sueltos por el suelo delante del cristal (familiares).
+			_demo_scatter.call_deferred(int(a.get_slice("=", 1)))
+		elif a.begins_with("--summon="):
+			# --summon=s: a los s segundos se compra un Familiar más (jaula, sonido y aviso).
+			get_tree().create_timer(float(a.get_slice("=", 1))).timeout.connect(
+				func() -> void:
+					var lv: int = GameState.progression.get_level(&"familiar") + 1
+					GameState.progression.upgrade_levels[&"familiar"] = lv
+					Events.upgrade_bought.emit(&"familiar", lv)
 			)
 		elif a.begins_with("--time="):
 			_day_night.time_of_day = float(a.get_slice("=", 1))
@@ -368,6 +384,8 @@ func _warm_up() -> void:
 	_aim(cam, pylon.mouth_position())
 	pylon.warm_up()
 	await _frames(24)
+	_flock.warm_up(pylon.mouth_position() + Vector3(1.5, 1.0, 0.0))
+	await _frames(12)
 	# 3) El Santuario: el destello de objeto nuevo.
 	_aim(cam, sanctum.marker_position())
 	sanctum.warm_up()
@@ -424,6 +442,18 @@ func _demo_dig(hits: int) -> void:
 		crystal.call("_dig", r["position"] + jitter, r["normal"], 30.0, false)
 		for k: int in 3:
 			await get_tree().physics_frame
+
+
+## Demo: `n` fragmentos que caen por el suelo del claro, delante del cristal.
+func _demo_scatter(n: int) -> void:
+	await get_tree().physics_frame
+	var pool: ShardPool = get_tree().get_first_node_in_group(&"shard_pool")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3
+	for i: int in n:
+		var p := Vector3(rng.randf_range(-32.0, -16.0), 0.0, rng.randf_range(44.0, 58.0))
+		p.y = Valley.ground_height(p.x, p.z) + 0.6
+		pool.spawn(p, Vector3.UP, ShardPool.TYPES[i % 2], 1, 0.25)
 
 
 func _arg_int(prefix: String, fallback: int) -> int:

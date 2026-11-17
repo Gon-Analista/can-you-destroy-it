@@ -172,6 +172,16 @@ func marker_position() -> Vector3:
 	return global_position + Vector3.UP * (HOPPER_TOP + 0.9)
 
 
+## Punta de la palanca (los familiares tiran de ella).
+func lever_tip() -> Vector3:
+	return _lever.global_position + _lever.global_basis.y * 0.75
+
+
+## Cristales en la tolva más los que aún vuelan hacia ella.
+func queued_count() -> int:
+	return _hopper.size() + _incoming
+
+
 ## Envío directo: un fragmento recogido vuela desde `from` hasta la tolva.
 func receive_direct(type: ShardType, from: Vector3) -> void:
 	if pylon == null:

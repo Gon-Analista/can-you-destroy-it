@@ -297,6 +297,41 @@ func nearest(point: Vector3, radius: float) -> int:
 	return best
 
 
+## Para los familiares: el fragmento suelto más cercano a `point` dentro de `radius` que lleve
+## al menos `settle_sec` en el mundo (ya ha caído) y no esté en `claimed`, o -1.
+func loose_near(
+	point: Vector3, radius: float, claimed: PackedInt32Array, settle_sec: float = 1.0
+) -> int:
+	var best: int = -1
+	var best_d: float = radius * radius
+	for i: int in pool_size:
+		if not is_loose(i) or _time - _spawn_time[i] < settle_sec or claimed.has(i):
+			continue
+		var d: float = _shards[i].global_position.distance_squared_to(point)
+		if d < best_d:
+			best_d = d
+			best = i
+	return best
+
+
+## True si el fragmento `index` está en el mundo y nadie lo está recogiendo.
+func is_loose(index: int) -> bool:
+	return _shards[index].visible and _spawn_time[index] >= 0.0 and _collect_t[index] <= 0.0
+
+
+## Un familiar se lleva el fragmento: desaparece sin sonido (el familiar pone el suyo).
+## Devuelve su tipo, o null si ya no estaba.
+func take(index: int) -> ShardType:
+	if not is_loose(index):
+		return null
+	if index == _highlighted:
+		set_highlight(-1)
+	var t: ShardType = _types[index]
+	_deactivate(_shards[index])
+	_spawn_time[index] = -1.0
+	return t
+
+
 func position_of(index: int) -> Vector3:
 	return _shards[index].global_position
 
