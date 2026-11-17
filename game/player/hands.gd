@@ -129,6 +129,27 @@ func release_combine() -> void:
 		_combo_orb.visible = false
 
 
+## Cambia la llama de las dos manos (al subir de nivel la Chispa pasa a Llama, a Llama mágica...).
+## Recrea los orbes sólo si el aspecto es otro: ocurre al comprar una mejora, no en caliente.
+func set_flame_visual(def: SpellVisualDef) -> void:
+	if def == null or _camera == null or (not _flames.is_empty() and _flames[0].def == def):
+		return
+	for side: int in _flames.size():
+		var old: SpellOrb = _flames[side]
+		var flame := SpellOrb.new()
+		flame.name = "HandFlame%s" % ("L" if side == 0 else "R")
+		old.name = "OldFlame"
+		flame.def = def
+		flame.charge = charges[side]
+		old.queue_free()
+		_camera.add_child(flame)
+		_flames[side] = flame
+		# Se enciende con un estallido nuevo: la mano "cambia" de hechizo a la vista.
+		_flame_spent[side] = false
+		_kick_vel[side] = -8.0
+	_place_orbs()
+
+
 func is_combining() -> bool:
 	return _combining
 

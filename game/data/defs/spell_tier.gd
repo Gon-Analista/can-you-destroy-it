@@ -22,3 +22,15 @@ extends Resource
 @export var color_glow: Color = Color("#ffa53a")
 ## Color de las partículas, anillo y luz del impacto. Alfa 0 = los de siempre (cian / oro).
 @export var impact_tint: Color = Color(0, 0, 0, 0)
+
+@export_group("Aspecto en vuelo")
+## Orbe que flota en la mano y vuela como proyectil (Chispa, Llama, Llama mágica...).
+@export var visual: SpellVisualDef
+## Escala del orbe en vuelo respecto a como se ve en la mano.
+@export var orb_scale: float = 6.0
+## Rampa de color de la estela, de caliente a frío (interpolación constante, alfa < 1 tramado).
+@export var trail_ramp: Gradient
+## Ancho de la estela en la cabeza (m).
+@export var trail_width: float = 0.2
+## Duración de la estela (s): cuanto más, más larga.
+@export var trail_length: float = 0.14

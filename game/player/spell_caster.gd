@@ -52,11 +52,9 @@ var _rng := RandomNumberGenerator.new()
 func _ready() -> void:
 	_rng.randomize()
 	for i: int in PROJECTILE_POOL:
-		_projectiles.append(_make_projectile("Spark%d" % i, null, 1.0))
+		_projectiles.append(_make_projectile("Spark%d" % i))
 	for i: int in COMBO_PROJECTILE_POOL:
-		_combo_projectiles.append(
-			_make_projectile("Combo%d" % i, RECIPE.visual, RECIPE.projectile_orb_scale)
-		)
+		_combo_projectiles.append(_make_projectile("Combo%d" % i))
 	_cast_random = _randomizer(CAST_SFX, 1.15)
 	_combo_cast_random = _randomizer(RECIPE.cast_sfx, 1.08)
 	_charge_player = AudioStreamPlayer.new()
@@ -94,6 +92,8 @@ func is_combining() -> bool:
 
 func set_tier(index: int) -> void:
 	tier_index = clampi(index, 0, ELEMENT.tiers.size() - 1)
+	if hands:
+		hands.set_flame_visual(current_tier().visual)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -310,14 +310,10 @@ func _launch(projectile: SparkProjectile, hit: SpellHit, side: int) -> void:
 	projectile.launch(origin, target, hit, collider)
 
 
-func _make_projectile(
-	node_name: String, visual: SpellVisualDef, orb_scale: float
-) -> SparkProjectile:
+func _make_projectile(node_name: String) -> SparkProjectile:
 	var p := SparkProjectile.new()
 	p.name = node_name
 	p.top_level = true
-	p.visual = visual
-	p.orb_scale = orb_scale
 	p.arrived.connect(_on_projectile_arrived)
 	add_child(p)
 	return p

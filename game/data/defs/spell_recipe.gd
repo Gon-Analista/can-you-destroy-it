@@ -27,8 +27,6 @@ extends Resource
 @export var tier: SpellTier
 ## Orbe que se forma entre las manos y que vuela como proyectil.
 @export var visual: SpellVisualDef
-## Escala del orbe en vuelo respecto a como se ve entre las manos.
-@export var projectile_orb_scale: float = 5.0
 
 @export_group("Sonido")
 @export var combine_sfx: AudioStream

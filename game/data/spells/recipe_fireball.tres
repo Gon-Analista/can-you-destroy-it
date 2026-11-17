@@ -12,6 +12,11 @@
 [ext_resource type="AudioStream" path="res://audio/sfx/sfx_fireball_impact_02.ogg" id="10"]
 [ext_resource type="AudioStream" path="res://audio/sfx/sfx_fireball_impact_03.ogg" id="11"]
 
+[sub_resource type="Gradient" id="ramp_fire"]
+interpolation_mode = 1
+offsets = PackedFloat32Array(0, 0.14, 0.3, 0.48, 0.66, 0.82, 0.93)
+colors = PackedColorArray(2, 1.9, 1.4, 1, 1, 0.9, 0.45, 1, 1, 0.62, 0.2, 1, 0.94, 0.38, 0.14, 1, 0.72, 0.18, 0.12, 1, 0.45, 0.1, 0.1, 0.55, 0.25, 0.06, 0.1, 0.25)
+
 [sub_resource type="Resource" id="fireball_tier"]
 script = ExtResource("2")
 cooldown_sec = 2.0
@@ -29,6 +34,11 @@ shake = 0.3
 color_core = Color(1, 0.95, 0.76, 1)
 color_glow = Color(1, 0.42, 0.16, 1)
 impact_tint = Color(1, 0.62, 0.25, 1)
+visual = ExtResource("3")
+orb_scale = 8.0
+trail_ramp = SubResource("ramp_fire")
+trail_width = 0.75
+trail_length = 0.28
 
 [resource]
 script = ExtResource("1")
@@ -43,7 +53,6 @@ min_power = 0.5
 cooldown_sec = 2.0
 tier = SubResource("fireball_tier")
 visual = ExtResource("3")
-projectile_orb_scale = 5.0
 combine_sfx = ExtResource("4")
 charge_loop_sfx = ExtResource("5")
 cast_sfx = Array[AudioStream]([ExtResource("6"), ExtResource("7"), ExtResource("8")])
