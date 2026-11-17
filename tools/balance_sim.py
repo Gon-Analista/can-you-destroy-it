@@ -10,10 +10,16 @@ Lee los datos reales del juego (game/data/**.tres) y reproduce las reglas del c�
 - Daño de los hechizos (`SpellCaster`): niveles de cada elemento (con `ElementDef.ensure_levels`), tamaño
   (`_sized_damage`), combinaciones (`SpellRecipe.damage_for` x potencia), resonancia (x3, sube un tamaño de
   fragmento y dobla la cuenta), Canalización (enfriamiento).
-- Fragmentos (`MotherCrystal.receive_hit` + `ShardPool.type_for_hit`): cuántos caen y de qué tipo; el maná es
-  la suma de sus valores. La esencia que se quita es el daño del golpe.
-- Logística: recoger (o Telequinesis), bolsa, viaje a la trituradora, echar y triturar (Engranajes), Envío
-  directo, viajes al Santuario para comprar.
+- Fragmentos (`MotherCrystal.receive_hit` + `ShardPool.pieces_for`): cuántos caen y de qué tipo; el maná es
+  la suma de sus valores con la Pureza redondeada en cada pieza (`GameState.shard_value`); el Pilón suma el
+  valor sin Pureza. La esencia que se quita es el daño del golpe (más el túnel de las lanzas).
+- Lo que hace cada golpe en el cristal: saltos del Rayo y de las combinaciones, túnel de las lanzas, haz
+  de Plasma, pulso de la Resonancia, ecos (con los efectos de la receta base), zona helada de la Escarcha
+  (x2, Explosión de Vapor), Temple (Escarcha sobre quemadura), zona quebradiza del Choque Térmico (x3) y
+  venas (x2 y Resonantes con tope por golpe). Ataques "frost+X" (una mano de cada) y "A->X" (preparar
+  con A y lanzar X encima).
+- Logística: recoger (Telequinesis en paralelo, Gravedad), bolsa, viaje a la trituradora, echar y triturar
+  (Engranajes), Envío directo, viajes al Santuario para comprar.
 - Capas: el Corazón (80-99 %) sólo cede a combinaciones; el Núcleo (último 1 %) es el final.
 
 El jugador simulado elige siempre el ataque que más maná por segundo le da y compra la mejora con mejor
@@ -42,17 +48,40 @@ PROFILES = {
     "normal": dict(speed=7.0, buy=6.0, pick=1.0, accuracy=0.8, max_rate=4.0, charge=0.9, focus=0.85),
 }
 P = dict(PROFILES["eficiente"])
-CRUSHER_DIST = 50.0  # del cristal a la trituradora
-FAMILIAR_DIST = 55.0  # de la tolva a donde caen los fragmentos
+# core/world_layout.gd: Pilón en (-46, 0, 52) y la trituradora 2,8 m a su derecha (mana_pylon.gd), con
+# 3,8 m de radio de uso (crystal_crusher.gd). Desde la cara de delante del cristal (lado de la casucha,
+# a unos 40 m del centro, la misma de SANCTUM_EXTRA) hay unos 41 m andando y unos 45 m de vuelo.
+CRUSHER_DIST = 41.0  # del cristal a la trituradora
+FAMILIAR_DIST = 45.0  # de la tolva a donde caen los fragmentos
 SANCTUM_EXTRA = 94.0  # trituradora -> Santuario -> cristal, lo que se añade al viaje
 FEED_START, FEED_MIN, FEED_RAMP = 0.4, 0.09, 2.4
 LEVER_SEC = 1.0
 NEW_SHARDS = True  # regla nueva: el maná de un golpe es más o menos su daño (ver hit_yield)
 MAX_PIECES, MAX_EXTRA = 10, 3  # ShardPool
 VEIN_FOCUS = 0.6  # parte de los golpes que el jugador da en la vena de su elemento (capa de venas)
-VEIN_BONUS = 0.5  # CrystalLayerDef.vein_bonus
+VEIN_BONUS = None  # CrystalLayerDef.vein_bonus; None = el de data/crystal/layer_resonant_veins.tres
 DIRECT_SEND_LEVER_EVERY = 90.0  # con Envío directo, se va a tirar de la palanca cada tanto
 MOVEMENT_UPGRADES = {"double_jump", "levitation", "crystal_impulse"}
+# Constantes del código del juego (no son datos de diseño), copiadas tal cual:
+CHAIN_FRACTION = 0.2  # crystal_combos.gd chain: cada salto arranca maxf(1, daño x 0,2), sin bonus
+PIERCE_EXTRA, PIERCE_PIECES = 0.9, 2  # crystal_combos.gd pierce: túnel de 0,9 x daño y 2 Fragmentos
+PULSE_HITS, PULSE_FRACTION = 12, 0.1  # crystal_combos.gd resonance_pulse
+BEAM_TICK = 0.09  # spell_caster.gd; se comprueba por fotograma (60 fps): un golpe cada 0,1 s
+FRAME = 1.0 / 60.0
+STEAM_MULT, STEAM_PIECES, STEAM_CLOSE = 1.5, 4, 0.3  # crystal_combos.gd steam; la zona se cierra en 0,3 s
+TEMPER_MULT, TEMPER_PIECES = 1.8, 3  # crystal_combos.gd check_temper: 3 fragmentos grandes
+BURN_HOT_SEC = 3.0  # mother_crystal.gd hot_burn_near: quemadura "al rojo"
+TK_INTERVAL = 0.14  # player.gd telekinesis_interval_sec: un fragmento cada 0,14 s, sin dejar de lanzar
+TK_FULL_REACH = 12.0  # radio con el que la Telequinesis alcanza todo lo que cae (el del último nivel)
+POOL_SIZE, GRAVITY_BATCH = 128, 100  # shard_pool.gd pool_size; fragmentos que se juntan para la Gravedad
+# SpellRecipe.Delivery
+FRONT, SKY, RAIN, LANCE, BEAM, GROUND, MAGNET, GRAVITY, RESONANCE = range(9)
+ZERO = (0.0, 0.0, 0.0, 0.0)
+
+
+def yadd(a, b, k: float = 1.0):
+    """Suma de rendimientos (esencia, maná, fragmentos, valor sin Pureza): a + k x b."""
+    return (a[0] + k * b[0], a[1] + k * b[1], a[2] + k * b[2], a[3] + k * b[3])
 
 
 # --------------------------------------------------------------------------------------------
@@ -155,6 +184,9 @@ class Element:
     unlock: str
     shard_bonus: int = 0
     echo_damage: float = 0.0
+    chain_count: int = 0  # Rayo: saltos de cada golpe suelto (mother_crystal.gd receive_hit)
+    weaken_mult: float = 1.0  # Escarcha: zona helada (mother_crystal.gd _apply_element)
+    weaken_sec: float = 0.0
 
 
 @dataclass
@@ -173,6 +205,16 @@ class Recipe:
     shard_bonus: int
     echo_count: int = 0
     echo_damage: float = 0.0
+    echo_of: str = ""
+    # Lo que hace en el cristal (en un Eco de X, lo de X: spell_caster.gd hit.recipe = effect).
+    effect_el: str = ""  # elements[0]: el elemento del golpe (hit.element)
+    delivery: int = FRONT
+    pierce: float = 0.0
+    beam_sec: float = 0.0
+    shatter_mult: float = 1.0
+    shatter_sec: float = 0.0
+    buff_sec: float = 0.0
+    buff_lockout: float = 0.0
 
 
 @dataclass
@@ -209,6 +251,9 @@ def load():
             main.get("unlock_upgrade", ""),
             int(main.get("shard_bonus", 0)),
             float(main.get("echo_damage", 0.0)),
+            int(main.get("chain_count", 0)),
+            float(main.get("weaken_mult", 1.0)),
+            float(main.get("weaken_sec", 0.0)),
         )
     recipes: dict[str, Recipe] = {}
     for p in sorted((DATA / "spells").glob("recipe_*.tres")):
@@ -232,7 +277,35 @@ def load():
             int(main.get("shard_bonus", 0)),
             int(main.get("echo_count", 0)) if main.get("echo_of") else 0,
             float(main.get("echo_damage", 0.0)),
+            main.get("echo_of", ""),
+            # spell_caster.gd: hit.element = elements[0], salvo la lluvia, cuyas estalactitas son
+            # de Escarcha (_deliver_rain: sub.element = &"frost").
+            "frost" if int(main.get("delivery", FRONT)) == RAIN else main["elements"][0],
+            int(main.get("delivery", FRONT)),
+            float(main.get("pierce_depth", 0.0)),
+            float(main.get("beam_sec", 0.0)),
+            float(main.get("shatter_mult", 1.0)),
+            float(main.get("shatter_sec", 0.0)),
+            float(main.get("buff_sec", 0.0)),
+            float(main.get("buff_lockout_sec", 0.0)),
         )
+    # Eco de X (spell_caster.gd _launch_combine, spell_echoes.gd echo_recipe): el daño sale de la
+    # receta del eco, la potencia y el tamaño también salvo que no los tenga (entonces los de X), y
+    # en el cristal cada golpe (el principal y los ecos) hace lo que hace X (hit.recipe = X).
+    for r in recipes.values():
+        base = recipes.get(r.echo_of)
+        if base is None:
+            continue
+        r.power_stat = r.power_stat or base.power_stat
+        r.size_stat = r.size_stat or base.size_stat
+        r.area_hits, r.rain, r.chain, r.shard_bonus = base.area_hits, base.rain, base.chain, base.shard_bonus
+        r.effect_el, r.delivery, r.pierce, r.beam_sec = (
+            base.effect_el,
+            base.delivery,
+            base.pierce,
+            base.beam_sec,
+        )
+        r.shatter_mult, r.shatter_sec = base.shatter_mult, base.shatter_sec
     upgrades: dict[str, Upgrade] = {}
     for p in sorted((DATA / "upgrades").glob("*.tres")):
         main, _ = parse_tres(p)
@@ -244,11 +317,19 @@ def load():
             main.get("prerequisites", []),
         )
     shards = []
+    resonant = None
     for p in (DATA / "shards").glob("*.tres"):
         main, _ = parse_tres(p)
-        shards.append(ShardT(main["id"], int(main.get("min_damage", 0)), int(main.get("value", 1))))
+        st = ShardT(main["id"], int(main.get("min_damage", 0)), int(main.get("value", 1)))
+        # ShardPool.TYPES (la escalera por daño) no lleva el Fragmento Resonante de las venas.
+        if st.id == "resonant":
+            resonant = st
+        else:
+            shards.append(st)
     shards.sort(key=lambda s: s.min_damage)
     balance, _ = parse_tres(DATA / "balance" / "default_balance.tres")
+    balance["_resonant_value"] = resonant.value if resonant else 125
+    balance["_veins"], _ = parse_tres(DATA / "crystal" / "layer_resonant_veins.tres")
     balance["_familiars"] = {}
     for p in sorted((DATA / "familiars").glob("*.tres")) if (DATA / "familiars").exists() else []:
         main, _ = parse_tres(p)
@@ -270,7 +351,8 @@ def apply_tuning(t, elements, recipes, upgrades, balance) -> None:
     - UPGRADES = {"bag": {"costs": [...], "values": [...]}} (un id nuevo necesita "stat").
     - BALANCE = {"pylon_bolt_damage_max": 600, ...}  (BalanceConfig)
     - FAMILIARS = {"collector": {"carry": 3}, "caster": {"damage_mult": 0.6}}  (FamiliarDef)
-    - CONSTANTS = {"VEIN_BONUS": 0.5}  (constantes de este simulador que copian datos del juego)
+    - CONSTANTS = {"VEIN_BONUS": 0.5}  (constantes de este simulador que copian datos del juego;
+      VEIN_BONUS = None usa el de layer_resonant_veins.tres)
     """
     for eid, spec in getattr(t, "ELEMENTS", {}).items():
         el = elements[eid]
@@ -319,6 +401,17 @@ class Game:
         self.total = float(self.balance.get("total_essence", 1_000_000))
         self.res_mult = int(self.balance.get("resonant_damage_mult", 3))
         self.familiars = self.balance.get("_familiars", {})
+        self.resonant_value = float(self.balance.get("_resonant_value", 125))
+        self.chunk = next(st for st in self.shards if st.id == "chunk")
+        veins = self.balance.get("_veins", {})
+        self.vein_mult = float(veins.get("vein_damage_mult", 2.0))
+        self.vein_shards = int(veins.get("vein_shards", 8))
+        self.vein_bonus = float(VEIN_BONUS if VEIN_BONUS is not None else veins.get("vein_bonus", 0.5))
+        # Contexto del estado que se está midiendo (ver _begin) y caché de attacks().
+        self._purity = 1.0
+        self._veins = False
+        self._heart = False
+        self._cache: dict = {}
 
     # -- estadísticas --
     def stat(self, s: State, stat: str, fallback: float) -> float:
@@ -354,112 +447,381 @@ class Game:
     def sized(damage: int, size: float) -> int:
         return max(damage, round(damage * (1.0 + (size - 1.0) * 0.5)))
 
-    def hit_yield(self, damage: int, tier: Tier, size: float, bonus: int, res_p: float):
-        """(esencia, maná, fragmentos) medios de un golpe, con la resonancia."""
+    def _begin(self, s: State) -> None:
+        """Contexto del estado: Pureza y capa (venas, Corazón)."""
+        done = 1.0 - s.essence / self.total
+        self._purity = self.stat(s, "purity_mult", 1.0)
+        self._veins = 0.45 <= done < 0.8
+        self._heart = s.essence / self.total < 0.2
+
+    def pv(self, st: ShardT) -> int:
+        """Maná de un fragmento: GameState.shard_value redondea la Pureza pieza a pieza."""
+        return max(1, gd_round(st.value * self._purity))
+
+    def pieces(self, st: ShardT, count: float):
+        """Rendimiento de `count` fragmentos de un tipo (sin esencia)."""
+        return (0.0, count * self.pv(st), count, count * st.value)
+
+    def pieces_for(self, worth: float) -> list[tuple[ShardT, int]]:
+        """Copia de ShardPool.pieces_for: el tipo sale del daño (umbral `min_damage`), hasta
+        MAX_PIECES piezas (si no, un tamaño más; del mayor, el doble) y MAX_EXTRA trocitos."""
+        out: list[tuple[ShardT, int]] = []
+        if worth < 1.0:
+            return out
+        idx = 0
+        for i, st in enumerate(self.shards):
+            if worth >= st.min_damage:
+                idx = i
+        while idx < len(self.shards) - 1 and math.floor(worth / self.shards[idx].value) > MAX_PIECES:
+            idx += 1
+        top = MAX_PIECES * (2 if idx == len(self.shards) - 1 else 1)
+        c = max(1, min(int(math.floor(worth / self.shards[idx].value)), top))
+        out.append((self.shards[idx], c))
+        rest = worth - c * self.shards[idx].value
+        extra = 0
+        for j in range(idx - 1, -1, -1):
+            n = 0
+            while rest >= self.shards[j].value and extra < MAX_EXTRA:
+                rest -= self.shards[j].value
+                n += 1
+                extra += 1
+            if n:
+                out.append((self.shards[j], n))
+        return out
+
+    def _dig(self, d: float, tier: Tier, size: float, bonus: int):
+        """Un golpe que arranca `d` de esencia y suelta sus fragmentos (MotherCrystal.receive_hit)."""
+        if size < 0.6:
+            return yadd((d, 0.0, 0.0, 0.0), self.pieces(self.shards[0], 1))  # golpe flojo: una astilla
+        if not NEW_SHARDS:
+            # Regla antigua (aproximada): cuenta por nivel y tipo por daño.
+            count = math.ceil((tier.shards_min + tier.shards_max) / 2.0 * (1.0 + (size - 1.0) * 0.6))
+            return yadd((d, 0.0, 0.0, 0.0), self.pieces(self.shard_type(d, bonus), count))
+        # Tierra y Lanza Cargada (bonus): +25 % de valor por paso.
+        out = (d, 0.0, 0.0, 0.0)
+        for st, c in self.pieces_for(d * (1.0 + 0.25 * bonus)):
+            out = yadd(out, self.pieces(st, c))
+        return out
+
+    def _landed(self, d: float, tier: Tier, size: float, bonus: int, vein: str | None):
+        """Golpe con daño final `d`; en la capa de venas, VEIN_FOCUS de ellos caen en la vena de su
+        elemento (CrystalVeins.apply: x vein_damage_mult). Los golpes que pasan por receive_hit
+        ("main") sueltan además Resonantes por vein_bonus del daño, como mucho vein_shards
+        (CrystalVeins.react); los saltos y el pulso ("chain") sólo llevan el x2."""
+        y = self._dig(d, tier, size, bonus)
+        if not (self._veins and vein):
+            return y
+        d2 = max(1, gd_round(d * self.vein_mult))
+        yv = self._dig(d2, tier, size, bonus)
+        if vein == "main":
+            c = min(float(self.vein_shards), d2 * self.vein_bonus / self.resonant_value)
+            yv = yadd(
+                yv,
+                (0.0, c * max(1, gd_round(self.resonant_value * self._purity)), c, c * self.resonant_value),
+            )
+        return yadd(yadd(ZERO, y, 1.0 - VEIN_FOCUS), yv, VEIN_FOCUS)
+
+    def hit_yield(
+        self, damage: float, tier: Tier, size: float, bonus: int, res_p: float, vein: str | None = "main"
+    ):
+        """(esencia, maná, fragmentos, valor sin Pureza) medios de un golpe, con la resonancia."""
         if damage <= 0:
-            return 0.0, 0.0, 0.0
-        count = (tier.shards_min + tier.shards_max) / 2.0 * (1.0 + (size - 1.0) * 0.6)
-        weak = size < 0.6
-        if weak:
-            count = 1.0
-        out = [0.0, 0.0, 0.0]
-        if NEW_SHARDS:
-            # Cada golpe suelta fragmentos por valor de su daño: el tipo sale del daño (umbral
-            # `min_damage`) y la cuenta, daño / valor; lo que sobra, en trocitos.
-            # Tierra y Lanza Cargada (bonus): +25 % de valor por paso.
-            for res, p in ((False, 1.0 - res_p), (True, res_p)):
-                d = damage * (self.res_mult if res else 1)
-                worth = d * (1.0 + 0.25 * bonus)
-                if weak:
-                    out[0] += p * d
-                    out[1] += p * self.shards[0].value
-                    out[2] += p
-                    continue
-                else:
-                    # ShardPool.pieces_for: tipo por daño (umbral `min_damage`, el doble de su
-                    # valor), hasta 8 piezas (si no, un tamaño más) y 2 trocitos para el resto.
-                    idx = 0
-                    for i, st_i in enumerate(self.shards):
-                        if worth >= st_i.min_damage:
-                            idx = i
-                    while idx < len(self.shards) - 1 and worth // self.shards[idx].value > MAX_PIECES:
-                        idx += 1
-                    st = self.shards[idx]
-                    top = MAX_PIECES * (2 if idx == len(self.shards) - 1 else 1)
-                    c = max(1, min(int(worth // st.value), top))
-                    rest = worth - c * st.value
-                    extra_v, extra_n = 0.0, 0
-                    for j in range(idx - 1, -1, -1):
-                        while rest >= self.shards[j].value and extra_n < MAX_EXTRA:
-                            rest -= self.shards[j].value
-                            extra_v += self.shards[j].value
-                            extra_n += 1
-                    out[0] += p * d
-                    out[1] += p * (c * st.value + extra_v)
-                    out[2] += p * (c + extra_n)
-                    continue
-                out[0] += p * d
-                out[1] += p * c * st.value
-                out[2] += p * c
-            return tuple(out)
+            return ZERO
+        out = ZERO
         for res, p in ((False, 1.0 - res_p), (True, res_p)):
-            d = damage * (self.res_mult if res else 1)
-            c = math.ceil(count * (2 if res else 1)) if not weak else 1
-            st = self.shard_type(d, (1 if res else 0) + bonus)
-            out[0] += p * d
-            out[1] += p * c * st.value
-            out[2] += p * c
-        return tuple(out)
+            if p > 0:
+                out = yadd(
+                    out, self._landed(damage * (self.res_mult if res else 1), tier, size, bonus, vein), p
+                )
+        return out
+
+    def _receive(
+        self,
+        hd: float,
+        tier: Tier,
+        size: float,
+        bonus: int,
+        mult: float = 1.0,
+        steam: bool = False,
+        temper: bool = False,
+        chain: int = 0,
+        pierce: float = 0.0,
+        area: int = 0,
+        pulse: bool = False,
+    ):
+        """Un golpe que llega a MotherCrystal.receive_hit con daño `hd` (ya con la resonancia), en
+        su orden: zona debilitada (`mult`, _apply_weakness) con Explosión de Vapor si es fuego
+        sobre hielo, Temple, vena, y después área, perforación, saltos y pulso."""
+        extra = ZERO
+        if mult != 1.0:
+            hd = gd_round(hd * mult)
+        if steam:
+            hd = gd_round(hd * STEAM_MULT)
+            extra = yadd(extra, self.pieces(self.shards[1], STEAM_PIECES))
+        if temper:
+            # crystal_combos.gd check_temper: x1,8 y 3 Fragmentos grandes (ShardPool.CHUNK).
+            hd = gd_round(hd * TEMPER_MULT)
+            extra = yadd(extra, self.pieces(self.chunk, TEMPER_PIECES))
+        main = self._landed(hd, tier, size, bonus, "main")
+        out = yadd(main, extra)
+        if area and size >= 0.6:
+            out = yadd(out, self.pieces(self.shards[0], area))  # _area_blast: astillas
+        if pierce > 0:
+            # Túnel: 0,9 x daño más de esencia, sin fragmentos, y 2 Fragmentos al final.
+            out = yadd(
+                out, yadd((PIERCE_EXTRA * main[0], 0.0, 0.0, 0.0), self.pieces(self.shards[1], PIERCE_PIECES))
+            )
+        if chain:
+            out = yadd(out, self._landed(max(1.0, hd * CHAIN_FRACTION), tier, 1.0, 0, "chain"), chain)
+        if pulse:
+            out = yadd(out, self._landed(max(1.0, hd * PULSE_FRACTION), tier, 1.0, 0, "chain"), PULSE_HITS)
+        return out
+
+    def single_yield(
+        self,
+        s: State,
+        el: Element,
+        res_p: float,
+        mult: float = 1.0,
+        steam: bool = False,
+        temper: bool = False,
+    ):
+        """Rendimiento medio de un disparo suelto (SpellCaster._cast_single), con sus ecos."""
+        t = self.tier(s, el)
+        size = self.stat(s, el.size_stat, 1.0) if el.size_stat else 1.0
+        dmg = self.sized(t.damage, size)
+        if dmg <= 0:
+            return ZERO  # la chispita del tutorial no hace nada
+        out = ZERO
+        for res, p in ((False, 1.0 - res_p), (True, res_p)):
+            hd = dmg * (self.res_mult if res else 1)
+            out = yadd(
+                out, self._receive(hd, t, size, el.shard_bonus, mult, steam, temper, el.chain_count), p
+            )
+        if t.echoes and el.echo_damage > 0:
+            de = max(1, gd_round(dmg * el.echo_damage))
+            for res, p in ((False, 1.0 - res_p), (True, res_p)):
+                hd = de * (self.res_mult if res else 1)
+                out = yadd(
+                    out, self._receive(hd, t, size, el.shard_bonus, mult, chain=el.chain_count), p * t.echoes
+                )
+        return out
+
+    def _combo_damage(self, s: State, r: Recipe):
+        """(daño sin resonancia, tamaño, enfriamiento del ciclo) de una combinación cargada."""
+        els = [self.elements[x] for x in r.elements]
+        t0, t1 = self.tier(s, els[0]), self.tier(s, els[1])
+        if t0.damage <= 0 and t1.damage <= 0:
+            dmg, size = 1, 0.45  # tutorial: juntar sin daño hace 1
+        else:
+            dmg = max(1, round((t0.damage + t1.damage) * r.mult * P["charge"]))
+            if r.power_stat:
+                dmg = round(dmg * self.stat(s, r.power_stat, 1.0))
+            size = self.stat(s, r.size_stat, 1.0) if r.size_stat else 1.0
+            dmg = self.sized(dmg, size)
+        cdm = self.stat(s, "cooldown_mult", 1.0)
+        return dmg, size, max(r.cooldown * cdm, t0.cooldown * cdm)
+
+    def cast_yield(
+        self, s: State, r: Recipe, res_p: float, zone: tuple[str, float] | None = None, temper: bool = False
+    ):
+        """(rendimiento medio de un lanzamiento, ciclo en s). `zone`: zona en la que cae
+        ("frost", x) o ("shatter", x); `temper`: cae sobre una quemadura al rojo."""
+        dmg, size, cd = self._combo_damage(s, r)
+        if size < 0.6:
+            res_p = 0.0  # las dos chispitas del tutorial nunca resuenan
+        elif r.delivery == RESONANCE:
+            res_p = 1.0  # spell_caster.gd: la Resonancia Arcana siempre es resonante
+        # Zona helada: x2 a todo golpe que no sea de Escarcha (no se gasta); si es fuego, Explosión
+        # de Vapor y la zona se cierra en 0,3 s (el haz, con un golpe cada 0,1 s, la mantiene).
+        frost = zone is not None and zone[0] == "frost" and r.effect_el != "frost"
+        steam = frost and r.effect_el == "spark"
+        all_mult = zone[1] if frost else 1.0
+        # Zona quebradiza (Choque Térmico): x3 al primer golpe, y se gasta.
+        first_mult = zone[1] if zone is not None and zone[0] == "shatter" else 1.0
+        kw = dict(chain=r.chain, pierce=r.pierce, area=r.area_hits, pulse=r.delivery == RESONANCE)
+
+        def delivered(h: float, mult_all: float, stm: bool, first: float, tmp: bool):
+            if r.beam_sec > 0:
+                # Haz: un golpe cada 0,1 s durante beam_sec, de daño x BEAM_TICK / beam_sec.
+                tick = math.ceil(BEAM_TICK / FRAME - 1e-9) * FRAME
+                parts = math.ceil(r.beam_sec / tick - 1e-9)
+                each = max(1, gd_round(h * BEAM_TICK / max(r.beam_sec, 0.1)))
+            elif r.rain > 0:
+                parts = r.rain
+                each = max(1, gd_round(h / parts))
+            else:
+                parts, each = 1, h
+            y = self._receive(each, r.tier, size, r.shard_bonus, mult_all * first, stm, tmp, **kw)
+            if parts > 1:
+                y = yadd(y, self._receive(each, r.tier, size, r.shard_bonus, mult_all, stm, **kw), parts - 1)
+            return y
+
+        out = ZERO
+        for res, p in ((False, 1.0 - res_p), (True, res_p)):
+            if p > 0:
+                out = yadd(
+                    out,
+                    delivered(dmg * (self.res_mult if res else 1), all_mult, steam, first_mult, temper),
+                    p,
+                )
+        if r.echo_count:
+            # Ecos (spell_echoes.gd): max(1, daño x echo_damage), cada uno con su resonancia. Llegan
+            # 0,3 s después o más: ya no hay Vapor ni zona quebradiza, pero sí la zona helada.
+            de = max(1, gd_round(dmg * r.echo_damage))
+            emult = 1.0 if steam else all_mult
+            for res, p in ((False, 1.0 - res_p), (True, res_p)):
+                if p > 0:
+                    out = yadd(
+                        out,
+                        delivered(de * (self.res_mult if res else 1), emult, False, 1.0, False),
+                        p * r.echo_count,
+                    )
+        return out, r.charge + cd
 
     def attacks(self, s: State):
-        """Lista de (nombre, esencia/s, maná/s, fragmentos/s, sólo_combinación)."""
+        """Lista de (nombre, esencia/s, maná/s, fragmentos/s, valor/s, sólo_combinación, grupo)."""
+        self._begin(s)
+        key = (tuple(sorted(s.levels.items())), self._veins, self._heart)
+        if key not in self._cache:
+            self._cache[key] = self._attacks(s)
+        return self._cache[key]
+
+    def _attacks(self, s: State):
         res_p = self.stat(s, "resonant_percent", float(self.balance.get("resonant_chance", 0.07)) * 100) / 100
-        cd_mult = self.stat(s, "cooldown_mult", 1.0)
+        out = self._attack_list(s, res_p)
+        # Resonancia Arcana (spell_caster.gd _start_resonance): un golpe siempre resonante con pulso,
+        # y buff_sec s en los que todo golpe del mago es resonante; no se puede repetir hasta
+        # buff_lockout_sec s después de lanzarla. Rotación: la Resonancia y, en el resto del
+        # periodo, el mejor otro ataque (resonante mientras dure el efecto).
+        cdm = self.stat(s, "cooldown_mult", 1.0)
+        boosted = None
+        for r in self.recipes.values():
+            if r.delivery != RESONANCE or r.buff_sec <= 0 or not self._recipe_awake(s, r):
+                continue
+            if boosted is None:
+                boosted = self._attack_list(s, 1.0)
+            y, _ = self.cast_yield(s, r, 1.0)
+            _, _, c_r = self._combo_damage(s, r)
+            period = r.charge + max(r.buff_lockout, c_r)
+            t_buff = max(0.0, r.buff_sec - c_r)
+            t_rest = max(r.buff_lockout, c_r) - max(r.buff_sec, c_r)
+            ok = lambda a: a[5] or not self._heart  # noqa: E731 (en el Corazón, sólo combinaciones)
+            b1 = max((a for a in boosted if ok(a)), key=lambda a: a[2], default=None)
+            b0 = max((a for a in out if ok(a)), key=lambda a: a[2], default=None)
+            tot = yadd(ZERO, y, P["accuracy"])
+            if b1:
+                tot = yadd(tot, b1[1:5], t_buff)
+            if b0:
+                tot = yadd(tot, b0[1:5], t_rest)
+            tot = yadd(ZERO, tot, 1.0 / period)
+            out.append((f"{r.id}[{b1[0] if b1 else '-'}]",) + tot + (True, r.id))
+        return out
+
+    def _recipe_awake(self, s: State, r: Recipe) -> bool:
+        return all(x in self.elements and self.awake(s, self.elements[x]) for x in r.elements)
+
+    def _attack_list(self, s: State, res_p: float):
+        cdm = self.stat(s, "cooldown_mult", 1.0)
+        acc = P["accuracy"]
+        heart = self._heart
         out = []
+
+        def add(name, y, rate, combo, group):
+            out.append((name, y[0] * rate, y[1] * rate, y[2] * rate, y[3] * rate, combo, group))
+
+        def shots(el: Element) -> float:
+            return min(1.0 / (self.tier(s, el).cooldown * cdm), P["max_rate"]) * acc
+
         awake = [e for e in self.elements.values() if self.awake(s, e)]
         for el in awake:
-            t = self.tier(s, el)
-            size = self.stat(s, el.size_stat, 1.0) if el.size_stat else 1.0
-            dmg = self.sized(t.damage, size)
-            e, m, n = self.hit_yield(dmg, t, size, el.shard_bonus, res_p)
-            if t.echoes and el.echo_damage > 0:
-                ee, em, en = self.hit_yield(max(1, round(dmg * el.echo_damage)), t, size, 0, res_p)
-                e, m, n = e + ee * t.echoes, m + em * t.echoes, n + en * t.echoes
-            rate = 2.0 * min(1.0 / (t.cooldown * cd_mult), P["max_rate"]) * P["accuracy"]
-            out.append((el.id, e * rate, m * rate, n * rate, False))
+            add(el.id, self.single_yield(s, el, res_p), 2.0 * shots(el), False, el.id)
+        # Escarcha en una mano y otro elemento en la otra, a la misma mirilla (mother_crystal.gd
+        # _apply_element y _apply_weakness): los golpes del otro hacen x weaken_mult en la zona
+        # helada. Con Chispa, Explosión de Vapor (x1,5 y 4 Fragmentos) y cada chispa deja una
+        # quemadura que la Escarcha siguiente templa (crystal_combos.gd check_temper).
+        frost = self.elements.get("frost")
+        frost_ok = frost is not None and self.awake(s, frost) and frost.weaken_mult > 1.0
+        if frost_ok:
+            wm = frost.weaken_mult
+            rf = shots(frost)
+            for el in awake:
+                if el.id == frost.id:
+                    continue
+                rx = shots(el)
+                if el.id == "spark":
+                    lit = self.single_yield(s, el, res_p) != ZERO
+                    fast = self.tier(s, el).cooldown * cdm < STEAM_CLOSE
+                    steam_r = (rx if fast else min(rx, rf)) if lit else 0.0
+                    temper_r = min(rx, rf) if lit else 0.0
+                    y = yadd(ZERO, self.single_yield(s, el, res_p, wm, steam=True), steam_r)
+                    y = yadd(y, self.single_yield(s, el, res_p), rx - steam_r)
+                    y = yadd(y, self.single_yield(s, frost, res_p, temper=True), temper_r)
+                    y = yadd(y, self.single_yield(s, frost, res_p), rf - temper_r)
+                else:
+                    y = yadd(
+                        yadd(ZERO, self.single_yield(s, el, res_p, wm), rx),
+                        self.single_yield(s, frost, res_p),
+                        rf,
+                    )
+                add(f"frost+{el.id}", y, 1.0, False, el.id)
         # Combinaciones (la carga completa).
-        for r in self.recipes.values():
-            els = [self.elements.get(x) for x in r.elements]
-            if any(x is None or not self.awake(s, x) for x in els):
+        combos = [
+            r
+            for r in self.recipes.values()
+            if r.mult > 0 and self._recipe_awake(s, r) and not (r.delivery == RESONANCE and r.buff_sec > 0)
+        ]  # mult 0: utilidades (Gravedad, Magnetismo); la Resonancia Arcana va aparte
+        alone = {}
+        for r in combos:
+            y, cycle = self.cast_yield(s, r, res_p)
+            if r.shatter_mult > 1.0 and cycle < r.shatter_sec:
+                # Choque Térmico seguido en el mismo sitio: cae en la zona quebradiza del anterior.
+                y, cycle = self.cast_yield(s, r, res_p, ("shatter", r.shatter_mult))
+            alone[r.id] = (y, cycle)
+            add(r.id, y, acc / cycle, True, r.id)
+        spark = self.elements.get("spark")
+        spark_ok = spark is not None and self.awake(s, spark) and self.single_yield(s, spark, res_p) != ZERO
+        for x in combos:
+            _, _, cd_x = self._combo_damage(s, x)
+            if frost_ok and x.effect_el != "frost":
+                # Escarcha suelta y luego la combinación X sobre la zona helada (las manos esperan
+                # a que la Escarcha recargue). Si X deja quemadura, la Escarcha siguiente la templa;
+                # si X es el Choque Térmico, la Escarcha cae además en su zona quebradiza.
+                hot = x.effect_el == "spark" and cd_x < BURN_HOT_SEC
+                fmult = x.shatter_mult if x.shatter_mult > 1.0 and cd_x < x.shatter_sec else 1.0
+                if heart:
+                    # La Escarcha suelta rebota en el Corazón (no hay zona), pero el Temple paga antes.
+                    fy = self.pieces(self.chunk, TEMPER_PIECES) if hot else ZERO
+                    xy, xc = alone[x.id]
+                else:
+                    fy = self.single_yield(s, frost, res_p, fmult, temper=hot)
+                    xy, xc = self.cast_yield(s, x, res_p, ("frost", frost.weaken_mult))
+                add(
+                    f"frost->{x.id}",
+                    yadd(fy, xy),
+                    acc / (self.tier(s, frost).cooldown * cdm + xc),
+                    True,
+                    x.id,
+                )
+            if spark_ok and not heart and x.effect_el == "frost":
+                # Chispa suelta (deja quemadura) y la combinación de Escarcha encima: Temple.
+                xy, xc = self.cast_yield(s, x, res_p, temper=True)
+                y = yadd(self.single_yield(s, spark, res_p), xy)
+                add(f"spark->{x.id}", y, acc / (self.tier(s, spark).cooldown * cdm + xc), True, x.id)
+        for ts in combos:
+            if ts.shatter_mult <= 1.0:
                 continue
-            t0, t1 = self.tier(s, els[0]), self.tier(s, els[1])
-            if t0.damage <= 0 and t1.damage <= 0:
-                dmg, size = 1, 0.45  # tutorial: juntar sin daño hace 1
-            else:
-                dmg = max(1, round((t0.damage + t1.damage) * r.mult * P["charge"]))
-                if r.power_stat:
-                    dmg = round(dmg * self.stat(s, r.power_stat, 1.0))
-                size = self.stat(s, r.size_stat, 1.0) if r.size_stat else 1.0
-                dmg = self.sized(dmg, size)
-            if r.mult <= 0:
-                continue  # utilidad (Magnetismo)
-            parts = max(1, r.rain + (1 if r.rain == 0 else 0))
-            each = max(1, round(dmg / parts))
-            e, m, n = self.hit_yield(each, r.tier, size, r.shard_bonus, res_p)
-            e, m, n = e * parts, m * parts, n * parts
-            if r.chain:
-                # CrystalCombos.chain: cada salto arranca el 20 % del daño.
-                ce, cm, cn = self.hit_yield(max(1, round(dmg * 0.2)), r.tier, 1.0, r.shard_bonus, res_p)
-                e, m, n = e + ce * r.chain, m + cm * r.chain, n + cn * r.chain
-            if r.echo_count:
-                k = 1.0 + r.echo_count * r.echo_damage
-                e, m, n = e * k, m * k, n * k
-            if r.area_hits and size >= 0.6:
-                m += r.area_hits  # astillas de los golpes en área
-                n += r.area_hits
-            cycle = r.charge + max(r.cooldown * cd_mult, t0.cooldown * cd_mult)
-            rate = P["accuracy"] / cycle
-            out.append((r.id, e * rate, m * rate, n * rate, True))
+            ty, _ = self.cast_yield(s, ts, res_p)
+            _, _, cd_ts = self._combo_damage(s, ts)
+            tc = ts.charge + cd_ts
+            for x in combos:
+                if x is ts or cd_ts + x.charge >= ts.shatter_sec:
+                    continue
+                # Choque Térmico y luego X en su zona quebradiza (x3 al primer golpe); su quemadura
+                # templa una combinación de Escarcha que llegue antes de 3 s.
+                hot = x.effect_el == "frost" and cd_ts + x.charge < BURN_HOT_SEC
+                xy, xc = self.cast_yield(s, x, res_p, ("shatter", ts.shatter_mult), temper=hot)
+                add(f"{ts.id}->{x.id}", yadd(ty, xy), acc / (tc + xc), True, x.id)
         return out
 
     def feed_time(self, n: float, gears: float) -> float:
@@ -473,22 +835,25 @@ class Game:
             sent += 1
         return t + 0.2
 
-    def effective(self, s: State) -> tuple[float, float, str]:
-        """(maná/s, esencia/s, ataque) del mejor ataque, contando la logística."""
+    def effective(self, s: State) -> tuple[float, float, float, str]:
+        """(maná/s, esencia/s, Pilón/s, ataque) del mejor ataque, contando la logística."""
         rates = self.rates(s)
-        return max(rates, key=lambda r: r[0]) if rates else (0.0, 0.0, "-")
+        return max(rates, key=lambda r: r[0])[:4] if rates else (0.0, 0.0, 0.0, "-")
 
     def value(self, s: State) -> float:
         """Lo que vale el arsenal para el jugador: media cuadrática de todos sus ataques (un
-        jugador de verdad también mejora los hechizos que no son el mejor; el mejor pesa más)."""
-        rates = [r[0] for r in self.rates(s)]
-        if not rates:
+        jugador de verdad también mejora los hechizos que no son el mejor; el mejor pesa más).
+        Cada hechizo cuenta una vez, con su mejor uso (solo o preparado con otro)."""
+        best: dict[str, float] = {}
+        for r in self.rates(s):
+            best[r[4]] = max(best.get(r[4], 0.0), r[0])
+        if not best:
             return 0.0
-        return (sum(x**2 for x in rates) / len(rates)) ** 0.5
+        return (sum(x**2 for x in best.values()) / len(best)) ** 0.5
 
-    def familiar_rates(self, s: State) -> tuple[float, float, float, float]:
-        """(fragmentos/s que llevan los recolectores, y esencia/s, maná/s y fragmentos/s que sueltan
-        los hechiceros) según data/familiars/ y familiar.gd."""
+    def familiar_rates(self, s: State) -> tuple[float, float, float, float, float]:
+        """(fragmentos/s que llevan los recolectores, y esencia/s, maná/s, fragmentos/s y valor/s
+        que sueltan los hechiceros) según data/familiars/ y familiar.gd."""
         collectors = int(self.stat(s, "familiar_count", 0.0))
         casters = int(self.stat(s, "familiar_caster", 0.0))
         wings = self.stat(s, "familiar_speed", 1.0)
@@ -502,7 +867,7 @@ class Game:
             trip = 2 * FAMILIAR_DIST * 1.2 / speed
             per = carry * (float(f.get("grab_sec", 0.3)) + float(f.get("drop_gap_sec", 0.16)) + 0.5)
             carry_rate = collectors * carry / (trip + per)
-        ce = cm = cn = 0.0
+        y = ZERO
         if casters:
             f = self.familiars.get("caster", {})
             spark = self.elements["spark"]
@@ -511,67 +876,84 @@ class Game:
             dmg = max(1, gd_round(t.damage * float(f.get("damage_mult", 0.6))))
             period = float(f.get("cast_interval", 3.2)) + float(f.get("cast_charge_sec", 0.9))
             res_p = self.stat(s, "resonant_percent", 7.0) / 100
-            e, m, n = self.hit_yield(dmg, t, 1.0, 0, res_p)
             k = casters * 0.85 / period  # alguno falla
-            ce, cm, cn = e * k, m * k, n * k
-        return carry_rate, ce, cm, cn
+            y = yadd(ZERO, self.hit_yield(dmg, t, 1.0, 0, res_p, vein=None), k)
+        return (carry_rate,) + y
 
-    def pylon_bolt_rates(self, s: State) -> tuple[float, float, float]:
+    def pylon_bolt_rates(self, s: State) -> tuple[float, float, float, float]:
         """Resonancia del Pilón: un rayo cada `pylon_bolt_sec` s con daño de 25 a 600 según lo lleno
-        que se vea el Pilón (raíz del progreso, ManaPylon.display_fill)."""
+        que se vea el Pilón (raíz del progreso, ManaPylon.display_fill). Lleva el elemento Rayo
+        (pylon_resonance.gd), así que salta como un Rayo suelto (chain_count)."""
         every = self.stat(s, "pylon_bolt_sec", 0.0)
         if every <= 0:
-            return 0.0, 0.0, 0.0
+            return ZERO
         lo = float(self.balance.get("pylon_bolt_damage_min", 25))
         hi = float(self.balance.get("pylon_bolt_damage_max", 600))
         dmg = gd_round(lo + (hi - lo) * math.sqrt(s.pylon / self.total))
-        e, m, n = self.hit_yield(dmg, self.elements["bolt"].tiers[0], 1.0, 0, 0.0)
+        bolt = self.elements["bolt"]
+        y = self.hit_yield(dmg, bolt.tiers[0], 1.0, 0, 0.0, vein=None)
+        if bolt.chain_count:
+            y = yadd(
+                y,
+                self.hit_yield(max(1.0, dmg * CHAIN_FRACTION), bolt.tiers[0], 1.0, 0, 0.0, vein=None),
+                bolt.chain_count,
+            )
         k = 1.0 / (every + float(self.balance.get("pylon_bolt_charge_sec", 0.9)))
-        return e * k, m * k, n * k
+        return yadd(ZERO, y, k)
 
-    def rates(self, s: State) -> list[tuple[float, float, str]]:
-        heart = s.essence / self.total < 0.2
-        out: list[tuple[float, float, str]] = []
+    def rates(self, s: State) -> list[tuple[float, float, float, str, str]]:
+        """(maná/s, esencia/s, Pilón/s, ataque, grupo) de cada ataque, contando la logística."""
+        attacks = self.attacks(s)  # también fija el contexto (_begin)
+        heart = self._heart
+        out: list[tuple[float, float, float, str, str]] = []
         cap = self.stat(s, "bag_capacity", float(self.balance.get("hand_capacity", 3)))
         tk = self.stat(s, "telekinesis_radius", 0.0)
-        pick = P["pick"] if tk <= 0 else max(0.08, 0.3 / (tk / 3.5))
+        # Telequinesis (player.gd _update_telekinesis): atrae sola un fragmento cada 0,14 s dentro de
+        # su radio mientras el mago sigue lanzando; el resto se recoge a mano.
+        tk_rate = (1.0 / TK_INTERVAL) * min(1.0, tk / TK_FULL_REACH) if tk > 0 else 0.0
+        pick = P["pick"]
+        grav = next(
+            (r for r in self.recipes.values() if r.delivery == GRAVITY and self._recipe_awake(s, r)), None
+        )
+        if grav is not None:
+            # Gravedad (shard_pool.gd gravity_pull): recoge todo el valle de una vez (hasta el pool),
+            # a cambio de la carga y de las manos bloqueadas (spell_caster.gd _launch_combine).
+            _, _, cd_g = self._combo_damage(s, grav)
+            pick = min(pick, (grav.charge + cd_g) / min(POOL_SIZE, GRAVITY_BATCH))
         trip = CRUSHER_DIST / P["speed"]
         gears = self.stat(s, "crusher_speed", 1.0)
         direct = self.stat(s, "direct_send", 0.0) > 0.5
-        carry_rate, fe, fm, fn = self.familiar_rates(s)
-        be, bm, bn = self.pylon_bolt_rates(s)
-        fe, fm, fn = fe + be, fm + bm, fn + bn
-        done = 1.0 - s.essence / self.total
-        veins = 0.45 <= done < 0.8
-        purity = self.stat(s, "purity_mult", 1.0)
-        for name, e, m, n, combo in self.attacks(s):
+        carry_rate, *fam = self.familiar_rates(s)
+        passive = yadd(tuple(fam), self.pylon_bolt_rates(s))
+        if heart:
+            # El Corazón sólo cede ante combinaciones (mother_crystal.gd _allowed_mask): los golpes
+            # de los hechiceros y del rayo del Pilón no llevan receta y rebotan.
+            passive = ZERO
+        for name, e, m, n, v, combo, group in attacks:
             if heart and not combo:
                 continue
             if n <= 0 or m <= 0:
                 continue
-            if veins:
-                # CrystalVeins: VEIN_FOCUS de los golpes caen en su vena débil: x2 de daño y
-                # Fragmentos Resonantes por la mitad de ese daño (vein_bonus).
-                e, m = e * (1 + VEIN_FOCUS), m * (1 + VEIN_FOCUS) + e * 2 * VEIN_FOCUS * VEIN_BONUS
-                n = n * (1 + VEIN_FOCUS) + e * VEIN_FOCUS * VEIN_BONUS / 125.0
-            # Los hechiceros y el rayo del Pilón suman lo suyo mientras el mago ataca.
-            e, m, n = e + fe, m + fm, n + fn
-            # La Pureza sube el maná (no el Pilón: ver simulate).
-            m *= purity
+            # Los hechiceros y el rayo del Pilón suman lo suyo mientras el mago ataca. La Pureza ya
+            # va en el maná de cada fragmento (pv); el Pilón suma el valor sin ella (v).
+            e, m, n, v = yadd((e, m, n, v), passive)
             # Segundos de logística del mago por cada fragmento que le toca a él.
             if direct:
                 # Vuelan solos a la tolva: recogerlos y, de vez en cuando, ir a la palanca (si no
                 # hay familiares que tiren de ella).
                 lever = 0.0 if carry_rate > 0 else (2 * trip + LEVER_SEC) / DIRECT_SEND_LEVER_EVERY
-                per_shard = pick
+                travel = 0.0
                 fixed = lever
             else:
-                per_shard = pick + (2 * trip + self.feed_time(cap, gears) + LEVER_SEC) / cap
+                travel = (2 * trip + self.feed_time(cap, gears) + LEVER_SEC) / cap
                 fixed = 0.0
-            # Los recolectores se llevan una parte de los fragmentos (los que caen al suelo).
+            # Los recolectores se llevan una parte de los fragmentos (los que caen al suelo) y la
+            # Telequinesis, otra; sólo los que quedan cuestan tiempo de recogida al mago.
             mine = max(0.0, n - carry_rate)
-            k = 1.0 / (1.0 + mine * per_shard + fixed)
-            out.append((m * k * P["focus"], e * k * P["focus"], name))
+            manual = max(0.0, mine - tk_rate)
+            k = 1.0 / (1.0 + manual * pick + mine * travel + fixed)
+            f = k * P["focus"]
+            out.append((m * f, e * f, v * f, name, group))
         return out
 
     # -- mejoras --
@@ -604,19 +986,21 @@ class Game:
 
 def simulate(game: Game, verbose: bool = False, max_hours: float = 6.0):
     s = State()
+    game._cache.clear()  # attacks() depende del perfil (P)
     log: list[tuple[float, str, int, int]] = []
     timeline: list[tuple[float, float, float, float, str]] = []
     step = 2.0
     next_sample = 0.0
     while s.essence > game.total * 0.01 and s.t < max_hours * 3600:
-        rate, ess_rate, attack = game.effective(s)
+        rate, ess_rate, pylon_rate, attack = game.effective(s)
         if rate <= 0:
             break
         # Avanza `step` segundos de juego.
         # El Pilón no pasa de la esencia total; el maná sí se sigue ganando (Progression.deliver).
+        # El Pilón suma el valor de los fragmentos sin la Pureza (mana_pylon.gd receive_mana).
         gain = rate * step
         s.mana += gain
-        s.pylon = min(game.total, s.pylon + gain / game.stat(s, "purity_mult", 1.0))
+        s.pylon = min(game.total, s.pylon + pylon_rate * step)
         s.essence = max(0.0, s.essence - ess_rate * step)
         s.t += step
         if s.t >= next_sample:

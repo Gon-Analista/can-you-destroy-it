@@ -60,8 +60,8 @@ func check_temper(hit: SpellHit) -> void:
 	var at := Vector3(b.x, b.y, b.z)
 	hit.damage = roundi(float(hit.damage) * 1.8)
 	var n: Vector3 = hit.normal if hit.normal.length_squared() > 0.01 else Vector3.UP
-	var chunk: ShardType = ShardPool.TYPES[ShardPool.TYPES.size() - 1]
-	_shards.spawn(at, n, chunk, 3, 1.5, _crystal.hit_layer())
+	# Siempre fragmentos grandes (TYPES ya llega a los Pedruscos: "el mayor" daría 1.500 de maná).
+	_shards.spawn(at, n, ShardPool.CHUNK, 3, 1.5, _crystal.hit_layer())
 	_crystal.add_crack(at, b.w * 2.4 + 1.5)
 	_hd_fx.play(at, n, hit.tier, true, true, 1.5)
 	_puff(at + n * 0.5)
