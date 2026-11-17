@@ -148,6 +148,8 @@ en el Grimorio del Santuario mejoras que cambian los hechizos. Lo que hay:
   destellos y luz; `charge`, `release()`, `appear()`). Primer hechizo: Orbe Arcano (`data/spells/vfx_arcane_orb.tres`).
   Galería para verlo y grabarlo: `godot --path game res://tests/vfx_gallery/vfx_gallery.tscn` (ver `CHANGELOG.md`).
 
+- **Magia HD** (`fx/hd/`): capa de magia a resolución nativa con resplandor (ver registro de decisiones); fuego
+  turbulento, halos, estelas, chispas con estela, ondas de choque, humo e impactos (`HdImpact`).
 - **Hechizos que resaltan** (`spells/`): en vuelo, la misma llama de la mano (`SpellOrb`) de cara a la cámara con
   estela de fuego en píxeles sólidos (`spells/vfx/spell_trail.gd`), brasas y luz; al impactar, un estallido pixel art
   (`fx/impact_blast.gdshader`) con los colores del hechizo. Aspecto por nivel en `SpellTier` (`visual`, `orb_scale`,
@@ -209,6 +211,8 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-15 | Manos en vertical que suben y se juntan desde su posición de reposo (no en horizontal desde los lados). | Pedido del equipo: juntar el hechizo verticalmente. |
 | 2026-11-17 | Cada mano lleva su llama (elemento) y recarga por separado; los dos clics a la vez (ventana de 0,09 s, `combine_window_sec`) juntan las manos y funden las llamas en la Bola de Fuego, que se carga manteniendo y sale al soltar. Con las dos manos listas, un clic suelto espera esa ventana o sale al soltar el botón. | GDD 5.2 y 10.1; pedido del equipo ("juntar 2 hechizos de fuego, uno en cada mano, en uno grande"). Sustituye al orbe único entre las manos. |
 | 2026-11-17 | Las llamas flotan sobre la punta de los dedos, no delante de la palma. | Las manos son 2D por encima del 3D: lo que queda detrás de la palma no se ve. |
+| 2026-11-17 | **HD-2D**: el mundo y las manos en pixel art (640x360) y la magia en una capa aparte a resolución nativa con resplandor HDR, compuesta con alfa premultiplicado (`MagicLayer`, capa visual `1 << 10`). Stretch del proyecto a `canvas_items`; el mundo en una SubViewport con filtro nearest. | Pedido del equipo: los hechizos deben verse espectaculares, con efectos de juegos modernos; con píxeles sólidos a 12 fps no se llegaba. Referencia: Octopath Traveler. |
+| 2026-11-17 | Cristal Madre a escala 2,3 y posiciones en `WorldLayout` (Pilón y Santuario a ~30 m). | Pedido del equipo: cristal más grande y máquinas menos pegadas; GDD 4.1 (30 veces el mago). |
 | 2026-11-17 | El hechizo en vuelo es el mismo `SpellOrb` de la mano + estela de píxeles sólidos (`SpellTrail`) + estallido de impacto pixel art; el rombo aditivo (`spark.gdshader`) deja de usarse. | Pedido del equipo: los hechizos tienen que resaltar mucho más; lo aditivo se perdía contra el cielo y el cristal. |
 | 2026-11-17 | Cada nivel de la Chispa tiene su aspecto (`SpellTier.visual`): Chispa, Llama y Llama mágica rosa. | GDD 7 y 10.3: "Chispa -> Llama -> Infierno" y "de naranja a rosa mágico". |
 | 2026-11-17 | Pilón a la izquierda (-8, 0, 11) y Santuario a la derecha (9,5, 0, 12,5) del claro, a unos 10 m del cristal; el jugador empieza entre los dos. | GDD 4 y 8.1 (≈ 10 m, 4 s andando). |

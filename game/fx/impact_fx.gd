@@ -151,7 +151,8 @@ func play(pos: Vector3, normal: Vector3, tier: SpellTier, resonant: bool) -> voi
 	_blast_mats[i].set_shader_parameter("ramp", ramp)
 	_blast_mats[i].set_shader_parameter("seed", randf() * 10.0)
 	_blast_mats[i].set_shader_parameter("progress", 0.0)
-	blast.visible = true
+	# El estallido pixel art queda sustituido por el impacto HD (HdImpact).
+	blast.visible = false
 	_age[i] = 0.0
 	set_process(true)
 

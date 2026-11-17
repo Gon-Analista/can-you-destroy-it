@@ -31,6 +31,7 @@ var _material: ShaderMaterial
 var _mesh_instance: MeshInstance3D
 var _shards: ShardPool
 var _fx: ImpactFx
+var _hd_fx: HdImpact
 var _streak: StreakTracker
 var _hits: PackedVector4Array = []
 var _hit_resonant: PackedFloat32Array = []
@@ -82,6 +83,9 @@ func _ready() -> void:
 	_fx = ImpactFx.new()
 	_fx.name = "ImpactFx"
 	add_child(_fx)
+	_hd_fx = HdImpact.new()
+	_hd_fx.name = "HdImpact"
+	add_child(_hd_fx)
 	_setup_audio()
 	for i: int in MAX_HITS:
 		_hits.append(Vector4(0, 0, 0, -1))
@@ -171,6 +175,7 @@ func receive_hit(hit: SpellHit) -> void:
 	var shard_type: ShardType = ShardPool.type_for_hit(hit.damage, hit.resonant)
 	_shards.spawn(hit.position, hit.normal, shard_type, count, 1.25 if hit.resonant else 1.0)
 	_fx.play(hit.position, hit.normal, tier, hit.resonant)
+	_hd_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.recipe != null)
 	_play_tink(hit)
 	if hit.recipe:
 		_play_spell_impact(hit)
@@ -216,6 +221,7 @@ func _area_blast(hit: SpellHit) -> void:
 		_hit_index = (_hit_index + 1) % MAX_HITS
 		_shards.spawn(p, n, splinter, 1, 1.15)
 		_fx.play(p, n, hit.tier, false)
+		_hd_fx.play(p, n, hit.tier, false)
 
 
 func _play_spell_impact(hit: SpellHit) -> void:

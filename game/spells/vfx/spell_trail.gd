@@ -5,12 +5,16 @@ extends MeshInstance3D
 ## reutiliza; la malla es una `ImmediateMesh` que se rehace sólo mientras hay estela.
 
 const SHADER: Shader = preload("res://spells/vfx/spell_trail.gdshader")
+const HD_SHADER: Shader = preload("res://fx/hd/hd_trail.gdshader")
 const MAX_POINTS: int = 32
 
 ## Duración de la estela (s): cuánto tarda un punto en llegar a la cola.
 var length_sec: float = 0.18
 ## Ancho en la cabeza (m) cuando el hechizo ya va lejos.
 var width: float = 0.3
+## true: estela suave en la capa de magia HD (hechizos); false: pixel art (fragmentos al Pilón).
+## Se fija antes de añadir el nodo al árbol.
+var hd: bool = false
 ## Cerca de la cámara la estela se estrecha igual que el orbe (ver `SparkProjectile`): a
 ## `near_depth` m mide `width / max_scale` y alcanza `width` a `near_depth * max_scale` m.
 var near_depth: float = 0.85
@@ -29,8 +33,10 @@ var _mat := ShaderMaterial.new()
 func _ready() -> void:
 	top_level = true
 	mesh = _mesh
-	_mat.shader = SHADER
+	_mat.shader = HD_SHADER if hd else SHADER
 	_mat.render_priority = 2
+	if hd:
+		layers = MagicLayer.MAGIC_LAYER
 	material_override = _mat
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	extra_cull_margin = 64.0
@@ -41,6 +47,9 @@ func _ready() -> void:
 
 ## Rampa de colores de la estela (de caliente a frío; alfa < 1 se trama).
 func set_ramp(gradient: Gradient) -> void:
+	if hd:
+		_mat.set_shader_parameter("ramp", HdFx.smooth_ramp(gradient))
+		return
 	var tex := GradientTexture1D.new()
 	tex.gradient = gradient
 	tex.use_hdr = true

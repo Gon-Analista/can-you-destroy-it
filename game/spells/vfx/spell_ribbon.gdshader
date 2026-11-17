@@ -20,6 +20,8 @@ uniform float anim_fps = 12.0;
 uniform float fade = 1.0;
 // false: sólo la mitad de la órbita detrás del centro del orbe; true: sólo la de delante.
 uniform bool front = false;
+// true: degradado suave y aditivo de verdad (capa HD); false: bandas y tramado pixel art.
+uniform bool smooth_hd = false;
 
 varying float depth_vs_center;
 
@@ -57,6 +59,13 @@ void fragment() {
 	if (across > 0.35 + k) {
 		discard;
 	}
+	if (smooth_hd) {
+		// Cometa de luz: cabeza blanca ardiente, cuerpo del color y cola que se desvanece.
+		float core = smoothstep(1.0, 0.0, across / (0.35 + k));
+		vec3 hc = mix(color.rgb * hdr, head_color.rgb * 1.5, smoothstep(0.75, 1.0, k));
+		ALBEDO = hc * (0.4 + core);
+		ALPHA = clamp(k * k * core * fade * 1.5, 0.0, 1.0);
+	} else {
 	vec3 c;
 	float a = 1.0;
 	if (k > 0.9) {
@@ -75,4 +84,5 @@ void fragment() {
 	}
 	ALBEDO = c;
 	ALPHA = 1.0;
+	}
 }

@@ -76,3 +76,23 @@ extends Resource
 @export var release_ring_scale: float = 2.2
 ## Semilla para inclinaciones y fases (dos orbes con la misma semilla son idénticos).
 @export var seed: int = 7
+
+@export_group("HD")
+## 0 = fuego (lenguas que suben), 1 = arcano (remolino).
+@export_enum("Fuego", "Arcano") var style: int = 0
+## Brillo del cuerpo (HDR: > 1 florece con el resplandor).
+@export var body_intensity: float = 2.2
+## Tamaño del cuerpo respecto a `core_radius`.
+@export var body_scale: float = 1.5
+## Tamaño del halo respecto a `core_radius` y su brillo.
+@export var glow_scale: float = 5.0
+@export var glow_intensity: float = 0.9
+## Rayos de luz en el halo (0 = sin rayos).
+@export var glow_rays: float = 0.4
+## Partículas que se arremolinan hacia el centro mientras carga (0 = ninguna).
+@export var converge_amount: int = 0
+## Chispas con estela al estallar.
+@export var spark_amount: int = 40
+## Fuerza del destello al soltar (1 = normal). Las llamas de la mano, que estallan pegadas a la
+## cámara, lo llevan bajo.
+@export var release_flash: float = 1.0

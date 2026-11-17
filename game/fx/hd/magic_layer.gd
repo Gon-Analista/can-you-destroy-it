@@ -81,13 +81,15 @@ func _make_environment() -> Environment:
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_DISABLED
 	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	env.glow_enabled = true
-	env.glow_intensity = 1.1
-	env.glow_strength = 1.15
-	env.glow_bloom = 0.08
-	env.glow_hdr_threshold = 0.9
+	env.glow_intensity = 0.6
+	env.glow_strength = 1.0
+	env.glow_bloom = 0.0
+	env.glow_hdr_threshold = 1.2
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
+	# Sólo radios cortos y medios: un resplandor ancho lava toda la pantalla de blanco.
+	var levels: PackedFloat32Array = [0.0, 1.0, 0.8, 0.45, 0.0, 0.0, 0.0]
 	for i: int in 7:
-		env.set_glow_level(i, 1.0 if i >= 1 and i <= 5 else 0.0)
+		env.set_glow_level(i, levels[i])
 	return env
 
 

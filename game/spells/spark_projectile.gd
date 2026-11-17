@@ -13,7 +13,7 @@ signal arrived(projectile: SparkProjectile)
 ## Distancia a la cámara a la que flotan los hechizos entre las manos.
 const HANDS_DEPTH: float = 0.85
 ## Distancia recorrida a partir de la cual suelta brasas (m).
-const EMBERS_FROM: float = 2.5
+const EMBERS_FROM: float = 5.0
 
 ## Carga del orbe en vuelo (la que tenía en la mano al soltarlo).
 var orb_charge: float = 1.0
@@ -27,6 +27,7 @@ var _orb_scale: float = 1.0
 var _trail: SpellTrail
 var _embers: GPUParticles3D
 var _ember_mat: ParticleProcessMaterial
+var _sparks: GPUParticles3D
 var _light: OmniLight3D
 var _from: Vector3
 var _to: Vector3
@@ -41,6 +42,7 @@ var _linger: float = 0.0
 func _ready() -> void:
 	_trail = SpellTrail.new()
 	_trail.name = "Trail"
+	_trail.hd = true
 	add_child(_trail)
 	_build_embers()
 	_light = OmniLight3D.new()
@@ -80,8 +82,11 @@ func launch(from: Vector3, to: Vector3, p_hit: SpellHit, collider: Object) -> vo
 	_light.light_energy = tier.light_energy * 0.6
 	_light.omni_range = 3.0 + tier.orb_scale * 0.4
 	_light.visible = true
-	_ember_mat.color = tier.color_glow
+	var ember_cols := PackedColorArray([tier.color_core * 2.0, tier.color_glow * 1.4])
+	_ember_mat.color_ramp = HdFx.color_ramp(ember_cols)
+	(_sparks.process_material as ParticleProcessMaterial).color_ramp = HdFx.color_ramp(ember_cols)
 	_embers.amount_ratio = clampf(tier.orb_scale / 10.0, 0.3, 1.0)
+	_sparks.amount_ratio = clampf(tier.orb_scale / 10.0, 0.3, 1.0)
 	active = true
 	visible = true
 	set_process(true)
@@ -111,10 +116,12 @@ func _process(delta: float) -> void:
 	global_position = pos
 	# Las brasas sólo cuando ya va lejos: pegadas a la cámara se verían como manchas enormes.
 	_embers.emitting = k < 1.0 and _from.distance_to(pos) > EMBERS_FROM
+	_sparks.emitting = _embers.emitting
 	if k >= 1.0:
 		_light.visible = false
 		_trail.stop()
 		_embers.emitting = false
+		_sparks.emitting = false
 		_linger = maxf(_embers.lifetime, _trail.length_sec)
 		if _orb:
 			_orb.release()
@@ -149,56 +156,31 @@ func _face_camera() -> void:
 		_orb.global_basis = cam.global_basis.scaled(Vector3.ONE * s)
 
 
-## Brasas: píxeles sólidos (no aditivos) que se desprenden, suben un poco y se apagan.
+## Brasas suaves y chispas con estela que va soltando en vuelo (capa de magia HD).
 func _build_embers() -> void:
-	_embers = GPUParticles3D.new()
+	_embers = HdFx.embers(48, 0.09, PackedColorArray([Color(2, 1.7, 1.1), Color(1, 0.6, 0.2)]))
 	_embers.name = "Embers"
-	_embers.amount = 36
-	_embers.lifetime = 0.55
-	_embers.local_coords = false
 	_embers.emitting = false
-	_embers.fixed_fps = 24
-	_embers.interpolate = false
-	_embers.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_embers.visibility_aabb = AABB(Vector3(-40, -40, -40), Vector3(80, 80, 80))
-	_ember_mat = ParticleProcessMaterial.new()
-	_ember_mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	_ember_mat.emission_sphere_radius = 0.12
-	_ember_mat.direction = Vector3(0, 1, 0)
-	_ember_mat.spread = 180.0
-	_ember_mat.initial_velocity_min = 0.3
-	_ember_mat.initial_velocity_max = 1.2
-	_ember_mat.gravity = Vector3(0, 1.2, 0)
-	_ember_mat.damping_min = 1.0
-	_ember_mat.damping_max = 2.0
-	var shrink := Curve.new()
-	shrink.add_point(Vector2(0.0, 1.0))
-	shrink.add_point(Vector2(0.6, 1.0))
-	shrink.add_point(Vector2(1.0, 0.0))
-	var shrink_tex := CurveTexture.new()
-	shrink_tex.curve = shrink
-	_ember_mat.scale_curve = shrink_tex
-	_embers.process_material = _ember_mat
-	var q := QuadMesh.new()
-	q.size = Vector2(0.06, 0.06)
-	var m := StandardMaterial3D.new()
-	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
-	m.alpha_scissor_threshold = 0.5
-	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
-	m.vertex_color_use_as_albedo = true
-	m.albedo_texture = PixelTextures.star()
-	m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
-	m.disable_fog = true
-	q.material = m
-	_embers.draw_pass_1 = q
+	_ember_mat = _embers.process_material
+	_ember_mat.emission_sphere_radius = 0.15
+	_ember_mat.initial_velocity_min = 0.5
+	_ember_mat.initial_velocity_max = 2.0
 	add_child(_embers)
+	_sparks = HdFx.sparks(40, 2.5, 0.02, PackedColorArray([Color(2, 1.8, 1.2), Color(1, 0.5, 0.2)]))
+	_sparks.name = "Sparks"
+	_sparks.one_shot = false
+	_sparks.explosiveness = 0.0
+	_sparks.lifetime = 0.35
+	_sparks.trail_lifetime = 0.07
+	(_sparks.process_material as ParticleProcessMaterial).gravity = Vector3(0, -3.0, 0)
+	add_child(_sparks)
 
 
 func _deactivate() -> void:
 	active = false
 	visible = false
 	_embers.emitting = false
+	_sparks.emitting = false
 	_trail.stop()
 	_linger = -1.0
 	set_process(false)

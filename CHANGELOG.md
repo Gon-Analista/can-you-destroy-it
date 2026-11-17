@@ -2,6 +2,42 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-17 · Magia HD (HD-2D), cristal más grande y valle con más detalle
+
+**Qué hay nuevo**
+
+- **Nuevo método para los hechizos: HD-2D.** El valle y las manos siguen en pixel art a 640x360, pero la magia se
+  dibuja en una capa aparte a resolución nativa (`fx/hd/magic_layer.gd`) con resplandor HDR y se compone con alfa
+  premultiplicado (no se lava sobre el cielo claro). Piezas nuevas en `fx/hd/`:
+  - `hd_fire.gdshader`: bola de energía turbulenta (fbm a 60 fps) con lenguas de fuego, núcleo blanco ardiente y
+    borde que se vuelve luz; estilo remolino para lo arcano.
+  - `hd_glow.gdshader` (halo con rayos), `hd_ring.gdshader` (onda de choque), `hd_trail.gdshader` (estela suave).
+  - `HdFx`: brasas suaves, chispas con estela (trails de GPUParticles) y humo.
+  - `HdImpact`: destello con rayos, fuego que se hincha y se deshace, onda, chispas, brasas y humo.
+  - `SpellOrb` reescrito en HD (misma API): halo, cuerpo de fuego, órbitas suaves, brasas, partículas que se
+    arremolinan hacia la Bola de Fuego mientras carga, y estallido con chispas y onda.
+- **Bola de Fuego mucho más grande** entre las manos; las manos se tiñen con su luz al cargar.
+- **Cristal Madre a escala 2,3** (punta de ~57 m, 30 veces el mago, GDD 4.1). `WorldLayout` reúne las posiciones;
+  **Pilón y Santuario más lejos** (~30 m del centro).
+- **Valle con más detalle** (`world/valley_details.gd`): caminos de tierra con losas, faroles, hierba y flores,
+  rocas, setas, tocones, cristales que brotan del suelo y motas de maná flotando.
+- Proyecto: stretch `canvas_items` (antes `viewport`); el mundo vive en `WorldView/WorldViewport`.
+
+**Capturas**: pendientes de grabar en un GIF; ver la sesión.
+
+**Cómo se probó**
+
+- Render Forward+ fotograma a fotograma: llamas en las manos, carga y vuelo de la Bola de Fuego, chispas de nivel
+  2 y 5 e impactos; iteración de mezcla (aditivo → premultiplicado), resplandor y rampas de color.
+- `progression_smoke`, `combine_input_smoke`, `loop_smoke`: OK. `gdlint` y `gdformat` limpios.
+
+**Pendiente**
+
+- Ciclo de día y noche con sonidos ambientales (pájaros, búhos, grillos), pedido por el equipo.
+- Grimorio organizado por elemento (ramas por elemento) y mejora de la Bola de Fuego.
+- Mundo menos "lavado": más contraste y profundidad (va con el día y la noche).
+- Pulir más los hechizos: distorsión de calor, nivel 5 menos blanquecino, impactos de nivel 1 más legibles.
+
 ## 2026-11-17 · Bucle completo jugable y hechizos que resaltan
 
 **Qué hay nuevo**

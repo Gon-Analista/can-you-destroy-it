@@ -33,6 +33,8 @@ const CAST_PUSH := Vector2(10, -22)
 const JOIN_SPEED: float = 9.0
 ## A partir de esta mezcla las llamas ya se han fundido en el orbe central.
 const MERGED_AT: float = 0.8
+## Tinte de las manos cuando el hechizo las ilumina (HDR suave).
+const HAND_GLOW := Color(1.35, 1.08, 0.82)
 
 ## Carga de cada mano (0 = recién lanzada, 1 = lista). [izquierda, derecha]
 var charges: PackedFloat32Array = PackedFloat32Array([1.0, 1.0])
@@ -196,6 +198,10 @@ func _process(delta: float) -> void:
 			var amp: float = combine_charge * 2.0
 			pos += Vector2(randf_range(-amp, amp), randf_range(-amp, amp) * 0.5)
 		sprite.position = pos.round()
+		# La luz del hechizo baña las manos: cálidas al cargar la Bola de Fuego y un poco al
+		# sostener su llama (las manos son 2D y no reciben la luz 3D del orbe).
+		var warm: float = 0.25 * _ease(charges[side]) + combine_charge * join_eased * 0.9
+		sprite.modulate = Color.WHITE.lerp(HAND_GLOW, clampf(warm, 0.0, 1.0))
 	_update_orbs()
 
 
