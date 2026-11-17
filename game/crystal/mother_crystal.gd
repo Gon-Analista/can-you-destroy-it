@@ -374,7 +374,8 @@ func receive_hit(hit: SpellHit) -> void:
 		_shudder + (0.1 if hit.minor else 0.35 + tier.shake * 2.0) + (0.5 if hit.resonant else 0.0)
 	)
 	_core_pulse = 1.0
-	if hit.resonant:
+	# Los golpes menores (ecos del Arcano) no destellan toda la pantalla aunque resuenen.
+	if hit.resonant and not hit.minor:
 		_global_flash = 0.55
 	var count: int = ceili(
 		(

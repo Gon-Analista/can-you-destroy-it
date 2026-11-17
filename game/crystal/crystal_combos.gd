@@ -164,9 +164,10 @@ func resonance_pulse(hit: SpellHit) -> void:
 		get_tree().create_timer(0.1 + radius * 0.035).timeout.connect(
 			func() -> void:
 				_arcs.bolt_between(center, p, 0.22, col, 0.45)
-				_crystal.dig(p, n, maxf(1.0, float(hit.damage) * 0.1), true)
-				var t: ShardType = ShardPool.type_for_hit(hit.damage / 4, true)
-				_shards.spawn(p, n, t, 1, 1.2, _crystal.hit_layer())
+				# Sólo suelta fragmento donde el cristal cede (el Núcleo no da nada gratis).
+				if _crystal.dig(p, n, maxf(1.0, float(hit.damage) * 0.1), true) >= 0.0:
+					var t: ShardType = ShardPool.type_for_hit(floori(hit.damage / 4.0), true)
+					_shards.spawn(p, n, t, 1, 1.2, _crystal.hit_layer())
 				_hd_fx.play(p, n, hit.tier, true, false, 0.7)
 		)
 	var cam: Camera3D = get_viewport().get_camera_3d()
