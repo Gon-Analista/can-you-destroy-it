@@ -435,16 +435,20 @@ func collect(i: int, hand: Node3D) -> void:
 	_dur[i] = PICK_SEC
 	_from[i] = _roots[i].global_position
 	_collect_target = hand
+	# Las motas van con la gota (coordenadas locales): pegadas a la cámara serían manchas.
+	_motes[i].emitting = false
 	_flash_body(i)
 	_burst(_from[i], 0.8)
 	_sync_loose()
 
 
-func _credit(i: int) -> void:
+## Suma la Lágrima `i`. `in_hand`: llega a la mano (la celebran la mano, el HUD y el sonido; un
+## estallido 3D a medio metro de la cámara la llenaba de manchas); si no, estalla donde estaba.
+func _credit(i: int, in_hand: bool = false) -> void:
 	var at: Vector3 = _roots[i].global_position
 	_release(i)
-	# Junto a la mano: un destello pequeño (uno grande delante de la cámara la ciega).
-	_burst(at, 0.3)
+	if not in_hand:
+		_burst(at, 0.6)
 	_pickup_player.play()
 	credit_tear(at)
 
@@ -552,8 +556,12 @@ func _update_collect(i: int) -> void:
 	_roots[i].rotate_y(0.3 + k * 0.6)
 	_roots[i].scale = Vector3.ONE * maxf(0.1, 1.0 - k * 0.8)
 	_pulse(i, 1.0 - k * 0.5)
+	# Junto a la cámara el halo y la luz se apagan: si no, una mancha violeta tapa la mano.
+	var fade: float = (1.0 - k) * (1.0 - k)
+	_halo_mats[i].set_shader_parameter("intensity", 0.5 * fade)
+	_lights[i].light_energy *= fade
 	if k >= 1.0:
-		_credit(i)
+		_credit(i, true)
 
 
 ## Telequinesis (más alcance) y Ojo del Núcleo (desde lejos): las Lágrimas vuelan solas al mago.
