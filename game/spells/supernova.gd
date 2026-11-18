@@ -9,12 +9,20 @@ extends Node3D
 
 const GATHER_SFX: AudioStream = preload("res://audio/sfx/sfx_nova_gather_01.ogg")
 const VISUAL: SpellVisualDef = preload("res://data/spells/vfx_supernova.tres")
+const GLOW_SHADER: Shader = preload("res://fx/hd/hd_glow.gdshader")
 const POOL: int = 2
 ## Distancia a la superficie a la que flota la estrella (m) y su tamaño al contraerse.
 const LIFT: float = 1.6
 const STAR_SCALE: float = 7.0
 ## A partir de esta distancia (m) la estrella crece con ella: desde lejos también se ve.
 const SEEN_FROM: float = 12.0
+## "Se traga la luz": un halo oscuro detrás de la estrella que tapa el cristal (claro) y crece
+## mientras ella se encoge. Tamaño relativo al de la estrella, color y opacidad máxima.
+const VOID_SIZE: float = 0.55
+const VOID_COLOR := Color(0.16, 0.03, 0.26)
+const VOID_MAX: float = 1.6
+## Por debajo de las capas de la estrella (SpellOrb usa 4 y 6): queda detrás.
+const VOID_PRIORITY: int = 3
 
 ## Los círculos mágicos del lanzador (un sello gira bajo la estrella).
 var circles: MagicCircles
@@ -22,6 +30,7 @@ var _stars: Array[SpellOrb] = []
 var _swirls: Array[GPUParticles3D] = []
 var _lights: Array[OmniLight3D] = []
 var _sounds: Array[AudioStreamPlayer3D] = []
+var _voids: Array[MeshInstance3D] = []
 var _hits: Array[SpellHit] = []
 var _crystals: Array[MotherCrystal] = []
 var _age: PackedFloat32Array = PackedFloat32Array()
@@ -43,6 +52,17 @@ func _ready() -> void:
 		star.visible = false
 		add_child(star)
 		_stars.append(star)
+		var hole: MeshInstance3D = HdFx.quad(GLOW_SHADER, 1.0, VOID_PRIORITY)
+		hole.name = "Void%d" % i
+		hole.top_level = true
+		hole.visible = false
+		var vm: ShaderMaterial = hole.material_override
+		vm.set_shader_parameter(&"color", VOID_COLOR)
+		vm.set_shader_parameter(&"cover", 1.0)
+		vm.set_shader_parameter(&"falloff", 0.9)
+		vm.set_shader_parameter(&"intensity", 0.0)
+		add_child(hole)
+		_voids.append(hole)
 		var swirl: GPUParticles3D = HdFx.embers(120, 0.18, cols)
 		swirl.name = "Swirl%d" % i
 		swirl.lifetime = 0.6
@@ -101,6 +121,9 @@ func ignite(hit: SpellHit, crystal: MotherCrystal, camera: Camera3D) -> void:
 	star.charge = 0.6
 	# Se clava en el sitio con un destello: aquí se queda.
 	star.flare(0.6)
+	_voids[i].global_position = at
+	_voids[i].scale = Vector3.ONE * _base_scale[i] * VOID_SIZE
+	_voids[i].visible = true
 	_swirls[i].global_position = at
 	_swirls[i].emitting = true
 	_lights[i].global_position = at
@@ -158,6 +181,11 @@ func _process(delta: float) -> void:
 			)
 		)
 		_lights[i].light_energy = lerpf(0.5, 7.0, k * k)
+		# El agujero oscuro crece y se cierra sobre la estrella, que brilla cada vez más.
+		_voids[i].scale = Vector3.ONE * _base_scale[i] * VOID_SIZE * lerpf(0.7, 1.15, k)
+		(_voids[i].material_override as ShaderMaterial).set_shader_parameter(
+			&"intensity", VOID_MAX * smoothstep(0.0, 0.35, k)
+		)
 		if _camera is CameraRig:
 			(_camera as CameraRig).add_trauma(delta * 0.5 * k)
 		if k >= 1.0:
@@ -174,6 +202,7 @@ func _detonate(i: int) -> void:
 	_stars[i].release()
 	_swirls[i].emitting = false
 	_lights[i].light_energy = 0.0
+	_voids[i].visible = false
 	if is_instance_valid(crystal):
 		crystal.receive_hit(hit)
 		crystal.flash(1.0)
