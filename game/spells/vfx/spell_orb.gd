@@ -15,6 +15,9 @@ signal released
 
 const RIBBON_SHADER: Shader = preload("res://spells/vfx/spell_ribbon.gdshader")
 const RING_SEGMENTS: int = 72
+## Radio de la roca del Meteoro respecto a `core_radius`.
+const ROCK_SIZE: float = 0.21
+const ROCK_SPIN_AXIS := Vector3(0.6, 0.8, 0.0)
 
 @export var def: SpellVisualDef
 ## 0..1. Con carga baja el orbe es pequeño y tenue; con carga completa, a tope.
@@ -23,6 +26,15 @@ const RING_SEGMENTS: int = 72
 		charge = clampf(value, 0.0, 1.0)
 		if is_node_ready():
 			_apply_charge()
+## Multiplica el destello de `release()`. Al llegar al blanco el estallido lo pone `HdImpact`:
+## el del orbe (que en vuelo es enorme) se baja para no tapar el cristal de blanco.
+var release_flash_mul: float = 1.0
+## Meteoro: muestra la roca dentro del fuego (en vuelo no: la lleva `MeteorRock`).
+var rock_enabled: bool = true:
+	set(value):
+		rock_enabled = value
+		if _rock:
+			_rock.visible = value and _release_t < 0.0
 
 var _body: MeshInstance3D
 var _body_mat: ShaderMaterial
@@ -43,6 +55,9 @@ var _release_t: float = -1.0
 var _flare: float = 0.0
 var _precession: float = 0.0
 var _t: float = 0.0
+## Meteoro (`def.meteor`): la roca fundida que se forma dentro del fuego mientras se carga.
+var _rock: MeshInstance3D
+var _rock_mat: ShaderMaterial
 
 
 func _ready() -> void:
@@ -53,6 +68,8 @@ func _ready() -> void:
 	_glow_mat = _glow.material_override
 	_glow_mat.set_shader_parameter("color", def.light_color)
 	_glow_mat.set_shader_parameter("rays", def.glow_rays)
+	# El halo del fuego tiñe (no se suma a blanco sobre el cristal y el cielo claros).
+	_glow_mat.set_shader_parameter("cover", 0.8 if def.style == 0 else 0.0)
 	_glow_mat.set_shader_parameter("seed", seed_f)
 	add_child(_glow)
 	_body = HdFx.quad(HdFx.FIRE_SHADER, 1.0, 5)
@@ -70,6 +87,16 @@ func _ready() -> void:
 	_ring_mat.set_shader_parameter("seed", seed_f)
 	_ring.visible = false
 	add_child(_ring)
+	if def.meteor:
+		_rock = MeteorRock.make_rock()
+		_rock_mat = _rock.material_override
+		_rock_mat.set_shader_parameter("travel_dir", Vector3.DOWN)
+		_rock_mat.set_shader_parameter("seed", seed_f)
+		# Pegada a la cámara, grietas que apenas florecen: si no, el resplandor vela el fuego.
+		_rock_mat.set_shader_parameter("crack_energy", 1.1)
+		add_child(_rock)
+		# El fuego envuelve la roca (centrado) y sus lenguas suben.
+		set_center_shift(0.0)
 	_build_ribbons()
 	_build_particles()
 	_light = OmniLight3D.new()
@@ -90,6 +117,8 @@ func appear() -> void:
 	_glow.visible = true
 	_ribbon_pivot.visible = true
 	_ring.visible = false
+	if _rock:
+		_rock.visible = rock_enabled
 	_embers.emitting = true
 	_body_mat.set_shader_parameter("burst", 0.0)
 	_body_mat.set_shader_parameter("fade", 1.0)
@@ -108,9 +137,11 @@ func release() -> void:
 	_release_t = 0.0
 	_embers.emitting = false
 	_converge.emitting = false
+	if _rock:
+		_rock.visible = false
 	_sparks.amount_ratio = lerpf(0.4, 1.0, charge)
 	_sparks.restart()
-	_ring.visible = def.release_flash >= 0.5
+	_ring.visible = def.release_flash * release_flash_mul >= 0.5
 	set_process(true)
 
 
@@ -130,6 +161,12 @@ func set_flow(dir: Vector2, strength: float) -> void:
 	_body_mat.set_shader_parameter("flow_strength", strength)
 
 
+## 1: la bola de fuego se aparta hacia atrás para que quepan sus lenguas; 0: centrada (el
+## Meteoro, cuyo fuego envuelve la roca).
+func set_center_shift(value: float) -> void:
+	_body_mat.set_shader_parameter("center_shift", value)
+
+
 func is_releasing() -> bool:
 	return _release_t >= 0.0
 
@@ -139,6 +176,8 @@ func _process(delta: float) -> void:
 	var spin_mul: float = lerpf(1.0, def.charge_spin_boost, charge)
 	_precession = wrapf(_precession + deg_to_rad(def.precession_deg) * spin_mul * delta, 0.0, TAU)
 	_ribbon_pivot.basis = Basis(Vector3.BACK, _precession)
+	if _rock and _rock.visible:
+		_rock.rotate(ROCK_SPIN_AXIS, delta * lerpf(0.8, 2.6, charge))
 	# Las partículas que se arremolinan sólo mientras se está cargando.
 	_converge.emitting = _release_t < 0.0 and def.converge_amount > 0 and charge < 0.98
 	var flicker: float = 0.9 + 0.1 * sin(_t * 23.0) * sin(_t * 17.0)
@@ -168,7 +207,7 @@ func _process(delta: float) -> void:
 	_ring_mat.set_shader_parameter("progress", k)
 	# Destello: el halo se hincha y se apaga.
 	var flash: float = (1.0 - k) * (1.0 - k)
-	var f: float = def.release_flash
+	var f: float = def.release_flash * release_flash_mul
 	_glow.scale = Vector3.ONE * _glow_size() * (1.0 + ease_out * 0.8 * f)
 	_glow_mat.set_shader_parameter(
 		"intensity", _glow_intensity() * (1.0 + 2.5 * flash * f) * (1.0 - k)
@@ -211,6 +250,10 @@ func _apply_charge() -> void:
 	_ring.scale = Vector3.ONE * def.core_radius * 2.0 * def.release_ring_scale * 2.0
 	_body_mat.set_shader_parameter("charge", charge)
 	_glow_mat.set_shader_parameter("intensity", _glow_intensity())
+	if _rock:
+		# La roca crece y se pone al rojo con la carga.
+		_rock.scale = Vector3.ONE * def.core_radius * ROCK_SIZE * s
+		_rock_mat.set_shader_parameter("heat", lerpf(0.35, 1.0, charge))
 	var spin_mul: float = lerpf(1.0, def.charge_spin_boost, charge)
 	for i: int in _ribbons.size():
 		var r: MeshInstance3D = _ribbons[i]
@@ -229,7 +272,9 @@ func _build_particles() -> void:
 	var g: Gradient = def.sparkle_colors
 	for i: int in g.get_point_count():
 		cols.append(g.get_color(i))
-	var dot: float = def.core_radius * 0.35
+	# En el fuego, brasas pequeñas y nítidas: grandes y suaves, delante de la bola (se suman),
+	# la velaban hasta dejarla de color crema.
+	var dot: float = def.core_radius * (0.16 if def.style == 0 else 0.35)
 	_embers = HdFx.embers(def.sparkle_amount, dot, cols)
 	_embers.name = "Embers"
 	_embers.lifetime = def.sparkle_lifetime

@@ -106,6 +106,8 @@ var _gravity: GravityWell
 ## Resonancia Arcana: segundos en los que todo golpe es resonante y hasta poder repetirla.
 var _resonance_left: float = 0.0
 var _resonance_lock: float = 0.0
+## Lado por el que entra el próximo hechizo del cielo (se alterna en cada lanzamiento).
+var _sky_side: float = 1.0
 
 
 func _ready() -> void:
@@ -524,7 +526,7 @@ func _update_combine(delta: float) -> void:
 			r.sky_circles + maxi(0, lvl - ElementDef.ASCENDED_LEVEL + 1),
 			aim["position"],
 			aim["normal"],
-			_sky_origin(r, aim["position"]),
+			_sky_origin(r, aim["position"], aim["normal"]),
 			r.circle_color,
 			r.circle_hot
 		)
@@ -595,6 +597,7 @@ func _launch_combine() -> void:
 	if recipe.delivery == SpellRecipe.Delivery.RESONANCE:
 		_start_resonance(recipe)
 	_circles.release()
+	_sky_side = -_sky_side
 	AudioDirector.play_sfx(_combo_sounds[recipe], lerpf(-4.0, 0.0, charge))
 	Events.spell_cast.emit(tier, BOTH_HANDS)
 	GameState.register_recipe_cast(recipe)
@@ -653,7 +656,7 @@ func _deliver_sky(
 	if aim.is_empty():
 		aim = _aim()
 	var target: Vector3 = aim["position"]
-	var origin: Vector3 = _sky_origin(recipe, target)
+	var origin: Vector3 = _sky_origin(recipe, target, aim["normal"])
 	hit.position = target
 	hit.normal = aim["normal"]
 	hit.direction = (target - origin).normalized()
@@ -669,13 +672,17 @@ func _deliver_sky(
 	return origin
 
 
-## De dónde cae un hechizo del cielo sobre `target`: alto y algo inclinado hacia el mago, para
-## que se vea venir y sus círculos miren hacia él.
-func _sky_origin(recipe: SpellRecipe, target: Vector3) -> Vector3:
-	var toward: Vector3 = camera.global_position - target
-	toward.y = 0.0
-	toward = toward.normalized() if toward.length() > 0.1 else Vector3.BACK
-	return target + Vector3.UP * recipe.sky_height + toward * recipe.sky_height * 0.45
+## De dónde cae un hechizo del cielo sobre `target`: alto, sobre el blanco y a un lado, para que
+## se vea caer en diagonal (ver SkyPath); sus círculos se abren por ese camino.
+func _sky_origin(recipe: SpellRecipe, target: Vector3, normal: Vector3) -> Vector3:
+	return SkyPath.origin(
+		camera.get_world_3d().direct_space_state,
+		camera.global_position,
+		target,
+		normal,
+		recipe.sky_height,
+		_sky_side
+	)
 
 
 ## Lluvia de Estalactitas: caen escalonadas del cielo sobre una zona alrededor del blanco.

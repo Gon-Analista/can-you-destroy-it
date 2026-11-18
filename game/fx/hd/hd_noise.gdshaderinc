@@ -30,3 +30,8 @@ float hd_fbm(vec3 p) {
 
 // Billboard: el quad siempre de cara a la cámara conservando la escala del nodo.
 #define HD_BILLBOARD float hd_s = length(MODEL_MATRIX[0].xyz); MODELVIEW_MATRIX = VIEW_MATRIX * mat4(INV_VIEW_MATRIX[0] * hd_s, INV_VIEW_MATRIX[1] * hd_s, INV_VIEW_MATRIX[2] * hd_s, MODEL_MATRIX[3]);
+
+// Tras HD_BILLBOARD: 0 cuando la cámara está metida en el quad y 1 cuando está a `hi` tamaños
+// del quad o más. Pegados a la cámara, los efectos se apagan en vez de
+// cubrir toda la pantalla. El shader declara `varying float hd_near;`.
+#define HD_NEAR_FADE(lo, hi) hd_near = smoothstep(lo, hi, length(MODELVIEW_MATRIX[3].xyz) / max(hd_s, 0.0001));

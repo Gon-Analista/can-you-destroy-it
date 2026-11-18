@@ -42,6 +42,7 @@ def clone_visual(base, name, core, sparkle, ribbons, overrides):
     lines = text.split("\n")
     out = []
     gradient = 0
+    present = {ln.split(" = ")[0] for ln in lines}
     for ln in lines:
         if ln.startswith("[sub_resource type=\"Gradient\""):
             gradient += 1
@@ -60,6 +61,10 @@ def clone_visual(base, name, core, sparkle, ribbons, overrides):
             if key in overrides:
                 ln = f"{key} = {overrides[key]}"
         out.append(ln)
+    # Propiedades que la plantilla no tiene (p. ej. `meteor`): al final del [resource].
+    while out and out[-1] == "":
+        out.pop()
+    out += [f"{key} = {val}" for key, val in overrides.items() if key not in present] + [""]
     (SPELLS / f"{name}.tres").write_text("\n".join(out))
 
 
@@ -86,9 +91,9 @@ VISUALS = {
                     {"flare_color": c(2.6, 2.5, 1.6, 1), "light_color": c(1, 0.95, 0.6, 1), "light_energy": "0.8",
                      "core_spin": "2.0", "ribbon_speed": "2.6", "seed": "73", "style": "1"}),
     "vfx_meteor": ("vfx_fireball", [(2.4, 1.8, 1.0), (1.7, 0.8, 0.2), (1.0, 0.35, 0.06), (0.45, 0.14, 0.05), (0.18, 0.06, 0.04)],
-                   [(2.0, 1.6, 0.9), (1.2, 0.6, 0.2), (0.8, 0.4, 0.15), (0.5, 0.25, 0.12)],
+                   [(1.3, 0.8, 0.35), (1.1, 0.5, 0.15), (0.8, 0.35, 0.12), (0.5, 0.22, 0.1)],
                    [(1, 0.6, 0.25), (0.8, 0.35, 0.12), (1, 0.85, 0.4), (0.55, 0.28, 0.15)],
-                   {"seed": "79"}),
+                   {"seed": "79", "meteor": "true"}),
     "vfx_stalactite": ("vfx_frost_2", [(1.9, 2.1, 2.6), (0.8, 1.2, 2.0), (0.45, 0.6, 1.5), (0.25, 0.3, 1.0), (0.1, 0.1, 0.5)],
                        [(2.0, 2.1, 2.5), (1.0, 1.1, 1.6), (0.8, 0.8, 1.5), (0.6, 0.6, 1.4)],
                        [(0.85, 0.9, 1), (0.6, 0.7, 1), (0.9, 0.8, 1), (1, 1, 1)],
@@ -295,11 +300,11 @@ RECIPES = [
          description="Círculos mágicos se abren en el cielo, uno sobre otro. Al soltar, una roca ardiendo cae del cielo y "
                      "abre un cráter enorme.",
          riddle="El fuego solo vuela. Dale un cuerpo de piedra y caerá del cielo.",
-         dmg=7.8, area=3.0, area_hits=7, burn=5.0, sky_height=60.0, fall=1.15, sky_circles=4, charge=1.4, cooldown=4.0,
+         dmg=7.8, area=3.0, area_hits=7, burn=5.0, sky_height=70.0, fall=1.4, sky_circles=4, charge=1.4, cooldown=4.0,
          visual="vfx_meteor", circle=(1.6, 0.7, 0.25), hot=(1.9, 1.5, 0.9), cast=["sfx_meteor_fall_01"],
          impact=["sfx_meteor_impact_01"], loop="amb_sky_charge_loop",
          tier=dict(damage=10, speed=60.0, wobble=0.0, shards_min=4, shards_max=6, shard_scale=1.4, impact_particles=90,
-                   light_energy=10.0, crack_radius=3.0, shake=0.6, orb_scale=26.0, trail_width=5.0, trail_length=0.7,
+                   light_energy=4.0, crack_radius=3.0, shake=0.6, orb_scale=26.0, trail_width=5.0, trail_length=0.7,
                    trail_smoke=1.0, core=(1, 0.9, 0.6), glow=(1, 0.4, 0.1), tint=(1, 0.6, 0.25),
                    ramp=[(2.4, 1.8, 1.0), (1.7, 0.8, 0.2), (1.0, 0.35, 0.06), (0.45, 0.14, 0.05), (0.18, 0.06, 0.04)])),
     dict(id="stalactites", name="Lluvia de Estalactitas", elements=["earth", "frost"], delivery=2,
@@ -360,7 +365,7 @@ RECIPES = [
          impact=["sfx_arcane_impact_01"], loop="amb_arcane_charge_loop", flight="sfx_fireball_charge_loop",
          echo_sfx=["sfx_arcane_echo_01", "sfx_arcane_echo_02"],
          tier=dict(damage=5, speed=20.0, wobble=0.04, shards_min=2, shards_max=3, shard_scale=1.3, impact_particles=60,
-                   light_energy=6.0, crack_radius=1.8, shake=0.3, orb_scale=8.0, trail_width=1.1, trail_length=0.4,
+                   light_energy=3.0, crack_radius=1.8, shake=0.3, orb_scale=8.0, trail_width=1.1, trail_length=0.4,
                    trail_smoke=0.5, core=(1, 0.9, 1), glow=(1, 0.35, 0.8), tint=(1, 0.55, 0.95),
                    ramp=[(2.6, 2.0, 2.6), (2.0, 0.75, 1.5), (1.3, 0.3, 1.1), (0.55, 0.12, 0.75), (0.2, 0.05, 0.35)])),
     dict(id="echo_ice", name="Eco de Hielo", elements=["arcane", "frost"], delivery=3,

@@ -9,8 +9,11 @@ uniform float intensity = 2.0;
 uniform float progress = 0.0;
 uniform float seed = 0.0;
 
+varying float hd_near;
+
 void vertex() {
 	HD_BILLBOARD
+	HD_NEAR_FADE(0.15, 0.35)
 }
 
 void fragment() {
@@ -23,6 +26,6 @@ void fragment() {
 	float n = hd_noise(vec3(cos(a) * 3.0, sin(a) * 3.0, seed));
 	float d = abs(r - radius - (n - 0.5) * 0.06);
 	float ring = smoothstep(width, 0.0, d);
-	ALBEDO = color.rgb * ring * intensity * (1.0 - k) * (1.0 - k);
+	ALBEDO = color.rgb * ring * intensity * (1.0 - k) * (1.0 - k) * hd_near;
 	ALPHA = 0.0;
 }

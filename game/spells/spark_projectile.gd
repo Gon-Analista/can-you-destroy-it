@@ -14,6 +14,8 @@ signal arrived(projectile: SparkProjectile)
 const HANDS_DEPTH: float = 0.85
 ## Distancia recorrida a partir de la cual suelta brasas (m).
 const EMBERS_FROM: float = 5.0
+## Hacia arriba en pantalla (en el shader del fuego la `y` crece hacia abajo).
+const UP_2D := Vector2(0.0, -1.0)
 
 ## Carga del orbe en vuelo (la que tenía en la mano al soltarlo).
 var orb_charge: float = 1.0
@@ -32,6 +34,7 @@ var _sparks: GPUParticles3D
 var _smoke: GPUParticles3D
 var _roar: AudioStreamPlayer3D
 var _prev_screen := Vector2.ZERO
+var _flow := Vector2(0.0, -1.0)
 var _light: OmniLight3D
 var _from: Vector3
 var _to: Vector3
@@ -45,6 +48,9 @@ var _linger: float = 0.0
 var _grow: float = 1.0
 var _trail_width: float = 1.0
 var _light_range: float = 3.0
+## Meteoro (`SpellVisualDef.meteor`): roca, humo e impacto propios; cae acelerando.
+var _meteor: MeteorRock
+var _falls: bool = false
 
 
 func _ready() -> void:
@@ -75,10 +81,26 @@ func launch(from: Vector3, to: Vector3, p_hit: SpellHit, collider: Object) -> vo
 	global_position = from
 	_set_orb(tier.visual)
 	_orb_scale = tier.orb_scale * (1.35 if p_hit.resonant else 1.0)
+	_falls = tier.visual != null and tier.visual.meteor
+	if _falls:
+		# Cae del cielo acelerando, sin arco ni bamboleo, en lo que diga la receta.
+		var r: SpellRecipe = p_hit.recipe
+		_duration = maxf(_duration, r.fall_sec if r else 1.0)
+		_arc = 0.0
+		_wobble = 0.0
+		if _meteor == null:
+			_meteor = MeteorRock.new()
+			_meteor.name = "Meteor"
+			add_child(_meteor)
+		_meteor.launch(from, to, p_hit.size, p_hit.warmup)
+	elif _meteor:
+		_meteor.stop()
 	if _orb:
 		_orb.appear()
 		_orb.charge = orb_charge
-		_orb.set_flow(Vector2(0.0, -1.0), 1.0)
+		_orb.set_flow(UP_2D, 1.0)
+		# El fuego del meteoro envuelve la roca (centrado); el resto deja sitio a sus lenguas.
+		_orb.set_center_shift(0.0 if _falls else 1.0)
 		_face_camera()
 	_grow = 1.0
 	_trail_width = tier.trail_width * (1.35 if p_hit.resonant else 1.0)
@@ -102,6 +124,7 @@ func launch(from: Vector3, to: Vector3, p_hit: SpellHit, collider: Object) -> vo
 	_sparks.amount_ratio = clampf(tier.orb_scale / 10.0, 0.3, 1.0)
 	_smoke.amount_ratio = clampf(tier.trail_smoke, 0.01, 1.0)
 	_prev_screen = Vector2.ZERO
+	_flow = UP_2D
 	if tier.flight_sfx:
 		_roar.stream = tier.flight_sfx
 		_roar.pitch_scale = 0.8
@@ -128,7 +151,9 @@ func _process(delta: float) -> void:
 	_trail.width = _trail_width * _grow
 	_trail.max_scale = _orb_scale * _grow
 	_light.omni_range = _light_range * _grow
-	var pos: Vector3 = _from.lerp(_to, k)
+	# El meteoro empieza despacio y acelera (la gravedad): llega con todo el peso.
+	var kp: float = k * lerpf(0.3, 1.0, k) if _falls else k
+	var pos: Vector3 = _from.lerp(_to, kp)
 	# Arco suave hacia arriba y bamboleo que se apaga al llegar.
 	pos.y += sin(k * PI) * _arc
 	var fade_w: float = sin(k * PI)
@@ -145,7 +170,7 @@ func _process(delta: float) -> void:
 	_light.light_energy = _light_peak * smoothstep(2.0, 7.0, _from.distance_to(pos))
 	_sparks.emitting = _embers.emitting
 	_smoke.emitting = _embers.emitting and hit.tier.trail_smoke > 0.0
-	_update_flow()
+	_update_flow(delta)
 	if k >= 1.0:
 		_light.visible = false
 		_trail.stop()
@@ -157,6 +182,9 @@ func _process(delta: float) -> void:
 		if _orb:
 			_orb.release()
 			_linger = maxf(_linger, _orb_def.release_time + _orb_def.sparkle_lifetime)
+		if _falls:
+			_meteor.impact(_to, hit.normal, hit.warmup)
+			_linger = maxf(_linger, MeteorRock.IMPACT_SEC)
 		arrived.emit(self)
 
 
@@ -173,20 +201,30 @@ func _set_orb(def: SpellVisualDef) -> void:
 	_orb = SpellOrb.new()
 	_orb.name = "Orb"
 	_orb.def = def
+	_orb.release_flash_mul = 0.2
+	_orb.rock_enabled = false
 	add_child(_orb)
 
 
 ## Las llamas se arrastran hacia atrás de la trayectoria en pantalla (y algo hacia arriba).
-func _update_flow() -> void:
+## Si en pantalla apenas se mueve (se aleja de la cámara, como casi siempre), el fuego sube: una
+## bola con lenguas hacia arriba, no una gota que gotea hacia el mago.
+func _update_flow(delta: float) -> void:
 	var cam: Camera3D = get_viewport().get_camera_3d()
 	if cam == null or _orb == null or cam.is_position_behind(global_position):
 		return
 	var sp: Vector2 = cam.unproject_position(global_position)
-	if _prev_screen != Vector2.ZERO:
+	if _prev_screen != Vector2.ZERO and delta > 0.0:
 		var v: Vector2 = sp - _prev_screen
-		if v.length() > 0.5:
-			var back: Vector2 = -v.normalized() + Vector2(0.0, -0.35)
-			_orb.set_flow(back.normalized(), 1.0 + minf(v.length() / 6.0, 1.6))
+		# Velocidad en pantallas (de alto) por segundo.
+		var speed: float = v.length() / delta / maxf(get_viewport().get_visible_rect().size.y, 1.0)
+		var w: float = smoothstep(0.12, 0.9, speed)
+		var back: Vector2 = (
+			(-v.normalized() + Vector2(0.0, -0.35)).normalized() if w > 0.0 else UP_2D
+		)
+		var target: Vector2 = (back * w + UP_2D * (1.0 - w)).normalized()
+		_flow = _flow.lerp(target, minf(delta * 10.0, 1.0)).normalized()
+		_orb.set_flow(_flow, lerpf(0.7, 2.6, w))
 	_prev_screen = sp
 
 
@@ -220,7 +258,7 @@ func _build_embers() -> void:
 	(_sparks.process_material as ParticleProcessMaterial).gravity = Vector3(0, -3.0, 0)
 	add_child(_sparks)
 	# Humo que deja la Bola de Fuego: le da cuerpo y peso a la trayectoria.
-	_smoke = HdFx.smoke(40, 1.4, Color(0.3, 0.22, 0.26))
+	_smoke = HdFx.smoke(40, 1.4, Color(0.28, 0.23, 0.23))
 	_smoke.name = "Smoke"
 	_smoke.one_shot = false
 	_smoke.explosiveness = 0.0
@@ -245,5 +283,7 @@ func _deactivate() -> void:
 	_smoke.emitting = false
 	_roar.stop()
 	_trail.stop()
+	if _meteor:
+		_meteor.stop()
 	_linger = -1.0
 	set_process(false)

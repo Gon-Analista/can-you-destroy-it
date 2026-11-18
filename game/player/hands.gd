@@ -20,13 +20,16 @@ const FRAME_SIZE := Vector2(192, 192)
 ## en alto con la llama lista y juntas sosteniendo el hechizo combinado.
 const REST_POS := Vector2(70, 228)
 const READY_POS := Vector2(84, 194)
-const JOINED_POS := Vector2(158, 180)
+const JOINED_POS := Vector2(158, 188)
 ## La llama flota sobre la punta de los dedos (las manos 2D tapan el 3D que quede detrás):
 ## posición dentro del sprite de la mano izquierda.
 const FLAME_IN_SPRITE := Vector2(116, 0)
 ## El hechizo combinado flota sobre las palmas juntas: altura respecto al borde superior.
-const ORB_ABOVE_SPRITE_TOP: float = 22.0
+const ORB_ABOVE_SPRITE_TOP: float = 38.0
 const ORB_DEPTH: float = 0.85
+## Entre las palmas, el fuego es una bola que gira con lenguas cortas: largas, subirían hasta
+## la mira y taparían el blanco.
+const COMBO_FLOW: float = 0.4
 ## Empujón al lanzar: las manos suben y se cierran hacia el centro.
 const CAST_PUSH := Vector2(10, -22)
 ## Velocidad a la que las manos se juntan y se separan (1/s).
@@ -137,6 +140,9 @@ func begin_combine(visual: SpellVisualDef = null) -> void:
 	combine_charge = 0.0
 	if _combo_orb:
 		_combo_orb.appear()
+		# El Meteoro: llamas más altas que envuelven la roca (la roca ya marca el centro).
+		var meteor: bool = _combo_orb.def != null and _combo_orb.def.meteor
+		_combo_orb.set_flow(Vector2(0.0, -1.0), COMBO_FLOW * (2.0 if meteor else 1.0))
 		_combo_orb.charge = 0.0
 		_combo_orb.visible = orb_enabled
 

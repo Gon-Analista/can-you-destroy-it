@@ -54,6 +54,8 @@ func _ready() -> void:
 			m.set_shader_parameter("turbulence", 0.55)
 			m.set_shader_parameter("flow_strength", 2.2)
 			m.set_shader_parameter("speed", 2.4)
+			# Llamas que salen del cristal (base ancha), no bolas de fuego apiladas.
+			m.set_shader_parameter("ball", 0.2)
 			root.add_child(f)
 			flames.append(f)
 		_flames.append(flames)
@@ -65,7 +67,7 @@ func _ready() -> void:
 		e.emitting = false
 		root.add_child(e)
 		_embers.append(e)
-		var sm: GPUParticles3D = HdFx.smoke(16, 1.6, Color(0.28, 0.2, 0.26))
+		var sm: GPUParticles3D = HdFx.smoke(12, 1.6, Color(0.4, 0.34, 0.34))
 		sm.one_shot = false
 		sm.explosiveness = 0.0
 		sm.lifetime = 2.0
@@ -104,13 +106,13 @@ func ignite(
 	var flames: Array = _flames[i]
 	for k: int in flames.size():
 		var f: MeshInstance3D = flames[k]
-		var off := Vector3(randf_range(-0.4, 0.4), randf_range(-0.1, 0.3), randf_range(-0.4, 0.4))
+		var off := Vector3(randf_range(-0.5, 0.5), randf_range(-0.05, 0.15), randf_range(-0.5, 0.5))
 		f.position = off * size
 		f.set_meta(&"base", size * randf_range(0.6, 1.0))
 	(_embers[i].process_material as ParticleProcessMaterial).emission_sphere_radius = size * 0.35
 	_embers[i].emitting = true
 	_smoke[i].emitting = true
-	(_smoke[i].draw_pass_1 as QuadMesh).size = Vector2.ONE * size * 0.8
+	HdFx.set_smoke_size(_smoke[i], size * 0.8)
 	_audio[i].volume_db = -8.0
 	_audio[i].pitch_scale = randf_range(0.9, 1.1)
 	_audio[i].play()

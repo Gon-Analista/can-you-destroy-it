@@ -21,6 +21,8 @@ var _smoke: Array[GPUParticles3D] = []
 var _age: PackedFloat32Array = []
 var _size: PackedFloat32Array = []
 var _peak: PackedFloat32Array = []
+## Tamaño extra de la bola de fuego (los combinados estallan más grandes).
+var _fire_k: PackedFloat32Array = []
 var _next: int = 0
 var _default_ramp: Gradient
 
@@ -58,7 +60,9 @@ func _ready() -> void:
 		epm.initial_velocity_max = 4.0
 		epm.emission_sphere_radius = 0.6
 		slot.add_child(embers)
-		var smoke: GPUParticles3D = HdFx.smoke(14, 2.2, Color(0.32, 0.24, 0.36))
+		var smoke: GPUParticles3D = HdFx.smoke(14, 2.2, Color(0.44, 0.39, 0.4))
+		smoke.lifetime = 1.6
+		(smoke.process_material as ParticleProcessMaterial).spread = 75.0
 		slot.add_child(smoke)
 		_slots.append(slot)
 		_fire.append(fire.material_override as ShaderMaterial)
@@ -72,6 +76,7 @@ func _ready() -> void:
 		_age.append(-1.0)
 		_size.append(1.0)
 		_peak.append(1.0)
+		_fire_k.append(1.0)
 		slot.visible = false
 	set_process(false)
 
@@ -95,17 +100,22 @@ func play(
 		tier.crack_radius * 2.6 * (1.6 if resonant else 1.0) * (1.4 if big else 1.0) * scale_k
 	)
 	_size[i] = size
-	_peak[i] = 0.7 + (0.6 if resonant else 0.0) - (0.3 if big else 0.0)
+	# El destello suma luz: sobre el cristal claro, poco o lo lava todo a blanco. El que se tiene
+	# que ver es el fuego (opaco, con color).
+	_peak[i] = 0.45 + (0.45 if resonant else 0.0) - (0.15 if big else 0.0)
+	_fire_k[i] = 1.35 if big else 1.0
 	var ramp: Gradient = tier.trail_ramp if tier.trail_ramp else _default_ramp
 	var glow: Color = Color("#ffd27a") if resonant else tier.color_glow
 	_fire[i].set_shader_parameter("ramp", HdFx.smooth_ramp(ramp))
 	_fire[i].set_shader_parameter("seed", randf() * 10.0)
 	_fire[i].set_shader_parameter("style", 0)
 	_fire[i].set_shader_parameter("turbulence", 0.5)
-	_fire[i].set_shader_parameter("intensity", 1.15)
+	_fire[i].set_shader_parameter("intensity", 1.0)
 	_flash[i].set_shader_parameter("color", glow)
 	_flash[i].set_shader_parameter("rays", 1.0)
 	_flash[i].set_shader_parameter("ray_count", 8.0)
+	# Tiñe más que suma: sobre el cristal claro, sumar luz lo lavaba todo a blanco.
+	_flash[i].set_shader_parameter("cover", 0.8)
 	_flash[i].set_shader_parameter("seed", randf() * 10.0)
 	_ring[i].set_shader_parameter("color", glow)
 	_ring[i].set_shader_parameter("seed", randf() * 10.0)
@@ -121,7 +131,15 @@ func play(
 	_embers[i].amount_ratio = clampf(power * 0.4, 0.2, 1.0)
 	_embers[i].restart()
 	_smoke[i].amount_ratio = clampf(power * 0.35, 0.15, 1.0)
-	(_smoke[i].draw_pass_1 as QuadMesh).size = Vector2.ONE * size * 0.7
+	var puff: float = size * 0.7
+	HdFx.set_smoke_size(_smoke[i], puff)
+	# El humo se abre y sube deprisa (a la escala del golpe): quieto, se apilaba en un disco
+	# oscuro sobre el impacto.
+	var smpm: ParticleProcessMaterial = _smoke[i].process_material
+	smpm.emission_sphere_radius = puff * 0.25
+	smpm.initial_velocity_min = puff * 0.5
+	smpm.initial_velocity_max = puff * 1.3
+	smpm.gravity = Vector3(0.0, puff * 0.35, 0.0)
 	_smoke[i].restart()
 	_age[i] = 0.0
 	_animate(i)
@@ -149,13 +167,13 @@ func _animate(i: int) -> void:
 	var e: float = 1.0 - pow(1.0 - k, 3.0)
 	var s: float = _size[i]
 	_fire_mi[i].visible = k < 1.0
-	_fire_mi[i].scale = Vector3.ONE * s * lerpf(0.4, 1.1, e)
+	_fire_mi[i].scale = Vector3.ONE * s * _fire_k[i] * lerpf(0.45, 1.25, e)
 	_fire[i].set_shader_parameter("burst", k)
 	_fire[i].set_shader_parameter("fade", 1.0 - k * k)
 	_fire[i].set_shader_parameter("charge", 1.0)
 	var fk: float = clampf(_age[i] / 0.3, 0.0, 1.0)
 	_flash_mi[i].visible = fk < 1.0
-	_flash_mi[i].scale = Vector3.ONE * s * lerpf(0.9, 1.7, fk)
+	_flash_mi[i].scale = Vector3.ONE * s * lerpf(0.7, 1.3, fk)
 	_flash[i].set_shader_parameter("intensity", _peak[i] * (1.0 - fk) * (1.0 - fk))
 	_ring[i].set_shader_parameter("progress", k)
 	_slots[i].get_child(2).set(&"scale", Vector3.ONE * s * 2.4)

@@ -8,7 +8,7 @@ const GLOW_SHADER: Shader = preload("res://fx/hd/hd_glow.gdshader")
 const RING_SHADER: Shader = preload("res://fx/hd/hd_ring.gdshader")
 
 static var _dot: Texture2D
-static var _puff: Texture2D
+static var _billow: Texture2D
 static var _star: Texture2D
 static var _ramps: Dictionary[Gradient, GradientTexture1D] = {}
 
@@ -55,21 +55,47 @@ static func soft_star() -> Texture2D:
 	return _star
 
 
-## Bocanada suave con alfa (humo): tapa el fondo, no suma luz.
-static func soft_puff() -> Texture2D:
-	if _puff == null:
-		var g := Gradient.new()
-		g.offsets = PackedFloat32Array([0.0, 0.5, 1.0])
-		g.colors = PackedColorArray([Color(1, 1, 1, 0.8), Color(1, 1, 1, 0.4), Color(1, 1, 1, 0)])
-		var t := GradientTexture2D.new()
-		t.gradient = g
-		t.fill = GradientTexture2D.FILL_RADIAL
-		t.fill_from = Vector2(0.5, 0.5)
-		t.fill_to = Vector2(1.0, 0.5)
-		t.width = 64
-		t.height = 64
-		_puff = t
-	return _puff
+## Nube de humo con volumen: bolas pequeñas que se solapan, con el contorno roto por ruido (nada
+## de discos) y luz de arriba a la izquierda (el color es la luz, el alfa la densidad).
+static func soft_billow() -> Texture2D:
+	if _billow == null:
+		var size: int = 64
+		var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+		var noise := FastNoiseLite.new()
+		noise.seed = 77
+		noise.frequency = 0.07
+		noise.fractal_octaves = 3
+		var blobs: Array[Vector3] = [
+			Vector3(0.5, 0.56, 0.17),
+			Vector3(0.37, 0.5, 0.13),
+			Vector3(0.63, 0.47, 0.14),
+			Vector3(0.52, 0.36, 0.13),
+			Vector3(0.36, 0.66, 0.1),
+			Vector3(0.64, 0.66, 0.11),
+			Vector3(0.43, 0.33, 0.09),
+		]
+		var light := Vector2(-0.6, -0.8)
+		for y: int in size:
+			for x: int in size:
+				var uv := Vector2((x + 0.5) / size, (y + 0.5) / size)
+				var d: float = 0.0
+				var grad := Vector2.ZERO
+				for b: Vector3 in blobs:
+					var off: Vector2 = uv - Vector2(b.x, b.y)
+					var w: float = exp(-off.length_squared() / (b.z * b.z))
+					d += w
+					grad += off * w
+				var n: float = noise.get_noise_2d(x, y) * 0.5 + 0.5
+				d *= 0.45 + 1.1 * n
+				# Ventana suave: el contorno lo deciden las bolas y el ruido, no un círculo.
+				var win: float = 1.0 - smoothstep(0.28, 0.5, uv.distance_to(Vector2(0.5, 0.5)))
+				var a: float = smoothstep(0.2, 1.0, d) * win * 0.9
+				# Las caras que miran a la luz, más claras; abajo, algo más oscuro.
+				var lit: float = 0.74 - grad.normalized().dot(light) * 0.2 + (n - 0.5) * 0.25
+				lit = clampf(lit - uv.y * 0.12, 0.45, 1.0)
+				img.set_pixel(x, y, Color(lit, lit, lit, a))
+		_billow = ImageTexture.create_from_image(img)
+	return _billow
 
 
 ## Rampa suave (lineal y HDR) a partir de un degradado cualquiera (aunque sea por bandas).
@@ -259,7 +285,8 @@ static func smoke(amount: int, size: float, color: Color) -> GPUParticles3D:
 	var ct := CurveTexture.new()
 	ct.curve = curve
 	pm.scale_curve = ct
-	pm.color_ramp = color_ramp(PackedColorArray([Color(color, 0.0), Color(color, 0.45), color]))
+	# Humo sutil: nunca más de un tercio de opaco (si no, una mancha gris tapa el fuego).
+	pm.color_ramp = color_ramp(PackedColorArray([Color(color, 0.0), Color(color, 0.32), color]))
 	p.process_material = pm
 	var q := QuadMesh.new()
 	q.size = Vector2.ONE * size
@@ -268,10 +295,22 @@ static func smoke(amount: int, size: float, color: Color) -> GPUParticles3D:
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	m.vertex_color_use_as_albedo = true
-	m.albedo_texture = soft_puff()
+	m.albedo_texture = soft_billow()
 	m.disable_fog = true
 	m.no_depth_test = true
 	m.render_priority = 2
+	# Pegado a la cámara se desvanece: si no, una bocanada cercana vela toda la pantalla.
+	m.distance_fade_mode = BaseMaterial3D.DISTANCE_FADE_PIXEL_ALPHA
 	q.material = m
 	p.draw_pass_1 = q
+	set_smoke_size(p, size)
 	return p
+
+
+## Cambia el tamaño de las bocanadas de un `smoke()` (y a qué distancia de la cámara se apagan).
+static func set_smoke_size(p: GPUParticles3D, size: float) -> void:
+	var q: QuadMesh = p.draw_pass_1
+	q.size = Vector2.ONE * size
+	var m: StandardMaterial3D = q.material
+	m.distance_fade_min_distance = size * 0.4
+	m.distance_fade_max_distance = size * 1.6

@@ -105,6 +105,7 @@ func _rebuild() -> void:
 		return
 	_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLE_STRIP)
 	var cam_pos: Vector3 = cam.global_position
+	var prev_side := Vector3.ZERO
 	for k: int in alive:
 		var i: int = (_head - 1 - k + MAX_POINTS) % MAX_POINTS
 		var j: int = (_head - 1 - mini(k + 1, alive - 1) + MAX_POINTS) % MAX_POINTS
@@ -113,12 +114,23 @@ func _rebuild() -> void:
 		var tangent: Vector3 = _points[h] - _points[j]
 		if tangent.length_squared() < 0.000001:
 			tangent = Vector3.UP
-		var side: Vector3 = tangent.cross(cam_pos - p).normalized()
+		# Vista de punta (la estela se aleja o viene hacia la cámara), el lado se vuelve
+		# inestable y la cinta se abría en abanico ("alas"): ahí se estrecha y conserva el lado
+		# anterior, sin girar de golpe.
+		var side: Vector3 = tangent.normalized().cross((cam_pos - p).normalized())
+		var edge_on: float = smoothstep(0.06, 0.3, side.length())
+		if side.length_squared() < 0.0025:
+			side = prev_side
+		else:
+			side = side.normalized()
+			if side.dot(prev_side) < 0.0:
+				side = -side
+		prev_side = side
 		var age: float = clampf((_now - _times[i]) / length_sec, 0.0, 1.0)
 		if k == alive - 1:
 			age = 1.0
 		var near: float = clampf(cam_pos.distance_to(p) / near_depth, 1.0, max_scale) / max_scale
-		var w: float = width * near * (1.0 - age * 0.6)
+		var w: float = width * near * (1.0 - age * 0.6) * edge_on
 		_mesh.surface_set_uv(Vector2(age, 0.0))
 		_mesh.surface_add_vertex(p + side * w)
 		_mesh.surface_set_uv(Vector2(age, 1.0))

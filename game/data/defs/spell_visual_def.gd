@@ -96,3 +96,7 @@ extends Resource
 ## Fuerza del destello al soltar (1 = normal). Las llamas de la mano, que estallan pegadas a la
 ## cámara, lo llevan bajo.
 @export var release_flash: float = 1.0
+## Meteoro: en vuelo lleva una roca fundida con grietas que brillan dentro del fuego, cola de
+## cometa y humo, cae acelerando desde lo alto y estalla con onda de choque, polvo, cascotes y
+## cráter encendido (ver `MeteorRock`).
+@export var meteor: bool = false
