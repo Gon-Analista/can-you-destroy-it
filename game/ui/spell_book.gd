@@ -18,7 +18,8 @@ const ROW_H: float = 13.0
 ## Marcapáginas: las parejas (y reacciones) y las triples del báculo.
 # i18n
 const TABS: PackedStringArray = ["PAREJAS", "TRIPLES"]
-const TAB_W: float = 92.0
+## Estrechos: a la derecha asoma la Esencia del HUD y no la deben pisar.
+const TAB_W: float = 72.0
 const TAB_H: float = 16.0
 ## Página del Grimorio (y su icono) de cada elemento.
 const ELEMENT_PAGE: Dictionary[StringName, int] = {
