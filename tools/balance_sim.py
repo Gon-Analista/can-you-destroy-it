@@ -988,7 +988,7 @@ class Game:
         if s.essence / self.total >= 0.2 or ess_rate <= 0:
             return 0.0
         e = float(self.balance.get("tear_essence", 12000.0))
-        eye = 1.5 if self.stat(s, "tear_eye", 0.0) > 0.5 else 1.0
+        eye = self.stat(s, "tear_eye", 1.0)  # Ojo del Núcleo: x probabilidad (core_eye.tres)
         lam = ess_rate * TEAR_MAIN_FRACTION / e * eye
         pity = float(self.balance.get("tear_pity_sec", 100.0))
         return lam / max(1e-9, 1.0 - math.exp(-lam * pity))

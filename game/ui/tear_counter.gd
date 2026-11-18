@@ -47,6 +47,10 @@ var _fly_t: PackedFloat32Array = PackedFloat32Array()
 var _camera: Camera3D
 var _icon_x: float = 400.0
 var _label_value: int = -1
+## Píxeles de ICON por tipo (borde, cuerpo, corazón), calculados una vez: dibujar no crea textos.
+var _px_rim: PackedVector2Array = PackedVector2Array()
+var _px_body: PackedVector2Array = PackedVector2Array()
+var _px_heart: PackedVector2Array = PackedVector2Array()
 
 
 func _ready() -> void:
@@ -61,6 +65,15 @@ func _ready() -> void:
 	UiFonts.outline(_label, C_SHADOW)
 	_label.size = Vector2(60, UiFonts.HEAD_LINE)
 	add_child(_label)
+	for yy: int in ICON.size():
+		for x: int in ICON[yy].length():
+			match ICON[yy][x]:
+				"o":
+					_px_rim.append(Vector2(x, yy))
+				"#":
+					_px_body.append(Vector2(x, yy))
+				"+":
+					_px_heart.append(Vector2(x, yy))
 	for i: int in 4:
 		_fly_from.append(Vector2.ZERO)
 		_fly_t.append(-1.0)
@@ -201,15 +214,10 @@ func _draw_icon(
 	at: Vector2, rim: Color, px: int, heart := Color(0, 0, 0, 0), body := Color(0, 0, 0, 0)
 ) -> void:
 	var flat: bool = heart.a <= 0.0
-	for yy: int in ICON.size():
-		var row: String = ICON[yy]
-		for x: int in row.length():
-			var ch: String = row[x]
-			if ch == ".":
-				continue
-			var c: Color = rim
-			if not flat and ch == "+":
-				c = heart
-			elif not flat and ch == "#":
-				c = body
-			draw_rect(Rect2(at + Vector2(x * px, yy * px), Vector2(px, px)), c)
+	var sz := Vector2(px, px)
+	for p: Vector2 in _px_rim:
+		draw_rect(Rect2(at + p * px, sz), rim)
+	for p: Vector2 in _px_body:
+		draw_rect(Rect2(at + p * px, sz), rim if flat else body)
+	for p: Vector2 in _px_heart:
+		draw_rect(Rect2(at + p * px, sz), rim if flat else heart)

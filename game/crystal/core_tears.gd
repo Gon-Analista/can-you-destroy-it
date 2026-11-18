@@ -218,7 +218,8 @@ func apply(hit: SpellHit) -> void:
 func react(hit: SpellHit) -> void:
 	if hit.warmup or hit.recipe == null or hit.layer != TearDrops.HEART_LAYER:
 		return
-	var eye: float = 1.5 if GameState.stat(&"tear_eye", 0.0) > 0.5 else 1.0
+	# Ojo del Núcleo: multiplica la probabilidad (valor del nodo, x1 cerrado).
+	var eye: float = GameState.stat(&"tear_eye", 1.0)
 	var prog: Progression = GameState.progression
 	if _drops.register_heart_hit(prog, _clock(), hit.damage, _rng.randf(), eye):
 		drop(hit.position, hit.normal)
@@ -284,6 +285,27 @@ func drop(at: Vector3, normal: Vector3) -> void:
 	Events.tear_dropped.emit(from)
 	if i >= 0:
 		_flash_body(i)
+	else:
+		# Todas volando a la mano a la vez (rarísimo): nunca se pierde una, cuenta en el acto.
+		_pickup_player.play()
+		credit_tear(from)
+
+
+## Pantalla de carga: enseña una Lágrima y su estallido un instante en `at` para compilar su
+## shader, el halo y las partículas antes de jugar (la primera del Corazón no da tirón).
+func warm_up(at: Vector3) -> void:
+	_roots[0].global_position = at
+	_roots[0].scale = Vector3.ONE
+	_roots[0].visible = true
+	_motes[0].emitting = true
+	_lights[0].light_energy = 1.0
+	_halo_mats[0].set_shader_parameter("intensity", 0.5)
+	_burst(at, 0.5)
+	await get_tree().create_timer(0.4).timeout
+	if _state[0] < 0:
+		_roots[0].visible = false
+		_motes[0].emitting = false
+		_lights[0].light_energy = 0.0
 
 
 ## Donde flota una Lágrima que sale por `p`: a HOVER_M del suelo o del cristal de debajo.
@@ -537,7 +559,7 @@ func _update_collect(i: int) -> void:
 ## Telequinesis (más alcance) y Ojo del Núcleo (desde lejos): las Lágrimas vuelan solas al mago.
 func _pull_to_player() -> void:
 	var reach: float = GameState.stat(&"telekinesis_radius", 0.0) * TK_REACH_MULT
-	if GameState.stat(&"tear_eye", 0.0) > 0.5:
+	if GameState.stat(&"tear_eye", 1.0) > 1.0:
 		reach = maxf(reach, EYE_RADIUS_M)
 	if reach <= 0.0:
 		return

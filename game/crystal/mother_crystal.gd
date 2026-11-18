@@ -523,6 +523,7 @@ func warm_up(at: Vector3, normal: Vector3, tier: SpellTier, big_tier: SpellTier)
 	_burn_fire.ignite(at, normal, 1.0, 0.6, 0.3, 0)
 	_add_burn(at, 0.01)
 	_shards.warm_up(at + normal * 1.5)
+	_tears.warm_up(at + normal * 2.5)
 	set_process(true)
 
 

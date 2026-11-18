@@ -101,6 +101,14 @@ func _currency(gs: Node) -> void:
 	_check(bool(gs.call(&"buy_upgrade", eye)), "con Lágrimas, sí")
 	_check(prog.tears == 1 and prog.mana == 1_000_000, "gasta Lágrimas, no maná")
 	_check(bool(gs.call(&"has_upgrade", &"core_eye")), "has_upgrade")
+	# El Grimorio se abre por una estrella del Núcleo nueva, pero una ya vista no tapa las de maná
+	# (un coste de 1 Lágrima no es "más barato" que 5 de maná).
+	var cheapest: UpgradeNode = gs.call(&"cheapest_affordable")
+	_check(cheapest != null and cheapest.pays_with_tears(), "abre por la estrella del Núcleo nueva")
+	prog.seen_upgrades[cheapest.id] = prog.get_level(cheapest.id)
+	cheapest = gs.call(&"cheapest_affordable")
+	_check(cheapest != null and not cheapest.pays_with_tears(), "ya vista: abre por la de maná")
+	prog.seen_upgrades.clear()
 	prog.tears = 10
 	_check(prog.purchase_block(gc) == &"hidden", "la Gran Convergencia no se ve antes del 99 %")
 	_check(not bool(gs.get(&"core_exposed")), "Núcleo tapado")
@@ -193,6 +201,14 @@ func _world(gs: Node, main: Node) -> void:
 	player.global_position = (tears.call(&"position_of", 0) as Vector3) + Vector3(0, 0, 12)
 	await create_timer(3.5).timeout
 	_check(prog.tears == 2, "con el Ojo del Núcleo vuela sola al mago (%d)" % prog.tears)
+	# Sin plazas libres nunca se pierde una: la más vieja (o la nueva) cuenta sola.
+	levels.erase(&"core_eye")
+	player.global_position += Vector3(0, 0, 200)
+	var max_tears: int = tears.get(&"MAX_TEARS")
+	for i: int in max_tears + 2:
+		tears.call(&"drop", crystal.global_position + Vector3(0, 30, 0), Vector3.UP)
+	_check(int(tears.call(&"loose_count")) == max_tears, "pool lleno: %d flotando" % max_tears)
+	_check(prog.tears == 4, "y las que no caben cuentan solas (%d)" % prog.tears)
 
 
 ## Golpe en el fondo del túnel de demo hasta la capa `layer` (daño 20).

@@ -190,18 +190,27 @@ func buy_upgrade(node: UpgradeNode) -> bool:
 	return true
 
 
-## Mejora más barata que se puede comprar ahora mismo, o null.
+## Mejora más barata que se puede comprar ahora mismo, o null. Los costes en Lágrimas no se
+## comparan con los de maná: una estrella del Núcleo pagable que aún no se ha visto va primero (es
+## rara); si ya se vio, sólo sale cuando no hay nada de maná que comprar.
 func cheapest_affordable() -> UpgradeNode:
 	var best: UpgradeNode = null
+	var tear_node: UpgradeNode = null
 	for node: UpgradeNode in UPGRADES:
-		if progression.purchase_block(node) == &"":
-			var lvl: int = progression.get_level(node.id)
-			if (
-				best == null
-				or node.cost_for_level(lvl) < best.cost_for_level(progression.get_level(best.id))
-			):
-				best = node
-	return best
+		if progression.purchase_block(node) != &"":
+			continue
+		var lvl: int = progression.get_level(node.id)
+		if node.pays_with_tears():
+			if progression.seen_upgrades.get(node.id, -1) < lvl:
+				return node
+			if tear_node == null:
+				tear_node = node
+		elif (
+			best == null
+			or node.cost_for_level(lvl) < best.cost_for_level(progression.get_level(best.id))
+		):
+			best = node
+	return best if best else tear_node
 
 
 ## Niveles comprados en total (para el rango del mago y la música).
