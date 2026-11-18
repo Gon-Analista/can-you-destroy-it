@@ -57,14 +57,14 @@ func _ready() -> void:
 	_world.add_child(milestones)
 	_hud.bind(_player.get_camera(), _player.get_caster())
 	_hud.debug_menu.bind(self, _player, _day_night, _hut)
-	# Hasta que exista el sistema de rangos, se empieza en Aprendiz (1 capa).
-	AudioDirector.play_music(MUSIC_LAYERS, _arg_int("--music-layers=", 1))
-	GameState.emit_all()
-	# La música crece con el mago: una capa más cada 3 niveles comprados (Aprendiz -> Archimago).
-	AudioDirector.set_music_layers(_rank_layers(), 0.1)
-	Events.upgrade_bought.connect(
-		func(_id: StringName, _l: int) -> void: AudioDirector.set_music_layers(_rank_layers())
+	# La música crece con el rango del mago (GDD 11.4): una capa por rango, de Aprendiz a
+	# Archimago (Leyenda las mantiene todas). Al subir de rango la capa nueva entra con la
+	# ceremonia (RankCeremony); al cargar, ya suena la del rango guardado.
+	AudioDirector.play_music(MUSIC_LAYERS, rank_music_layers())
+	Events.rank_changed.connect(
+		func(_r: int, _p: int) -> void: AudioDirector.set_music_layers(rank_music_layers(), 4.0)
 	)
+	GameState.emit_all()
 	if OS.is_debug_build():
 		_setup_autoplay()
 	# La música del título suena ya durante la pantalla de carga.
@@ -472,8 +472,9 @@ func _place(node: Node3D, at: Vector3) -> void:
 	node.position = Vector3(at.x, Valley.ground_height(at.x, at.z) - 0.05, at.z)
 
 
-func _rank_layers() -> int:
-	return maxi(_arg_int("--music-layers=", 1), 1 + GameState.total_upgrade_levels() / 3)
+## Capas de música del rango actual (`RankDef.music_layers`); `--music-layers=N` pone un mínimo.
+func rank_music_layers() -> int:
+	return maxi(_arg_int("--music-layers=", 1), GameState.rank_def().music_layers)
 
 
 func _demo_dig(hits: int) -> void:

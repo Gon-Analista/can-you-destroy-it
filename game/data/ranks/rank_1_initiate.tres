@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="RankDef" format=3]
+
+[ext_resource type="Script" path="res://data/defs/rank_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"initiate"
+display_name = "Iniciado"
+motto = "Ya mandas en dos elementos. El cristal empieza a temerte."
+key_upgrade = &"awaken_frost"
+key_pylon = 0.0
+pylon_alone = 0.0008
+min_destroyed = 0.0
+or_finished = false
+requirement = "Despierta la Escarcha"
+color = Color(0.498, 0.9059, 1, 1)
+color_light = Color(0.902, 0.9922, 1, 1)
+color_dark = Color(0.1647, 0.3647, 0.6588, 1)
+rim = Color(0.7882, 0.8275, 0.9098, 1)
+emblem = 1
+music_layers = 2
+hand_gem = Color(0.498, 0.9059, 1, 1)
+hand_trim = Color(0, 0, 0, 0)
+hand_runes = Color(0, 0, 0, 0)
+hand_sleeve = Color(1, 1, 1, 1)
+hand_prismatic = false

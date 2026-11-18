@@ -44,7 +44,58 @@ const LAYERS: Array[CrystalLayerDef] = [
 	preload("res://data/crystal/layer_core.tres"),
 ]
 
+## Estadísticas del Espejo del Archimago que se cuentan solas (`Progression.stats`).
+const STAT_SPELLS: StringName = &"spells_cast"
+const STAT_SHARDS: StringName = &"shards_collected"
+const STAT_MANA: StringName = &"mana_earned"
+const STAT_STREAK: StringName = &"best_streak"
+const STAT_GEODES: StringName = &"geodes_broken"
+const STAT_VEINS: StringName = &"veins_hit"
+const STAT_RESONANT: StringName = &"resonant_hits"
+const STAT_DELIVERIES: StringName = &"deliveries"
+
 var progression: Progression = Progression.new(BALANCE.total_essence)
+## Con el título o la pausa abiertos no corre el tiempo jugado.
+var _menu_open: bool = false
+
+
+func _ready() -> void:
+	Events.menu_opened.connect(func() -> void: _menu_open = true)
+	Events.menu_closed.connect(func() -> void: _menu_open = false)
+	Events.spell_cast.connect(func(_t: SpellTier, _s: int) -> void: progression.count(STAT_SPELLS))
+	Events.streak_changed.connect(func(s: int) -> void: progression.record_best(STAT_STREAK, s))
+	Events.geode_broken.connect(func(_at: Vector3) -> void: progression.count(STAT_GEODES))
+	Events.vein_hit.connect(func(_h: SpellHit, _e: StringName) -> void: progression.count(STAT_VEINS))
+	Events.spell_impacted.connect(
+		func(hit: SpellHit) -> void:
+			if hit.resonant and hit.by_player:
+				progression.count(STAT_RESONANT)
+	)
+
+
+func _process(delta: float) -> void:
+	if not _menu_open:
+		progression.play_time += delta
+
+
+## Rango del mago (0 = Aprendiz ... 5 = Leyenda) y su definición.
+func rank() -> int:
+	return progression.rank
+
+
+func rank_def() -> RankDef:
+	return WizardRanks.def_of(progression.rank)
+
+
+## Sube de rango si ya se ha ganado el siguiente (o varios: se celebra el más alto). Se llama al
+## entregar, comprar y golpear; no cuesta nada si no hay cambio.
+func check_rank() -> void:
+	var r: int = WizardRanks.earned(progression, progression.rank)
+	if r <= progression.rank:
+		return
+	var previous: int = progression.rank
+	progression.rank = r
+	Events.rank_changed.emit(r, previous)
 
 
 ## Fracción del cristal ya destruida (0..1).
@@ -68,6 +119,7 @@ func hit_crystal(damage: int, at: Vector3) -> int:
 		Events.essence_changed.emit(progression.essence, progression.total_essence)
 		if progression.is_crystal_destroyed():
 			Events.crystal_destroyed.emit()
+		check_rank()
 	return removed
 
 
@@ -93,6 +145,7 @@ func collect_shard(type: ShardType, at: Vector3) -> bool:
 	if count == 0:
 		Events.bag_full.emit()
 		return false
+	progression.count(STAT_SHARDS)
 	Events.shard_collected.emit(type, count, at)
 	Events.bag_changed.emit(progression.bag_count(), bag_capacity())
 	return true
@@ -107,6 +160,7 @@ func send_direct(type: ShardType, at: Vector3) -> bool:
 	if crusher == null:
 		return false
 	crusher.receive_direct(type, at)
+	progression.count(STAT_SHARDS)
 	Events.shard_collected.emit(type, 0, at)
 	return true
 
@@ -136,6 +190,8 @@ func shard_value(type: ShardType) -> int:
 func deliver(value: int, pylon_value: int = -1) -> void:
 	var before: float = progression.pylon_ratio()
 	progression.deliver(value, pylon_value)
+	progression.count(STAT_MANA, maxi(value, 0))
+	progression.count(STAT_DELIVERIES)
 	Events.shard_delivered.emit(value)
 	Events.mana_changed.emit(progression.mana)
 	var ratio: float = progression.pylon_ratio()
@@ -144,6 +200,7 @@ func deliver(value: int, pylon_value: int = -1) -> void:
 	for i: int in ManaPylon.MARKS.size():
 		if not ManaPylon.mark_reached(before, i) and ManaPylon.mark_reached(ratio, i):
 			Events.pylon_milestone.emit(i, ManaPylon.MARKS[i])
+	check_rank()
 
 
 ## Llamar cada vez que se lanza una combinación: la primera vez se celebra el descubrimiento.
@@ -160,6 +217,7 @@ func buy_upgrade(node: UpgradeNode) -> bool:
 	Events.upgrade_bought.emit(node.id, progression.get_level(node.id))
 	Events.mana_changed.emit(progression.mana)
 	Events.bag_changed.emit(progression.bag_count(), bag_capacity())
+	check_rank()
 	return true
 
 
@@ -177,7 +235,7 @@ func cheapest_affordable() -> UpgradeNode:
 	return best
 
 
-## Niveles comprados en total (para el rango del mago y la música).
+## Niveles comprados en total (objetos del Santuario, guía y Espejo).
 func total_upgrade_levels() -> int:
 	var n: int = 0
 	for node: UpgradeNode in UPGRADES:

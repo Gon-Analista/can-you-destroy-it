@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="RankDef" format=3]
+
+[ext_resource type="Script" path="res://data/defs/rank_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"sorcerer"
+display_name = "Hechicero"
+motto = "El rayo responde a tu voz."
+key_upgrade = &"awaken_bolt"
+key_pylon = 0.0
+pylon_alone = 0.01
+min_destroyed = 0.0
+or_finished = false
+requirement = "Despierta el Rayo"
+color = Color(0.7804, 0.6078, 1, 1)
+color_light = Color(0.9451, 0.902, 1, 1)
+color_dark = Color(0.2902, 0.1843, 0.6039, 1)
+rim = Color(0.9098, 0.7608, 0.4784, 1)
+emblem = 2
+music_layers = 3
+hand_gem = Color(0.7804, 0.6078, 1, 1)
+hand_trim = Color(0.8471, 0.6353, 0.2275, 1)
+hand_runes = Color(0, 0, 0, 0)
+hand_sleeve = Color(1, 1, 1, 1)
+hand_prismatic = false

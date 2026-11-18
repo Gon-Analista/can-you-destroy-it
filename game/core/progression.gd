@@ -29,6 +29,13 @@ var learned: Dictionary[StringName, int] = {}
 ## Mejoras pagables que el jugador ya ha visto en el Grimorio: id -> nivel que se ofrecía. La
 ## guía sólo lleva al Santuario por las que no ha visto (también tras volver a cargar).
 var seen_upgrades: Dictionary[StringName, int] = {}
+## Rango del mago ganado (índice en `WizardRanks.RANKS`; 0 = Aprendiz). Sólo sube. Se guarda para
+## no repetir la ceremonia al cargar.
+var rank: int = 0
+## Estadísticas del Espejo del Archimago (ver `Stat`): cuentas que sólo suben y mejores marcas.
+var stats: Dictionary[StringName, int] = {}
+## Tiempo jugado (s), sin contar menús ni pausa.
+var play_time: float = 0.0
 
 
 func _init(p_total_essence: int) -> void:
@@ -157,6 +164,22 @@ func times(key: StringName) -> int:
 	return learned.get(key, 0)
 
 
+## Suma `n` a la estadística `key` (p. ej. &"spells_cast").
+func count(key: StringName, n: int = 1) -> void:
+	stats[key] = stats.get(key, 0) + n
+
+
+## Guarda `value` en la estadística `key` si supera la marca (p. ej. &"best_streak").
+func record_best(key: StringName, value: int) -> void:
+	if value > stats.get(key, 0):
+		stats[key] = value
+
+
+## Valor de una estadística (0 si aún no se ha contado).
+func tally(key: StringName) -> int:
+	return stats.get(key, 0)
+
+
 func is_crystal_destroyed() -> bool:
 	return essence <= 0
 
@@ -175,6 +198,9 @@ func to_dict() -> Dictionary:
 		"tutorial_step": tutorial_step,
 		"learned": learned.duplicate(),
 		"seen_upgrades": seen_upgrades.duplicate(),
+		"rank": rank,
+		"stats": stats.duplicate(),
+		"play_time": play_time,
 	}
 
 
@@ -201,6 +227,11 @@ func load_dict(data: Dictionary) -> void:
 	var saved_seen: Dictionary = data.get("seen_upgrades", {})
 	for key: Variant in saved_seen:
 		seen_upgrades[StringName(str(key))] = maxi(int(saved_seen[key]), 0)
+	stats.clear()
+	var saved_stats: Dictionary = data.get("stats", {})
+	for key: Variant in saved_stats:
+		stats[StringName(str(key))] = maxi(int(saved_stats[key]), 0)
+	play_time = maxf(float(data.get("play_time", 0.0)), 0.0)
 	geodes.clear()
 	var saved_geodes: Dictionary = data.get("geodes", {})
 	for key: Variant in saved_geodes:
@@ -209,3 +240,5 @@ func load_dict(data: Dictionary) -> void:
 	var saved_recipes: Array = data.get("discovered_recipes", [])
 	for r: Variant in saved_recipes:
 		discover_recipe(StringName(str(r)))
+	# Partidas de antes de los rangos: el que corresponde, sin ceremonia.
+	rank = WizardRanks.earned(self, int(data.get("rank", 0)))

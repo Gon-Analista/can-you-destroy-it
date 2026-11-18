@@ -17,6 +17,8 @@ signal vein_hit(hit: SpellHit, element: StringName)
 signal pylon_milestone(index: int, mark: float)
 ## La Resonancia del Pilón lanza un rayo al cristal (`at`: dónde da).
 signal pylon_bolt(at: Vector3)
+## El mago sube de rango (`WizardRanks.RANKS`). Una vez por rango; al cargar no se emite.
+signal rank_changed(rank: int, previous: int)
 
 # --- Sensación del golpe (prototipo de la chispa) ---
 signal spell_cast(tier: SpellTier, hand_side: int)
@@ -45,6 +47,8 @@ signal bag_full
 signal shard_sent_to_pylon(type: ShardType)
 ## Abrir el Grimorio: `at_sanctum` = true si se puede comprar (junto al atril).
 signal grimoire_requested(at_sanctum: bool)
+## Abrir las estadísticas del Espejo del Archimago (F junto al espejo).
+signal mirror_requested
 signal menu_opened
 signal menu_closed
 ## El jugador cambió de idioma en Opciones: los textos fijos se rehacen.
