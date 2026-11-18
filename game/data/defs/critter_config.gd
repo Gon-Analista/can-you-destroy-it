@@ -23,8 +23,11 @@ extends Resource
 ## de la pantalla, a `in_view_min_distance` como poco.
 @export var min_player_distance: float = 12.0
 @export var in_view_min_distance: float = 26.0
-## Y no demasiado lejos (para que se vean de vez en cuando).
+## Y no demasiado lejos (para que se vean de vez en cuando); también los del principio.
 @export var max_player_distance: float = 75.0
+## Los que se quedan más lejos que esto del mago (y fuera de la pantalla) se esconden para salir
+## luego cerca de él.
+@export var despawn_distance: float = 105.0
 ## Pasean sólo un poco alrededor de donde salieron (m).
 @export var wander_radius: float = 3.0
 ## Separación con edificios, caminos y otros bichos (m).

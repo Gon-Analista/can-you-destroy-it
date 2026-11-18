@@ -52,11 +52,13 @@ var _combo_t: float = -1.0
 var _last_combo_hint: float = -100.0
 var _last_quip: float = -100.0
 var _last_stop: float = -100.0
+var _bonk_hinted: bool = false
+var _cull_i: int = 0
 var _now: float = 0.0
 var _hd: HdImpact
 var _fx: ImpactFx
 var _cam_pos := Vector3.ZERO
-var _player_pos := Vector3(0, 0, 1000)
+var _player_pos := WorldLayout.PLAYER_START
 var _player: Node3D
 
 
@@ -138,6 +140,8 @@ func _process(delta: float) -> void:
 			alive += 1
 			if c.global_position.distance_squared_to(_player_pos) < config.startle_radius ** 2:
 				c.startle(_player_pos)
+	if ambient:
+		_cull_far(cam)
 	if ambient and alive < cap():
 		_respawn_t -= delta
 		if _respawn_t <= 0.0:
@@ -172,10 +176,27 @@ func critters() -> Array[Critter]:
 func _populate() -> void:
 	if not ambient:
 		return
+	# Alrededor del mago (no por todo el anillo: detrás del cristal no los vería nadie).
+	_player = get_tree().get_first_node_in_group(&"player") as Node3D
+	_player_pos = _player.global_position if _player else WorldLayout.PLAYER_START
 	for i: int in mini(config.initial_count, cap()):
 		var at: Vector3 = find_spot(false)
 		if at != Vector3.INF:
 			_spawn_at(pick_species(), at, false, _player_pos)
+
+
+## Uno por frame: el que se ha quedado muy lejos del mago (y fuera de la pantalla) se esconde, y
+## el siguiente que salga lo hará cerca de él. Así siempre hay bichos por donde anda.
+func _cull_far(cam: Camera3D) -> void:
+	_cull_i = (_cull_i + 1) % _critters.size()
+	var c: Critter = _critters[_cull_i]
+	if not c.is_alive() or c.state == Critter.State.EMERGE:
+		return
+	if c.global_position.distance_squared_to(_player_pos) < config.despawn_distance ** 2:
+		return
+	if cam and cam.is_position_in_frustum(c.global_position):
+		return
+	c.hide_now()
 
 
 ## Saca un bicho nuevo donde no lo vea el mago de cerca. False si no encontró sitio.
@@ -220,8 +241,10 @@ func find_spot(hidden_from_player: bool) -> Vector3:
 		if not CritterZones.is_free(p.x, p.z, config.clearance):
 			continue
 		var d: float = Vector2(p.x - _player_pos.x, p.z - _player_pos.z).length()
+		if d > config.max_player_distance:
+			continue
 		if hidden_from_player:
-			if d < config.min_player_distance or d > config.max_player_distance:
+			if d < config.min_player_distance:
 				continue
 			if cam and d < config.in_view_min_distance and cam.is_position_in_frustum(p):
 				continue
@@ -343,6 +366,8 @@ func on_spell_arrived(hit: SpellHit, collider: Object) -> bool:
 	var direct: Critter = null
 	if node and node.has_meta(&"critter"):
 		direct = node.get_meta(&"critter") as Critter
+	if hit.damage <= 0:
+		return _bonk(hit, direct)
 	var flavor: Critter.Flavor = flavor_of(hit)
 	var explosive: bool = _is_explosive(hit)
 	var n: int = 0
@@ -371,7 +396,26 @@ func _on_spell_impacted(hit: SpellHit) -> void:
 		_quake_corridor(hit)
 	if hit.recipe and (hit.recipe.area_radius > 0.0 or _is_explosive(hit)):
 		pop_area(hit.position, blast_radius(hit), flavor, true, null)
+	if not hit.minor:
+		# El Rayo que da en el cristal también salta a los bichos que haya al pie.
+		_bolt_chain(hit)
 	_startle_near(hit.position, config.spell_startle_radius)
+
+
+## La chispita de aprendiz (sin daño) no revienta a nadie: el bicho se lleva un coscorrón, chilla
+## y se va ofendido. True si le dio a uno.
+func _bonk(hit: SpellHit, direct: Critter) -> bool:
+	_startle_near(hit.position, config.spell_startle_radius)
+	if direct == null or not direct.is_alive():
+		return false
+	direct.bonk(hit.position)
+	voices.play(CritterVoices.Kind.BOINK, hit.position, -4.0, _rng.randf_range(1.3, 1.6))
+	if hit.tier:
+		_fx.play(hit.position, Vector3.UP, hit.tier, false, 0.25)
+	if not _bonk_hinted:
+		_bonk_hinted = true
+		Events.hint.emit(tr("NI COSQUILLAS LE HACES"), C_HINT)
+	return true
 
 
 ## Revienta los bichos vivos a menos de `radius` de `center` (los más lejos, un pelín después:
@@ -525,12 +569,14 @@ func burst(c: Critter) -> void:
 
 func _arcane_echoes(at: Vector3, def: CritterDef, gore_on: bool) -> void:
 	for k: int in 2:
+		# Método enlazado (no lambda): si el rebaño ya no está, la señal se desconecta sola.
 		var t: SceneTreeTimer = get_tree().create_timer(0.22 * float(k + 1))
-		t.timeout.connect(
-			func() -> void:
-				gore.echo_burst(at, def, gore_on)
-				voices.play(CritterVoices.Kind.SPLORCH, at, -6.0 - 3.0 * k, 1.35 + 0.25 * k)
-		)
+		t.timeout.connect(_arcane_echo.bind(at, def, gore_on, k))
+
+
+func _arcane_echo(at: Vector3, def: CritterDef, gore_on: bool, k: int) -> void:
+	gore.echo_burst(at, def, gore_on)
+	voices.play(CritterVoices.Kind.SPLORCH, at, -6.0 - 3.0 * k, 1.35 + 0.25 * k)
 
 
 func _count_pop(def: CritterDef) -> void:

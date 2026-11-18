@@ -276,6 +276,18 @@ func startle(from: Vector3) -> void:
 	_kick_pupils(1.6)
 
 
+## Un hechizo sin fuerza le da en la cabeza: aplastón, ojos locos y a correr (aunque acabe de
+## asustarse).
+func bonk(from: Vector3) -> void:
+	if not is_alive():
+		return
+	if state == State.EMERGE:
+		_set_state(State.IDLE, _idle_time())
+	_startle_cool = 0.0
+	_jig_v -= 6.0
+	startle(from)
+
+
 ## Se le acabó la suerte: anticipación según el sabor y, al terminar, el rebaño lo revienta.
 ## `delay`: segundos antes de empezar (reacciones en cadena, ondas de área).
 func doom(

@@ -820,6 +820,8 @@ func _build_particles() -> void:
 		spm.initial_velocity_min = 0.8
 		spm.initial_velocity_max = 2.2
 		spm.spread = 180.0
+		# Con prueba de profundidad: el polvo de un bicho detrás del cristal no se ve a través.
+		((s.draw_pass_1 as QuadMesh).material as StandardMaterial3D).no_depth_test = false
 		add_child(s)
 		_puffs.append(s)
 	for i: int in STARS:

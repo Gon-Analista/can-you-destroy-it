@@ -10,6 +10,7 @@ extends SceneTree
 const HERD_PATH: NodePath = ^"WorldView/WorldViewport/CritterHerd"
 const HIDDEN: int = 0
 const SPARK: Resource = preload("res://data/elements/spark.tres")
+const BOLT: Resource = preload("res://data/elements/bolt.tres")
 const FIREBALL: Resource = preload("res://data/spells/recipe_fireball.tres")
 const SPLINTER: Resource = preload("res://data/shards/splinter.tres")
 const HIT_SCRIPT: GDScript = preload("res://spells/spell_hit.gd")
@@ -38,6 +39,8 @@ func _initialize() -> void:
 	await _check_area_pop()
 	await _check_gore_setting()
 	await _check_pools(config)
+	var finished: bool = await _check_real_aim(prog)
+	_check(finished, "las comprobaciones de la mira llegan al final")
 	# La estadística se guarda y se carga.
 	var data: Dictionary = prog.call(&"to_dict")
 	var popped: int = int(prog.get(&"critters_popped"))
@@ -93,10 +96,22 @@ func _check_cap() -> void:
 		most = maxi(most, int(_herd.call(&"alive_count")))
 	_check(most <= cap, "nunca más de %d vivos (máximo %d)" % [cap, most])
 	_check(most >= mini(cap, 3), "salen hasta llenar el tope (%d)" % most)
+	# Uno que se queda muy lejos del mago (a su espalda) se esconde para salir luego cerca.
+	_pop_all_now()
+	await _wait(1.0)
+	var def: Resource = (_herd.get(&"config") as Resource).get(&"species")[0]
+	var far: Node3D = _herd.call(&"_spawn_at", def, Vector3(0.0, 0.0, 220.0), false, Vector3.ZERO)
+	_herd.set(&"_respawn_t", 100.0)
+	for i: int in 20:
+		await process_frame
+	_check(int(far.get(&"state")) == HIDDEN, "el que se queda lejos se esconde")
 
 
 func _check_single_pop(prog: RefCounted) -> void:
 	_herd.set(&"ambient", false)
+	if _first_alive() == null:
+		_herd.call(&"spawn_in_front", 1, 7.0)
+		await _wait(1.0)
 	var c: Node3D = _first_alive()
 	var pool: Node = current_scene.get_tree().get_first_node_in_group(&"shard_pool")
 	var shards0: int = int(pool.call(&"count_of", SPLINTER))
@@ -199,6 +214,100 @@ func _check_pools(config: Resource) -> void:
 	_check(int(gore.get(&"active_chunks")) <= max_pieces, "trozos dentro del tope")
 	_check(int(gore.get(&"active_splats")) <= int(config.get(&"max_splats")), "manchas al tope")
 	_check(int(gore.get(&"active_eyes")) <= int(config.get(&"max_eyes")), "ojos al tope")
+
+
+## Por el camino de verdad (mira de SpellCaster y proyectil): el cristal se sigue golpeando igual,
+## un bicho delante se lleva el hechizo, uno detrás del cristal no, y la chispita sin daño del
+## principio sólo le da un coscorrón.
+func _check_real_aim(prog: RefCounted) -> bool:
+	_pop_all_now()
+	await _wait(1.0)
+	(_herd.get(&"gore") as Node).call(&"clear")
+	var main: Node = current_scene
+	var menu: Node = main.get_node(^"HUDLayer/Hud/GameMenu")
+	if bool(menu.call(&"is_open")):
+		menu.call(&"_close")
+	var player: Node3D = main.get_node(^"WorldView/WorldViewport/Player")
+	var head: Node3D = player.get_node(^"Head")
+	var caster: Node = player.call(&"get_caster")
+	player.global_position = Vector3(0.0, 0.3, 60.0)
+	player.rotation.y = 0.0
+	head.rotation.x = deg_to_rad(8.0)
+	await physics_frame
+	await process_frame
+	# Sin bichos delante: la mira da en el cristal y el golpe le quita esencia.
+	var aim: Dictionary = caster.call(&"_aim")
+	var on_crystal: bool = (
+		aim["collider"] is Node and (aim["collider"] as Node).has_meta(&"mother_crystal")
+	)
+	_check(on_crystal, "sin bichos, la mira da en el cristal")
+	caster.call(&"set_debug_level", 3)
+	var essence0: int = int(prog.get(&"essence"))
+	await _cast(caster)
+	_check(int(prog.get(&"essence")) < essence0, "y el cristal se sigue rompiendo")
+	# Un bicho justo detrás del cristal, en la línea de la mira: no se lleva el golpe.
+	var cam: Camera3D = caster.get(&"camera")
+	var fwd: Vector3 = -cam.global_basis.z
+	var behind: Vector3 = (aim["position"] as Vector3) + fwd * 25.0
+	var def: Resource = (_herd.get(&"config") as Resource).get(&"species")[0]
+	var c: Node3D = _herd.call(&"_spawn_at", def, behind, false, cam.global_position)
+	c.global_position = behind - Vector3(0.0, 0.5, 0.0)
+	await physics_frame
+	aim = caster.call(&"_aim")
+	on_crystal = aim["collider"] is Node and (aim["collider"] as Node).has_meta(&"mother_crystal")
+	_check(on_crystal, "un bicho detrás del cristal no le roba la mira")
+	essence0 = int(prog.get(&"essence"))
+	await _cast(caster)
+	_check(bool(c.call(&"is_alive")), "ni el golpe")
+	_check(int(prog.get(&"essence")) < essence0, "que va al cristal")
+	_pop_all_now()
+	await _wait(1.0)
+	# Un bicho delante, donde mira el mago (hacia el suelo, a unos 6 m).
+	head.rotation.x = deg_to_rad(-15.0)
+	await physics_frame
+	var ground: Vector3 = caster.call(&"_aim")["position"]
+	c = _herd.call(&"_spawn_at", def, ground, false, cam.global_position)
+	await physics_frame
+	aim = caster.call(&"_aim")
+	_check(aim["collider"] == c.get_node(^"Hitbox"), "la mira ve al bicho de delante")
+	# La chispita del principio (sin daño): coscorrón, susto y nada más.
+	caster.call(&"set_debug_level", 1)
+	var startles0: int = int(c.get(&"startles"))
+	var popped0: int = int(prog.get(&"critters_popped"))
+	await _cast(caster)
+	_check(bool(c.call(&"is_alive")), "la chispa sin daño no lo revienta")
+	_check(int(c.get(&"startles")) > startles0, "pero se lleva un susto")
+	_check(int(prog.get(&"critters_popped")) == popped0, "y no cuenta")
+	# Con un hechizo de verdad, ¡PUM!, y el cristal ni se entera.
+	_pop_all_now()
+	await _wait(1.0)
+	c = _herd.call(&"_spawn_at", def, ground, false, cam.global_position)
+	await physics_frame
+	caster.call(&"set_debug_level", 3)
+	essence0 = int(prog.get(&"essence"))
+	popped0 = int(prog.get(&"critters_popped"))
+	await _cast(caster)
+	await _wait(0.6)
+	_check(not bool(c.call(&"is_alive")), "un hechizo de verdad lo revienta")
+	_check(int(prog.get(&"critters_popped")) == popped0 + 1, "y cuenta")
+	_check(int(prog.get(&"essence")) == essence0, "sin tocar el cristal")
+	# Un Rayo que da en el cristal salta a un bicho que esté cerca del golpe.
+	await _wait(0.5)
+	c = _herd.call(&"_spawn_at", def, ground, false, cam.global_position)
+	var bolt_hit: RefCounted = _hit(c.call(&"center") + Vector3(5.0, 1.0, 0.0))
+	bolt_hit.set(&"element", &"bolt")
+	bolt_hit.set(&"element_def", BOLT)
+	root.get_node(^"Events").emit_signal(&"spell_impacted", bolt_hit)
+	_check(not bool(c.call(&"is_alive")), "el Rayo en el cristal salta al bicho de al lado")
+	return true
+
+
+## Una chispa de la mano izquierda por SpellCaster, y espera a que llegue.
+func _cast(caster: Node) -> void:
+	caster.set(&"_cooldown", PackedFloat32Array([0.0, 0.0]))
+	await process_frame
+	caster.call(&"try_cast", 0)
+	await _wait(1.2)
 
 
 func _hit(at: Vector3) -> RefCounted:
