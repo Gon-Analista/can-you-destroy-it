@@ -10,6 +10,8 @@ extends SceneTree
 
 const PLAYER_PATH: NodePath = ^"WorldView/WorldViewport/Player"
 const BOOK_PATH: NodePath = ^"HUDLayer/Hud/SpellBook"
+const HERD_PATH: NodePath = ^"WorldView/WorldViewport/CritterHerd"
+const NOVA: Resource = preload("res://data/spells/recipe_supernova.tres")
 
 var _ok: bool = true
 var _caster: Node
@@ -103,7 +105,7 @@ func _initialize() -> void:
 	# Supernova: despierta el Arcano (Chispa + Tierra en las manos, Arcano en la gema).
 	levels[&"awaken_arcane"] = 1
 	_set_hands(0, 3, 4)
-	await _cast_and_wait(load("res://data/spells/recipe_supernova.tres"))
+	await _cast_and_wait(NOVA)
 	for k: int in 30:
 		if float(storm.call(&"lock_left")) <= 0.0:
 			break
@@ -123,8 +125,73 @@ func _initialize() -> void:
 	_check(String((rows[3] as Label).text) == "???", "lo no descubierto, con acertijo")
 	_check(book.call(&"state_of", listed[3]) == &"unknown", "con báculo ya no tiene candado")
 	book.call(&"close")
+	# Las dos triples que faltan, contra el cristal.
+	_set_hands(4, 4, 0)
+	await _cast_and_wait(load("res://data/spells/recipe_star_rain.tres"))
+	_set_hands(0, 3, 3)
+	await _cast_and_wait(load("res://data/spells/recipe_eruption.tres"))
+	# Las triples de área también revientan bichos (critters/).
+	await _check_critters(main, player, storm_recipe)
 	print("staff_smoke: ", "OK" if _ok else "FALLO")
 	quit(0 if _ok else 1)
+
+
+## Tormenta sobre la hierba con bichos debajo: descarga en el suelo y los revienta. La Supernova sobre un bicho revienta a los de alrededor.
+func _check_critters(main: Node, player: Node3D, storm_recipe: Resource) -> void:
+	var herd: Node = main.get_node(HERD_PATH)
+	herd.set(&"ambient", false)
+	for c: Node in herd.call(&"critters"):
+		c.call(&"hide_now")
+	var delivery: Node = _caster.get_node(^"Delivery")
+	var storm: Node = delivery.call(&"storm")
+	for k: int in 40:
+		if float(storm.call(&"lock_left")) <= 0.0:
+			break
+		await create_timer(0.5).timeout
+	(player.get_node(^"Head") as Node3D).rotation.x = deg_to_rad(-15.0)
+	await physics_frame
+	await process_frame
+	var ground: Vector3 = _caster.call(&"_aim")["position"]
+	var cam: Camera3D = _caster.get(&"camera")
+	var def: Resource = (herd.get(&"config") as Resource).get(&"species")[0]
+	var made: Array[Node] = []
+	for off: Vector3 in [Vector3(-2.5, 0, 0.5), Vector3(2.5, 0, -0.5), Vector3(0, 0, -2.5)]:
+		made.append(herd.call(&"_spawn_at", def, ground + off, false, cam.global_position))
+	for i: int in 30:
+		await physics_frame
+	var popped0: int = int(_prog.get(&"critters_popped"))
+	_set_hands(0, 1, 2)
+	_cast(storm_recipe)
+	await create_timer(float(storm_recipe.get(&"charge_sec")) + 0.3).timeout
+	_caster.call(&"try_release_combine")
+	var waited: float = 0.0
+	while int(_prog.get(&"critters_popped")) < popped0 + 2 and waited < 12.0:
+		await create_timer(0.25).timeout
+		waited += 0.25
+	var popped: int = int(_prog.get(&"critters_popped")) - popped0
+	_check(popped >= 2, "la Tormenta sobre la hierba revienta bichos (%d)" % popped)
+	_check(not bool(storm.get(&"_on_crystal")), "y descarga en la hierba")
+	# Supernova: el golpe da en un bicho y revienta a los de alrededor.
+	for c: Node in herd.call(&"critters"):
+		c.call(&"hide_now")
+	await create_timer(1.0).timeout
+	for off: Vector3 in [Vector3.ZERO, Vector3(3.0, 0, 0.5), Vector3(-3.0, 0, -0.5)]:
+		herd.call(&"_spawn_at", def, ground + off, false, cam.global_position)
+	for i: int in 30:
+		await physics_frame
+	popped0 = int(_prog.get(&"critters_popped"))
+	_set_hands(0, 3, 4)
+	var nova: Resource = NOVA
+	_cast(nova)
+	await create_timer(float(nova.get(&"charge_sec")) + 0.3).timeout
+	_caster.call(&"try_release_combine")
+	waited = 0.0
+	while int(_prog.get(&"critters_popped")) < popped0 + 3 and waited < 6.0:
+		await create_timer(0.25).timeout
+		waited += 0.25
+	popped = int(_prog.get(&"critters_popped")) - popped0
+	_check(popped >= 3, "la Supernova revienta a todos los de alrededor (%d)" % popped)
+	(player.get_node(^"Head") as Node3D).rotation.x = deg_to_rad(8.0)
 
 
 ## Datos: cada triple tiene tres elementos, se resuelve en cualquier orden y no hay dos iguales.
