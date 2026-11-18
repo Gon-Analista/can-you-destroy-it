@@ -224,6 +224,15 @@ func _in_game() -> void:
 	_check(String((vals[1] as Label).text).ends_with("/ 17"), "combinaciones x / total")
 	_check(String((vals[10] as Label).text) == "9", "el espejo enseña los bichos reventados")
 	_check(String((vals[0] as Label).text).contains("min"), "tiempo jugado en el espejo")
+	# Con el espejo abierto, B no abre el Libro de Hechizos encima y Esc lo cierra (no la pausa).
+	var book: Node = current_scene.get_node(HUD).get_node(^"SpellBook")
+	_push_action(&"open_spellbook")
+	await process_frame
+	_check(not bool(book.get(&"is_open")), "el Libro de Hechizos no se abre encima del espejo")
+	_push_action(&"ui_cancel")
+	await process_frame
+	_check(not bool(game_menu.call(&"is_open")), "Esc cierra el espejo y no abre la pausa")
+	_check(bool(screen.get(&"_closing")), "Esc cierra el espejo")
 	screen.call(&"close")
 	for i: int in 600:
 		await process_frame
@@ -231,6 +240,15 @@ func _in_game() -> void:
 			break
 	_check(not bool(screen.get(&"is_open")), "se cierra")
 	_check(fresh.seen_upgrades.is_empty(), "mirar el espejo no da las mejoras por vistas")
+
+
+## Pulsa y suelta la acción `action` por el camino real de la entrada.
+func _push_action(action: StringName) -> void:
+	for pressed: bool in [true, false]:
+		var ev := InputEventAction.new()
+		ev.action = action
+		ev.pressed = pressed
+		root.push_input(ev)
 
 
 func _check(cond: bool, what: String) -> void:

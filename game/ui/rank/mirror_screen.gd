@@ -207,6 +207,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	):
 		close()
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed(&"open_spellbook"):
+		# El Libro de Hechizos no se abre encima del espejo.
+		get_viewport().set_input_as_handled()
 
 
 func _gui_input(event: InputEvent) -> void:

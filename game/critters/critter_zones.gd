@@ -1,8 +1,9 @@
 class_name CritterZones
 extends RefCounted
 ## Dónde pueden estar los bichos: en la hierba del claro, nunca en el cristal, los caminos, la
-## explanada, los edificios (Pilón, trituradora, Santuario, casucha, jaula de familiares). Las
-## mismas reglas que `ValleyDetails._free` (donde se planta la hierba), sacadas de `WorldLayout`.
+## explanada, los edificios (Pilón, trituradora, Santuario, Espejo del Archimago, casucha, jaula
+## de familiares). Las mismas reglas que `ValleyDetails._free` (donde se planta la hierba),
+## sacadas de `WorldLayout`.
 
 static var _paths: Array[PackedVector2Array] = []
 
@@ -28,6 +29,9 @@ static func is_free(x: float, z: float, margin: float) -> bool:
 	if p.distance_to(Vector2(WorldLayout.SANCTUM.x, WorldLayout.SANCTUM.z)) < 4.6 + margin:
 		return false
 	if p.distance_to(Vector2(WorldLayout.HUT.x, WorldLayout.HUT.z)) < 4.6 + margin:
+		return false
+	var mirror := Vector2(WorldLayout.ARCHMAGE_MIRROR.x, WorldLayout.ARCHMAGE_MIRROR.z)
+	if p.distance_to(mirror) < 1.8 + margin:
 		return false
 	if (
 		p.distance_to(Vector2(WorldLayout.FAMILIAR_NEST.x, WorldLayout.FAMILIAR_NEST.z))
