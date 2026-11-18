@@ -136,7 +136,8 @@ func _initialize() -> void:
 	quit(0 if _ok else 1)
 
 
-## Tormenta sobre la hierba con bichos debajo: descarga en el suelo y los revienta. La Supernova sobre un bicho revienta a los de alrededor.
+## Tormenta sobre la hierba con bichos debajo: descarga en el suelo y los revienta. La
+## Supernova sobre un bicho revienta a los de alrededor.
 func _check_critters(main: Node, player: Node3D, storm_recipe: Resource) -> void:
 	var herd: Node = main.get_node(HERD_PATH)
 	herd.set(&"ambient", false)
