@@ -28,6 +28,7 @@ const PAGES: Array[Array] = [
 	[&"bolt", "RAYO", "#ffe66b", "#2a2450", "#1b1838", 0.25],
 	[&"earth", "TIERRA", "#c9a26b", "#2e2a24", "#1f1c18", 0.5],
 	[&"arcane", "ARCANO", "#c79bff", "#24164a", "#170e33", 0.75],
+	[&"staff", "BÁCULO", "#ffc46b", "#2b2140", "#1c152c", 0.1],
 ]
 # i18n
 const PAGE_TITLES: PackedStringArray = [
@@ -37,8 +38,9 @@ const PAGE_TITLES: PackedStringArray = [
 	"CONSTELACIÓN DEL RAYO",
 	"CONSTELACIÓN DE LA TIERRA",
 	"CONSTELACIÓN DEL ARCANO",
+	"CONSTELACIÓN DEL BÁCULO",
 ]
-const TAB_W: int = 36
+const TAB_W: int = 30
 const SMALL: int = UiFonts.SMALL
 const LINE: int = UiFonts.LINE
 ## Primera línea de la descripción de la página derecha (debajo, AHORA y SIGUIENTE se colocan
@@ -65,262 +67,11 @@ const C_PINK := Color("#ff7ad9")
 const C_RED := Color("#c8423a")
 const C_SHADOW := Color("#14183a")
 
-## Iconos de cada rama (8x8): '#' color, '+' brillo, '.' vacío.
-## Mejoras de Tamaño: una bolita que se hace grande.
-const SIZE_ICON: PackedStringArray = [
-	"....####", "...#++##", "..#++###", ".#.#####", "#.#.####", ".#..###.", "#.#.....", ".#......"
-]
-const ICONS: Dictionary[StringName, PackedStringArray] = {
-	&"spark_size": SIZE_ICON,
-	&"fireball_size": SIZE_ICON,
-	&"frost_size": SIZE_ICON,
-	&"thermal_size": SIZE_ICON,
-	&"purity":
-	[
-		"...#....",
-		"..#+#...",
-		".#+++#..",
-		"#++++##.",
-		"#+++###.",
-		"#++####.",
-		".#####..",
-		"..###..."
-	],
-	&"pylon_resonance":
-	[
-		"#..#..#.",
-		".#.#.#..",
-		"..###...",
-		"..#+#...",
-		"..#+#...",
-		"..#+#...",
-		".#####..",
-		"#######."
-	],
-	&"crystal_impulse":
-	[
-		"...##...",
-		"..#++#..",
-		".#++++#.",
-		"..#++#..",
-		"...##...",
-		".#.##.#.",
-		"..####..",
-		"...##..."
-	],
-	&"bag":
-	[
-		"..##.#..",
-		".#..#...",
-		"..####..",
-		".######.",
-		"##+#####",
-		"#+######",
-		"########",
-		".######."
-	],
-	&"spark_power":
-	[
-		"...#....",
-		"...##...",
-		"..###.#.",
-		".#####..",
-		".##+###.",
-		"##+++###",
-		"##+++##.",
-		".#####.."
-	],
-	&"channeling":
-	[
-		"########",
-		".#++++#.",
-		"..#++#..",
-		"...##...",
-		"...##...",
-		"..#..#..",
-		".#.++.#.",
-		"########"
-	],
-	&"resonance":
-	[
-		"...##...",
-		"...##...",
-		"..#++#..",
-		"########",
-		".##++##.",
-		"..####..",
-		".##..##.",
-		"##....##"
-	],
-	&"fireball_power":
-	[
-		"..#..#..",
-		".#.##.#.",
-		"..####..",
-		".##++##.",
-		"#+++++##",
-		"#+++++##",
-		".##+###.",
-		"..####.."
-	],
-	&"telekinesis":
-	[
-		".######.",
-		"#......#",
-		"#.####.#",
-		"#.#..#.#",
-		"#.#.+#.#",
-		"#.#....#",
-		"#.######",
-		"#......."
-	],
-	&"double_jump":
-	[
-		"#.....##",
-		"##...##.",
-		".#####..",
-		"..###...",
-		"..###...",
-		"..####..",
-		"..#####.",
-		"..#####."
-	],
-	&"awaken_arcane":
-	[
-		"..####..",
-		".#....#.",
-		"#..##..#",
-		"#.#++#.#",
-		"#..##..#",
-		".#....#.",
-		"..####..",
-		"........"
-	],
-	# Potencia arcana: anillos de eco alrededor de un núcleo.
-	&"arcane_power":
-	[
-		"..####..",
-		".#....#.",
-		"#.####.#",
-		"#.#++#.#",
-		"#.#++#.#",
-		"#.####.#",
-		".#....#.",
-		"..####.."
-	],
-	&"familiar":
-	[
-		"#......#",
-		"##....##",
-		".######.",
-		"#+#..#+#",
-		"########",
-		".#++++#.",
-		".#++++#.",
-		"..#..#..",
-	],
-	&"familiar_wings":
-	[
-		"......##",
-		"....###.",
-		"..####..",
-		".####+..",
-		"####++..",
-		"###++...",
-		"#.#.#...",
-		"........",
-	],
-	&"familiar_caster":
-	[
-		"#..+...#",
-		"##.+..##",
-		".######.",
-		"#+#..#+#",
-		"########",
-		".#....#.",
-		".#.++.#.",
-		"..####..",
-	],
-	&"levitation":
-	[
-		"...##...",
-		"..####..",
-		"...##...",
-		"..####..",
-		"...##...",
-		"..#..#..",
-		"+.+..+.+",
-		".+.++.+."
-	],
-}
-const PAGE_ICONS: Array[PackedStringArray] = [
-	[
-		"...#....",
-		"..###...",
-		".#####..",
-		"########",
-		"...#....",
-		"..###...",
-		".#...#..",
-		"#.....#."
-	],
-	[
-		"...#....",
-		"...##...",
-		"..###.#.",
-		".#####..",
-		".##+###.",
-		"##+++###",
-		"##+++##.",
-		".#####.."
-	],
-	[
-		"#..#..#.",
-		".#.#.#..",
-		"..###...",
-		"#######.",
-		"..###...",
-		".#.#.#..",
-		"#..#..#.",
-		"........"
-	],
-	[
-		"....##..",
-		"...##...",
-		"..##....",
-		".######.",
-		"....##..",
-		"...##...",
-		"..##....",
-		".##....."
-	],
-	[
-		"........",
-		"..####..",
-		".##++##.",
-		"###++###",
-		"########",
-		".######.",
-		"..####..",
-		"........"
-	],
-	[
-		"..####..",
-		".#....#.",
-		"#..##..#",
-		"#.#++#.#",
-		"#..##..#",
-		".#....#.",
-		"..####..",
-		"........"
-	],
-]
-const LOCK_ICON: PackedStringArray = [
-	"..###...", ".#...#..", ".#...#..", "#######.", "##+++##.", "###+###.", "#######.", "........"
-]
-const MANA_ICON: PackedStringArray = [
-	"...#....", "..###...", "..###...", ".##+##..", ".#+####.", ".#+####.", "..####..", "........"
-]
+## Iconos (ver GrimoireIcons): los usan también el Libro de Combinaciones y el HUD.
+const ICONS: Dictionary[StringName, PackedStringArray] = GrimoireIcons.ICONS
+const PAGE_ICONS: Array[PackedStringArray] = GrimoireIcons.PAGE_ICONS
+const LOCK_ICON: PackedStringArray = GrimoireIcons.LOCK_ICON
+const MANA_ICON: PackedStringArray = GrimoireIcons.MANA_ICON
 
 var is_open: bool = false
 
@@ -698,6 +449,8 @@ func _prereq_names(node: UpgradeNode) -> String:
 	for req: StringName in node.prerequisites:
 		if String(req).begins_with("recipe:"):
 			names.append(tr("DESCUBRIR LA BOLA DE FUEGO"))
+		elif String(req).begins_with("pylon:"):
+			names.append(tr("EL PILÓN AL %d %%") % roundi(float(String(req).get_slice(":", 1)) * 100.0))
 		for n: UpgradeNode in GameState.UPGRADES:
 			if n.id == req:
 				names.append(tr(n.display_name).to_upper())

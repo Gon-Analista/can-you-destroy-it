@@ -1,0 +1,76 @@
+[gd_resource type="Resource" script_class="SpellRecipe" format=3]
+
+[ext_resource type="Script" path="res://data/defs/spell_recipe.gd" id="main"]
+[ext_resource type="Script" path="res://data/defs/spell_tier.gd" id="tier"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_spell_combine_01.ogg" id="combine"]
+[ext_resource type="Resource" path="res://data/spells/vfx_thunder_glacier.tres" id="vis"]
+[ext_resource type="AudioStream" path="res://audio/sfx/amb_sky_charge_loop.ogg" id="loop"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_meteor_fall_01.ogg" id="sfx_meteor_fall_01"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_glacier_crash_01.ogg" id="sfx_glacier_crash_01"]
+
+[sub_resource type="Gradient" id="ramp"]
+offsets = PackedFloat32Array(0, 0.2, 0.45, 0.72, 1)
+colors = PackedColorArray(2.5, 2.7, 2.9, 1, 1, 1.7, 2.3, 1, 0.4, 0.9, 1.8, 1, 0.2, 0.4, 1.1, 1, 0.06, 0.12, 0.45, 1)
+
+[sub_resource type="Resource" id="t"]
+script = ExtResource("tier")
+damage = 12
+speed = 60.0
+wobble = 0.0
+shards_min = 4
+shards_max = 6
+shard_scale = 1.4
+impact_particles = 90
+light_energy = 6.0
+crack_radius = 3.0
+shake = 0.6
+orb_scale = 24.0
+trail_width = 4.0
+trail_length = 0.6
+trail_smoke = 0.6
+color_core = Color(0.95, 1, 1, 1)
+color_glow = Color(0.5, 0.8, 1, 1)
+impact_tint = Color(0.75, 0.9, 1, 1)
+size = 0.5
+cooldown_sec = 4.0
+visual = ExtResource("vis")
+trail_ramp = SubResource("ramp")
+flight_sfx = ExtResource("loop")
+
+[resource]
+script = ExtResource("main")
+id = &"thunder_glacier"
+display_name = "Glaciar Tronante"
+elements = Array[StringName]([&"frost", &"earth", &"bolt"])
+description = "Triple. Un glaciar entero cae del cielo envuelto en rayos: perfora un túnel helado, se parte en esquirlas y los rayos saltan por todo el cristal."
+riddle = "El hielo pesa si le das piedra. Y si además le das un rayo, cae tronando."
+delivery = 1
+damage_multiplier = 6.1
+area_radius = 3.5
+area_hits = 8
+burn_sec = 0.0
+burn_damage = 2
+burn_tick_sec = 0.4
+sky_height = 62.0
+fall_sec = 1.1
+sky_circles = 4
+rain_count = 0
+rain_radius = 4.0
+pierce_depth = 9.0
+freeze_trail = true
+chain_count = 6
+beam_sec = 0.0
+shard_bonus = 1
+circle_color = Color(0.8, 1.2, 1.8, 1)
+circle_hot = Color(1.9, 2, 2.2, 1)
+charge_sec = 1.6
+min_power = 0.5
+cooldown_sec = 4.0
+tier = SubResource("t")
+visual = ExtResource("vis")
+combine_sfx = ExtResource("combine")
+charge_loop_sfx = ExtResource("loop")
+cast_sfx = Array[AudioStream]([ExtResource("sfx_meteor_fall_01")])
+impact_sfx = Array[AudioStream]([ExtResource("sfx_glacier_crash_01")])
+power_stat = &"staff_mult"
+power_upgrade = &"staff_power"

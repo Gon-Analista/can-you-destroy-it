@@ -15,7 +15,7 @@ const TRIPLES: Array[SpellRecipe] = [
 	preload("res://data/spells/recipe_thunder_glacier.tres"),
 	preload("res://data/spells/recipe_supernova.tres"),
 	preload("res://data/spells/recipe_star_rain.tres"),
-	preload("res://data/spells/recipe_magma_tide.tres"),
+	preload("res://data/spells/recipe_eruption.tres"),
 ]
 ## Mejora que da el báculo y sus estadísticas (data/upgrades/staff*.tres).
 const UNLOCK_UPGRADE: StringName = &"staff"

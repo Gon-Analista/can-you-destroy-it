@@ -7,9 +7,13 @@ extends Node
 ## Choque Térmico), que se carga mientras se mantiene y sale al soltar. Desde el nivel 2 la
 ## carga va por etapas, un círculo mágico por etapa con su golpe (ChargeStages, ChargeFeedback).
 ##
+## Con el báculo (StaffCombos) la gema lleva un tercer elemento (R o la rueda lo cambian): si
+## las dos manos y la gema forman una receta triple, al juntar las manos sale la triple.
+##
 ## Para no perder la combinación, un clic con las dos manos listas espera `combine_window_sec`
 ## por si llega el otro; si se suelta antes, sale en el acto. Enfriamiento con "buffer" (si
-## pulsas un poco antes de tiempo, sale en cuanto se pueda), golpe resonante y pools.
+## pulsas un poco antes de tiempo, sale en cuanto se pueda), golpe resonante y pools. Cómo llega
+## cada hechizo al cristal está en SpellDelivery.
 
 const ELEMENT: ElementDef = preload("res://data/elements/spark.tres")
 const RECIPE: SpellRecipe = preload("res://data/spells/recipe_fireball.tres")
@@ -43,6 +47,11 @@ const RECIPES: Array[SpellRecipe] = [
 	preload("res://data/spells/recipe_temper.tres"),
 ]
 const SWITCH_SFX: AudioStream = preload("res://audio/sfx/sfx_spell_combine_01.ogg")
+const STAFF_SFX: Array[AudioStream] = [
+	preload("res://audio/sfx/sfx_staff_cycle_01.ogg"),
+	preload("res://audio/sfx/sfx_staff_cycle_02.ogg"),
+]
+const TRIPLE_SFX: AudioStream = preload("res://audio/sfx/sfx_triple_combine_01.ogg")
 const CAST_SFX: Array[AudioStream] = [
 	preload("res://audio/sfx/sfx_spark_cast_01.ogg"),
 	preload("res://audio/sfx/sfx_spark_cast_02.ogg"),
@@ -59,7 +68,13 @@ const ACTIONS: Array[StringName] = [&"cast_left", &"cast_right"]
 ## Lado que usan las señales y las manos para el hechizo combinado.
 const BOTH_HANDS: int = 2
 
-@export var camera: Camera3D
+@export var camera: Camera3D:
+	set(value):
+		camera = value
+		if _delivery:
+			_delivery.camera = value
+		if _stage_fx:
+			_stage_fx.camera = value
 @export var hands: WizardHands
 
 ## Nivel de la Chispa (lo da la Potencia; en debug, las teclas 1-5 lo fuerzan en todos).
@@ -70,6 +85,8 @@ var hand_element: Array[int] = [0, 0]
 var debug_recipe_level: int = -1
 ## Depuración (modo dios): las manos recargan al instante.
 var debug_no_cooldown: bool = false
+## El báculo: elemento de su gema y las recetas triples.
+var staff := StaffCombos.new()
 var _debug_tier: int = -1
 var _active_recipe: SpellRecipe = RECIPE
 var _cast_sounds: Dictionary[ElementDef, AudioStreamRandomizer] = {}
@@ -168,7 +185,10 @@ func element_of(side: int) -> ElementDef:
 
 ## Nivel del hechizo de una mano: según la mejora de Potencia de su elemento.
 func tier_for(side: int) -> SpellTier:
-	var el: ElementDef = element_of(side)
+	return _element_tier(element_of(side))
+
+
+func _element_tier(el: ElementDef) -> SpellTier:
 	var idx: int = tier_index if el == ELEMENT else roundi(GameState.stat(el.power_stat, 0.0))
 	if _debug_tier >= 0:
 		idx = _debug_tier
@@ -231,8 +251,16 @@ func _hand_origin(side: int) -> Vector3:
 	return camera.global_position + camera.global_basis * Vector3(0, -0.17, -0.6)
 
 
-## Receta para la pareja de elementos de las manos (el orden no importa), o null.
+## Receta para los elementos de las manos (el orden no importa), o null. Con el báculo, si las
+## manos y la gema forman una triple, la triple.
 func recipe_for_hands() -> SpellRecipe:
+	var gem: ElementDef = staff.element(ELEMENTS)
+	if gem:
+		var triple: SpellRecipe = StaffCombos.triple_for(
+			element_of(0).id, element_of(1).id, gem.id
+		)
+		if triple:
+			return triple
 	for r: SpellRecipe in RECIPES:
 		if r.matches(element_of(0).id, element_of(1).id):
 			return r
@@ -266,6 +294,25 @@ func cycle_element(side: int) -> void:
 	Events.hint.emit(
 		tr("AÚN NO CONOCES OTRO ELEMENTO: DESPIÉRTALO EN EL GRIMORIO"), Color("#a5dae5")
 	)
+
+
+## R / rueda: la gema del báculo pasa al siguiente elemento despierto (`dir` -1: al anterior).
+func _cycle_staff(dir: int) -> void:
+	if _combining or not StaffCombos.owned():
+		return
+	var idx: int = staff.cycle(ELEMENTS, dir)
+	if idx < 0:
+		Events.hint.emit(tr("LA GEMA NO CONOCE OTRO ELEMENTO"), Color("#ffc46b"))
+		return
+	var el: ElementDef = ELEMENTS[idx]
+	if hands and hands.staff:
+		hands.staff.set_element(el, true)
+	AudioDirector.play_sfx(STAFF_SFX[idx % STAFF_SFX.size()], -6.0, 0.9 + 0.06 * idx)
+	var triple: SpellRecipe = recipe_for_hands()
+	var msg: String = "%s: %s" % [tr("BÁCULO"), tr(el.display_name).to_upper()]
+	if triple and triple.is_triple():
+		msg += "  ·  " + tr("¡LAS MANOS Y LA GEMA RESUENAN!")
+	Events.hint.emit(msg, el.color)
 
 
 ## Carga de una mano: 0 = recién lanzada, 1 = lista. Sin `side`, la media de las dos
@@ -302,6 +349,14 @@ func _refresh_hands(celebrate: bool, only_side: int = -1) -> void:
 		if only_side >= 0 and side != only_side:
 			continue
 		hands.set_flame_visual(tier_for(side).visual, celebrate, side)
+	if hands.staff and only_side < 0:
+		var first: bool = staff.ensure_element(ELEMENTS)
+		hands.staff.set_element(staff.element(ELEMENTS), celebrate)
+		if first and celebrate:
+			Events.hint.emit(
+				tr("¡BÁCULO! R O LA RUEDA: ELEMENTO DE LA GEMA · JUNTA LAS MANOS PARA UNA TRIPLE"),
+				Color("#ffc46b")
+			)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -313,6 +368,14 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"cycle_element_right"):
 		cycle_element(1)
 		return
+	if event.is_action_pressed(&"cycle_staff"):
+		_cycle_staff(1)
+		return
+	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+		var wheel: MouseButton = (event as InputEventMouseButton).button_index
+		if wheel == MOUSE_BUTTON_WHEEL_UP or wheel == MOUSE_BUTTON_WHEEL_DOWN:
+			_cycle_staff(1 if wheel == MOUSE_BUTTON_WHEEL_UP else -1)
+			return
 	for side: int in 2:
 		if event.is_action_pressed(ACTIONS[side]):
 			_on_press(side)
@@ -517,6 +580,14 @@ func _begin_combine(by_input: bool = true) -> void:
 		)
 		AudioDirector.play_sfx(FIZZLE_SFX, -6.0, 1.2)
 		return
+	var storm_lock: float = _delivery.storm().lock_left()
+	if _active_recipe.delivery == SpellRecipe.Delivery.STORM and storm_lock > 0.0:
+		# Sólo una tormenta a la vez: la nube aún descarga (o el cielo se está calmando).
+		Events.hint.emit(
+			tr("EL CIELO AÚN RUGE: ESPERA %d S") % ceili(storm_lock), Color("#c9b8ff")
+		)
+		AudioDirector.play_sfx(FIZZLE_SFX, -6.0, 1.2)
+		return
 	_combining = true
 	_combine_by_input = by_input
 	_combine_time = 0.0
@@ -524,12 +595,17 @@ func _begin_combine(by_input: bool = true) -> void:
 	var bal: BalanceConfig = GameState.BALANCE
 	_stages.reset(
 		ChargeStages.count_for_level(charge_level(_active_recipe), bal.charge_stages_by_level),
-		_active_recipe.charge_sec,
+		StaffCombos.charge_sec(_active_recipe),
 		bal.charge_stage_min_sec
 	)
 	_stage_fx.begin(_stages.count)
 	if hands:
 		hands.begin_combine(_active_recipe.visual)
+	if _active_recipe.is_triple():
+		# Las manos y la gema: acorde de tres notas y la llama del báculo viaja al orbe.
+		AudioDirector.play_sfx(TRIPLE_SFX, -2.0)
+		if hands and hands.staff:
+			hands.staff.begin_triple()
 	AudioDirector.play_sfx(_active_recipe.combine_sfx, -3.0)
 	_charge_player.stream = _active_recipe.charge_loop_sfx
 	_charge_player.pitch_scale = 0.85
@@ -608,6 +684,8 @@ func _launch_combine() -> void:
 	_start_cooldown(1, cd)
 	if hands:
 		hands.release_combine()
+		if hands.staff and recipe.is_triple():
+			hands.staff.release_triple()
 	var tier: SpellTier = recipe.tier
 	# Eco de X: sale X (con el aspecto del eco) y en el cristal hace lo que hace X.
 	var base: SpellRecipe = SpellEchoes.base_of(recipe)
@@ -619,7 +697,9 @@ func _launch_combine() -> void:
 	hit.resonant = (
 		recipe.delivery == SpellRecipe.Delivery.RESONANCE or _rng.randf() < _resonant_chance()
 	)
-	var damage: int = recipe.damage_for(tier_for(0).damage, tier_for(1).damage, power)
+	var gem: ElementDef = staff.element(ELEMENTS)
+	var gem_damage: int = _element_tier(gem).damage if gem and recipe.is_triple() else 0
+	var damage: int = recipe.damage_for(tier_for(0).damage, tier_for(1).damage, power, gem_damage)
 	var power_stat: StringName = (
 		recipe.power_stat if recipe.power_stat != &"" else effect.power_stat
 	)
@@ -660,6 +740,8 @@ func _cancel_combine() -> void:
 	_stage_fx.end()
 	if hands:
 		hands.cancel_combine()
+		if hands.staff:
+			hands.staff.cancel_triple()
 	AudioDirector.play_sfx(FIZZLE_SFX, -10.0, 0.75)
 
 

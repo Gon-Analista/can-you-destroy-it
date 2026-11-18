@@ -57,6 +57,7 @@ func setup(cam: Camera3D, circles: MagicCircles, aim: Callable, hand_origin: Cal
 	_nova = Supernova.new()
 	_nova.name = "Supernova"
 	add_child(_nova)
+	_nova.circles = _circles
 	_beam_player = AudioStreamPlayer.new()
 	_beam_player.name = "BeamLoop"
 	_beam_player.bus = &"SFX"
