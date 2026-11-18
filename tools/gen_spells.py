@@ -482,7 +482,7 @@ RECIPES = [
          dmg=6.66, area=6.0, area_hits=12, burn=4.0, nova=0.9, charge=1.8, cooldown=4.5, visual="vfx_supernova",
          circle=(1.9, 1.3, 0.8), hot=(2.6, 2.4, 2.0), cast=["sfx_echo_cast_01"], impact=["sfx_nova_blast_01"],
          loop="amb_arcane_charge_loop", staff=True,
-         tier=dict(damage=12, speed=16.0, wobble=0.02, shards_min=5, shards_max=7, shard_scale=1.5, impact_particles=120,
+         tier=dict(damage=12, speed=30.0, wobble=0.02, shards_min=5, shards_max=7, shard_scale=1.5, impact_particles=120,
                    light_energy=8.0, crack_radius=3.6, shake=0.8, orb_scale=14.0, trail_width=1.4, trail_length=0.5,
                    trail_smoke=0.3, core=(1, 1, 0.95), glow=(1, 0.7, 0.4), tint=(1, 0.8, 0.6),
                    ramp=[(3.0, 2.9, 2.6), (2.6, 2.0, 1.0), (2.0, 0.9, 0.9), (1.0, 0.3, 0.9), (0.3, 0.06, 0.4)])),
