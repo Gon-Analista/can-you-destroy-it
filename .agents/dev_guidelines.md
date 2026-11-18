@@ -54,6 +54,7 @@ Tecnologías ya previstas (validar la versión al integrarlas):
 | SFX de venas y Pilón | `tools/sfx_veins.py` (campanas de vena, carga y rayo del Pilón, coro de los hitos) | Semillas fijas. |
 | SFX de la carga por etapas | `tools/sfx_charge_stages.py` (campana por escalón en pentatónica de La, acorde de máxima potencia) | Semillas fijas. |
 | SFX del meteorito | `tools/sfx_meteor.py` (destello en el cielo, silbido de caída, estruendo) | Semillas fijas. |
+| SFX de los bichos | `tools/sfx_critters.py` (boing, chillidos, splorch, bocina, coscorrón) | Semillas fijas. |
 | SFX de familiares | `tools/sfx_familiars.py` (ululatos, píos, aleteo, recoger, invocar) | Semillas fijas. |
 | SFX de movimiento | `tools/sfx_move.py` (doble salto, levitación en bucle, carga agotada) | Semillas fijas. |
 | SFX de la casucha | `tools/sfx_hut.py` (puerta, viento, revelación, ambiente de dentro) | Igual que el resto: semillas fijas. |
@@ -315,6 +316,8 @@ godot --headless --path game --script res://tests/smoke/progression_smoke.gd
   `tests/smoke/charge_stages_smoke.gd`, los escalones de carga por nivel, que cada uno suena una vez y que el
   daño no baja al subir de escalón;
   `tests/smoke/meteor_smoke.gd`, la trayectoria del meteorito (entra alto, de lado y sin atravesar el cristal);
+  `tests/smoke/critters_smoke.gd`, los bichos: zonas de aparición, tope, reventón por el camino real de la mira,
+  que no roban golpes al cristal, el coscorrón sin daño, el Rayo encadenado y la opción sin sangre;
   `tests/smoke/debug_menu_smoke.gd`, que "comprar todo" del menú de depuración lo deja todo al máximo;
   `tests/smoke/settings_smoke.gd`, que las opciones nuevas (FOV, VSync, FPS, invertir Y...) se guardan y se
   aplican, también en pausa;

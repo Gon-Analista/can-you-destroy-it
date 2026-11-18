@@ -150,7 +150,6 @@ func deliver(recipe: SpellRecipe, hit: SpellHit, charge: float) -> void:
 			var cloud: Vector3 = (
 				target + back * STORM_FRONT + Vector3.UP * maxf(STORM_MIN_RISE, dist * STORM_RISE)
 			)
-			print("DBG cam ", camera.global_position, " fwd ", -camera.global_basis.z, " ", camera.name)
 			_storm.start(recipe, hit, cloud, target, aim["normal"], _hand_origin.call(BOTH_HANDS))
 			_trauma(0.45)
 		_:
@@ -274,7 +273,7 @@ func _process(delta: float) -> void:
 		c.draw_beam(origin, aim["position"], _beam_hit.recipe.circle_color)
 	if _beam_tick <= 0.0:
 		_beam_tick = BEAM_TICK
-		var collider: Object = aim["collider"]
+		var collider: Object = null if CritterHerd.beam(_beam_hit, aim) else aim["collider"]
 		if collider is Node and (collider as Node).has_meta(&"mother_crystal"):
 			var sub := SpellHit.new()
 			sub.tier = _beam_hit.tier
@@ -301,7 +300,7 @@ func _trauma(amount: float) -> void:
 
 
 func _on_projectile_arrived(projectile: SparkProjectile) -> void:
-	if projectile.hit.warmup:
+	if projectile.hit.warmup or CritterHerd.intercept(projectile.hit, projectile.target_collider):
 		return
 	var collider: Object = projectile.target_collider
 	if collider is Node and (collider as Node).has_meta(&"mother_crystal"):

@@ -16,6 +16,7 @@ const MUSIC_LAYERS: Array[AudioStream] = [
 var _day_night: DayNight
 var _hut: ApprenticeHut
 var _flock: FamiliarFlock
+var _critters: CritterHerd
 
 @onready var _world: SubViewport = $WorldView/WorldViewport
 @onready var _sun: DirectionalLight3D = $WorldView/WorldViewport/Sun
@@ -34,6 +35,10 @@ func _ready() -> void:
 	_flock = FamiliarFlock.new()
 	_flock.name = "FamiliarFlock"
 	_world.add_child(_flock)
+	# Bichos del valle (critters/): pasean por la hierba y revientan con los hechizos.
+	_critters = CritterHerd.new()
+	_critters.name = "CritterHerd"
+	_world.add_child(_critters)
 	# Se empieza dentro de la casucha, mirando a la puerta: el cristal no se ve hasta abrirla.
 	_hut = ApprenticeHut.new()
 	_hut.name = "ApprenticeHut"
@@ -454,6 +459,7 @@ func _warm_up() -> void:
 	caster.warm_up(front)
 	var tiers: Array[SpellTier] = SpellCaster.ELEMENT.tiers
 	crystal.warm_up(front, Vector3.BACK, tiers[tiers.size() - 1], caster.current_recipe().tier)
+	_critters.warm_up(cam.global_position.lerp(front, 0.2))
 	await _frames(24)
 	_aim(cam, front)
 	await _frames(12)

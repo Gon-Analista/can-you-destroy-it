@@ -233,12 +233,12 @@ func charge_stages() -> ChargeStages:
 	return _stages
 
 
-## Punto al que se apunta (rayo por el centro de la pantalla), y su colisionador.
+## Punto al que se apunta (rayo por el centro de la pantalla), y su colisionador (o un bicho).
 func _aim() -> Dictionary:
 	var from_cam: Vector3 = camera.global_position
 	var forward: Vector3 = -camera.global_basis.z
 	var query := PhysicsRayQueryParameters3D.create(
-		from_cam, from_cam + forward * RAY_LENGTH, 1 | (1 << 1)
+		from_cam, from_cam + forward * RAY_LENGTH, 1 | (1 << 1) | Critter.LAYER
 	)
 	var result: Dictionary = camera.get_world_3d().direct_space_state.intersect_ray(query)
 	if result.is_empty():
