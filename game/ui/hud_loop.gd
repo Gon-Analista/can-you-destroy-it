@@ -57,6 +57,9 @@ var _guide: ObjectiveGuide
 var _hand_tags: Array[Label] = []
 ## Elemento de la gema del báculo (cuando se tiene); late si manos y gema forman una triple.
 var _staff_tag: Label
+## Elemento que muestra ahora cada etiqueta (izquierda, derecha, gema): el texto sólo se rehace
+## cuando cambia (o el idioma), no en cada frame.
+var _tag_shown: Array[ElementDef] = [null, null, null]
 var _shown_fill: float = 0.0
 var _bar_flash: float = 0.0
 var _shown_mana: float = 0.0
@@ -99,7 +102,11 @@ func _ready() -> void:
 	Events.bag_changed.connect(func(_c: int, _cap: int) -> void: _bag_punch = 1.0)
 	Events.bag_full.connect(_on_bag_full)
 	Events.hint.connect(_push_hint)
-	Events.locale_changed.connect(func() -> void: _pylon_title.text = tr("PILÓN DE MANÁ"))
+	Events.locale_changed.connect(
+		func() -> void:
+			_pylon_title.text = tr("PILÓN DE MANÁ")
+			_tag_shown.fill(null)
+	)
 	# El bucle lo enseña el Tutorial (ui/tutorial.gd); estos avisos quedan para partidas que lo
 	# saltaron (demo) y aún no han entregado nada.
 	if GameState.progression.pylon_progress == 0 and GameState.progression.tutorial_step >= 8:
@@ -231,14 +238,18 @@ func _update_hand_tags() -> void:
 		if not l.visible:
 			continue
 		var el: ElementDef = caster.element_of(side)
-		var name: String = tr(el.display_name).to_upper()
-		l.text = ("[Q] " + name) if side == 0 else (name + " [E]")
-		l.add_theme_color_override(&"font_color", el.color)
+		if el != _tag_shown[side]:
+			_tag_shown[side] = el
+			var name: String = tr(el.display_name).to_upper()
+			l.text = ("[Q] " + name) if side == 0 else (name + " [E]")
+			l.add_theme_color_override(&"font_color", el.color)
 	var gem: ElementDef = caster.staff.element(SpellCaster.ELEMENTS)
 	_staff_tag.visible = gem != null
 	if gem:
-		_staff_tag.text = "%s %s [R]" % [tr("BÁCULO"), tr(gem.display_name).to_upper()]
-		_staff_tag.add_theme_color_override(&"font_color", gem.color)
+		if gem != _tag_shown[2]:
+			_tag_shown[2] = gem
+			_staff_tag.text = "%s %s [R]" % [tr("BÁCULO"), tr(gem.display_name).to_upper()]
+			_staff_tag.add_theme_color_override(&"font_color", gem.color)
 		var recipe: SpellRecipe = caster.recipe_for_hands()
 		var ready: bool = recipe != null and recipe.is_triple()
 		_staff_tag.modulate.a = (0.75 + 0.25 * sin(_t * 9.0)) if ready else 0.8

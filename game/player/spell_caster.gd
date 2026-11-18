@@ -67,6 +67,9 @@ const RAY_LENGTH: float = 250.0
 const ACTIONS: Array[StringName] = [&"cast_left", &"cast_right"]
 ## Lado que usan las señales y las manos para el hechizo combinado.
 const BOTH_HANDS: int = 2
+## La rueda del ratón (o un panel táctil, que manda muchos pasos seguidos) cambia la gema como
+## mucho una vez cada tanto (ms).
+const WHEEL_STEP_MS: int = 140
 
 @export var camera: Camera3D:
 	set(value):
@@ -119,6 +122,7 @@ var _delivery: SpellDelivery
 ## Resonancia Arcana: segundos en los que todo golpe es resonante y hasta poder repetirla.
 var _resonance_left: float = 0.0
 var _resonance_lock: float = 0.0
+var _wheel_at: int = -WHEEL_STEP_MS
 
 
 func _ready() -> void:
@@ -403,7 +407,10 @@ func _staff_input(event: InputEvent) -> bool:
 	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
 		var wheel: MouseButton = (event as InputEventMouseButton).button_index
 		if wheel == MOUSE_BUTTON_WHEEL_UP or wheel == MOUSE_BUTTON_WHEEL_DOWN:
-			_cycle_staff(1 if wheel == MOUSE_BUTTON_WHEEL_UP else -1)
+			var now: int = Time.get_ticks_msec()
+			if now - _wheel_at >= WHEEL_STEP_MS:
+				_wheel_at = now
+				_cycle_staff(1 if wheel == MOUSE_BUTTON_WHEEL_UP else -1)
 			return true
 	return false
 
