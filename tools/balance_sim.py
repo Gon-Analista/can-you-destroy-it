@@ -667,7 +667,8 @@ class Game:
                 each = max(1, gd_round(h / n))
                 y = ZERO
                 for k in range(n):
-                    el = r.elements[k % len(r.elements)]
+                    first = r.elements.index("bolt") if "bolt" in r.elements else 0
+                    el = r.elements[(k + first) % len(r.elements)]  # empieza por el rayo
                     if el == "frost":
                         hail = max(1, gd_round(each / HAIL_PER_VOLLEY))
                         for _ in range(HAIL_PER_VOLLEY):

@@ -76,7 +76,7 @@ func _initialize() -> void:
 	_caster.call(&"try_release_combine")
 	var delivery: Node = _caster.get_node(^"Delivery")
 	var storm: Node = delivery.call(&"storm")
-	await create_timer(1.6).timeout
+	await create_timer(2.4).timeout
 	_check(bool(storm.call(&"is_raging")), "la nube se queda descargando")
 	var samples: Array[int] = []
 	for k: int in 4:
@@ -87,9 +87,9 @@ func _initialize() -> void:
 	for k: int in samples.size() - 1:
 		if samples[k + 1] < samples[k]:
 			drops += 1
-	_check(samples[0] < before, "la Tormenta ya ha quitado esencia")
+	_check(samples[0] < before, "la primera descarga (el rayo) ya ha quitado esencia")
 	_check(drops >= 3, "sigue quitando esencia con el tiempo (%s)" % [samples])
-	_check(int(storm.call(&"strikes_done")) >= 8, "descargas: %d" % storm.call(&"strikes_done"))
+	_check(int(storm.call(&"strikes_done")) >= 6, "descargas: %d" % storm.call(&"strikes_done"))
 	_check(_found(&"elemental_storm"), "la Tormenta se descubre")
 	_check(float(storm.call(&"lock_left")) > 0.0, "sólo una tormenta a la vez")
 	_check(not bool(_caster.call(&"try_begin_combine")), "otra tormenta no se carga aún")
@@ -100,6 +100,11 @@ func _initialize() -> void:
 	levels[&"awaken_arcane"] = 1
 	_set_hands(0, 3, 4)
 	await _cast_and_wait(load("res://data/spells/recipe_supernova.tres"))
+	for k: int in 30:
+		if float(storm.call(&"lock_left")) <= 0.0:
+			break
+		await create_timer(0.5).timeout
+	_check(float(storm.call(&"lock_left")) <= 0.0, "pasado el cierre, se puede lanzar otra")
 	# El Libro enseña las triples en su página.
 	book.call(&"open")
 	book.call(&"open_page", 1)

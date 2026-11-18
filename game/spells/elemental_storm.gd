@@ -208,7 +208,9 @@ func _process(delta: float) -> void:
 				set_process(false)
 		return
 	if _t < 0.0 or _recipe == null:
-		set_process(false)
+		# Ya sin nube: el reloj sigue hasta que se pueda lanzar otra (lock_left).
+		if _clock >= _lock_until:
+			set_process(false)
 		return
 	_t += delta
 	var life: float = _recipe.storm_sec
@@ -230,7 +232,6 @@ func _process(delta: float) -> void:
 		visible = false
 		_sound.stop()
 		_rain.emitting = false
-		set_process(false)
 
 
 ## Las bocanadas giran despacio alrededor del centro y se revuelven; el relámpago las ilumina.
@@ -250,13 +251,14 @@ func _animate_puffs(delta: float, k: float) -> void:
 		puff.set_instance_shader_parameter(&"fade", clampf(k * 1.4, 0.0, 1.0))
 
 
-## Una descarga: el elemento que toca por turno (en el orden de la receta).
+## Una descarga: el elemento que toca por turno (en el orden de la receta, desde el rayo).
 func _strike(k: int) -> void:
 	var crystal: MotherCrystal = _delivery.crystal()
 	if crystal == null:
 		return
 	var els: Array[StringName] = _recipe.elements
-	var el: StringName = els[k % els.size()]
+	# Empieza por el rayo (si lo lleva): la primera descarga es instantánea y se ve.
+	var el: StringName = els[(k + maxi(els.find(&"bolt"), 0)) % els.size()]
 	var from: Vector3 = _cloud_point()
 	match el:
 		&"bolt":
