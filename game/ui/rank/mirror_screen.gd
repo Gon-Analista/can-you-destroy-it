@@ -158,13 +158,13 @@ func _refresh() -> void:
 	queue_redraw()
 
 
-## Qué pide el rango `def`: "Despierta la Tierra con el Pilón al 9 % (o el Pilón al 12 %)".
+## Qué pide el rango `def`: "Despierta la Tierra (Pilón 9 %)  ·  o Pilón 12 %".
 func requirement_text(def: RankDef) -> String:
 	var txt: String = tr(def.requirement) if def.requirement != "" else ""
 	if def.key_upgrade != &"" and def.key_pylon > 0.0:
-		txt += " " + tr("con el Pilón al %s") % percent_text(def.key_pylon)
+		txt += " " + tr("(Pilón %s)") % percent_text(def.key_pylon)
 	if def.pylon_alone <= 1.0:
-		txt += " " + tr("(o el Pilón al %s)") % percent_text(def.pylon_alone)
+		txt += "  ·  " + tr("o Pilón %s") % percent_text(def.pylon_alone)
 	return txt
 
 
@@ -180,7 +180,10 @@ static func time_text(sec: float) -> String:
 static func percent_text(ratio: float) -> String:
 	var pct: float = ratio * 100.0
 	var decimals: int = 2 if pct < 1.0 else (1 if pct < 10.0 else 0)
-	return String.num(pct, decimals).replace(".", ",") + " %"
+	var txt: String = String.num(pct, decimals)
+	if txt.contains("."):
+		txt = txt.rstrip("0").rstrip(".")
+	return txt.replace(".", ",") + " %"
 
 
 func _unhandled_input(event: InputEvent) -> void:
