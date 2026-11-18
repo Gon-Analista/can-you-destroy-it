@@ -78,11 +78,11 @@ func _run() -> void:
 	real.warmup = false
 	p.call(&"launch", from, to, real, null)
 	var lit: float = 0.0
-	for i: int in 80:
-		if not p.get(&"active"):
+	for i: int in 400:
+		if not p.get(&"active") or float(p.get(&"_t")) >= 1.0:
 			break
 		lit = maxf(lit, FireGlow.strength())
-		await process_frame
+		await create_timer(0.01).timeout
 	_check(lit > 0.3, "la bola tiñe el cristal al acercarse (%.2f)" % lit)
 	for i: int in 3:
 		await process_frame
