@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CritterConfig" format=3]
+
+[ext_resource type="Script" path="res://data/defs/critter_config.gd" id="1_ccfg"]
+[ext_resource type="Script" path="res://data/defs/critter_def.gd" id="7_cdef"]
+[ext_resource type="Resource" path="res://data/critters/gelatin.tres" id="2_gelatin"]
+[ext_resource type="Resource" path="res://data/critters/dienton.tres" id="3_dienton"]
+[ext_resource type="Resource" path="res://data/critters/pelusin.tres" id="4_pelusin"]
+[ext_resource type="Resource" path="res://data/critters/babosin.tres" id="5_babosin"]
+[ext_resource type="Resource" path="res://data/critters/ciclope.tres" id="6_ciclope"]
+
+[resource]
+script = ExtResource("1_ccfg")
+species = Array[ExtResource("7_cdef")]([ExtResource("2_gelatin"), ExtResource("3_dienton"), ExtResource("4_pelusin"), ExtResource("5_babosin"), ExtResource("6_ciclope")])

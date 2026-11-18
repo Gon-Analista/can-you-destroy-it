@@ -34,6 +34,8 @@ var seen_upgrades: Dictionary[StringName, int] = {}
 var rank: int = 0
 ## Cifras del Espejo del Archimago y tiempo jugado.
 var stats := PlayStats.new()
+## Bichos del valle reventados (critters/).
+var critters_popped: int = 0
 
 
 func _init(p_total_essence: int) -> void:
@@ -182,6 +184,7 @@ func to_dict() -> Dictionary:
 		"seen_upgrades": seen_upgrades.duplicate(),
 		"rank": rank,
 		"stats": stats.to_dict(),
+		"critters_popped": critters_popped,
 	}
 
 
@@ -200,6 +203,7 @@ func load_dict(data: Dictionary) -> void:
 	deepest_layer = maxi(int(data.get("deepest_layer", 0)), 0)
 	hut_door_open = bool(data.get("hut_door_open", false))
 	tutorial_step = int(data.get("tutorial_step", 8 if pylon_progress > 0 else 0))
+	critters_popped = maxi(int(data.get("critters_popped", 0)), 0)
 	learned.clear()
 	var saved_learned: Dictionary = data.get("learned", {})
 	for key: Variant in saved_learned:

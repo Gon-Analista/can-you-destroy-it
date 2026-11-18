@@ -30,6 +30,8 @@ var reduce_flashes: bool = false:
 		HdFx.flash_scale = REDUCED_FLASH if value else 1.0
 ## Números de daño que saltan del cristal.
 var damage_numbers: bool = true
+## Los bichos revientan en baba, ojos y huesitos (gore de dibujos); si no, en confeti y estrellas.
+var cartoon_gore: bool = true
 ## true: se mantiene el clic para cargar el combinado y sale al soltar; false: un clic lo
 ## empieza a cargar y el siguiente lo lanza.
 var hold_to_charge: bool = true
@@ -140,6 +142,7 @@ func restore_defaults() -> void:
 	screen_shake = 1.0
 	reduce_flashes = false
 	damage_numbers = true
+	cartoon_gore = true
 	hold_to_charge = true
 	mouse_sensitivity = 1.0
 	invert_y = false
@@ -189,6 +192,7 @@ func save_settings() -> void:
 	cfg.set_value("accessibility", "screen_shake", screen_shake)
 	cfg.set_value("accessibility", "reduce_flashes", reduce_flashes)
 	cfg.set_value("accessibility", "damage_numbers", damage_numbers)
+	cfg.set_value("accessibility", "cartoon_gore", cartoon_gore)
 	cfg.set_value("controls", "hold_to_charge", hold_to_charge)
 	cfg.set_value("controls", "mouse_sensitivity", mouse_sensitivity)
 	cfg.set_value("controls", "invert_y", invert_y)
@@ -211,6 +215,7 @@ func load_settings() -> void:
 	screen_shake = float(cfg.get_value("accessibility", "screen_shake", screen_shake))
 	reduce_flashes = bool(cfg.get_value("accessibility", "reduce_flashes", reduce_flashes))
 	damage_numbers = bool(cfg.get_value("accessibility", "damage_numbers", damage_numbers))
+	cartoon_gore = bool(cfg.get_value("accessibility", "cartoon_gore", cartoon_gore))
 	hold_to_charge = bool(cfg.get_value("controls", "hold_to_charge", hold_to_charge))
 	mouse_sensitivity = float(cfg.get_value("controls", "mouse_sensitivity", mouse_sensitivity))
 	invert_y = bool(cfg.get_value("controls", "invert_y", invert_y))
