@@ -628,7 +628,7 @@ func play_accent(stream: AudioStream, pitch: float, db: float) -> void:
 
 ## Para CrystalCombos: destello de todo el cristal (0..1).
 func flash(amount: float) -> void:
-	_global_flash = maxf(_global_flash, amount)
+	_global_flash = maxf(_global_flash, amount * Settings.flash_scale())
 	set_process(true)
 
 

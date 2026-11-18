@@ -271,9 +271,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		var motion: InputEventMouseMotion = event
 		var sens: float = mouse_sensitivity * Settings.mouse_sensitivity
 		rotate_y(-motion.relative.x * sens)
-		_head.rotation.x = clampf(
-			_head.rotation.x - motion.relative.y * sens, deg_to_rad(-80), deg_to_rad(80)
-		)
+		var dy: float = motion.relative.y * (-1.0 if Settings.invert_y else 1.0)
+		_head.rotation.x = clampf(_head.rotation.x - dy * sens, deg_to_rad(-80), deg_to_rad(80))
 
 
 func _physics_process(delta: float) -> void:

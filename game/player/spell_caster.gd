@@ -72,6 +72,8 @@ var tier_index: int = 0
 var hand_element: Array[int] = [0, 0]
 ## Demo/depuración: fuerza el nivel de los combinados (1..10); -1 = el comprado.
 var debug_recipe_level: int = -1
+## Depuración (modo dios): las manos recargan al instante.
+var debug_no_cooldown: bool = false
 var _debug_tier: int = -1
 var _active_recipe: SpellRecipe = RECIPE
 var _cast_sounds: Dictionary[ElementDef, AudioStreamRandomizer] = {}
@@ -168,11 +170,17 @@ func tier_for(side: int) -> SpellTier:
 	return el.tiers[clampi(idx, 0, el.tiers.size() - 1)]
 
 
-## Demo: todos los hechizos a nivel `level` (1..10) sin comprar nada.
-func set_debug_level(level: int) -> void:
+## Demo y menú de depuración: todos los hechizos a nivel `level` (1..10) sin comprar nada;
+## 0 vuelve a los niveles comprados. Con `celebrate`, las manos lo celebran.
+func set_debug_level(level: int, celebrate: bool = false) -> void:
 	_debug_tier = level - 1
 	debug_recipe_level = level
-	_refresh_hands(false)
+	_refresh_hands(celebrate)
+
+
+## Nivel forzado por depuración (1..10), o 0 si manda lo comprado.
+func debug_level() -> int:
+	return maxi(debug_recipe_level, 0)
 
 
 ## Nivel (1..10) del hechizo de una mano.
@@ -202,10 +210,11 @@ func _aim() -> Dictionary:
 	return result
 
 
-## Origen de un hechizo: la palma de la mano `side` (o las dos juntas) a 0,85 m de la cámara.
+## Origen de un hechizo: la palma de la mano `side` (o las dos juntas), donde va su llama.
 func _hand_origin(side: int) -> Vector3:
 	if hands:
-		return camera.project_position(hands.palm_screen_position(side), 0.85)
+		var depth: float = WizardHands.orb_depth(camera)
+		return camera.project_position(hands.palm_screen_position(side), depth)
 	return camera.global_position + camera.global_basis * Vector3(0, -0.17, -0.6)
 
 
@@ -329,6 +338,9 @@ func try_release_combine() -> void:
 
 func _on_press(side: int) -> void:
 	if _combining:
+		# "Clic para cargar" (Opciones): el siguiente clic suelta el combinado.
+		if not Settings.hold_to_charge:
+			_launch_combine()
 		return
 	var other: int = 1 - side
 	if _pending_side == other:
@@ -350,7 +362,8 @@ func _on_press(side: int) -> void:
 
 func _on_release(side: int) -> void:
 	if _combining:
-		_launch_combine()
+		if Settings.hold_to_charge:
+			_launch_combine()
 	elif _pending_side == side:
 		# Clic corto: no hay combinación, sale ya.
 		_pending_side = -1
@@ -788,6 +801,8 @@ static func _sized_damage(damage: int, size: float) -> int:
 
 
 func _start_cooldown(side: int, seconds: float) -> void:
+	if debug_no_cooldown:
+		seconds = 0.0
 	_cooldown[side] = seconds
 	_cooldown_total[side] = maxf(seconds, 0.001)
 	_was_ready[side] = false

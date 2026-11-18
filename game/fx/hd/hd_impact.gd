@@ -95,7 +95,7 @@ func play(
 		tier.crack_radius * 2.6 * (1.6 if resonant else 1.0) * (1.4 if big else 1.0) * scale_k
 	)
 	_size[i] = size
-	_peak[i] = 0.7 + (0.6 if resonant else 0.0) - (0.3 if big else 0.0)
+	_peak[i] = (0.7 + (0.6 if resonant else 0.0) - (0.3 if big else 0.0)) * Settings.flash_scale()
 	var ramp: Gradient = tier.trail_ramp if tier.trail_ramp else _default_ramp
 	var glow: Color = Color("#ffd27a") if resonant else tier.color_glow
 	_fire[i].set_shader_parameter("ramp", HdFx.smooth_ramp(ramp))
