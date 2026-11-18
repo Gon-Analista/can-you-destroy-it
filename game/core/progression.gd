@@ -40,6 +40,8 @@ var tear_pity: float = 0.0
 var loose_tears: PackedVector3Array = PackedVector3Array()
 ## Depuración ("comprar todo"): compra también lo que aún no se ve (la Gran Convergencia).
 var reveal_all: bool = false
+## Bichos del valle reventados (critters/).
+var critters_popped: int = 0
 
 
 func _init(p_total_essence: int) -> void:
@@ -203,6 +205,7 @@ func to_dict() -> Dictionary:
 		"tears_total": tears_total,
 		"tear_pity": tear_pity,
 		"loose_tears": _vec_list(loose_tears),
+		"critters_popped": critters_popped,
 	}
 
 
@@ -221,6 +224,7 @@ func load_dict(data: Dictionary) -> void:
 	deepest_layer = maxi(int(data.get("deepest_layer", 0)), 0)
 	hut_door_open = bool(data.get("hut_door_open", false))
 	tutorial_step = int(data.get("tutorial_step", 8 if pylon_progress > 0 else 0))
+	critters_popped = maxi(int(data.get("critters_popped", 0)), 0)
 	learned.clear()
 	var saved_learned: Dictionary = data.get("learned", {})
 	for key: Variant in saved_learned:

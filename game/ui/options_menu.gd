@@ -209,6 +209,12 @@ func _build_accessibility(page: VBoxContainer) -> void:
 		Settings.damage_numbers,
 		func(on: bool) -> void: Settings.damage_numbers = on
 	)
+	_switch(
+		page,
+		tr("SANGRE DE CARICATURA"),
+		Settings.cartoon_gore,
+		func(on: bool) -> void: Settings.cartoon_gore = on
+	)
 
 
 ## Chuleta de las teclas (las mismas frases que la ayuda del HUD), en dos columnas.

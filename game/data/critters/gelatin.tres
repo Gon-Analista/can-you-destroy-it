@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="CritterDef" format=3]
+
+[ext_resource type="Script" path="res://data/defs/critter_def.gd" id="1_cdef"]
+
+[resource]
+script = ExtResource("1_cdef")
+id = &"gelatin"
+display_name = "Gelatín"
+shape = 0
+gait = 0
+size = 0.8
+body_color = Color(0.2039, 0.8392, 0.7529, 1)
+belly_color = Color(0.7059, 1, 0.949, 1)
+accent_color = Color(0.1216, 0.6196, 0.5569, 1)
+goo_color = Color(0.2471, 0.9412, 0.6902, 1)
+cheek_color = Color(1, 0.4784, 0.851, 1)
+eye_radius = 0.15
+pupil_ratio = 0.55
+eye_wobble = 1.3
+walk_speed = 0.6
+flee_speed = 3.0
+hop_height = 0.32
+hop_sec = 0.45
+idle_min_sec = 1.5
+idle_max_sec = 4.0
+voice_pitch = 1.1
+emotes = PackedInt32Array(0, 1, 2, 3)
+weight = 1.4
+min_pylon = 0.0
+splinters = 2
+chunks = 10
+drops_tooth = false
+drops_bone = true
