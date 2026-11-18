@@ -5,8 +5,9 @@ extends Control
 ## grande letra a letra, su frase y el rango x de 6; suena la fanfarria con coro (una por rango),
 ## la cámara se cierra de golpe y tiembla, una columna de luz envuelve al mago con un círculo mágico
 ## a sus pies (`RankAura`), la manga y la gema de las manos cambian (`HandRankStyle`), el escudo del
-## HUD destella (`RankBadge`) y la música suma su capa (Main). Si se sube con un libro abierto (se
-## despierta un elemento en el Grimorio), espera a que se cierre.
+## HUD destella al cerrarse la franja (`RankBadge`; antes quedaría tapado por ella) y la música
+## suma su capa (Main). Si se sube con un libro abierto (se despierta un elemento en el
+## Grimorio), espera a que se cierre.
 
 const RANK_SFX: Array[AudioStream] = [
 	preload("res://audio/sfx/sfx_rank_up_01.ogg"),
@@ -22,6 +23,8 @@ const BAND_TOP: float = 50.0
 const BAND_BOTTOM: float = 200.0
 const CREST_CENTER := Vector2(320, 94)
 const RAYS: int = 14
+## Segundos antes del final en que el escudo del HUD toma el rango nuevo (la franja ya se cierra).
+const BADGE_LEAD: float = 0.6
 
 ## Rango que se está celebrando (-1 = nada).
 var rank: int = -1
@@ -29,6 +32,8 @@ var rank: int = -1
 var _age: float = 0.0
 var _pending: int = -1
 var _modal: bool = false
+## El escudo del HUD aún no ha celebrado el rango de esta ceremonia.
+var _badge_pending: bool = false
 var _title: Label
 var _motto: Label
 var _count: Label
@@ -104,7 +109,7 @@ func play(r: int) -> void:
 	AudioDirector.play_sfx(RANK_SFX[rank - 1], 0.0)
 	HitStop.trigger(get_tree(), 0.25, 0.2)
 	get_tree().call_group(&"hand_rank_style", &"celebrate", rank)
-	get_tree().call_group(&"rank_badge", &"celebrate", rank)
+	_badge_pending = true
 	_world_fx(def)
 	set_process(true)
 
@@ -136,6 +141,9 @@ func _process(delta: float) -> void:
 	_title.modulate.a = out
 	_motto.modulate.a = clampf((_age - 0.9) / 0.4, 0.0, 1.0) * out
 	_count.modulate.a = clampf((_age - 1.2) / 0.4, 0.0, 1.0) * out
+	if _badge_pending and _age >= DURATION - BADGE_LEAD:
+		_badge_pending = false
+		get_tree().call_group(&"rank_badge", &"celebrate", rank)
 	if _age >= DURATION:
 		rank = -1
 		visible = false

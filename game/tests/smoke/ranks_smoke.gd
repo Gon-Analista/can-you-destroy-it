@@ -124,6 +124,12 @@ func _in_game() -> void:
 		"la gema de las manos cambia"
 	)
 	var badge: Node = current_scene.get_node(HUD).find_child("RankBadge", true, false)
+	_check(int(badge.get(&"_rank")) == 0, "el escudo del HUD espera a que se cierre la franja")
+	for i: int in 900:
+		await process_frame
+		if not bool(ceremony.call(&"is_playing")):
+			break
+	_check(not bool(ceremony.call(&"is_playing")), "la ceremonia termina")
 	_check(int(badge.get(&"_rank")) == 1, "el HUD enseña el rango")
 	# Más comprobaciones y entregas sin pasar el siguiente: no se repite.
 	for i: int in 5:
