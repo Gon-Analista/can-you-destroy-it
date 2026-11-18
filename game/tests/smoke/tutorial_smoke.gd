@@ -127,9 +127,13 @@ func _initialize() -> void:
 	await create_timer(0.3).timeout
 	_check(bool(guide.call(&"has_new_upgrade")), "hay una mejora nueva que pagar")
 	_check(int(guide.get(&"wanted")) == Guidance.Kind.SANCTUM, "y la guía lleva al Santuario")
-	ev.emit_signal(&"grimoire_opened")
-	ev.emit_signal(&"grimoire_closed")
-	await create_timer(0.3).timeout
+	# Se abre el Grimorio de verdad (el Libro de Hechizos y el Espejo emiten la misma señal y no
+	# cuentan como verlo).
+	var grimoire: Node = hud.get_node(^"Grimoire")
+	ev.emit_signal(&"grimoire_requested", true)
+	await process_frame
+	grimoire.call(&"close")
+	await create_timer(0.6).timeout
 	_check(not bool(guide.call(&"has_new_upgrade")), "vista en el Grimorio: ya no es nueva")
 	_check(int(guide.get(&"wanted")) != Guidance.Kind.SANCTUM, "y la guía deja de insistir")
 	# Lo visto se guarda: tras guardar y cargar no vuelve a insistir.

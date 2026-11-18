@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="RankDef" format=3]
+
+[ext_resource type="Script" path="res://data/defs/rank_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"magus"
+display_name = "Magus"
+motto = "La tierra tiembla cuando cargas."
+key_upgrade = &"awaken_earth"
+key_pylon = 0.09
+pylon_alone = 0.12
+min_destroyed = 0.0
+or_finished = false
+requirement = "Despierta la Tierra"
+color = Color(1, 0.702, 0.2784, 1)
+color_light = Color(1, 0.9137, 0.7608, 1)
+color_dark = Color(0.5412, 0.2471, 0.102, 1)
+rim = Color(1, 0.8235, 0.4784, 1)
+emblem = 3
+music_layers = 4
+hand_gem = Color(1, 0.5412, 0.2275, 1)
+hand_trim = Color(1, 0.8235, 0.4784, 1)
+hand_runes = Color(1, 0.702, 0.2784, 1)
+hand_sleeve = Color(1, 1, 1, 1)
+hand_prismatic = false

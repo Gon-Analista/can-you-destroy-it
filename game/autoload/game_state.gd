@@ -54,6 +54,18 @@ const LAYERS: Array[CrystalLayerDef] = [
 	preload("res://data/crystal/layer_core.tres"),
 ]
 
+## Estadísticas del Espejo del Archimago que se cuentan solas (`Progression.stats`).
+## Segundos tras romper el Núcleo hasta la ceremonia de Leyenda.
+const LEGEND_DELAY_SEC: float = 5.0
+const STAT_SPELLS: StringName = &"spells_cast"
+const STAT_SHARDS: StringName = &"shards_collected"
+const STAT_MANA: StringName = &"mana_earned"
+const STAT_STREAK: StringName = &"best_streak"
+const STAT_GEODES: StringName = &"geodes_broken"
+const STAT_VEINS: StringName = &"veins_hit"
+const STAT_RESONANT: StringName = &"resonant_hits"
+const STAT_DELIVERIES: StringName = &"deliveries"
+
 var progression: Progression = Progression.new(BALANCE.total_essence)
 ## Esencia que guarda el Núcleo (el último 1 %): ningún golpe baja de aquí; sólo la Gran
 ## Convergencia la rompe (ver EndingDirector).
@@ -73,19 +85,45 @@ var _menu_open: bool = false
 
 
 func _ready() -> void:
-	# Estadísticas de la pantalla final (Progression.time_played y shards_collected; los hechizos
-	# lanzados los cuenta el SpellCaster, sin los ecos del Arcano).
-	Events.shard_collected.connect(
-		func(_t: ShardType, _n: int, _at: Vector3) -> void: progression.shards_collected += 1
-	)
+	# Cifras del Espejo y de la pantalla final (en Progression.stats). Los hechizos lanzados los
+	# cuenta el SpellCaster (sin los ecos del Arcano); los fragmentos, collect_shard.
 	Events.menu_opened.connect(func() -> void: _menu_open = true)
 	Events.menu_closed.connect(func() -> void: _menu_open = false)
+	Events.streak_changed.connect(
+		func(s: int) -> void: progression.stats.record_best(STAT_STREAK, s)
+	)
+	Events.geode_broken.connect(func(_at: Vector3) -> void: progression.stats.count(STAT_GEODES))
+	Events.vein_hit.connect(
+		func(_h: SpellHit, _e: StringName) -> void: progression.stats.count(STAT_VEINS)
+	)
+	Events.spell_impacted.connect(
+		func(hit: SpellHit) -> void:
+			if hit.resonant and hit.by_player:
+				progression.stats.count(STAT_RESONANT)
+	)
+	# Romper el Núcleo hace Leyenda: su ceremonia entra con la fiesta, tras el estallido y antes
+	# de la pantalla final (EndingDirector la abre a los `ending_screen_delay_sec`).
+	Events.game_completed.connect(
+		func() -> void:
+			get_tree().create_timer(LEGEND_DELAY_SEC, false).timeout.connect(_check_rank)
+	)
 
 
 func _process(delta: float) -> void:
 	if not _menu_open and not progression.game_complete and not get_tree().paused:
 		# Tiempo real (sin hit-stop ni la velocidad de depuración).
 		progression.time_played += delta / maxf(Engine.time_scale, 0.01)
+
+
+## Sube de rango si ya se ha ganado el siguiente (o varios: se celebra el más alto). Se llama al
+## entregar, comprar y golpear; no cuesta nada si no hay cambio.
+func _check_rank() -> void:
+	var r: int = WizardRanks.earned(progression, progression.rank)
+	if r <= progression.rank:
+		return
+	var previous: int = progression.rank
+	progression.rank = r
+	Events.rank_changed.emit(r, previous)
 
 
 ## Fracción del cristal ya destruida (0..1).
@@ -116,6 +154,7 @@ func hit_crystal(damage: int, at: Vector3) -> int:
 			Events.grimoire_final_revealed.emit()
 		if progression.is_crystal_destroyed():
 			Events.crystal_destroyed.emit()
+		_check_rank()
 	return removed
 
 
@@ -147,6 +186,7 @@ func collect_shard(type: ShardType, at: Vector3) -> bool:
 	if count == 0:
 		Events.bag_full.emit()
 		return false
+	progression.stats.count(STAT_SHARDS)
 	Events.shard_collected.emit(type, count, at)
 	Events.bag_changed.emit(progression.bag_count(), bag_capacity())
 	return true
@@ -161,6 +201,7 @@ func send_direct(type: ShardType, at: Vector3) -> bool:
 	if crusher == null:
 		return false
 	crusher.receive_direct(type, at)
+	progression.stats.count(STAT_SHARDS)
 	Events.shard_collected.emit(type, 0, at)
 	return true
 
@@ -190,6 +231,8 @@ func shard_value(type: ShardType) -> int:
 func deliver(value: int, pylon_value: int = -1) -> void:
 	var before: float = progression.pylon_ratio()
 	progression.deliver(value, pylon_value)
+	progression.stats.count(STAT_MANA, maxi(value, 0))
+	progression.stats.count(STAT_DELIVERIES)
 	Events.shard_delivered.emit(value)
 	Events.mana_changed.emit(progression.mana)
 	var ratio: float = progression.pylon_ratio()
@@ -198,6 +241,7 @@ func deliver(value: int, pylon_value: int = -1) -> void:
 	for i: int in ManaPylon.MARKS.size():
 		if not ManaPylon.mark_reached(before, i) and ManaPylon.mark_reached(ratio, i):
 			Events.pylon_milestone.emit(i, ManaPylon.MARKS[i])
+	_check_rank()
 
 
 ## Llamar cada vez que se lanza una combinación: la primera vez se celebra el descubrimiento.
@@ -218,6 +262,7 @@ func buy_upgrade(node: UpgradeNode) -> bool:
 		Events.tears_changed.emit(progression.tears)
 	if node.id == GRAND_CONVERGENCE:
 		Events.grand_convergence_unlocked.emit()
+	_check_rank()
 	return true
 
 
@@ -244,7 +289,7 @@ func cheapest_affordable() -> UpgradeNode:
 	return best if best else tear_node
 
 
-## Niveles comprados en total (para el rango del mago y la música).
+## Niveles comprados en total (objetos del Santuario, guía y Espejo).
 func total_upgrade_levels() -> int:
 	var n: int = 0
 	for node: UpgradeNode in UPGRADES:

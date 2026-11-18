@@ -40,6 +40,11 @@ var tear_pity: float = 0.0
 var loose_tears: PackedVector3Array = PackedVector3Array()
 ## Depuración ("comprar todo"): compra también lo que aún no se ve (la Gran Convergencia).
 var reveal_all: bool = false
+## Rango del mago ganado (índice en `WizardRanks.RANKS`; 0 = Aprendiz). Sólo sube. Se guarda para
+## no repetir la ceremonia al cargar.
+var rank: int = 0
+## Cifras del Espejo del Archimago y tiempo jugado.
+var stats := PlayStats.new()
 ## Bichos del valle reventados (critters/).
 var critters_popped: int = 0
 ## El final (GDD 9): la Gran Convergencia rompió el Núcleo. Al volver a cargar, el valle celebra.
@@ -48,9 +53,22 @@ var game_complete: bool = false
 var ending_seen: bool = false
 ## Estadísticas de la pantalla final: segundos jugados (sin menús ni pausa; se paran al acabar),
 ## hechizos lanzados (sueltos y combinados) y fragmentos recogidos.
-var time_played: float = 0.0
-var spells_cast: int = 0
-var shards_collected: int = 0
+## Cifras de la pantalla final: viven en `stats` (las mismas del Espejo del Archimago).
+var time_played: float:
+	get:
+		return stats.play_time
+	set(value):
+		stats.play_time = value
+var spells_cast: int:
+	get:
+		return stats.tally(&"spells_cast")
+	set(value):
+		stats.counts[&"spells_cast"] = value
+var shards_collected: int:
+	get:
+		return stats.tally(&"shards_collected")
+	set(value):
+		stats.counts[&"shards_collected"] = value
 
 
 func _init(p_total_essence: int) -> void:
@@ -217,12 +235,11 @@ func to_dict() -> Dictionary:
 		"tears_total": tears_total,
 		"tear_pity": tear_pity,
 		"loose_tears": _vec_list(loose_tears),
+		"rank": rank,
+		"stats": stats.to_dict(),
 		"critters_popped": critters_popped,
 		"game_complete": game_complete,
 		"ending_seen": ending_seen,
-		"time_played": time_played,
-		"spells_cast": spells_cast,
-		"shards_collected": shards_collected,
 	}
 
 
@@ -244,9 +261,6 @@ func load_dict(data: Dictionary) -> void:
 	critters_popped = maxi(int(data.get("critters_popped", 0)), 0)
 	game_complete = bool(data.get("game_complete", false))
 	ending_seen = bool(data.get("ending_seen", game_complete))
-	time_played = maxf(float(data.get("time_played", 0.0)), 0.0)
-	spells_cast = maxi(int(data.get("spells_cast", 0)), 0)
-	shards_collected = maxi(int(data.get("shards_collected", 0)), 0)
 	learned.clear()
 	var saved_learned: Dictionary = data.get("learned", {})
 	for key: Variant in saved_learned:
@@ -264,6 +278,7 @@ func load_dict(data: Dictionary) -> void:
 		var xyz: Array = v if v is Array else []
 		if xyz.size() == 3:
 			loose_tears.append(Vector3(float(xyz[0]), float(xyz[1]), float(xyz[2])))
+	stats.load_dict(data.get("stats", {}))
 	geodes.clear()
 	var saved_geodes: Dictionary = data.get("geodes", {})
 	for key: Variant in saved_geodes:
@@ -279,3 +294,9 @@ static func _vec_list(points: PackedVector3Array) -> Array:
 	for p: Vector3 in points:
 		out.append([p.x, p.y, p.z])
 	return out
+	# El rango guardado tal cual; las partidas de antes de los rangos reciben el que les toca,
+	# sin ceremonia.
+	if data.has("rank"):
+		rank = clampi(int(data["rank"]), 0, WizardRanks.last())
+	else:
+		rank = WizardRanks.earned(self)

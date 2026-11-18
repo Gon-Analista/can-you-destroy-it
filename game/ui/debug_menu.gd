@@ -287,6 +287,7 @@ func _build() -> void:
 	row = _row(box, tr("TRUCOS"))
 	_fps_button = _button(row, tr("MOSTRAR FPS"), _toggle_fps)
 	_god_button = _button(row, tr("MODO DIOS"), _toggle_god)
+	_button(row, tr("SUBIR DE RANGO"), _rank_up)
 	for b: Button in [_fps_button, _god_button]:
 		b.toggle_mode = true
 	row = _row(box, tr("BICHOS"))
@@ -662,6 +663,15 @@ func _warp(where: StringName) -> void:
 	at.y = Valley.ground_height(at.x, at.z) + 0.2
 	_main.debug_teleport(at, target)
 	_feedback(tr("TELETRANSPORTE: %s") % tr(name_key), WARP_SFX)
+
+
+## El rango siguiente con su ceremonia (se cierra el menú para verla).
+func _rank_up() -> void:
+	if _main == null or GameState.progression.rank >= WizardRanks.last():
+		_feedback(tr("NO HAY RANGO MÁS ALTO"), TICK_SFX)
+		return
+	close()
+	_main.debug_set_rank(GameState.progression.rank + 1, true)
 
 
 func _save_now() -> void:

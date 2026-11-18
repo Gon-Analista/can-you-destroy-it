@@ -12,6 +12,17 @@ const MUSIC_LAYERS: Array[AudioStream] = [
 	preload("res://audio/music/music_valley_4_magus.ogg"),
 	preload("res://audio/music/music_valley_5_archimago.ogg"),
 ]
+## Demo `--stats`: cifras del Espejo de una partida avanzada.
+const DEMO_STATS: Dictionary[StringName, int] = {
+	&"spells_cast": 6184,
+	&"shards_collected": 3411,
+	&"mana_earned": 128450,
+	&"best_streak": 47,
+	&"resonant_hits": 512,
+	&"geodes_broken": 6,
+	&"veins_hit": 233,
+	&"deliveries": 1210,
+}
 
 var _day_night: DayNight
 var _hut: ApprenticeHut
@@ -68,14 +79,14 @@ func _ready() -> void:
 	_ending.setup(self, _world, _player, _hud, _day_night)
 	add_child(_ending)
 	_hud.debug_menu.bind(self, _player, _day_night, _hut)
-	# Hasta que exista el sistema de rangos, se empieza en Aprendiz (1 capa).
-	AudioDirector.play_music(MUSIC_LAYERS, _arg_int("--music-layers=", 1))
-	GameState.emit_all()
-	# La música crece con el mago: una capa más cada 3 niveles comprados (Aprendiz -> Archimago).
-	AudioDirector.set_music_layers(_rank_layers(), 0.1)
-	Events.upgrade_bought.connect(
-		func(_id: StringName, _l: int) -> void: AudioDirector.set_music_layers(_rank_layers())
+	# La música crece con el rango del mago (GDD 11.4): una capa por rango, de Aprendiz a
+	# Archimago (Leyenda las mantiene todas). Al subir de rango la capa nueva entra con la
+	# ceremonia (RankCeremony); al cargar, ya suena la del rango guardado.
+	AudioDirector.play_music(MUSIC_LAYERS, rank_music_layers())
+	Events.rank_changed.connect(
+		func(_r: int, _p: int) -> void: AudioDirector.set_music_layers(rank_music_layers(), 4.0)
 	)
+	GameState.emit_all()
 	if OS.is_debug_build():
 		_setup_autoplay()
 	# La música del título suena ya durante la pantalla de carga.
@@ -303,6 +314,24 @@ func _setup_autoplay() -> void:
 		elif a == "--complete":
 			# --complete: la partida ya terminada (el valle de fiesta, sin cristal).
 			_ending.demo_complete.call_deferred()
+		elif a.begins_with("--rank="):
+			# --rank=N: ya con ese rango (0 Aprendiz ... 5 Leyenda), sin ceremonia.
+			debug_set_rank(int(a.get_slice("=", 1)), false)
+		elif a.begins_with("--rank-up="):
+			# --rank-up=N: sube al rango N con su ceremonia al acabar la pantalla de carga.
+			var to: int = int(a.get_slice("=", 1))
+			debug_set_rank(to - 1, false)
+			get_tree().create_timer(3.4).timeout.connect(debug_set_rank.bind(to, true))
+		elif a == "--mirror":
+			# --mirror: abre las estadísticas del Espejo del Archimago al acabar la carga.
+			get_tree().create_timer(3.3).timeout.connect(_hud.mirror_screen.open)
+		elif a == "--stats":
+			# --stats: cifras de una partida avanzada para el Espejo (capturas).
+			var st: PlayStats = GameState.progression.stats
+			st.play_time = 4931.0
+			for k: StringName in DEMO_STATS:
+				st.counts[k] = DEMO_STATS[k]
+			GameState.progression.critters_popped = 37
 		elif a.begins_with("--time="):
 			_day_night.time_of_day = float(a.get_slice("=", 1))
 		elif a.begins_with("--warp="):
@@ -557,8 +586,11 @@ func _place(node: Node3D, at: Vector3) -> void:
 	node.position = Vector3(at.x, Valley.ground_height(at.x, at.z) - 0.05, at.z)
 
 
-func _rank_layers() -> int:
-	return maxi(_arg_int("--music-layers=", 1), 1 + GameState.total_upgrade_levels() / 3)
+## Capas de música del rango actual (`RankDef.music_layers`); `--music-layers=N` pone un mínimo.
+func rank_music_layers() -> int:
+	return maxi(
+		_arg_int("--music-layers=", 1), WizardRanks.def_of(GameState.progression.rank).music_layers
+	)
 
 
 func _demo_dig(hits: int) -> void:
@@ -673,6 +705,21 @@ func debug_teleport(at: Vector3, look_at: Vector3) -> void:
 	var to: Vector3 = look_at - (at + Vector3.UP * 1.6)
 	_player.rotation.y = atan2(-to.x, -to.z)
 	(_player.get_node(^"Head") as Node3D).rotation.x = atan2(to.y, Vector2(to.x, to.z).length())
+
+
+## Depuración y demo: pone el rango `rank`. Con `ceremony` (y si sube) se celebra como una subida
+## de verdad; si no, el HUD, las manos y la música pasan a él sin más.
+func debug_set_rank(rank: int, ceremony: bool) -> void:
+	var prog: Progression = GameState.progression
+	var previous: int = prog.rank
+	prog.rank = clampi(rank, 0, WizardRanks.last())
+	if ceremony and prog.rank > previous:
+		Events.rank_changed.emit(prog.rank, previous)
+		return
+	AudioDirector.set_music_layers(rank_music_layers(), 0.1)
+	get_tree().call_group(&"hand_rank_style", &"apply", prog.rank)
+	get_tree().call_group(&"rank_badge", &"show_rank", prog.rank)
+	get_tree().call_group(&"archmage_mirror", &"show_rank", prog.rank)
 
 
 ## Depuración y demo: pone el Pilón a `ratio` sin celebrar los hitos (el valle ya cambiado).

@@ -94,6 +94,9 @@ var _crusher: CrystalCrusher
 var _sanctum: Sanctum
 var _tutorial: Tutorial
 var _flock: FamiliarFlock
+## El libro abierto es el Grimorio. El Libro de Hechizos y el Espejo del Archimago también emiten
+## `grimoire_opened`, pero no enseñan mejoras: abrirlos no las da por vistas.
+var _in_grimoire: bool = false
 
 
 func _ready() -> void:
@@ -103,8 +106,8 @@ func _ready() -> void:
 	_dist = _label(UiFonts.BOLD)
 	Events.mana_changed.connect(func(_m: int) -> void: _recheck_upgrades())
 	Events.upgrade_bought.connect(func(_id: StringName, _l: int) -> void: _recheck_upgrades())
-	Events.grimoire_opened.connect(_mark_seen)
-	Events.grimoire_closed.connect(_mark_seen)
+	Events.grimoire_opened.connect(_on_book_opened)
+	Events.grimoire_closed.connect(_on_book_closed)
 	Events.locale_changed.connect(_refresh_tag)
 	_recheck_upgrades()
 
@@ -149,6 +152,19 @@ func _recheck_upgrades() -> void:
 		if not seen.has(n.id) or (early and seen[n.id] < lv):
 			_new_upgrade = true
 			return
+
+
+func _on_book_opened() -> void:
+	var g: Grimoire = get_tree().get_first_node_in_group(&"grimoire") as Grimoire
+	_in_grimoire = g != null and g.is_open
+	if _in_grimoire:
+		_mark_seen()
+
+
+func _on_book_closed() -> void:
+	if _in_grimoire:
+		_in_grimoire = false
+		_mark_seen()
 
 
 ## Al abrir o cerrar el Grimorio, lo que se puede pagar ya está visto.

@@ -142,9 +142,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+## Con un libro abierto (Grimorio, Libro de Hechizos o Espejo del Archimago), Esc lo cierra a él
+## en vez de abrir la pausa encima.
 func _can_pause() -> bool:
 	var g: Grimoire = get_parent().get_node_or_null(^"Grimoire") as Grimoire
-	return g == null or not g.is_open
+	var b: SpellBook = get_parent().get_node_or_null(^"SpellBook") as SpellBook
+	var m: MirrorScreen = get_parent().get_node_or_null(^"MirrorScreen") as MirrorScreen
+	return not ((g and g.is_open) or (b and b.is_open) or (m and m.is_open))
 
 
 func _rebuild_main() -> void:
