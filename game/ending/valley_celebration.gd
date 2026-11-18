@@ -21,6 +21,7 @@ const POP_SFX: Array[AudioStream] = [
 const BELLS_SFX: AudioStream = preload("res://audio/sfx/sfx_bells_peal_01.ogg")
 const CHOIR_SFX: AudioStream = preload("res://audio/sfx/sfx_choir_celebrate_01.ogg")
 const COLUMN_HEIGHT: float = 900.0
+const CLOUD_HOLE_HEIGHT: float = 95.0
 const FIREWORKS: int = 8
 const ROCKET_SEC: float = 1.5
 ## Colores de las palmeras (los de la magia del juego).
@@ -35,6 +36,10 @@ const COLORS: PackedColorArray = [
 ## Dónde están los campanarios (los de ValleyMilestones) y desde dónde salen cohetes.
 const LAUNCH_SITES: Array[Vector3] = [
 	Vector3(-130, 0, -30), Vector3(-85, 0, -105), Vector3(75, 0, -135), Vector3(85, 0, -215)
+]
+## Más cohetes desde el borde del claro (se ven mires a donde mires).
+const CLEARING_SITES: Array[Vector3] = [
+	Vector3(-95, 0, 45), Vector3(95, 0, 20), Vector3(10, 0, -110), Vector3(-40, 0, 135)
 ]
 
 var started: bool = false
@@ -109,8 +114,8 @@ func start(instant: bool = false) -> void:
 
 func _build_column() -> void:
 	var cyl := CylinderMesh.new()
-	cyl.top_radius = 9.0
-	cyl.bottom_radius = 2.2
+	cyl.top_radius = 16.0
+	cyl.bottom_radius = 3.6
 	cyl.height = COLUMN_HEIGHT
 	cyl.radial_segments = 20
 	cyl.rings = 1
@@ -166,18 +171,18 @@ func _build_fireworks() -> void:
 		g.colors = PackedColorArray([Color(2.0, 1.6, 1.0), Color(1.0, 0.4, 0.2, 0.0)])
 		trail.set_ramp(g)
 		_rocket_trails.append(trail)
-		var burst: GPUParticles3D = HdFx.sparks(150, 26.0, 0.9, PackedColorArray([COLORS[0]]))
+		var burst: GPUParticles3D = HdFx.sparks(170, 34.0, 1.3, PackedColorArray([COLORS[0]]))
 		burst.name = "Burst%d" % i
 		burst.lifetime = 2.6
 		burst.trail_lifetime = 0.35
 		burst.top_level = true
-		burst.visibility_aabb = AABB(Vector3(-80, -80, -80), Vector3(160, 160, 160))
+		burst.visibility_aabb = AABB(Vector3(-100, -100, -100), Vector3(200, 200, 200))
 		var pm: ParticleProcessMaterial = burst.process_material
 		pm.gravity = Vector3(0, -5.0, 0)
 		pm.damping_min = 6.0
 		pm.damping_max = 9.0
-		pm.initial_velocity_min = 22.0
-		pm.initial_velocity_max = 30.0
+		pm.initial_velocity_min = 28.0
+		pm.initial_velocity_max = 36.0
 		pm.emission_sphere_radius = 0.5
 		add_child(burst)
 		_bursts.append(burst)
@@ -304,10 +309,12 @@ func _update_column(delta: float) -> void:
 	# El agujero en las nubes, en la dirección en la que se ve la columna desde la cámara.
 	var cam: Camera3D = get_viewport().get_camera_3d()
 	if _sky and cam:
-		var top: Vector3 = _pylon_at + Vector3.UP * COLUMN_HEIGHT * 0.6
+		# Las nubes del cielo están "en el infinito": el agujero va donde la columna se ve a la
+		# altura de las nubes bajas.
+		var top: Vector3 = _pylon_at + Vector3.UP * CLOUD_HOLE_HEIGHT
 		_sky.set_shader_parameter("hole_dir", (top - cam.global_position).normalized())
 		var open: float = smoothstep(1.0, 2.4, _column_t)
-		_sky.set_shader_parameter("hole_size", lerpf(1.0, 0.988, open) if open > 0.0 else 0.0)
+		_sky.set_shader_parameter("hole_size", lerpf(1.0, 0.982, open) if open > 0.0 else 0.0)
 
 
 func _update_fireworks(delta: float) -> void:
@@ -344,7 +351,11 @@ func _launch() -> void:
 	_fw_next = (_fw_next + 1) % FIREWORKS
 	if _fw_t[i] >= 0.0 and _fw_t[i] < ROCKET_SEC + 1.0:
 		return
-	var site: Vector3 = LAUNCH_SITES[_rng.randi() % LAUNCH_SITES.size()]
+	var site: Vector3 = (
+		LAUNCH_SITES[_rng.randi() % LAUNCH_SITES.size()]
+		if _rng.randf() < 0.55
+		else CLEARING_SITES[_rng.randi() % CLEARING_SITES.size()]
+	)
 	var from := site + Vector3(_rng.randf_range(-20, 20), 0.0, _rng.randf_range(-20, 20))
 	from.y = Valley.ground_height(from.x, from.z) + 2.0
 	_fw_from[i] = from

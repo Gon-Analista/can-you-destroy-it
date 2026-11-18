@@ -480,7 +480,7 @@ func debug_trim(keep: float, then: Callable) -> void:
 static func reachable_shell(v: CrystalVolume, src: PackedFloat32Array) -> float:
 	var total: float = 0.0
 	var vol: float = v.cell * v.cell * v.cell * 8.0
-	var r2: float = v.core_radius * v.core_radius
+	var r2: float = (v.core_radius + v.cell) * (v.core_radius + v.cell)
 	for z: int in range(0, v.size.z, 2):
 		for y: int in range(0, v.size.y, 2):
 			var row: int = v.size.x * (y + v.size.y * z)
@@ -493,7 +493,7 @@ static func reachable_shell(v: CrystalVolume, src: PackedFloat32Array) -> float:
 					continue
 				var p: Vector3 = v.origin + Vector3(x, y, z) * v.cell
 				if p.distance_squared_to(v.core_center) < r2:
-					continue
+					continue  # el Núcleo (y el borde de su esfera) no cuenta
 				var fill: float = clampf(0.5 - d / v.cell, 0.0, 1.0)
 				total += fill * vol * v.layer_density[v.layer_at(p)]
 	return total
@@ -517,7 +517,7 @@ func _process(delta: float) -> void:
 	_update_debris(delta)
 	if state == State.EXPOSED or state == State.CRACKING:
 		_update_orb(delta)
-	elif _task < 0 and _scan_task < 0 and not _debris_busy():
+	elif state == State.GONE and _task < 0 and _scan_task < 0 and not _debris_busy():
 		set_process(false)
 
 

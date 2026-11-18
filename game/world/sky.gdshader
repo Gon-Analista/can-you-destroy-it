@@ -135,7 +135,8 @@ void sky() {
 			float in_hole = hole_size > 0.0 ? step(hole_size, hd) : 0.0;
 			col = mix(col, cc * cloud_tint.rgb, step(0.02, h) * (1.0 - in_hole));
 			float edge = hole_size > 0.0 ? step(hole_size - 0.012, hd) * (1.0 - in_hole) : 0.0;
-			col = mix(col, hole_color.rgb * 1.3, edge * 0.8);
+			float glow = hole_size > 0.0 ? smoothstep(hole_size - 0.05, hole_size, hd) : 0.0;
+			col = mix(col, hole_color.rgb * 1.3, max(edge * 0.6, step(dither, glow * 0.5) * 0.35));
 		}
 	}
 	if (d.y < 0.0) {

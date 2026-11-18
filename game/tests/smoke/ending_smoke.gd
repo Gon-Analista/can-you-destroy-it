@@ -24,6 +24,7 @@ func _initialize() -> void:
 	await _settle()
 	await _world(gs, current_scene)
 	await _reload(gs)
+	await _fallback(gs)
 	print("ending_smoke: ", "OK" if _ok else "FALLO")
 	quit(0 if _ok else 1)
 
@@ -212,6 +213,44 @@ func _reload(gs: Node) -> void:
 		int((current_scene.get_node(^"EndingDirector").call(&"convergence")).get(&"state")) == 0,
 		"la Gran Convergencia ya no se arma"
 	)
+	gs.call(&"reset")
+
+
+## Red de seguridad: si ya no queda nada a tiro fuera del Núcleo pero la cuenta no llega al 99 %
+## (el volumen y la cuenta no cuadran del todo), el Núcleo queda expuesto igual.
+func _fallback(gs: Node) -> void:
+	var prog: Progression = gs.get(&"progression")
+	var balance: BalanceConfig = gs.get(&"BALANCE")
+	var scan_sec: float = balance.core_reveal_scan_sec
+	balance.core_reveal_scan_sec = 0.5
+	reload_current_scene()
+	await _settle()
+	var crystal: Node3D = current_scene.get_node(^"WorldView/WorldViewport/MotherCrystal")
+	var reveal: Node3D = crystal.get_node(^"CoreReveal")
+	var volume: RefCounted = crystal.get(&"volume")
+	var reveal_script: Script = reveal.get_script()
+	var full: float = reveal_script.call(&"reachable_shell", volume, volume.get(&"sdf"))
+	_check(full > prog.total_essence * 0.5, "cristal entero: casi todo a tiro (%.0f)" % full)
+	var done: Array[bool] = [false]
+	reveal.call(&"debug_trim", 0.0, func() -> void: done[0] = true)
+	var waited: float = 0.0
+	while not done[0] and waited < 30.0:
+		await create_timer(0.25).timeout
+		waited += 0.25
+	var left: float = reveal_script.call(&"reachable_shell", volume, volume.get(&"sdf"))
+	_check(
+		left < prog.total_essence * balance.core_reveal_leftover,
+		"sin cristal fuera del Núcleo: nada a tiro (%.0f)" % left
+	)
+	prog.essence = roundi(prog.total_essence * 0.04)
+	_check(not bool(gs.get(&"core_exposed")), "la cuenta se ha quedado en el 96 %")
+	waited = 0.0
+	while int(reveal.get(&"state")) == 0 and waited < 20.0:
+		await create_timer(0.25).timeout
+		waited += 0.25
+	_check(int(reveal.get(&"state")) != 0, "el Núcleo queda expuesto igual (%.1f s)" % waited)
+	_check(bool(gs.get(&"core_exposed")), "y la cuenta pasa al 99 %%")
+	balance.core_reveal_scan_sec = scan_sec
 	gs.call(&"reset")
 
 

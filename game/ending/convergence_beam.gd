@@ -36,7 +36,7 @@ func _ready() -> void:
 		var strand := SpellTrail.new()
 		strand.hd = true
 		strand.name = "Strand%d" % i
-		strand.width = 0.9
+		strand.width = 0.55
 		strand.length_sec = 0.4
 		strand.near_depth = 2.0
 		strand.max_scale = 3.0
@@ -70,7 +70,7 @@ func launch(
 		add_child(_orb)
 	_orb.visible = true
 	_orb.charge = 1.0
-	_orb.scale = Vector3.ONE * 2.0
+	_orb.scale = Vector3.ONE * 0.8
 	_orb.global_position = from
 	_orb.appear()
 	for i: int in STRANDS:
@@ -101,10 +101,12 @@ func _process(delta: float) -> void:
 	side = side.normalized() if side.length() > 0.01 else Vector3.RIGHT
 	var up: Vector3 = side.cross(dir).normalized()
 	_orb.global_position = head
-	_orb.scale = Vector3.ONE * lerpf(2.0, ORB_SCALE, smoothstep(0.0, 0.35, u))
+	# Pegado a la cámara es pequeño (si no, tapa la pantalla); crece al alejarse.
+	var away: float = clampf(head.distance_to(_from) / 14.0, 0.0, 1.0)
+	_orb.scale = Vector3.ONE * lerpf(0.8, ORB_SCALE, away)
 	_light.global_position = head
 	_light.light_energy = 6.0 + 6.0 * u
-	var braid: float = lerpf(0.25, 2.2, sin(PI * minf(u * 1.3, 1.0))) * (1.0 - u * 0.5)
+	var braid: float = lerpf(0.05, 1.8, away) * (1.0 - u * 0.45)
 	var phase: float = u * TAU * TURNS
 	_bolt_t -= delta
 	var bolts: bool = _bolt_t <= 0.0

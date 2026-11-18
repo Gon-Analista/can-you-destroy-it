@@ -220,7 +220,6 @@ func _on_struck(_at: Vector3) -> void:
 			_celebration.start()
 			AudioDirector.stop_theme(4.0)
 			AudioDirector.set_music_layers(5, 3.0)
-			Events.hint.emit(tr("¡EL VALLE ENTERO LO CELEBRA!"), Color("#ffd27a"))
 	)
 	tree.create_timer(GameState.BALANCE.ending_screen_delay_sec).timeout.connect(show_final_screen)
 
