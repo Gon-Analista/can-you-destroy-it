@@ -30,6 +30,8 @@ const BOLT_GOLD := Color(1.0, 0.9, 0.45)
 const MASK_GROUND: int = 1 | (1 << 1)
 ## Probabilidad de que una descarga vaya a por un bicho que haya bajo la nube.
 const CRITTER_CHANCE: float = 0.6
+## Distancia (m) a partir de la cual las gotas de lluvia tienen su grosor entero.
+const RAIN_FULL_AT: float = 45.0
 
 var _delivery: SpellDelivery
 var _circles: MagicCircles
@@ -190,9 +192,13 @@ func start(
 	_sound.volume_db = -30.0
 	_sound.play()
 	_rain.global_position = cloud - Vector3.UP * 1.5
-	(_rain.process_material as ParticleProcessMaterial).emission_box_extents = Vector3(
-		_radius, 0.5, _radius
-	)
+	var rain_pm: ParticleProcessMaterial = _rain.process_material
+	rain_pm.emission_box_extents = Vector3(_radius, 0.5, _radius)
+	# Gotas finas de cerca (la nube puede estar casi encima del mago) y gruesas de lejos.
+	var cam: Camera3D = get_viewport().get_camera_3d()
+	var dist: float = cam.global_position.distance_to(cloud) if cam else RAIN_FULL_AT
+	rain_pm.scale_min = clampf(dist / RAIN_FULL_AT, 0.3, 1.0)
+	rain_pm.scale_max = rain_pm.scale_min
 	_rain.emitting = false
 	set_process(true)
 
