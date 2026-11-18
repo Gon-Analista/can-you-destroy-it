@@ -60,6 +60,23 @@ func _initialize() -> void:
 	_check(int(staff.get(&"element_index")) == 0, "R: salta el Arcano dormido y vuelve a la Chispa")
 	_caster.call(&"_cycle_staff", -1)
 	_check(int(staff.get(&"element_index")) == 3, "rueda abajo: vuelve a la Tierra")
+	# Girar la gema varias veces no deja una cola de avisos viejos: sólo queda el último (Tierra),
+	# a la vista o esperando su turno.
+	var loop: Node = main.get_node(^"HUDLayer/Hud/Loop")
+	var hint: Label = loop.get(&"_hint")
+	var topic: String = TranslationServer.translate("BÁCULO")
+	var gem_hints: Array[String] = []
+	if hint.visible and hint.text.get_slice(":", 0) == topic:
+		gem_hints.append(hint.text)
+	for h: Array in loop.get(&"_hint_queue"):
+		if String(h[0]).get_slice(":", 0) == topic:
+			gem_hints.append(String(h[0]))
+	var earth: Resource = load("res://data/elements/earth.tres")
+	var earth_name: String = TranslationServer.translate(String(earth.get(&"display_name")))
+	_check(
+		gem_hints.size() == 1 and gem_hints[0].contains(earth_name.to_upper()),
+		"un solo aviso de la gema, el de ahora: %s" % [gem_hints]
+	)
 	# Manos + gema = triple; si no, la pareja.
 	_set_hands(0, 1, 0)
 	var pair: Resource = _caster.call(&"recipe_for_hands")

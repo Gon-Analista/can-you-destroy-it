@@ -154,9 +154,27 @@ func _push_hint(text: String, color: Color) -> void:
 	if _hint.visible and _hint.text == text:
 		_hint_t = maxf(_hint_t, HINT_SEC * 0.6)
 		return
+	# Un aviso nuevo del mismo tema (lo de antes de los dos puntos: "BÁCULO: ...", "EL CIELO AÚN
+	# RUGE: ...") sustituye al viejo en vez de hacer cola: al girar la gema varias veces seguidas
+	# sólo se lee la última.
+	var key: String = _hint_key(text)
+	for i: int in range(_hint_queue.size() - 1, -1, -1):
+		if _hint_key(String(_hint_queue[i][0])) == key:
+			_hint_queue.remove_at(i)
+	if _hint.visible and _hint_key(_hint.text) == key:
+		_hint.text = text
+		_hint.add_theme_color_override(&"font_color", color)
+		_hint_t = HINT_SEC
+		return
 	_hint_queue.append([text, color])
 	if not _hint.visible:
 		_next_hint()
+
+
+## Tema de un aviso: lo que va antes de los dos puntos (o el aviso entero).
+static func _hint_key(text: String) -> String:
+	var at: int = text.find(":")
+	return text.substr(0, at) if at > 0 else text
 
 
 func _next_hint() -> void:
