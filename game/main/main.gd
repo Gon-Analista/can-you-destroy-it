@@ -195,9 +195,14 @@ func _setup_autoplay() -> void:
 			# --discover=fireball,meteor: combinaciones ya descubiertas (Libro de Combinaciones).
 			for id: String in a.get_slice("=", 1).split(","):
 				GameState.progression.discover_recipe(StringName(id))
-		elif a == "--book":
+		elif a == "--book" or a == "--book-triples":
+			# --book-triples: el Libro abierto por la página de las triples.
+			var page: int = 1 if a == "--book-triples" else 0
 			get_tree().create_timer(0.8).timeout.connect(
-				func() -> void: (_hud.get_node(^"SpellBook") as SpellBook).open()
+				func() -> void:
+					var book: SpellBook = _hud.get_node(^"SpellBook")
+					book.open()
+					book.open_page(page)
 			)
 		elif a.begins_with("--menu="):
 			# --menu=title|pause|options[N]: abre ese menú (options2: la pestaña 2, Controles,

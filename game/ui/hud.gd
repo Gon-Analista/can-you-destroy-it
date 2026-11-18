@@ -393,13 +393,18 @@ func _on_recipe_discovered(recipe: SpellRecipe) -> void:
 	_discovery_name.visible = true
 	_discovery_time = DISCOVERY_SEC
 	var found: int = GameState.progression.discovered_recipes.size()
+	var total: int = SpellCaster.RECIPES.size() + StaffCombos.TRIPLES.size()
+	var triple: bool = recipe.is_triple()
 	_discovery_title.text = (
-		tr("¡COMBINACIÓN NUEVA!")
+		(tr("¡COMBINACIÓN TRIPLE!") if triple else tr("¡COMBINACIÓN NUEVA!"))
 		+ "   "
-		+ tr("%d / %d  ·  B LIBRO") % [found, SpellCaster.RECIPES.size()]
+		+ tr("%d / %d  ·  B LIBRO") % [found, total]
 	)
 	AudioDirector.play_sfx(DISCOVERY_SFX, -2.0)
-	HitStop.trigger(get_tree(), 0.22, 0.15)
+	# Las triples se celebran un poco más (el tiempo se para más y suena el acorde del báculo).
+	HitStop.trigger(get_tree(), 0.34 if triple else 0.22, 0.15)
+	if triple:
+		AudioDirector.play_sfx(SpellCaster.TRIPLE_SFX, -4.0, 1.12)
 
 
 func _show_banner(text: String, color: Color) -> void:

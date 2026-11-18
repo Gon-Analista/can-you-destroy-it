@@ -653,10 +653,17 @@ func _update_combine(delta: float) -> void:
 		)
 		if camera is CameraRig:
 			(camera as CameraRig).add_trauma(delta * 0.25 * k)
-	elif _stages.is_staged() or lvl >= ElementDef.ASCENDED_LEVEL or _is_arcane_recipe(r):
+	elif (
+		_stages.is_staged()
+		or lvl >= ElementDef.ASCENDED_LEVEL
+		or _is_arcane_recipe(r)
+		or r.is_triple()
+	):
 		# Círculos mágicos que se abren hacia donde apuntas mientras cargas: uno por etapa (y
-		# siempre en los arcanos: los Ecos, uno por eco).
-		var arcane_n: int = maxi(r.echo_count, 2) if _is_arcane_recipe(r) else 0
+		# siempre en los arcanos, uno por eco, y en las triples, uno por elemento).
+		var arcane_n: int = (
+			3 if r.is_triple() else (maxi(r.echo_count, 2) if _is_arcane_recipe(r) else 0)
+		)
 		_circles.charging(
 			k,
 			maxi(maxi(_stages.count, lvl - ElementDef.ASCENDED_LEVEL + 1), arcane_n),
