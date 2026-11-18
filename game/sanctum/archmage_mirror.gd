@@ -45,10 +45,10 @@ func _ready() -> void:
 	_build_glass()
 	_build_crest()
 	_build_fx()
-	_apply_rank(GameState.rank())
+	show_rank(GameState.progression.rank)
 	Events.rank_changed.connect(
 		func(r: int, _p: int) -> void:
-			_apply_rank(r)
+			show_rank(r)
 			_flash = 1.0
 	)
 
@@ -115,7 +115,8 @@ func _process(delta: float) -> void:
 	_crest.modulate = Color.WHITE.lerp(Color(2.5, 2.5, 2.5), _flash)
 
 
-func _apply_rank(rank: int) -> void:
+## Colores del cristal, luz y escudo del rango `rank`.
+func show_rank(rank: int) -> void:
 	var def: RankDef = WizardRanks.def_of(rank)
 	_glass_mat.set_shader_parameter("color_deep", def.color_dark.darkened(0.55))
 	_glass_mat.set_shader_parameter("color_mid", def.color_dark.lerp(def.color, 0.45))

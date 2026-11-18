@@ -431,7 +431,10 @@ func _process(delta: float) -> void:
 	)
 	# Con un libro abierto, el HUD del bucle (Pilón, bolsa, manos) asomaba por los bordes.
 	_loop.visible = (
-		not _grimoire.is_open and not _book.is_open and not mirror_screen.is_open and not menu.is_open()
+		not _grimoire.is_open
+		and not _book.is_open
+		and not mirror_screen.is_open
+		and not menu.is_open()
 	)
 	_crosshair.visible = captured and not menu.is_open()
 	var title: bool = menu.mode == GameMenu.Mode.TITLE

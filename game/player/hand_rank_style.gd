@@ -23,7 +23,7 @@ func bind(sprites: Array[Sprite2D]) -> void:
 	_mat.shader = SHADER
 	for s: Sprite2D in sprites:
 		s.material = _mat
-	apply(GameState.rank())
+	apply(GameState.progression.rank)
 
 
 ## Aspecto del rango `rank`, sin destello.

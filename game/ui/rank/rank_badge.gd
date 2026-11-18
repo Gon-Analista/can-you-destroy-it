@@ -25,7 +25,7 @@ func _ready() -> void:
 	UiFonts.outline(_name, C_SHADOW)
 	add_child(_name)
 	Events.locale_changed.connect(_refresh)
-	_rank = GameState.rank()
+	_rank = GameState.progression.rank
 	_refresh()
 	set_process(false)
 
@@ -36,6 +36,12 @@ func celebrate(rank: int) -> void:
 	_refresh()
 	_flash = 1.0
 	set_process(true)
+
+
+## Rango sin celebración (al cargar o desde la depuración).
+func show_rank(rank: int) -> void:
+	_rank = rank
+	_refresh()
 
 
 func _refresh() -> void:

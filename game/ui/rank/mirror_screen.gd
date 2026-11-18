@@ -135,16 +135,16 @@ func _refresh() -> void:
 	var destroyed: float = GameState.destroyed_ratio()
 	# i18n
 	var rows: Array[Array] = [
-		[tr("TIEMPO JUGADO"), time_text(prog.play_time)],
+		[tr("TIEMPO JUGADO"), time_text(prog.stats.play_time)],
 		[tr("COMBINACIONES"), "%d / %d" % [found, SpellCaster.RECIPES.size()]],
 		[tr("MEJORAS COMPRADAS"), "%d / %d" % [GameState.total_upgrade_levels(), max_levels]],
-		[tr("HECHIZOS LANZADOS"), Hud.format_int(prog.tally(GameState.STAT_SPELLS))],
-		[tr("FRAGMENTOS RECOGIDOS"), Hud.format_int(prog.tally(GameState.STAT_SHARDS))],
-		[tr("MANÁ GANADO"), Hud.format_int(prog.tally(GameState.STAT_MANA))],
-		[tr("MEJOR RACHA"), "x%d" % prog.tally(GameState.STAT_STREAK)],
-		[tr("GOLPES RESONANTES"), Hud.format_int(prog.tally(GameState.STAT_RESONANT))],
-		[tr("GEODAS ROTAS"), Hud.format_int(prog.tally(GameState.STAT_GEODES))],
-		[tr("VENAS GOLPEADAS"), Hud.format_int(prog.tally(GameState.STAT_VEINS))],
+		[tr("HECHIZOS LANZADOS"), Hud.format_int(prog.stats.tally(GameState.STAT_SPELLS))],
+		[tr("FRAGMENTOS RECOGIDOS"), Hud.format_int(prog.stats.tally(GameState.STAT_SHARDS))],
+		[tr("MANÁ GANADO"), Hud.format_int(prog.stats.tally(GameState.STAT_MANA))],
+		[tr("MEJOR RACHA"), "x%d" % prog.stats.tally(GameState.STAT_STREAK)],
+		[tr("GOLPES RESONANTES"), Hud.format_int(prog.stats.tally(GameState.STAT_RESONANT))],
+		[tr("GEODAS ROTAS"), Hud.format_int(prog.stats.tally(GameState.STAT_GEODES))],
+		[tr("VENAS GOLPEADAS"), Hud.format_int(prog.stats.tally(GameState.STAT_VEINS))],
 		[tr("CAPA MÁS PROFUNDA"), tr(GameState.current_layer().display_name).to_upper()],
 		[tr("CRISTAL DESTRUIDO"), percent_text(destroyed)],
 		[tr("PILÓN DE MANÁ"), percent_text(prog.pylon_ratio())],
@@ -159,7 +159,7 @@ func _refresh() -> void:
 
 
 ## Qué pide el rango `def`: "Despierta la Tierra con el Pilón al 9 % (o el Pilón al 12 %)".
-static func requirement_text(def: RankDef) -> String:
+func requirement_text(def: RankDef) -> String:
 	var txt: String = tr(def.requirement) if def.requirement != "" else ""
 	if def.key_upgrade != &"" and def.key_pylon > 0.0:
 		txt += " " + tr("con el Pilón al %s") % percent_text(def.key_pylon)
@@ -301,7 +301,9 @@ func _draw_glass(def: RankDef) -> void:
 	# Degradado del rango desde abajo, en bandas de 4 px.
 	for k: int in 12:
 		var y: float = g.end.y - (k + 1) * 8
-		draw_rect(Rect2(g.position.x, y, g.size.x, 8), Color(def.color_dark, 0.35 * (1.0 - k / 12.0)))
+		draw_rect(
+			Rect2(g.position.x, y, g.size.x, 8), Color(def.color_dark, 0.35 * (1.0 - k / 12.0))
+		)
 	# Estrellas que titilan a saltos.
 	var step: int = floori(_t * 6.0)
 	for i: int in 40:

@@ -231,6 +231,17 @@ func _setup_autoplay() -> void:
 			get_tree().create_timer(0.4).timeout.connect(
 				_hud.tutorial.jump_to.bind(int(a.get_slice("=", 1)))
 			)
+		elif a.begins_with("--rank="):
+			# --rank=N: ya con ese rango (0 Aprendiz ... 5 Leyenda), sin ceremonia.
+			debug_set_rank(int(a.get_slice("=", 1)), false)
+		elif a.begins_with("--rank-up="):
+			# --rank-up=N: sube al rango N con su ceremonia al acabar la pantalla de carga.
+			var to: int = int(a.get_slice("=", 1))
+			debug_set_rank(to - 1, false)
+			get_tree().create_timer(3.4).timeout.connect(debug_set_rank.bind(to, true))
+		elif a == "--mirror":
+			# --mirror: abre las estadísticas del Espejo del Archimago al acabar la carga.
+			get_tree().create_timer(3.3).timeout.connect(_hud.mirror_screen.open)
 		elif a.begins_with("--time="):
 			_day_night.time_of_day = float(a.get_slice("=", 1))
 		elif a.begins_with("--warp="):
@@ -474,7 +485,9 @@ func _place(node: Node3D, at: Vector3) -> void:
 
 ## Capas de música del rango actual (`RankDef.music_layers`); `--music-layers=N` pone un mínimo.
 func rank_music_layers() -> int:
-	return maxi(_arg_int("--music-layers=", 1), GameState.rank_def().music_layers)
+	return maxi(
+		_arg_int("--music-layers=", 1), WizardRanks.def_of(GameState.progression.rank).music_layers
+	)
 
 
 func _demo_dig(hits: int) -> void:
@@ -561,6 +574,21 @@ func debug_teleport(at: Vector3, look_at: Vector3) -> void:
 	var to: Vector3 = look_at - (at + Vector3.UP * 1.6)
 	_player.rotation.y = atan2(-to.x, -to.z)
 	(_player.get_node(^"Head") as Node3D).rotation.x = atan2(to.y, Vector2(to.x, to.z).length())
+
+
+## Depuración y demo: pone el rango `rank`. Con `ceremony` (y si sube) se celebra como una subida
+## de verdad; si no, el HUD, las manos y la música pasan a él sin más.
+func debug_set_rank(rank: int, ceremony: bool) -> void:
+	var prog: Progression = GameState.progression
+	var previous: int = prog.rank
+	prog.rank = clampi(rank, 0, WizardRanks.last())
+	if ceremony and prog.rank > previous:
+		Events.rank_changed.emit(prog.rank, previous)
+		return
+	AudioDirector.set_music_layers(rank_music_layers(), 0.1)
+	get_tree().call_group(&"hand_rank_style", &"apply", prog.rank)
+	get_tree().call_group(&"rank_badge", &"show_rank", prog.rank)
+	get_tree().call_group(&"archmage_mirror", &"show_rank", prog.rank)
 
 
 ## Depuración y demo: pone el Pilón a `ratio` sin celebrar los hitos (el valle ya cambiado).

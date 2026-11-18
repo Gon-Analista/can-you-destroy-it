@@ -62,29 +62,26 @@ var _menu_open: bool = false
 func _ready() -> void:
 	Events.menu_opened.connect(func() -> void: _menu_open = true)
 	Events.menu_closed.connect(func() -> void: _menu_open = false)
-	Events.spell_cast.connect(func(_t: SpellTier, _s: int) -> void: progression.count(STAT_SPELLS))
-	Events.streak_changed.connect(func(s: int) -> void: progression.record_best(STAT_STREAK, s))
-	Events.geode_broken.connect(func(_at: Vector3) -> void: progression.count(STAT_GEODES))
-	Events.vein_hit.connect(func(_h: SpellHit, _e: StringName) -> void: progression.count(STAT_VEINS))
+	Events.spell_cast.connect(
+		func(_t: SpellTier, _s: int) -> void: progression.stats.count(STAT_SPELLS)
+	)
+	Events.streak_changed.connect(
+		func(s: int) -> void: progression.stats.record_best(STAT_STREAK, s)
+	)
+	Events.geode_broken.connect(func(_at: Vector3) -> void: progression.stats.count(STAT_GEODES))
+	Events.vein_hit.connect(
+		func(_h: SpellHit, _e: StringName) -> void: progression.stats.count(STAT_VEINS)
+	)
 	Events.spell_impacted.connect(
 		func(hit: SpellHit) -> void:
 			if hit.resonant and hit.by_player:
-				progression.count(STAT_RESONANT)
+				progression.stats.count(STAT_RESONANT)
 	)
 
 
 func _process(delta: float) -> void:
 	if not _menu_open:
-		progression.play_time += delta
-
-
-## Rango del mago (0 = Aprendiz ... 5 = Leyenda) y su definición.
-func rank() -> int:
-	return progression.rank
-
-
-func rank_def() -> RankDef:
-	return WizardRanks.def_of(progression.rank)
+		progression.stats.play_time += delta
 
 
 ## Sube de rango si ya se ha ganado el siguiente (o varios: se celebra el más alto). Se llama al
@@ -145,7 +142,7 @@ func collect_shard(type: ShardType, at: Vector3) -> bool:
 	if count == 0:
 		Events.bag_full.emit()
 		return false
-	progression.count(STAT_SHARDS)
+	progression.stats.count(STAT_SHARDS)
 	Events.shard_collected.emit(type, count, at)
 	Events.bag_changed.emit(progression.bag_count(), bag_capacity())
 	return true
@@ -160,7 +157,7 @@ func send_direct(type: ShardType, at: Vector3) -> bool:
 	if crusher == null:
 		return false
 	crusher.receive_direct(type, at)
-	progression.count(STAT_SHARDS)
+	progression.stats.count(STAT_SHARDS)
 	Events.shard_collected.emit(type, 0, at)
 	return true
 
@@ -190,8 +187,8 @@ func shard_value(type: ShardType) -> int:
 func deliver(value: int, pylon_value: int = -1) -> void:
 	var before: float = progression.pylon_ratio()
 	progression.deliver(value, pylon_value)
-	progression.count(STAT_MANA, maxi(value, 0))
-	progression.count(STAT_DELIVERIES)
+	progression.stats.count(STAT_MANA, maxi(value, 0))
+	progression.stats.count(STAT_DELIVERIES)
 	Events.shard_delivered.emit(value)
 	Events.mana_changed.emit(progression.mana)
 	var ratio: float = progression.pylon_ratio()

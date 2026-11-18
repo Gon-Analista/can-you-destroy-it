@@ -156,6 +156,8 @@ static func texture(rank: int) -> ImageTexture:
 
 
 ## Dibuja el escudo en `ci` con la esquina en `at` (redondeada a píxel) y escala entera `px`.
-static func draw(ci: CanvasItem, rank: int, at: Vector2, px: int, tint: Color = Color.WHITE) -> void:
+static func draw(
+	ci: CanvasItem, rank: int, at: Vector2, px: int, tint: Color = Color.WHITE
+) -> void:
 	var r := Rect2(at.round(), Vector2(SIZE * maxi(px, 1)))
 	ci.draw_texture_rect(texture(rank), r, false, tint)
