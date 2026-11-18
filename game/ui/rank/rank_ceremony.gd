@@ -24,7 +24,7 @@ const BAND_BOTTOM: float = 200.0
 const CREST_CENTER := Vector2(320, 94)
 const RAYS: int = 14
 ## Segundos antes del final en que el escudo del HUD toma el rango nuevo (la franja ya se cierra).
-const BADGE_LEAD: float = 0.6
+const BADGE_LEAD: float = 0.4
 
 ## Rango que se está celebrando (-1 = nada).
 var rank: int = -1

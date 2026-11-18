@@ -246,6 +246,18 @@ func _in_game() -> void:
 			break
 	_check(not bool(screen.get(&"is_open")), "se cierra")
 	_check(fresh.seen_upgrades.is_empty(), "mirar el espejo no da las mejoras por vistas")
+	# El Libro de Hechizos tampoco las da por vistas; el Grimorio, sí.
+	book.call(&"open")
+	await process_frame
+	book.call(&"close")
+	for i: int in 600:
+		await process_frame
+		if not bool(book.get(&"is_open")):
+			break
+	_check(fresh.seen_upgrades.is_empty(), "el Libro de Hechizos no da las mejoras por vistas")
+	events.emit_signal(&"grimoire_requested", true)
+	await process_frame
+	_check(not fresh.seen_upgrades.is_empty(), "abrir el Grimorio da las mejoras por vistas")
 
 
 ## Pulsa y suelta la acción `action` por el camino real de la entrada.

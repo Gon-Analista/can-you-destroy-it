@@ -153,6 +153,7 @@ func _ready() -> void:
 	# El Grimorio, por encima de todo el HUD, y el menú (título y pausa) encima de todo.
 	_grimoire = Grimoire.new()
 	_grimoire.name = "Grimoire"
+	_grimoire.add_to_group(&"grimoire")
 	add_child(_grimoire)
 	_book = SpellBook.new()
 	_book.name = "SpellBook"

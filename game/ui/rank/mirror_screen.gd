@@ -28,10 +28,6 @@ const BAR := Rect2(232, 130, 176, 4)
 ## Segundos entre una fila y la siguiente al abrir.
 const ROW_SEC: float = 0.045
 
-## El espejo es otro libro para el mago (bloquea manos y movimiento con `grimoire_opened`), pero
-## mirarlo no es ver las mejoras: mientras emite esas señales, la guía no las da por vistas.
-static var emitting_book_signal: bool = false
-
 var is_open: bool = false
 
 var _t: float = 0.0
@@ -102,9 +98,8 @@ func open() -> void:
 	_shown_rows = 0
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	AudioDirector.play_sfx(OPEN_SFX, -3.0)
-	emitting_book_signal = true
+	# Otro libro para el mago: bloquea manos y movimiento (la guía sabe que no es el Grimorio).
 	Events.grimoire_opened.emit()
-	emitting_book_signal = false
 	_refresh()
 	set_process(true)
 
@@ -227,9 +222,7 @@ func _process(delta: float) -> void:
 			visible = false
 			set_process(false)
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-			emitting_book_signal = true
 			Events.grimoire_closed.emit()
-			emitting_book_signal = false
 			return
 	else:
 		_open_t = minf(0.3, _open_t + delta)
