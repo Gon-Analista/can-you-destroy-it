@@ -220,6 +220,11 @@ func _setup_autoplay() -> void:
 		elif a.begins_with("--milestone="):
 			# --milestone=s: a los s segundos se entrega justo lo que falta para la siguiente marca.
 			get_tree().create_timer(float(a.get_slice("=", 1))).timeout.connect(_demo_next_mark)
+		elif a.begins_with("--tutorial-step="):
+			# --tutorial-step=N (con --tutorial): empieza en ese paso (4 recoger, 5 triturar...).
+			get_tree().create_timer(0.4).timeout.connect(
+				_hud.tutorial.jump_to.bind(int(a.get_slice("=", 1)))
+			)
 		elif a.begins_with("--time="):
 			_day_night.time_of_day = float(a.get_slice("=", 1))
 		elif a.begins_with("--warp="):

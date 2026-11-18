@@ -1,13 +1,15 @@
 class_name HudLoop
 extends Control
 ## HUD del bucle de juego (GDD 10.2): barra del Pilón arriba con sus marcas, maná y bolsa abajo a
-## la derecha, avisos en el centro y marcadores en pantalla hacia el Pilón (cuando llevas
-## fragmentos) y hacia el Santuario (cuando hay una mejora que puedes pagar). Todo reacciona:
-## los números ruedan, la barra destella con cada entrega, la bolsa llena late en oro.
+## la derecha, avisos en el centro, el aviso de la tecla junto a la mira (entero sólo mientras no
+## se sabe, ver `Guidance.prompt_mode`) y la guía de objetivos (`ObjectiveGuide`), que dice
+## adónde ir. Todo reacciona: los números ruedan, la barra destella con cada entrega, la bolsa
+## llena late en oro.
 ## Dibujado a píxel entero con las fuentes pixel del HUD.
 
 const BAG_FULL_SFX: AudioStream = preload("res://audio/sfx/sfx_bag_full_01.ogg")
-const AVAILABLE_SFX: AudioStream = preload("res://audio/sfx/sfx_spark_ready_01.ogg")
+const AVAILABLE_SFX: AudioStream = preload("res://audio/sfx/sfx_guide_new_01.ogg")
+const DEF: GuidanceDef = preload("res://data/ui/guidance.tres")
 const C_TEXT := Color("#f2f6ff")
 const C_SHADOW := Color("#14183a")
 const C_CYAN := Color("#a5dae5")
@@ -20,10 +22,6 @@ const C_FRAME := Color("#2a43a7")
 const BAR := Rect2i(8, 17, 152, 8)
 const SMALL: int = UiFonts.SMALL
 const LINE: int = UiFonts.LINE
-## Ancho de las etiquetas de los marcadores (Trituradora, Mejora).
-const TAG_W: float = 160.0
-## Los marcadores no suben de aquí (arriba están la esencia y el Pilón).
-const MARKER_TOP: float = 56.0
 ## Altura de la línea del maná (y de su gota).
 const MANA_Y: int = 336
 const MANA_ICON: PackedStringArray = [
@@ -41,6 +39,8 @@ var intro: bool = false:
 		if _pylon_title:
 			_pylon_title.visible = not v
 			_pylon_pct.visible = not v
+		if _guide:
+			_guide.suppressed = v
 		queue_redraw()
 var _camera: Camera3D
 var _pylon_title: Label
@@ -50,10 +50,11 @@ var _mana_gain: Label
 var _bag: Label
 var _hint: Label
 var _prompt: Label
-var _pylon_tag: Label
+## La tecla pequeña que queda cuando la acción ya se sabe.
+var _key: KeyHint
+var _guide: ObjectiveGuide
 ## Elemento de cada mano (sólo cuando conoces más de uno).
 var _hand_tags: Array[Label] = []
-var _sanctum_tag: Label
 var _shown_fill: float = 0.0
 var _bar_flash: float = 0.0
 var _shown_mana: float = 0.0
@@ -67,12 +68,6 @@ var _hint_queue: Array[Array] = []
 var _bag_full_cooldown: float = 0.0
 var _had_available: bool = false
 var _t: float = 0.0
-var _pylon_marker: Vector3 = Vector3.INF
-var _sanctum_marker: Vector3 = Vector3.INF
-var _pylon_screen := Vector2.ZERO
-var _sanctum_screen := Vector2.ZERO
-var _pylon_edge: bool = false
-var _sanctum_edge: bool = false
 
 
 func _ready() -> void:
@@ -86,10 +81,17 @@ func _ready() -> void:
 	_hint.pivot_offset = Vector2(300, 7)
 	_hint.visible = false
 	_prompt = _label("", SMALL, C_GOLD, Rect2(70, 214, 500, LINE), 1)
-	_pylon_tag = _label("", SMALL, C_PINK, Rect2(0, 0, TAG_W, LINE), 1)
+	_key = KeyHint.new()
+	_key.name = "KeyHint"
+	_key.position = Vector2(313, 200)
+	add_child(_key)
+	_guide = ObjectiveGuide.new()
+	_guide.name = "Guide"
+	_guide.suppressed = intro
+	add_child(_guide)
+	move_child(_guide, 0)
 	_hand_tags.append(_label("", SMALL, C_TEXT, Rect2(8, 298, 160, LINE), 0))
 	_hand_tags.append(_label("", SMALL, C_TEXT, Rect2(472, 298, 160, LINE), 2))
-	_sanctum_tag = _label("", SMALL, C_GOLD, Rect2(0, 0, TAG_W, LINE), 1)
 	Events.shard_delivered.connect(_on_delivered)
 	Events.bag_changed.connect(func(_c: int, _cap: int) -> void: _bag_punch = 1.0)
 	Events.bag_full.connect(_on_bag_full)
@@ -102,11 +104,12 @@ func _ready() -> void:
 		Events.shard_collected.connect(_on_first_collect, CONNECT_ONE_SHOT)
 	_shown_mana = GameState.progression.mana
 	_shown_fill = ManaPylon.display_fill(GameState.progression.pylon_ratio())
-	_had_available = GameState.cheapest_affordable() != null
+	_had_available = _guide.has_new_upgrade()
 
 
 func _on_first_impact(_hit: SpellHit) -> void:
-	_push_hint(tr("¡RECOGE LOS FRAGMENTOS CON [F]!"), C_CYAN)
+	if GameState.progression.times(&"pickup") < DEF.pickup_learn:
+		_push_hint(tr("¡RECOGE LOS FRAGMENTOS CON [F]!"), C_CYAN)
 
 
 func _on_first_collect(_type: ShardType, _count: int, _at: Vector3) -> void:
@@ -115,6 +118,7 @@ func _on_first_collect(_type: ShardType, _count: int, _at: Vector3) -> void:
 
 func bind(camera: Camera3D) -> void:
 	_camera = camera
+	_guide.bind(camera)
 
 
 func _on_delivered(value: int) -> void:
@@ -129,7 +133,10 @@ func _on_bag_full() -> void:
 	if _bag_full_cooldown <= 0.0:
 		_bag_full_cooldown = 1.6
 		AudioDirector.play_sfx(BAG_FULL_SFX, -4.0)
-		_push_hint(tr("¡BOLSA LLENA! LLÉVALA AL PILÓN"), C_PINK)
+		# Las primeras veces se dice con palabras; luego basta el sonido, la bolsa que late y la
+		# guía, que ya apunta a la trituradora.
+		if GameState.progression.learn(&"bag_full") <= DEF.bag_full_hints:
+			_push_hint(tr("¡BOLSA LLENA! A LA TRITURADORA"), C_PINK)
 
 
 func _push_hint(text: String, color: Color) -> void:
@@ -194,11 +201,12 @@ func _process(delta: float) -> void:
 		_hint.modulate.a = clampf(_hint_t / 0.35, 0.0, 1.0)
 		if _hint_t <= 0.0:
 			_next_hint()
-	_update_markers(count, full)
+	_update_prompt()
 	_update_hand_tags()
-	# Mejora disponible: aviso y campanita una vez cuando aparece.
-	var available: bool = GameState.cheapest_affordable() != null
-	if available and not _had_available:
+	# Mejora nueva (no vista en el Grimorio): campanita y aviso una vez cuando aparece. Durante
+	# el tutorial ya lo dice el panel.
+	var available: bool = _guide.has_new_upgrade()
+	if available and not _had_available and prog.tutorial_step >= Tutorial.Step.DONE:
 		AudioDirector.play_sfx(AVAILABLE_SFX, -2.0)
 		_push_hint(tr("¡MEJORA DISPONIBLE EN EL SANTUARIO!"), C_GOLD)
 	_had_available = available
@@ -225,86 +233,36 @@ func _update_hand_tags() -> void:
 		l.add_theme_color_override(&"font_color", el.color)
 
 
-func _update_markers(count: int, full: bool) -> void:
-	var pylon: ManaPylon = get_tree().get_first_node_in_group(&"mana_pylon") as ManaPylon
-	var sanctum: Sanctum = get_tree().get_first_node_in_group(&"sanctum") as Sanctum
+## Aviso de la tecla junto a la mira: trituradora, puerta de la casucha o atril del Santuario.
+## Entero mientras no se sabe; luego sólo la tecla pequeña y, al final, nada.
+func _update_prompt() -> void:
 	_prompt.visible = false
-	_pylon_marker = Vector3.INF
-	_sanctum_marker = Vector3.INF
+	_key.shown = false
 	if _camera == null:
 		return
-	var player: Node3D = get_tree().get_first_node_in_group(&"player") as Node3D
+	var pylon: ManaPylon = get_tree().get_first_node_in_group(&"mana_pylon") as ManaPylon
 	var crusher: CrystalCrusher = pylon.crusher() if pylon else null
-	var near_crusher: bool = crusher != null and crusher.player_in_range()
-	if crusher and (count > 0 or crusher.hopper_count() > 0) and not near_crusher:
-		_pylon_marker = crusher.marker_position()
-		var d: float = (
-			player.global_position.distance_to(crusher.global_position) if player else 0.0
-		)
-		_pylon_tag.text = (
-			(tr("¡TRITURADORA!  %d M") if full else tr("TRITURADORA  %d M")) % roundi(d)
-		)
-		_pylon_tag.add_theme_color_override(&"font_color", C_GOLD if full else C_PINK)
-	if near_crusher:
-		_prompt.visible = true
-		_prompt.text = crusher.prompt()
-	if sanctum and GameState.cheapest_affordable() != null:
-		_sanctum_marker = sanctum.marker_position() + Vector3.UP * 0.5
-		_sanctum_tag.text = tr("¡MEJORA!")
+	if crusher and crusher.player_in_range():
+		_show_prompt(crusher.prompt(), crusher.prompt_icon())
 	var hut: ApprenticeHut = get_tree().get_first_node_in_group(&"apprentice_hut") as ApprenticeHut
 	if hut and hut.player_can_open():
-		_prompt.visible = true
-		_prompt.text = hut.prompt()
+		_show_prompt(hut.prompt(), false)
+	var sanctum: Sanctum = get_tree().get_first_node_in_group(&"sanctum") as Sanctum
 	if sanctum and sanctum.player_in_range():
+		var mode: int = Guidance.prompt_mode(
+			GameState.progression.times(&"grimoire"), DEF.grimoire_learn, DEF.grimoire_forget
+		)
+		var full: bool = mode == Guidance.Prompt.FULL
+		_show_prompt(tr("[F] ABRIR EL GRIMORIO") if full else "", mode == Guidance.Prompt.ICON)
+
+
+func _show_prompt(text: String, icon: bool) -> void:
+	if text != "":
 		_prompt.visible = true
-		_prompt.text = tr("[F] ABRIR EL GRIMORIO")
-		_sanctum_marker = Vector3.INF
-	_pylon_tag.visible = _pylon_marker != Vector3.INF
-	_sanctum_tag.visible = _sanctum_marker != Vector3.INF
-	if _pylon_tag.visible:
-		var r: Array = _to_screen(_pylon_marker)
-		_pylon_screen = r[0]
-		_pylon_edge = r[1]
-		_pylon_tag.position = _tag_position(_pylon_tag, _pylon_screen)
-	if _sanctum_tag.visible:
-		var r: Array = _to_screen(_sanctum_marker)
-		_sanctum_screen = r[0]
-		_sanctum_edge = r[1]
-		_sanctum_tag.position = _tag_position(_sanctum_tag, _sanctum_screen)
-
-
-## Etiqueta centrada bajo el marcador, pero siempre entera dentro de la pantalla (en el borde,
-## el texto se cortaba).
-func _tag_position(tag: Label, at: Vector2) -> Vector2:
-	var slack: float = (TAG_W - _text_w(tag)) * 0.5
-	var x: float = clampf(at.x - TAG_W * 0.5, 4.0 - slack, size.x - 4.0 - TAG_W + slack)
-	return Vector2(x, at.y + 8.0).round()
-
-
-## Proyecta un punto del mundo a la pantalla. Si queda fuera (o detrás), lo pega al borde.
-## Devuelve [posición, está_en_el_borde].
-func _to_screen(world: Vector3) -> Array:
-	var sz: Vector2 = size
-	var margin: float = 18.0
-	var behind: bool = _camera.is_position_behind(world)
-	var p: Vector2 = _camera.unproject_position(world)
-	var inside: bool = (
-		not behind and p.x > margin and p.x < sz.x - margin and p.y > MARKER_TOP and p.y < sz.y - 40
-	)
-	if inside:
-		return [p.round(), false]
-	var center: Vector2 = sz * 0.5
-	var dir: Vector2 = p - center
-	if behind:
-		dir = -dir
-		if dir.length_squared() < 1.0:
-			dir = Vector2.DOWN
-	dir.y = clampf(dir.y, -1e9, 1e9)
-	var half_x: float = sz.x * 0.5 - margin
-	# Arriba, por debajo de la esencia (no se pisan); abajo, por encima de la bolsa y el maná.
-	var half_y: float = center.y - MARKER_TOP if dir.y < 0.0 else sz.y * 0.5 - margin - 20.0
-	var k: float = minf(half_x / maxf(absf(dir.x), 0.001), half_y / maxf(absf(dir.y), 0.001))
-	return [(center + dir * k).round(), true]
+		_prompt.text = text
+		_key.shown = false
+	elif icon and not _prompt.visible:
+		_key.shown = true
 
 
 func _draw() -> void:
@@ -313,10 +271,6 @@ func _draw() -> void:
 	_draw_levitation()
 	_draw_icon(MANA_ICON, Vector2(452 + 176 - _mana_text_width() - 22, MANA_Y), 2, C_PINK)
 	_draw_bag()
-	if _pylon_tag.visible:
-		_draw_marker(_pylon_screen, _pylon_edge, C_GOLD if GameState.is_bag_full() else C_PINK)
-	if _sanctum_tag.visible:
-		_draw_marker(_sanctum_screen, _sanctum_edge, C_GOLD)
 
 
 func _draw_pylon_bar() -> void:
@@ -377,24 +331,6 @@ func _draw_bag() -> void:
 		draw_rect(Rect2(right - w - 1, y - 1, w + 2, 5), C_SHADOW)
 		draw_rect(Rect2(right - w, y, w * float(count) / float(cap), 3), C_CYAN)
 	_draw_icon(SHARD_ICON, Vector2(right - 200 - 2 + 200 - _text_w(_bag) - 12, 317), 1, C_CYAN)
-
-
-## Rombo con contorno; en el borde de la pantalla, además, una flecha hacia el objetivo.
-func _draw_marker(p: Vector2, edge: bool, col: Color) -> void:
-	var bob: float = 0.0 if edge else round(sin(floor(_t * 8.0) * 0.8) * 1.5)
-	var c: Vector2 = p + Vector2(0, bob)
-	for k: int in range(-4, 5):
-		var w: int = 4 - absi(k)
-		draw_rect(Rect2(c.x - w - 1, c.y + k, w * 2 + 3, 1), C_SHADOW)
-	for k: int in range(-3, 4):
-		var w: int = 3 - absi(k)
-		draw_rect(Rect2(c.x - w, c.y + k, w * 2 + 1, 1), col)
-	draw_rect(Rect2(c.x, c.y - 1, 1, 1), Color.WHITE)
-	if edge:
-		var dir: Vector2 = (p - size * 0.5).normalized()
-		for k: int in 3:
-			var q: Vector2 = (c + dir * (8 + k * 2)).round()
-			draw_rect(Rect2(q, Vector2(2, 2)), col)
 
 
 func _draw_icon(rows: PackedStringArray, at: Vector2, px: int, col: Color) -> void:

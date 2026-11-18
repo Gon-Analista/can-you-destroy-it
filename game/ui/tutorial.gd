@@ -1,14 +1,17 @@
 class_name Tutorial
 extends Control
 ## Tutorial del principio, muy rápido y con humor (pedido del equipo):
-## 1. Clic izquierdo: tu magia es una chispita que ni araña el cristal ("clink").
-## 2. Clic derecho: la otra mano, igual de lamentable.
+## 1. Un clic: tu magia es una chispita que ni araña el cristal ("clink"). Vale cualquier mano.
+## 2. El otro clic: la otra mano, igual de lamentable.
 ## 3. Los dos clics a la vez: juntas los hechizos. Sigue siendo malo, pero hace 1 de daño y
-##    cae un pedacito.
-## 4. Recógelo con F. 5. Tritúralo (mantener F echa, tocar F tira de la palanca).
-## 6. Junta 5 de maná. 7. Compra en el Santuario la primera mejora (la magia hace 2 de daño).
-## Cada paso avanza con lo que pasa de verdad en el juego (señales de Events). Empieza al abrir
-## la puerta de la casucha y se guarda (`Progression.tutorial_step`).
+##    cae un pedacito. (Si juntas las manos antes, los pasos 1 y 2 se dan por sabidos.)
+## 4. Recógelo. 5. Llévalo a la trituradora. 6. Junta 5 de maná. 7. Compra en el Santuario la
+##    primera mejora (la magia hace 2 de daño).
+## El panel dice QUÉ hacer; el CÓMO de cada tecla lo enseña el aviso junto a la mira cuando toca
+## (y deja de hacerlo cuando ya se sabe), y la guía de objetivos (`ObjectiveGuide`) dice ADÓNDE
+## ir. Así ninguna instrucción se repite. Cada paso avanza con lo que pasa de verdad en el juego
+## (señales de Events). Empieza al abrir la puerta de la casucha y se guarda
+## (`Progression.tutorial_step`).
 
 enum Step { DOOR, CAST_LEFT, CAST_RIGHT, COMBINE, PICKUP, CRUSH, EARN, BUY, DONE }
 
@@ -19,10 +22,33 @@ const C_GOLD := Color("#ffd27a")
 const C_PINK := Color("#ff7ad9")
 const C_BG := Color("#14183a")
 const C_PANEL := Color("#2a1d4a")
+const C_CYAN := Color("#a5dae5")
+## Icono de cada paso (pixel art, '#' color, '+' brillo, 2 px por punto).
+const SHARD_ICON: PackedStringArray = [
+	"...#....", "..#+#...", "..#+#...", ".#+##...", ".#+###..", ".####...", "..##....", "........"
+]
+const MANA_ICON: PackedStringArray = [
+	"...#....", "..###...", "..###...", ".##+##..", ".#+####.", ".#+####.", "..####..", "........"
+]
+const BOOK_ICON: PackedStringArray = [
+	"........", "##.##...", "#+#+#...", "#+#+#...", "#+#+#...", "#+#+#...", "#####...", "........"
+]
 ## Panel centrado arriba; el ancho se ajusta al texto (`_box`).
 const BOX_Y := 46.0
 const BOX_H := 38.0
 const TEXT_X := 36.0
+## Fase de la guía de objetivos para cada paso (en el orden de `Step`).
+const GUIDE_PHASES: Array[int] = [
+	Guidance.Phase.DOOR,
+	Guidance.Phase.CAST,
+	Guidance.Phase.CAST,
+	Guidance.Phase.CAST,
+	Guidance.Phase.PICKUP,
+	Guidance.Phase.CRUSH,
+	Guidance.Phase.EARN,
+	Guidance.Phase.BUY,
+	Guidance.Phase.DONE,
+]
 ## Primera mejora (la que hace que tu magia haga daño de verdad).
 const FIRST_UPGRADE: StringName = &"spark_power"
 
@@ -34,12 +60,15 @@ var _t: float = 0.0
 var _done_t: float = -1.0
 var _pop: float = 0.0
 var _wait_reaction: bool = false
+## Mano con la que se lanzó el primer clic (el segundo paso pide la otra).
+var _first_side: int = 0
 var _box := Rect2(170, BOX_Y, 300, BOX_H)
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_to_group(&"tutorial")
 	_title = _label(UiFonts.TITLE, UiFonts.HEAD, C_GOLD)
 	_sub = _label(UiFonts.BODY, UiFonts.SMALL, C_SUB)
 	step = _initial_step()
@@ -77,12 +106,22 @@ func is_active() -> bool:
 	return step != Step.DONE
 
 
+## La fase que le importa a la guía de objetivos (`Guidance.Phase`).
+func guide_phase() -> int:
+	return GUIDE_PHASES[clampi(step, 0, GUIDE_PHASES.size() - 1)]
+
+
 ## Modo demo y pruebas: sin tutorial.
 func skip() -> void:
 	step = Step.DONE
 	GameState.progression.tutorial_step = Step.DONE
 	_done_t = -1.0
 	_refresh()
+
+
+## Modo demo (capturas): salta al paso `s` (con `--tutorial --tutorial-step=N`).
+func jump_to(s: int) -> void:
+	_set_step(clampi(s, Step.CAST_LEFT, Step.DONE))
 
 
 ## Partidas que ya han empezado no ven el tutorial.
@@ -131,11 +170,15 @@ func _reach(s: int) -> void:
 		_on_mana(GameState.progression.mana)
 
 
+## El primer clic vale con cualquier mano; el segundo, con la otra.
 func _on_cast(_tier: SpellTier, side: int) -> void:
-	if step == Step.CAST_LEFT and side == 0:
+	if side == SpellCaster.BOTH_HANDS:
+		return
+	if step == Step.CAST_LEFT:
+		_first_side = side
 		_wait_reaction = true
 		_reach(Step.CAST_LEFT)
-	elif step == Step.CAST_RIGHT and side == 1:
+	elif step == Step.CAST_RIGHT and side != _first_side:
 		_wait_reaction = true
 		_reach(Step.CAST_RIGHT)
 
@@ -151,9 +194,14 @@ func _on_fizzled(_at: Vector3) -> void:
 
 
 func _on_impacted(hit: SpellHit) -> void:
-	if step == Step.COMBINE and hit.recipe != null:
-		Events.hint.emit(tr("¡1 DE DAÑO! ¡CAYÓ UN PEDACITO!"), C_GOLD)
-		_reach(Step.COMBINE)
+	if hit.recipe == null or step < Step.CAST_LEFT or step > Step.COMBINE:
+		return
+	Events.hint.emit(tr("¡1 DE DAÑO! ¡CAYÓ UN PEDACITO!"), C_GOLD)
+	# Quien junta las manos antes de tiempo ya sabe usar las dos: no se le repite.
+	if step != Step.COMBINE:
+		_wait_reaction = false
+		_set_step(Step.COMBINE)
+	_reach(Step.COMBINE)
 
 
 func _on_mana(mana: int) -> void:
@@ -175,23 +223,28 @@ func _first_cost() -> int:
 func _refresh() -> void:
 	var titles: Dictionary[int, String] = {
 		Step.CAST_LEFT: tr("CLIC IZQUIERDO: LANZA TU MAGIA"),
-		Step.CAST_RIGHT: tr("CLIC DERECHO: TU OTRA MANO"),
+		Step.CAST_RIGHT:
+		(
+			tr("CLIC DERECHO: TU OTRA MANO")
+			if _first_side == 0
+			else tr("CLIC IZQUIERDO: TU OTRA MANO")
+		),
 		Step.COMBINE: tr("LOS DOS CLICS A LA VEZ: JUNTA TUS HECHIZOS"),
-		Step.PICKUP: tr("MIRA EL PEDACITO Y RECÓGELO CON [F]"),
+		Step.PICKUP: tr("RECOGE EL PEDACITO"),
 		Step.CRUSH: tr("LLÉVALO A LA TRITURADORA"),
 		Step.EARN:
 		(
 			tr("JUNTA %d DE MANÁ  (%d / %d)")
 			% [_first_cost(), mini(GameState.progression.mana, _first_cost()), _first_cost()]
 		),
-		Step.BUY: tr("VE AL SANTUARIO: [F] ABRE EL GRIMORIO"),
+		Step.BUY: tr("VE AL SANTUARIO"),
 	}
 	var subs: Dictionary[int, String] = {
 		Step.CAST_LEFT: tr("Tu mano izquierda guarda una chispa. Más o menos."),
 		Step.CAST_RIGHT: tr("A lo mejor ésta tiene más ganas."),
 		Step.COMBINE: tr("Mantén para cargar y suelta. Juntas son menos tímidas."),
 		Step.PICKUP: tr("Todo cristal cuenta. Hasta ése."),
-		Step.CRUSH: tr("Mantén [F] para echar y toca [F] para la palanca."),
+		Step.CRUSH: tr("Sigue el rombo: está junto al Pilón."),
 		Step.EARN: tr("Junta hechizos, recoge y tritura."),
 		Step.BUY: tr("Inscribe «Potencia»: tu magia hará 2 de daño."),
 	}
@@ -240,15 +293,20 @@ func _draw() -> void:
 	draw_rect(Rect2(r.position + Vector2(0, r.size.y - 2), Vector2(r.size.x, 2)), C_GOLD)
 	var icon_at: Vector2 = r.position + Vector2(9, 6)
 	var blink: bool = int(_t * 3.0) % 2 == 0
+	# Sólo QUÉ hacer: las teclas las enseña el aviso de la mira cuando hace falta.
 	match step:
 		Step.CAST_LEFT:
 			_mouse(icon_at, blink, false)
 		Step.CAST_RIGHT:
-			_mouse(icon_at, false, blink)
+			_mouse(icon_at, blink and _first_side == 1, blink and _first_side == 0)
 		Step.COMBINE:
 			_mouse(icon_at, blink, blink)
+		Step.PICKUP, Step.CRUSH:
+			_icon(SHARD_ICON, icon_at + Vector2(1, 4 - (1 if blink else 0)), C_CYAN)
+		Step.EARN:
+			_icon(MANA_ICON, icon_at + Vector2(1, 4 - (1 if blink else 0)), C_PINK)
 		_:
-			_key(icon_at + Vector2(1, 4), "F", blink)
+			_icon(BOOK_ICON, icon_at + Vector2(1, 4 - (1 if blink else 0)), C_GOLD)
 
 
 ## Ratón pixel art con el botón izquierdo / derecho encendido.
@@ -261,18 +319,17 @@ func _mouse(at: Vector2, left: bool, right: bool) -> void:
 	draw_rect(Rect2(at + Vector2(1, 11), Vector2(16, 1)), C_BG)
 
 
-func _key(at: Vector2, text: String, lit: bool) -> void:
-	draw_rect(Rect2(at, Vector2(18, 18)), C_BG)
-	draw_rect(Rect2(at + Vector2(1, 1), Vector2(16, 16)), C_GOLD if lit else C_TEXT)
-	var w: float = (
-		UiFonts.TITLE.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, UiFonts.HEAD).x
-	)
-	draw_string(
-		UiFonts.TITLE,
-		at + Vector2(roundf((19.0 - w) * 0.5), 13),
-		text,
-		HORIZONTAL_ALIGNMENT_LEFT,
-		-1,
-		UiFonts.HEAD,
-		C_BG
-	)
+func _icon(rows: PackedStringArray, at: Vector2, col: Color) -> void:
+	var hi: Color = col.lightened(0.5)
+	for pass_i: int in 2:
+		for y: int in rows.size():
+			var row: String = rows[y]
+			for x: int in row.length():
+				var ch: String = row[x]
+				if ch == ".":
+					continue
+				var r := Rect2(at + Vector2(x * 2, y * 2), Vector2(2, 2))
+				if pass_i == 0:
+					draw_rect(r.grow(1), C_BG)
+				else:
+					draw_rect(r, hi if ch == "+" else col)

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="GuidanceDef" format=3]
+
+[ext_resource type="Script" path="res://data/defs/guidance_def.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+pickup_learn = 4
+pickup_forget = 20
+feed_learn = 2
+feed_forget = 8
+lever_learn = 2
+lever_forget = 8
+grimoire_learn = 2
+grimoire_forget = 6
+bag_full_hints = 2
+guide_any_upgrade_until = 3
+shard_radius_m = 30.0
+fade_near_m = 3.0
+fade_far_m = 7.0
+trail_length_m = 18.0
+tag_sec = 3.5

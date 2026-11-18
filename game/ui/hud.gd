@@ -20,6 +20,8 @@ const DISCOVERY_SFX: AudioStream = preload("res://audio/sfx/sfx_combo_discovered
 const DISCOVERY_SEC: float = 2.8
 ## Segundos de juego que se enseña "ESC: MENÚ" mientras no se haya abierto nunca el menú.
 const MENU_HINT_SEC: float = 40.0
+## Cuándo deja de explicarse "[F] RECOGER" (ver `Guidance.prompt_mode`).
+const GUIDE: GuidanceDef = preload("res://data/ui/guidance.tres")
 
 ## Menú de título y pausa (encima de todo el HUD).
 var menu: GameMenu
@@ -41,6 +43,8 @@ var _essence: Label
 var _streak: Label
 var _banner: Label
 var _pickup_prompt: Label
+## Lo que queda del aviso de recoger cuando ya se sabe: la tecla pequeña.
+var _pickup_key: KeyHint
 var _fps: Label
 var _shown_fps: int = -1
 ## Ayuda "ESC: MENÚ" abajo a la izquierda y cuánto lleva enseñándose.
@@ -81,6 +85,10 @@ func _ready() -> void:
 	_pickup_prompt = _label("", SMALL, C_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
 	_place(_pickup_prompt, Control.PRESET_CENTER, Rect2(-150, 20, 300, UiFonts.LINE))
 	_pickup_prompt.visible = false
+	_pickup_key = KeyHint.new()
+	_pickup_key.name = "PickupKey"
+	add_child(_pickup_key)
+	_place(_pickup_key, Control.PRESET_CENTER, Rect2(-7, 20, 13, 14))
 	_fps = _label("", SMALL, C_CYAN, HORIZONTAL_ALIGNMENT_RIGHT)
 	_place(_fps, Control.PRESET_TOP_RIGHT, Rect2(-70, 5, 62, UiFonts.LINE))
 	_fps.visible = false
@@ -278,9 +286,19 @@ func _on_essence_changed(essence: int, _total: int) -> void:
 	_essence_punch = 1.0
 
 
+## Apuntar a un fragmento: las primeras veces "[F] RECOGER ASTILLA"; después sólo la tecla
+## pequeña bajo la mira y, cuando ya es costumbre, nada (el fragmento ya brilla al apuntarlo).
 func _on_shard_targeted(type: ShardType) -> void:
-	_pickup_prompt.visible = type != null
-	if type:
+	var mode: int = (
+		Guidance.prompt_mode(
+			GameState.progression.times(&"pickup"), GUIDE.pickup_learn, GUIDE.pickup_forget
+		)
+		if type
+		else Guidance.Prompt.NONE
+	)
+	_pickup_prompt.visible = mode == Guidance.Prompt.FULL
+	_pickup_key.shown = mode == Guidance.Prompt.ICON
+	if _pickup_prompt.visible:
 		_pickup_prompt.text = tr("[F] RECOGER %s") % tr(type.display_name).to_upper()
 
 
