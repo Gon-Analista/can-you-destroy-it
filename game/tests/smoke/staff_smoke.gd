@@ -92,7 +92,11 @@ func _initialize() -> void:
 	_check(int(storm.call(&"strikes_done")) >= 6, "descargas: %d" % storm.call(&"strikes_done"))
 	_check(_found(&"elemental_storm"), "la Tormenta se descubre")
 	_check(float(storm.call(&"lock_left")) > 0.0, "sólo una tormenta a la vez")
-	_check(not bool(_caster.call(&"try_begin_combine")), "otra tormenta no se carga aún")
+	var meanwhile: Resource = _caster.call(&"recipe_for_hands")
+	_check(
+		meanwhile != null and meanwhile.get(&"id") == &"thermal_shock",
+		"mientras ruge, las manos siguen con su pareja"
+	)
 	# Otra triple: Glaciar Tronante (Escarcha + Tierra + Rayo).
 	_set_hands(1, 3, 2)
 	await _cast_and_wait(load("res://data/spells/recipe_thunder_glacier.tres"))

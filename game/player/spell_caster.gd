@@ -260,7 +260,13 @@ func recipe_for_hands() -> SpellRecipe:
 	var gem: ElementDef = staff.element(ELEMENTS)
 	if gem:
 		var triple: SpellRecipe = StaffCombos.triple_for(element_of(0).id, element_of(1).id, gem.id)
-		if triple:
+		# Con la tormenta aún rugiendo, las manos siguen con su pareja (no se pierde el clic).
+		var raging: bool = (
+			triple
+			and triple.delivery == SpellRecipe.Delivery.STORM
+			and _delivery.storm().lock_left() > 0.0
+		)
+		if triple and not raging:
 			return triple
 	for r: SpellRecipe in RECIPES:
 		if r.matches(element_of(0).id, element_of(1).id):

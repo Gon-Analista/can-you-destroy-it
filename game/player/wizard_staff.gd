@@ -16,8 +16,8 @@ const GEM_TEX: Texture2D = preload("res://player/staff/staff_gem.png")
 const SHINE_TEX: Texture2D = preload("res://player/staff/staff_gem_shine.png")
 const SUMMON_SFX: AudioStream = preload("res://audio/sfx/sfx_staff_summon_01.ogg")
 ## Esquina superior izquierda del sprite en reposo y durante una triple (pantalla 640x360).
-const REST_POS := Vector2(522, 148)
-const TRIPLE_POS := Vector2(452, 120)
+const REST_POS := Vector2(490, 138)
+const TRIPLE_POS := Vector2(438, 108)
 ## Centro de la gema dentro del sprite (ver tools/make_staff_sprite.py).
 const GEM_IN_SPRITE := Vector2(28, 42)
 ## Tamaño de la llama de la gema (la de las manos es 1).

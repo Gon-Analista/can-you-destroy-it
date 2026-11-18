@@ -30,14 +30,14 @@ void fragment() {
 	float t = TIME * 0.12;
 	float n = hd_fbm(vec3(p * 1.7 + seed, t + seed * 0.3));
 	float r = length(p * vec2(1.0, 1.25)) + (n - 0.5) * 0.75;
-	float a = smoothstep(0.95, 0.45, r) * density * fade * hd_near;
+	float a = (1.0 - smoothstep(0.45, 0.95, r)) * density * fade * hd_near;
 	// Luz de arriba a la izquierda y algo de relieve con el ruido.
 	float lit = clamp(0.55 - p.y * 0.45 - p.x * 0.18 + (n - 0.5) * 0.7, 0.0, 1.0);
 	vec3 col = mix(color_dark.rgb, color_light.rgb, lit);
 	// Fuego por debajo (las bolas que caen iluminan la panza de la nube).
 	col = mix(col, ember_color.rgb * 1.6, ember * smoothstep(0.0, 0.8, p.y) * 0.8);
 	// El relámpago ilumina desde dentro: más en el centro de la bocanada.
-	float inside = flash * smoothstep(1.0, 0.1, r);
+	float inside = flash * (1.0 - smoothstep(0.1, 1.0, r));
 	col += flash_color.rgb * inside * 2.2;
 	ALBEDO = col * a;
 	ALPHA = clamp(a, 0.0, 1.0);

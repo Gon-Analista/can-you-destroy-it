@@ -12,6 +12,11 @@ const PROJECTILE_POOL: int = 24
 const COMBO_PROJECTILE_POOL: int = 6
 ## Cada cuánto golpea el Haz de Plasma (s).
 const BEAM_TICK: float = 0.09
+## La nube de la Tormenta: metros por delante de la cara del cristal y cuánto sube sobre el
+## blanco por metro de distancia al mago (con un mínimo).
+const STORM_FRONT: float = 4.0
+const STORM_RISE: float = 0.24
+const STORM_MIN_RISE: float = 5.0
 ## Lado que usan las señales y las manos para el hechizo combinado.
 const BOTH_HANDS: int = 2
 
@@ -136,7 +141,16 @@ func deliver(recipe: SpellRecipe, hit: SpellHit, charge: float) -> void:
 		SpellRecipe.Delivery.STORM:
 			var aim: Dictionary = _aim.call()
 			var target: Vector3 = aim["position"]
-			var cloud: Vector3 = sky_origin(recipe, target, aim["normal"])
+			# La nube se queda delante de la cara del cristal y algo por encima del blanco, a una
+			# altura que crece con la distancia: así se ve desde donde se lanzó, sobre la mira.
+			var back: Vector3 = camera.global_position - target
+			back.y = 0.0
+			var dist: float = back.length()
+			back = back / dist if dist > 0.1 else Vector3.BACK
+			var cloud: Vector3 = (
+				target + back * STORM_FRONT + Vector3.UP * maxf(STORM_MIN_RISE, dist * STORM_RISE)
+			)
+			print("DBG cam ", camera.global_position, " fwd ", -camera.global_basis.z, " ", camera.name)
 			_storm.start(recipe, hit, cloud, target, aim["normal"], _hand_origin.call(BOTH_HANDS))
 			_trauma(0.45)
 		_:

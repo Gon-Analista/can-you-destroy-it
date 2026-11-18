@@ -131,6 +131,7 @@ func start(
 ) -> void:
 	_recipe = recipe
 	_hit = hit
+	print("DBG storm start ", cloud, " target ", target, " dmg ", hit.damage)
 	_target = target
 	_normal = normal if normal.length_squared() > 0.01 else Vector3.BACK
 	_tangent = _normal.cross(Vector3.UP if absf(_normal.y) < 0.95 else Vector3.RIGHT).normalized()
@@ -165,7 +166,7 @@ func start(
 	_circles.stamp(
 		cloud - Vector3.UP * 2.5,
 		Vector3.DOWN,
-		_radius * 2.2,
+		_radius * 1.5,
 		recipe.circle_color,
 		recipe.circle_hot,
 		recipe.storm_sec + FORM_SEC,
@@ -254,6 +255,7 @@ func _animate_puffs(delta: float, k: float) -> void:
 ## Una descarga: el elemento que toca por turno (en el orden de la receta, desde el rayo).
 func _strike(k: int) -> void:
 	var crystal: MotherCrystal = _delivery.crystal()
+	print("DBG strike ", k, " ", crystal)
 	if crystal == null:
 		return
 	var els: Array[StringName] = _recipe.elements
