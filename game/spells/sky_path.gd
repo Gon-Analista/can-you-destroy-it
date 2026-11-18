@@ -9,6 +9,8 @@ extends RefCounted
 ## cristal), luego de lado y, por último, desde el lado del mago.
 
 const MASK: int = 1 | (1 << 1)
+## Puntos que prueba: detrás del blanco, de lado y del lado del mago.
+const CANDIDATES: int = 3
 
 
 ## `side` (+1 o -1) elige el lado por el que entra; `normal`, la de la superficie del blanco.
@@ -26,15 +28,20 @@ static func origin(
 	var right: Vector3 = fwd.cross(Vector3.UP).normalized() * side
 	var up := Vector3.UP * height
 	var dist: float = flat.length()
-	var candidates: Array[Vector3] = [
-		target + up + fwd * height * 0.3 + right * height * 0.4,
-		target + up + right * height * 0.5,
-		target + up - fwd * minf(height * 0.25, dist * 0.5) + right * height * 0.4,
-	]
 	var start: Vector3 = target + (normal if normal.length_squared() > 0.01 else Vector3.UP) * 1.5
-	if space:
-		for c: Vector3 in candidates:
-			var q := PhysicsRayQueryParameters3D.create(start, c, MASK)
-			if space.intersect_ray(q).is_empty():
-				return c
-	return candidates[candidates.size() - 1]
+	# Sin arrays: se llama en cada frame mientras se carga (los círculos siguen el camino).
+	for i: int in CANDIDATES:
+		var c: Vector3 = target + up + right * height * (0.5 if i == 1 else 0.4)
+		if i == 0:
+			c += fwd * height * 0.3
+		elif i == 2:
+			c -= fwd * minf(height * 0.25, dist * 0.5)
+		# El último se usa aunque choque (o si no hay física para comprobarlo).
+		if i == CANDIDATES - 1:
+			return c
+		if (
+			space
+			and space.intersect_ray(PhysicsRayQueryParameters3D.create(start, c, MASK)).is_empty()
+		):
+			return c
+	return target + up

@@ -11,6 +11,8 @@ render_mode unshaded, cull_back;
 uniform vec4 col_crack : source_color = vec4(0.95, 1.0, 1.0, 1.0);
 uniform vec4 col_flash : source_color = vec4(0.85, 1.0, 1.0, 1.0);
 uniform vec4 col_resonant : source_color = vec4(1.0, 0.87, 0.55, 1.0);
+// Destello de los golpes de fuego (Bola de Fuego, Meteoro): el blanco azulado tapaba el fuego.
+uniform vec4 col_fire_flash : source_color = vec4(1.0, 0.58, 0.24, 1.0);
 uniform float core_top = 4.0;
 uniform float core_bottom = 0.0;
 uniform float core_pulse = 0.0;
@@ -311,8 +313,10 @@ void fragment() {
 		float age = now - hits[i].w;
 		if (hits[i].w >= 0.0 && age >= 0.0 && age < 1.6) {
 			float d = distance(world_pos, hits[i].xyz);
-			vec3 fc = hit_resonant[i] > 0.0 ? col_resonant.rgb : col_flash.rgb;
-			float size = hit_radius * (hit_resonant[i] > 0.0 ? 1.8 : 1.0);
+			// hit_resonant: 0 normal, 1 resonante, 2 fuego.
+			bool res = hit_resonant[i] > 0.5 && hit_resonant[i] < 1.5;
+			vec3 fc = res ? col_resonant.rgb : (hit_resonant[i] > 1.5 ? col_fire_flash.rgb : col_flash.rgb);
+			float size = hit_radius * (res ? 1.8 : 1.0);
 			float core_glow = (1.0 - smoothstep(0.0, size * (0.5 + age * 2.0), d)) * exp(-age * 9.0);
 			float ring = (1.0 - step(0.22, abs(d - age * 9.0))) * exp(-age * 3.0);
 			flash = max(flash, fc * clamp(core_glow * 1.4 + ring * 0.7, 0.0, 1.0));

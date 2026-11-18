@@ -68,9 +68,12 @@ void arcane(vec2 p, float t, out vec3 col, out float a, out float alpha_mul) {
 }
 
 // Tono de la rampa en `x` con la energía limitada a 1 (no florece).
-vec3 ramp_hue(float x) {
+// `sat` > 1 aviva el color sin pasar de 1 (las rampas HDR, al limitarlas, quedaban color crema:
+// el interior del fuego se veía pastel en vez de amarillo anaranjado).
+vec3 ramp_hue(float x, float sat) {
 	vec3 c = texture(ramp, vec2(x, 0.5)).rgb;
-	return c / max(1.0, max(c.r, max(c.g, c.b)));
+	c /= max(1.0, max(c.r, max(c.g, c.b)));
+	return pow(c, vec3(sat));
 }
 
 // Banda nítida con antialias (estilizado: capas de color limpias, sin degradados borrosos).
@@ -122,9 +125,12 @@ void fire(vec2 p, float t, float gone, out vec3 col, out float a, out float alph
 	// jirones que se enfrían. Al apagarse (`gone`: fundido o pegado a la cámara) el fuego se
 	// deshace en lenguas en vez de volverse translúcido (a medio fundir, el rojo sobre el
 	// cristal claro se veía marrón).
-	float lump = hd_fbm(vec3(u * 1.2 + seed, v * 1.2 + t * 0.4, t * 0.2));
-	h += (lump - 0.5) * 0.7 * burst;
-	h -= burst * (0.15 + 0.6 * (1.0 - n1)) * smoothstep(0.25, 0.9, burst);
+	// (Rama por uniforme: sin estallido no se paga el ruido de los cúmulos.)
+	if (burst > 0.0) {
+		float lump = hd_fbm(vec3(u * 1.2 + seed, v * 1.2 + t * 0.4, t * 0.2));
+		h += (lump - 0.5) * 0.7 * burst;
+		h -= burst * (0.15 + 0.6 * (1.0 - n1)) * smoothstep(0.25, 0.9, burst);
+	}
 	h -= gone * (0.45 + 0.4 * (1.0 - n2));
 	// Calor dentro: el remolino dibuja vetas en espiral (sin agujerear el centro, que siempre
 	// es lo más caliente); cada capa tiene lenguas propias.
@@ -134,16 +140,18 @@ void fire(vec2 p, float t, float gone, out vec3 col, out float a, out float alph
 	float b1 = band(hv, 0.1);
 	float b2 = band(hv + lag, 0.26);
 	float b3 = band(hv - lag, 0.48);
+	float b4 = band(hv + lag * 0.5, 0.72);
 	// Se enfría a rojo (sin empezar en blanco: sobre el cristal claro, un estallido blanco y
 	// grande florecía hasta tapar el golpe).
 	float cold = smoothstep(0.35, 1.0, burst) * 0.5;
 	// Capas con el tono de la rampa pero sin pasar de 1 (sólo el núcleo florece): borde rojo
-	// oscuro, rojo anaranjado, naranja y amarillo.
+	// oscuro, rojo anaranjado, naranja, amarillo anaranjado y amarillo pálido alrededor del núcleo.
 	vec3 c0 = texture(ramp, vec2(1.0, 0.5)).rgb * 0.85;
-	vec3 c1 = ramp_hue(clamp(0.66 + cold * 0.25, 0.0, 1.0));
-	vec3 c2 = ramp_hue(clamp(0.36 + cold * 0.4, 0.0, 1.0));
-	vec3 c3 = ramp_hue(clamp(0.15 + cold * 0.5, 0.0, 1.0));
-	col = mix(mix(mix(c0, c1, b1), c2, b2), c3, b3) * intensity;
+	vec3 c1 = ramp_hue(clamp(0.66 + cold * 0.25, 0.0, 1.0), 1.0);
+	vec3 c2 = ramp_hue(clamp(0.36 + cold * 0.4, 0.0, 1.0), 1.15);
+	vec3 c3 = ramp_hue(clamp(0.15 + cold * 0.5, 0.0, 1.0), 2.0);
+	vec3 c4 = ramp_hue(clamp(0.04 + cold * 0.5, 0.0, 1.0), 1.4);
+	col = mix(mix(mix(mix(c0, c1, b1), c2, b2), c3, b3), c4, b4) * intensity;
 	// Núcleo pequeño y blanco (HDR), sólo en la bola; la carga lo aviva.
 	float core = band(hv, 0.95 + burst * 0.5) * in_ball * (1.0 - smoothstep(0.05, 0.3, burst));
 	vec3 hot = texture(ramp, vec2(0.0, 0.5)).rgb;

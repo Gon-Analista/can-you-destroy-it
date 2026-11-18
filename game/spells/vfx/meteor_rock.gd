@@ -376,6 +376,8 @@ func _build_impact() -> void:
 	_crater_mat = _crater.material_override
 	_crater_mat.set_shader_parameter("color", HOT)
 	_crater_mat.set_shader_parameter("falloff", 1.6)
+	# Brasa que tiñe el suelo de naranja (sumada, sobre el cristal claro se quedaba blanca).
+	_crater_mat.set_shader_parameter("cover", 0.6)
 	_impact.add_child(_crater)
 	_blast = HdFx.quad(HdFx.FIRE_SHADER, 1.0, 5)
 	_blast.name = "Blast"
@@ -401,6 +403,8 @@ func _build_impact() -> void:
 		var m: ShaderMaterial = ring.material_override
 		m.set_shader_parameter("color", Color(1.0, 0.6, 0.3) if i == 0 else Color(1.0, 0.85, 0.6))
 		m.set_shader_parameter("intensity", 0.9 if i == 0 else 0.5)
+		# Ondas de calor y polvo que tiñen: sumadas, sobre el cielo claro eran donuts blancos.
+		m.set_shader_parameter("cover", 0.7 if i == 0 else 0.5)
 		_impact.add_child(ring)
 		_rings.append(ring)
 		_ring_mats.append(m)

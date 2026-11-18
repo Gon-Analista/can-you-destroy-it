@@ -353,7 +353,11 @@ func receive_hit(hit: SpellHit) -> void:
 	var tier: SpellTier = hit.tier
 
 	_hits[_hit_index] = Vector4(hit.position.x, hit.position.y, hit.position.z, _now)
-	_hit_resonant[_hit_index] = 1.0 if hit.resonant else 0.0
+	# 1: resonante; 2: fuego (destello naranja en vez de blanco azulado).
+	var fire: bool = (
+		hit.recipe != null and hit.element == &"spark" and hit.recipe.shatter_mult <= 1.0
+	)
+	_hit_resonant[_hit_index] = 1.0 if hit.resonant else (2.0 if fire else 0.0)
 	_hit_index = (_hit_index + 1) % MAX_HITS
 	_cracks[_crack_index] = Vector4(
 		hit.position.x,

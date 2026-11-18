@@ -43,6 +43,11 @@ func _ready() -> void:
 		var fire: MeshInstance3D = HdFx.quad(HdFx.FIRE_SHADER, 1.0, 5)
 		slot.add_child(fire)
 		var ring: MeshInstance3D = HdFx.quad(HdFx.RING_SHADER, 1.0, 8)
+		# La onda tiñe en vez de sumar: al nacer es casi un disco del tamaño del golpe y, sumada
+		# con intensidad 2 (HDR), florecía en un fogonazo blanco que tapaba toda la pantalla.
+		var rm: ShaderMaterial = ring.material_override
+		rm.set_shader_parameter("intensity", 0.9)
+		rm.set_shader_parameter("cover", 0.35)
 		slot.add_child(ring)
 		var sparks: GPUParticles3D = HdFx.sparks(
 			60, 9.0, 0.05, PackedColorArray([Color(2, 1.8, 1.2), Color(1, 0.5, 0.2)])
