@@ -454,7 +454,7 @@ RECIPES = [
          description="Triple. Una nube de tormenta se queda sobre el cristal y descarga, por turnos, rayos que saltan, "
                      "granizo que congela y bolas de fuego que lo dejan ardiendo. Mientras dura, sigue lanzando.",
          riddle="Fuego, hielo y rayo no caben en dos manos. Con un tercero, el cielo entero se enfada.",
-         dmg=7.2, chain=2, burn=3.0, storm=9.0, storm_interval=0.45, storm_radius=7.0, lockout=13.0,
+         dmg=39.6, chain=2, burn=3.0, storm=9.0, storm_interval=1.0, storm_radius=7.0, lockout=13.0,
          sky_height=30.0, sky_circles=3, charge=1.6, cooldown=3.0, visual="vfx_elemental_storm",
          circle=(1.3, 1.1, 1.9), hot=(2.2, 2.2, 2.5), cast=["sfx_storm_strike_01"],
          impact=["sfx_storm_strike_01", "sfx_storm_strike_02", "sfx_storm_strike_03"], loop="amb_storm_charge_loop",
@@ -467,7 +467,7 @@ RECIPES = [
          description="Triple. Un glaciar entero cae del cielo envuelto en rayos: perfora un túnel helado, se parte en "
                      "esquirlas y los rayos saltan por todo el cristal.",
          riddle="El hielo pesa si le das piedra. Y si además le das un rayo, cae tronando.",
-         dmg=6.1, area=3.5, area_hits=8, chain=6, pierce=9.0, freeze=True, shard_bonus=1, sky_height=62.0, fall=1.1,
+         dmg=1.65, area=3.5, area_hits=8, chain=6, pierce=9.0, freeze=True, shard_bonus=1, sky_height=62.0, fall=1.1,
          sky_circles=4, charge=1.6, cooldown=4.0, visual="vfx_thunder_glacier", circle=(0.8, 1.2, 1.8),
          hot=(1.9, 2.0, 2.2), cast=["sfx_meteor_fall_01"], impact=["sfx_glacier_crash_01"], loop="amb_sky_charge_loop",
          staff=True,
@@ -479,7 +479,7 @@ RECIPES = [
          description="Triple. Una estrella diminuta vuela al cristal, se queda quieta, se traga la luz de alrededor y "
                      "revienta en una explosión enorme que deja el cristal ardiendo.",
          riddle="El fuego quema, la piedra pesa y lo arcano amplifica. Junta los tres y nace una estrella... que muere.",
-         dmg=7.6, area=6.0, area_hits=12, burn=4.0, nova=0.9, charge=1.8, cooldown=4.5, visual="vfx_supernova",
+         dmg=6.66, area=6.0, area_hits=12, burn=4.0, nova=0.9, charge=1.8, cooldown=4.5, visual="vfx_supernova",
          circle=(1.9, 1.3, 0.8), hot=(2.6, 2.4, 2.0), cast=["sfx_echo_cast_01"], impact=["sfx_nova_blast_01"],
          loop="amb_arcane_charge_loop", staff=True,
          tier=dict(damage=12, speed=16.0, wobble=0.02, shards_min=5, shards_max=7, shard_scale=1.5, impact_particles=120,
@@ -487,10 +487,10 @@ RECIPES = [
                    trail_smoke=0.3, core=(1, 1, 0.95), glow=(1, 0.7, 0.4), tint=(1, 0.8, 0.6),
                    ramp=[(3.0, 2.9, 2.6), (2.6, 2.0, 1.0), (2.0, 0.9, 0.9), (1.0, 0.3, 0.9), (0.3, 0.06, 0.4)])),
     dict(id="star_rain", name="Lluvia de Estrellas", elements=["arcane", "arcane", "spark"], delivery=2,
-         description="Triple. Se abre el cielo y caen decenas de estrellas fugaces sobre toda la zona; cada una deja una "
+         description="Triple. Se abre el cielo y caen una docena de estrellas fugaces sobre toda la zona; cada una deja una "
                      "quemadura de luz.",
          riddle="Dos veces lo arcano, y una chispa para encenderlo. Pide un deseo antes de mirar arriba.",
-         dmg=6.6, rain=24, rain_radius=7.0, strike="spark", burn=2.0, sky_height=46.0, sky_circles=3, charge=1.5,
+         dmg=7.26, rain=12, rain_radius=7.0, strike="spark", burn=2.0, sky_height=46.0, sky_circles=3, charge=1.5,
          cooldown=3.8, visual="vfx_star_rain", circle=(1.8, 0.9, 1.6), hot=(2.4, 2.1, 2.2), cast=["sfx_star_rain_01"],
          impact=["sfx_arcane_impact_01"], loop="amb_arcane_charge_loop", staff=True,
          tier=dict(damage=4, speed=55.0, wobble=0.0, shards_min=1, shards_max=2, impact_particles=30, light_energy=3.0,
@@ -501,7 +501,7 @@ RECIPES = [
          description="Triple. Golpeas el suelo y la tierra se abre hasta el cristal: su base revienta en un volcán de lava "
                      "que lo deja ardiendo y suelta fragmentos más grandes.",
          riddle="Piedra contra piedra hace temblar. ¿Y si en la grieta cae una chispa?",
-         dmg=6.4, area=4.5, area_hits=10, burn=6.0, shard_bonus=1, charge=1.5, cooldown=4.0, visual="vfx_eruption",
+         dmg=3.63, area=4.5, area_hits=10, burn=6.0, shard_bonus=1, charge=1.5, cooldown=4.0, visual="vfx_eruption",
          circle=(1.8, 0.8, 0.3), hot=(2.2, 1.6, 0.8), cast=["sfx_quake_01"], impact=["sfx_eruption_01"],
          loop="amb_sky_charge_loop", staff=True,
          tier=dict(damage=10, speed=26.0, wobble=0.0, shards_min=4, shards_max=6, shard_scale=1.4, impact_particles=90,

@@ -23,7 +23,7 @@ const PUFFS: int = 22
 const FORM_SEC: float = 0.9
 const FADE_SEC: float = 1.4
 ## Bolas de granizo de cada ráfaga.
-const HAIL_PER_VOLLEY: int = 3
+const HAIL_PER_VOLLEY: int = 2
 const MASK_CRYSTAL: int = 1 << 1
 
 var _delivery: SpellDelivery
