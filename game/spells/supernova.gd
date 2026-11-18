@@ -14,7 +14,7 @@ const POOL: int = 2
 const LIFT: float = 1.6
 const STAR_SCALE: float = 7.0
 ## A partir de esta distancia (m) la estrella crece con ella: desde lejos también se ve.
-const SEEN_FROM: float = 22.0
+const SEEN_FROM: float = 12.0
 
 ## Los círculos mágicos del lanzador (un sello gira bajo la estrella).
 var circles: MagicCircles
@@ -99,6 +99,8 @@ func ignite(hit: SpellHit, crystal: MotherCrystal, camera: Camera3D) -> void:
 	star.scale = Vector3.ONE * _base_scale[i] * 1.4
 	star.appear()
 	star.charge = 0.6
+	# Se clava en el sitio con un destello: aquí se queda.
+	star.flare(0.6)
 	_swirls[i].global_position = at
 	_swirls[i].emitting = true
 	_lights[i].global_position = at
