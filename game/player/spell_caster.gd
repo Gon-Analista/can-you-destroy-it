@@ -139,7 +139,10 @@ func _ready() -> void:
 	_echoes.name = "Echoes"
 	add_child(_echoes)
 	_echoes.setup(
-		self, _circles, echo_pool, [_aim, _hand_origin, _delivery.deliver, _delivery.deliver_sky, _resonant_chance]
+		self,
+		_circles,
+		echo_pool,
+		[_aim, _hand_origin, _delivery.deliver, _delivery.deliver_sky, _resonant_chance]
 	)
 	_cast_random = _randomizer(CAST_SFX, 1.15)
 	_combo_cast_random = _randomizer(RECIPE.cast_sfx, 1.08)
@@ -147,7 +150,7 @@ func _ready() -> void:
 		_cast_sounds[el] = (
 			_randomizer(el.cast_sfx, 1.12) if not el.cast_sfx.is_empty() else _cast_random
 		)
-	for r: SpellRecipe in RECIPES:
+	for r: SpellRecipe in RECIPES + StaffCombos.TRIPLES:
 		if not r.is_reaction:
 			_combo_sounds[r] = _randomizer(r.cast_sfx, 1.08)
 	_charge_player = AudioStreamPlayer.new()
@@ -256,9 +259,7 @@ func _hand_origin(side: int) -> Vector3:
 func recipe_for_hands() -> SpellRecipe:
 	var gem: ElementDef = staff.element(ELEMENTS)
 	if gem:
-		var triple: SpellRecipe = StaffCombos.triple_for(
-			element_of(0).id, element_of(1).id, gem.id
-		)
+		var triple: SpellRecipe = StaffCombos.triple_for(element_of(0).id, element_of(1).id, gem.id)
 		if triple:
 			return triple
 	for r: SpellRecipe in RECIPES:
@@ -368,14 +369,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"cycle_element_right"):
 		cycle_element(1)
 		return
-	if event.is_action_pressed(&"cycle_staff"):
-		_cycle_staff(1)
+	if _staff_input(event):
 		return
-	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
-		var wheel: MouseButton = (event as InputEventMouseButton).button_index
-		if wheel == MOUSE_BUTTON_WHEEL_UP or wheel == MOUSE_BUTTON_WHEEL_DOWN:
-			_cycle_staff(1 if wheel == MOUSE_BUTTON_WHEEL_UP else -1)
-			return
 	for side: int in 2:
 		if event.is_action_pressed(ACTIONS[side]):
 			_on_press(side)
@@ -392,6 +387,19 @@ func _unhandled_input(event: InputEvent) -> void:
 		var key: Key = (event as InputEventKey).physical_keycode
 		if key >= KEY_1 and key <= KEY_5:
 			set_tier(key - KEY_1, true)
+
+
+## R o la rueda del ratón: cambia el elemento de la gema del báculo. Devuelve si era eso.
+func _staff_input(event: InputEvent) -> bool:
+	if event.is_action_pressed(&"cycle_staff"):
+		_cycle_staff(1)
+		return true
+	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+		var wheel: MouseButton = (event as InputEventMouseButton).button_index
+		if wheel == MOUSE_BUTTON_WHEEL_UP or wheel == MOUSE_BUTTON_WHEEL_DOWN:
+			_cycle_staff(1 if wheel == MOUSE_BUTTON_WHEEL_UP else -1)
+			return true
+	return false
 
 
 ## Lanza con una mano, sin esperar a la combinación (lo usa el modo demo).
@@ -583,9 +591,7 @@ func _begin_combine(by_input: bool = true) -> void:
 	var storm_lock: float = _delivery.storm().lock_left()
 	if _active_recipe.delivery == SpellRecipe.Delivery.STORM and storm_lock > 0.0:
 		# Sólo una tormenta a la vez: la nube aún descarga (o el cielo se está calmando).
-		Events.hint.emit(
-			tr("EL CIELO AÚN RUGE: ESPERA %d S") % ceili(storm_lock), Color("#c9b8ff")
-		)
+		Events.hint.emit(tr("EL CIELO AÚN RUGE: ESPERA %d S") % ceili(storm_lock), Color("#c9b8ff"))
 		AudioDirector.play_sfx(FIZZLE_SFX, -6.0, 1.2)
 		return
 	_combining = true

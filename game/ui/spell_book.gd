@@ -2,7 +2,8 @@ class_name SpellBook
 extends Control
 ## Libro de Combinaciones (tecla B): todas las combinaciones y reacciones del juego. Las que ya
 ## has descubierto, con su nombre, cómo se lanzan y qué hacen; las que no, como "???" con un
-## acertijo de pista; y las que piden un elemento que aún no has despertado, con candado.
+## acertijo de pista; y las que piden un elemento que aún no has despertado (o el báculo), con
+## candado. Dos marcapáginas arriba: PAREJAS (las manos) y TRIPLES (las manos y el báculo).
 ## Mismo aspecto que el Grimorio (los dos libros son hermanos).
 
 const OPEN_SFX: AudioStream = preload("res://audio/sfx/sfx_book_open_01.ogg")
@@ -14,6 +15,11 @@ const RIGHT := Rect2(324, 42, 236, 276)
 const LIST_Y: float = 90.0
 ## Alto de cada fila de la lista: las 17 entradas caben en la página (90 + 17 x 13 < 318).
 const ROW_H: float = 13.0
+## Marcapáginas: las parejas (y reacciones) y las triples del báculo.
+# i18n
+const TABS: PackedStringArray = ["PAREJAS", "TRIPLES"]
+const TAB_W: float = 92.0
+const TAB_H: float = 16.0
 ## Página del Grimorio (y su icono) de cada elemento.
 const ELEMENT_PAGE: Dictionary[StringName, int] = {
 	&"spark": 1, &"frost": 2, &"bolt": 3, &"earth": 4, &"arcane": 5
@@ -29,8 +35,13 @@ const HOW: PackedStringArray = [
 	"Carga y suelta: una onda corre por el suelo hasta el cristal.",
 	"Carga y suelta: un pulso que atrae los fragmentos.",
 	"Carga y suelta: se abre un pozo delante de ti que se traga los fragmentos del valle.",
-	"Carga mirando el cristal: lo hace vibrar entero y tus golpes resuenan unos segundos."
+	"Carga mirando el cristal: lo hace vibrar entero y tus golpes resuenan unos segundos.",
+	"Carga y suelta: una nube de tormenta se queda sobre el blanco y descarga sola.",
+	"Carga y suelta: una estrella vuela al blanco, se contrae y estalla.",
 ]
+## Las triples piden la gema del báculo.
+# i18n
+const HOW_TRIPLE: String = "Pon el tercer elemento en la gema del báculo (R) y junta las manos."
 ## Los Ecos repiten otra combinación.
 # i18n
 const HOW_ECHO: String = "Carga y suelta: sale el hechizo y sus ecos fantasma lo repiten."
@@ -51,6 +62,9 @@ const C_CYAN := Color("#c9f6ff")
 var is_open: bool = false
 
 var _selected: int = 0
+## Página abierta: 0 parejas, 1 triples.
+var _page: int = 0
+var _tab_labels: Array[Label] = []
 var _t: float = 0.0
 var _open_t: float = 0.0
 var _closing: bool = false
@@ -85,7 +99,19 @@ func _ready() -> void:
 		Rect2(LEFT.position + Vector2(0, 28), Vector2(LEFT.size.x, UiFonts.LINE)),
 		1
 	)
-	for i: int in SpellCaster.RECIPES.size():
+	for i: int in TABS.size():
+		var tr_rect: Rect2 = _tab_rect(i)
+		_tab_labels.append(
+			_label(
+				TABS[i],
+				UiFonts.BOLD,
+				UiFonts.SMALL,
+				C_GOLD_LIGHT,
+				Rect2(tr_rect.position + Vector2(0, 3), Vector2(tr_rect.size.x, UiFonts.LINE)),
+				1
+			)
+		)
+	for i: int in maxi(SpellCaster.RECIPES.size(), StaffCombos.TRIPLES.size()):
 		var r := Rect2(
 			LEFT.position.x + 40,
 			LIST_Y + i * ROW_H + floorf((ROW_H - UiFonts.LINE) * 0.5),
@@ -145,10 +171,13 @@ func close() -> void:
 	AudioDirector.play_sfx(CLOSE_SFX, -6.0, 0.9)
 
 
-## Estado de una receta: &"found" (descubierta), &"locked" (falta un elemento) o &"unknown".
+## Estado de una receta: &"found" (descubierta), &"locked" (falta un elemento o el báculo) o
+## &"unknown".
 static func state_of(recipe: SpellRecipe) -> StringName:
 	if GameState.progression.discovered_recipes.has(recipe.id):
 		return &"found"
+	if recipe.is_triple() and not StaffCombos.owned():
+		return &"locked"
 	for e: StringName in recipe.elements:
 		for el: ElementDef in SpellCaster.ELEMENTS:
 			if el.id == e and el.unlock_upgrade != &"":
@@ -164,10 +193,38 @@ func _element_name(id: StringName) -> String:
 	return String(id).to_upper()
 
 
+## Las recetas de la página abierta.
+func _list() -> Array[SpellRecipe]:
+	return StaffCombos.TRIPLES if _page == 1 else SpellCaster.RECIPES
+
+
+## Abre una página del libro (0 parejas, 1 triples).
+func open_page(page: int) -> void:
+	page = clampi(page, 0, TABS.size() - 1)
+	if page == _page:
+		return
+	_page = page
+	_selected = 0
+	AudioDirector.play_sfx(OPEN_SFX, -10.0, 1.25)
+	_refresh()
+
+
+func _tab_rect(i: int) -> Rect2:
+	return Rect2(LEFT.position.x + 10.0 + i * (TAB_W + 6.0), BOOK.position.y - TAB_H, TAB_W, TAB_H)
+
+
 func _refresh() -> void:
+	var list: Array[SpellRecipe] = _list()
 	var found: int = 0
-	for i: int in SpellCaster.RECIPES.size():
-		var r: SpellRecipe = SpellCaster.RECIPES[i]
+	for i: int in _rows.size():
+		_rows[i].visible = i < list.size()
+	for i: int in TABS.size():
+		_tab_labels[i].text = tr(TABS[i])
+		_tab_labels[i].add_theme_color_override(
+			&"font_color", C_GOLD_LIGHT if i == _page else C_LOCKED.lightened(0.45)
+		)
+	for i: int in list.size():
+		var r: SpellRecipe = list[i]
 		var st: StringName = state_of(r)
 		if st == &"found":
 			found += 1
@@ -180,14 +237,14 @@ func _refresh() -> void:
 				else (C_CYAN if st == &"found" else C_LOCKED.lightened(0.3))
 			)
 		)
-	_count.text = tr("%d / %d DESCUBIERTAS") % [found, SpellCaster.RECIPES.size()]
-	var sel: SpellRecipe = SpellCaster.RECIPES[_selected]
+	_count.text = tr("%d / %d DESCUBIERTAS") % [found, list.size()]
+	var sel: SpellRecipe = list[_selected]
 	var s: StringName = state_of(sel)
 	var pair: String = "  +  ".join(
 		sel.elements.map(func(e: StringName) -> String: return _element_name(e))
 	)
 	_name.text = tr(sel.display_name).to_upper() if s == &"found" else "???"
-	_elements.text = pair if s == &"found" else "?  +  ?"
+	_elements.text = pair if s == &"found" else ("?  +  ?  +  ?" if sel.is_triple() else "?  +  ?")
 	if sel.is_reaction:
 		_how.text = tr(
 			"Reacción: no se lanza. Pasa en el cristal cuando un elemento toca la huella de otro."
@@ -195,6 +252,8 @@ func _refresh() -> void:
 	else:
 		var how: String = HOW_ECHO if sel.echo_of != &"" else HOW[sel.delivery]
 		_how.text = tr(how) if s == &"found" else ""
+		if sel.is_triple():
+			_how.text = (tr(HOW_TRIPLE) + " " + _how.text).strip_edges()
 	match s:
 		&"found":
 			_desc.text = tr(sel.description)
@@ -204,17 +263,21 @@ func _refresh() -> void:
 			for e: StringName in sel.elements:
 				missing.append(_element_name(e))
 			_desc.text = tr("Pide un elemento que aún duerme. Despiértalo en el Grimorio.")
+			if sel.is_triple() and not StaffCombos.owned():
+				_desc.text = tr(
+					"Pide el báculo: búscalo en la constelación del Báculo del Grimorio."
+				)
 			_desc.add_theme_color_override(&"font_color", C_INK_SOFT)
 		_:
 			_desc.text = tr("PISTA: %s") % tr(sel.riddle)
 			_desc.add_theme_color_override(&"font_color", C_PINK)
-	_footer.text = tr("W/S ELEGIR  ·  B / ESC CERRAR")
+	_footer.text = tr("A/D PÁGINA  ·  W/S ELEGIR  ·  B / ESC CERRAR")
 	_write_t = 0.0
 	queue_redraw()
 
 
 func _select(i: int) -> void:
-	i = wrapi(i, 0, SpellCaster.RECIPES.size())
+	i = wrapi(i, 0, _list().size())
 	if i == _selected:
 		return
 	_selected = i
@@ -234,6 +297,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		_select(_selected - 1)
 	elif event.is_action_pressed(&"ui_down") or event.is_action_pressed(&"move_back"):
 		_select(_selected + 1)
+	elif event.is_action_pressed(&"move_left") or event.is_action_pressed(&"cycle_element_left"):
+		open_page(_page - 1)
+	elif event.is_action_pressed(&"move_right") or event.is_action_pressed(&"cycle_element_right"):
+		open_page(_page + 1)
 	else:
 		return
 	get_viewport().set_input_as_handled()
@@ -248,9 +315,13 @@ func _gui_input(event: InputEvent) -> void:
 	if pos.x < 0.0:
 		return
 	var local: Vector2 = pos - _ofs()
+	if event is InputEventMouseButton:
+		for t: int in TABS.size():
+			if _tab_rect(t).has_point(local):
+				open_page(t)
 	if local.x > LEFT.position.x and local.x < LEFT.end.x:
 		var i: int = floori((local.y - LIST_Y) / ROW_H)
-		if i >= 0 and i < SpellCaster.RECIPES.size():
+		if i >= 0 and i < _list().size():
 			_select(i)
 	accept_event()
 
@@ -308,17 +379,28 @@ func _draw() -> void:
 		BOOK.end - Vector2(8, 8)
 	]:
 		draw_rect(Rect2(corner, Vector2(8, 8)), C_GOLD)
-	# Lista: dos iconos de elemento por fila (o "?").
-	for i: int in SpellCaster.RECIPES.size():
-		var r: SpellRecipe = SpellCaster.RECIPES[i]
+	# Marcapáginas: cintas que asoman por arriba del libro (la abierta, más alta y dorada).
+	for t: int in TABS.size():
+		var tab: Rect2 = _tab_rect(t)
+		var open_tab: bool = t == _page
+		if not open_tab:
+			tab = Rect2(tab.position + Vector2(0, 3), tab.size - Vector2(0, 3))
+		draw_rect(tab.grow(1), C_SHADOW)
+		draw_rect(tab, C_COVER if open_tab else C_COVER_DARK)
+		draw_rect(Rect2(tab.position, Vector2(tab.size.x, 2)), C_GOLD if open_tab else C_LOCKED)
+	# Lista: un icono de elemento por elemento de la receta (o "?").
+	var list: Array[SpellRecipe] = _list()
+	for i: int in list.size():
+		var r: SpellRecipe = list[i]
 		var st: StringName = state_of(r)
 		var y: float = LIST_Y + i * ROW_H
 		var row := Rect2(LEFT.position.x + 6, y, LEFT.size.x - 12, ROW_H - 2)
 		if i == _selected:
 			draw_rect(row, Color(C_GOLD, 0.25))
 			draw_rect(Rect2(row.position, Vector2(2, row.size.y)), C_GOLD_LIGHT)
-		for k: int in mini(r.elements.size(), 2):
-			var at := Vector2(row.position.x + 6 + k * 14, y + floorf((ROW_H - 9.0) * 0.5))
+		var step: float = 14.0 if r.elements.size() < 3 else 11.0
+		for k: int in mini(r.elements.size(), 3):
+			var at := Vector2(row.position.x + 6 + k * step, y + floorf((ROW_H - 9.0) * 0.5))
 			var page: int = ELEMENT_PAGE.get(r.elements[k], 0)
 			var col := Color(Grimoire.PAGES[page][2] as String)
 			if st == &"found":
@@ -334,13 +416,14 @@ func _draw() -> void:
 	var blink: float = 0.5 + 0.5 * sin(_t * 5.0)
 	draw_rect(Rect2(LEFT.end.x - 16, sel_y - 2, 4, 4), Color(C_GOLD_LIGHT, blink))
 	# Página derecha: viñeta de los dos elementos en grande si está descubierta.
-	var sel: SpellRecipe = SpellCaster.RECIPES[_selected]
+	var sel: SpellRecipe = list[_selected]
 	if state_of(sel) == &"found":
-		for k: int in mini(sel.elements.size(), 2):
+		var first_x: float = RIGHT.end.x - (52.0 if sel.elements.size() < 3 else 70.0)
+		for k: int in mini(sel.elements.size(), 3):
 			var page: int = ELEMENT_PAGE.get(sel.elements[k], 0)
 			_icon(
 				Grimoire.PAGE_ICONS[page],
-				Vector2(RIGHT.end.x - 52 + k * 22, 58),
+				Vector2(first_x + k * 22, 58),
 				Color(Grimoire.PAGES[page][2] as String),
 				2
 			)

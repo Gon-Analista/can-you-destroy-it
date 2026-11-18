@@ -450,7 +450,9 @@ func _prereq_names(node: UpgradeNode) -> String:
 		if String(req).begins_with("recipe:"):
 			names.append(tr("DESCUBRIR LA BOLA DE FUEGO"))
 		elif String(req).begins_with("pylon:"):
-			names.append(tr("EL PILÓN AL %d %%") % roundi(float(String(req).get_slice(":", 1)) * 100.0))
+			names.append(
+				tr("EL PILÓN AL %d %%") % roundi(float(String(req).get_slice(":", 1)) * 100.0)
+			)
 		for n: UpgradeNode in GameState.UPGRADES:
 			if n.id == req:
 				names.append(tr(n.display_name).to_upper())

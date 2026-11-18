@@ -14,6 +14,8 @@ const POOL: int = 2
 const LIFT: float = 1.6
 const STAR_SCALE: float = 7.0
 
+## Los círculos mágicos del lanzador (un sello gira bajo la estrella).
+var circles: MagicCircles
 var _stars: Array[SpellOrb] = []
 var _swirls: Array[GPUParticles3D] = []
 var _lights: Array[OmniLight3D] = []
@@ -24,8 +26,6 @@ var _age: PackedFloat32Array = PackedFloat32Array()
 var _sec: PackedFloat32Array = PackedFloat32Array()
 var _anchor: PackedVector3Array = PackedVector3Array()
 var _camera: Camera3D
-## Los círculos mágicos del lanzador (un sello gira bajo la estrella).
-var circles: MagicCircles
 
 
 func _ready() -> void:
@@ -140,8 +140,13 @@ func _process(delta: float) -> void:
 		# Se contrae (más brillante) y tiembla cada vez más.
 		star.charge = lerpf(0.15, 1.0, k * k)
 		var jitter: float = k * 0.25
-		star.global_position = _anchor[i] + Vector3(
-			randf_range(-jitter, jitter), randf_range(-jitter, jitter), randf_range(-jitter, jitter)
+		star.global_position = (
+			_anchor[i]
+			+ Vector3(
+				randf_range(-jitter, jitter),
+				randf_range(-jitter, jitter),
+				randf_range(-jitter, jitter)
+			)
 		)
 		_lights[i].light_energy = lerpf(0.5, 7.0, k * k)
 		if _camera is CameraRig:

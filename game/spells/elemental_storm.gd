@@ -122,7 +122,11 @@ func strikes_done() -> int:
 ## Abre la tormenta: `hit` lleva el daño total de la triple; `cloud` es el punto del cielo
 ## sobre el blanco (`target`, con su `normal`) y `from`, de dónde sale el orbe (las manos).
 func start(
-	recipe: SpellRecipe, hit: SpellHit, cloud: Vector3, target: Vector3, normal: Vector3,
+	recipe: SpellRecipe,
+	hit: SpellHit,
+	cloud: Vector3,
+	target: Vector3,
+	normal: Vector3,
 	from: Vector3
 ) -> void:
 	_recipe = recipe
@@ -278,9 +282,7 @@ func _strike(k: int) -> void:
 			_play(FIRE_SFX, -10.0, _rng.randf_range(1.2, 1.5))
 
 
-func _sub_hit(
-	el: ElementDef, damage: int, aim: Dictionary, from: Vector3, minor: bool
-) -> SpellHit:
+func _sub_hit(el: ElementDef, damage: int, aim: Dictionary, from: Vector3, minor: bool) -> SpellHit:
 	var sub := SpellHit.new()
 	var lvl: int = clampi(roundi(GameState.stat(el.power_stat, 0.0)), 0, el.tiers.size() - 1)
 	if el == SPARK:
