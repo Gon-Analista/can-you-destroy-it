@@ -44,6 +44,8 @@ var reveal_all: bool = false
 var critters_popped: int = 0
 ## El final (GDD 9): la Gran Convergencia rompió el Núcleo. Al volver a cargar, el valle celebra.
 var game_complete: bool = false
+## Ya se vio la pantalla final (si se sale durante la fiesta, sale al volver a cargar).
+var ending_seen: bool = false
 ## Estadísticas de la pantalla final: segundos jugados (sin menús ni pausa; se paran al acabar),
 ## hechizos lanzados (sueltos y combinados) y fragmentos recogidos.
 var time_played: float = 0.0
@@ -214,6 +216,7 @@ func to_dict() -> Dictionary:
 		"loose_tears": _vec_list(loose_tears),
 		"critters_popped": critters_popped,
 		"game_complete": game_complete,
+		"ending_seen": ending_seen,
 		"time_played": time_played,
 		"spells_cast": spells_cast,
 		"shards_collected": shards_collected,
@@ -237,6 +240,7 @@ func load_dict(data: Dictionary) -> void:
 	tutorial_step = int(data.get("tutorial_step", 8 if pylon_progress > 0 else 0))
 	critters_popped = maxi(int(data.get("critters_popped", 0)), 0)
 	game_complete = bool(data.get("game_complete", false))
+	ending_seen = bool(data.get("ending_seen", game_complete))
 	time_played = maxf(float(data.get("time_played", 0.0)), 0.0)
 	spells_cast = maxi(int(data.get("spells_cast", 0)), 0)
 	shards_collected = maxi(int(data.get("shards_collected", 0)), 0)

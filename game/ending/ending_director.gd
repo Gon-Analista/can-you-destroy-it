@@ -35,6 +35,8 @@ var _flash_k: float = 0.0
 var _glow_k: float = 0.0
 var _tension_tween: Tween
 var _finale_tween: Tween
+## Partida terminada cargada sin haber visto la pantalla final: sale al cerrar el título.
+var _screen_pending: bool = false
 
 
 func setup(main: Main, world: SubViewport, player: Player, hud: Hud, day_night: DayNight) -> void:
@@ -208,20 +210,22 @@ func _on_struck(_at: Vector3) -> void:
 				c.startle(core)
 	_complete_state()
 	var tree: SceneTree = get_tree()
-	tree.create_timer(1.2).timeout.connect(_pylon_full)
-	tree.create_timer(1.6).timeout.connect(_celebration.raise_column)
-	tree.create_timer(2.2).timeout.connect(
+	tree.create_timer(1.2, false).timeout.connect(_pylon_full)
+	tree.create_timer(1.6, false).timeout.connect(_celebration.raise_column)
+	tree.create_timer(2.2, false).timeout.connect(
 		func() -> void:
 			_set_tension(0.0, 3.0)
 			_set_finale(1.0, 5.0)
 	)
-	tree.create_timer(3.0).timeout.connect(
+	tree.create_timer(3.0, false).timeout.connect(
 		func() -> void:
 			_celebration.start()
 			AudioDirector.stop_theme(4.0)
 			AudioDirector.set_music_layers(5, 3.0)
 	)
-	tree.create_timer(GameState.BALANCE.ending_screen_delay_sec).timeout.connect(show_final_screen)
+	tree.create_timer(GameState.BALANCE.ending_screen_delay_sec, false).timeout.connect(
+		show_final_screen
+	)
 
 
 ## La pantalla final, sin las manos delante (vuelven al seguir en el valle).
@@ -267,6 +271,9 @@ func _restore_complete() -> void:
 	_celebration.start(true)
 	AudioDirector.set_music_layers(5, 0.1)
 	_suppress_guide.call_deferred()
+	if not prog.ending_seen:
+		# Se salió durante la fiesta: la pantalla final, en cuanto se cierre el título.
+		_screen_pending = true
 
 
 func _suppress_guide() -> void:
@@ -278,6 +285,10 @@ func _suppress_guide() -> void:
 ## propia música).
 func _on_menu_closed() -> void:
 	var prog: Progression = GameState.progression
+	if _screen_pending and prog.game_complete and not _screen.is_open():
+		_screen_pending = false
+		get_tree().create_timer(1.5, false).timeout.connect(show_final_screen)
+		return
 	if GameState.core_exposed and not prog.game_complete and not _screen.is_open():
 		if _reveal.state == CoreReveal.State.EXPOSED:
 			AudioDirector.play_theme(TENSION_MUSIC, -7.0)

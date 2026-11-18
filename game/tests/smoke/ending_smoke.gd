@@ -249,7 +249,7 @@ func _fallback(gs: Node) -> void:
 		await create_timer(0.25).timeout
 		waited += 0.25
 	_check(int(reveal.get(&"state")) != 0, "el Núcleo queda expuesto igual (%.1f s)" % waited)
-	_check(bool(gs.get(&"core_exposed")), "y la cuenta pasa al 99 %%")
+	_check(bool(gs.get(&"core_exposed")), "y la cuenta pasa al 99 %")
 	balance.core_reveal_scan_sec = scan_sec
 	gs.call(&"reset")
 

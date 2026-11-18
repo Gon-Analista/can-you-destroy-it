@@ -40,6 +40,8 @@ const TENSION_COLORS: PackedColorArray = [
 	Color("#4a3a72"),
 	Color("#c4b2ec")
 ]
+## Qué columnas de KEYS cambian (en el orden de TENSION_COLORS).
+const MOOD_KEYS: PackedInt32Array = [1, 2, 3, 4, 7, 9, 10]
 const FINALE_COLORS: PackedColorArray = [
 	Color("#0a0a30"),
 	Color("#22186a"),
@@ -336,9 +338,8 @@ func _apply() -> void:
 ## Lleva los colores del momento `k` hacia los del final (`cols`, ver TENSION_COLORS) en `w`
 ## (0..1) y apaga el sol en `dim`; con el final salen las estrellas.
 func _blend_mood(k: Array, cols: PackedColorArray, w: float, dim: float) -> void:
-	var idx: PackedInt32Array = [1, 2, 3, 4, 7, 9, 10]
-	for j: int in idx.size():
-		k[idx[j]] = (k[idx[j]] as Color).lerp(cols[j], w)
+	for j: int in MOOD_KEYS.size():
+		k[MOOD_KEYS[j]] = (k[MOOD_KEYS[j]] as Color).lerp(cols[j], w)
 	k[6] = float(k[6]) * (1.0 - dim * w)
 	k[8] = lerpf(float(k[8]), 0.55, w)
 	k[11] = maxf(float(k[11]), finale * 0.9)

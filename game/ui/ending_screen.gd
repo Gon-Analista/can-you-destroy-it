@@ -80,6 +80,7 @@ func _ready() -> void:
 	_new_game = _button("NUEVA PARTIDA", _ask_new_game)
 	visible = false
 	Events.locale_changed.connect(_relocalize)
+	Events.menu_closed.connect(_on_menu_closed)
 
 
 func is_open() -> bool:
@@ -101,10 +102,34 @@ func open() -> void:
 	_t = 0.0
 	visible = true
 	modulate.a = 0.0
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	AudioDirector.play_sfx(FANFARE_SFX, -1.0)
+	_claim()
+	if not prog.ending_seen:
+		prog.ending_seen = true
+		SaveSystem.save_game()
+
+
+## Ratón suelto y el mago quieto mientras se ve la pantalla.
+func _claim() -> void:
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	Events.menu_opened.emit()
 	_focus_first.call_deferred()
+
+
+## La pausa (Esc) se puede abrir encima; al cerrarla, la pantalla final sigue mandando (si no, el
+## ratón se quedaba capturado sin poder pulsar los botones y el mago andaba por detrás).
+func _on_menu_closed() -> void:
+	if visible and _t >= 0.0:
+		_claim.call_deferred()
+
+
+## Con la pantalla abierta no se abren el Grimorio ni el Libro de Combinaciones por debajo (los
+## botones ya han recibido sus teclas antes; Esc sí llega a la pausa).
+func _unhandled_input(event: InputEvent) -> void:
+	if not visible or event.is_action_pressed(&"ui_cancel"):
+		return
+	if event is InputEventKey or event is InputEventJoypadButton:
+		get_viewport().set_input_as_handled()
 
 
 func _focus_first() -> void:
@@ -153,11 +178,15 @@ func _process(delta: float) -> void:
 		if n > 0 and ANSWER[n - 1] != " ":
 			AudioDirector.play_sfx(TICK_SFX, -16.0, 1.0 + 0.04 * n)
 	_subtitle.visible = _t > 0.6 + TYPE_SEC * ANSWER.length() + 0.3
-	var k: float = clampf((_t - 1.8) / COUNT_SEC, 0.0, 1.0)
-	k = 1.0 - pow(1.0 - k, 3.0)
-	for i: int in _values.size():
-		_values[i].text = _format(i, _targets[i] * k)
-	queue_redraw()
+	# Las cifras cuentan hacia arriba; después ya no se rehacen los textos cada fotograma.
+	var count_end: float = 1.8 + COUNT_SEC
+	if _t - delta <= count_end + 0.1:
+		var k: float = clampf((_t - 1.8) / COUNT_SEC, 0.0, 1.0)
+		k = 1.0 - pow(1.0 - k, 3.0)
+		for i: int in _values.size():
+			_values[i].text = _format(i, _targets[i] * k)
+	if _t - delta <= 0.6 + TYPE_SEC * ANSWER.length() + 0.1:
+		queue_redraw()
 
 
 func _format(i: int, v: float) -> String:
