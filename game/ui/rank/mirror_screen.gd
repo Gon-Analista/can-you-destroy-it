@@ -20,10 +20,10 @@ const C_SOFT := Color("#a5b4e6")
 ## El espejo (marco por fuera) y el cristal.
 const FRAME := Rect2(170, 8, 300, 344)
 const GLASS := Rect2(178, 22, 284, 322)
-const ROW_Y: float = 150.0
+const ROW_Y: float = 153.0
 const ROW_H: float = 13.0
 const ROWS: int = 13
-const BAR := Rect2(232, 128, 176, 4)
+const BAR := Rect2(232, 130, 176, 4)
 ## Segundos entre una fila y la siguiente al abrir.
 const ROW_SEC: float = 0.045
 
@@ -55,7 +55,7 @@ func _ready() -> void:
 	_rank_name = _label(UiFonts.TITLE, UiFonts.HEAD, C_TEXT, Rect2(cx, 86, w, 14), 1)
 	_motto = _label(UiFonts.BODY, UiFonts.SMALL, C_SOFT, Rect2(cx, 100, w, UiFonts.LINE), 1)
 	_next = _label(UiFonts.BOLD, UiFonts.SMALL, C_TEXT, Rect2(cx, 115, w, UiFonts.LINE), 1)
-	_req = _label(UiFonts.BODY, UiFonts.SMALL, C_SOFT, Rect2(cx, 134, w, UiFonts.LINE), 1)
+	_req = _label(UiFonts.BODY, UiFonts.SMALL, C_SOFT, Rect2(cx, 137, w, UiFonts.LINE), 1)
 	for i: int in ROWS:
 		var y: float = ROW_Y + i * ROW_H
 		_keys.append(_label(UiFonts.BOLD, UiFonts.SMALL, C_SOFT, Rect2(196, y, 160, 12), 0))
@@ -176,17 +176,11 @@ static func time_text(sec: float) -> String:
 	return "%d min %02d s" % [s / 60, s % 60]
 
 
-## 0.0008 -> "0,08 %"; 0.123 -> "12,3 %".
+## 0.0008 -> "0,08 %"; 0.123 -> "12,3 %"; 0.5 -> "50 %".
 static func percent_text(ratio: float) -> String:
 	var pct: float = ratio * 100.0
-	var txt: String
-	if pct < 1.0 and pct > 0.0:
-		txt = "%.2f" % pct
-	elif pct < 10.0 and not is_equal_approx(pct, roundf(pct)):
-		txt = "%.1f" % pct
-	else:
-		txt = "%d" % roundi(pct)
-	return txt.replace(".", ",") + " %"
+	var decimals: int = 2 if pct < 1.0 else (1 if pct < 10.0 else 0)
+	return String.num(pct, decimals).replace(".", ",") + " %"
 
 
 func _unhandled_input(event: InputEvent) -> void:

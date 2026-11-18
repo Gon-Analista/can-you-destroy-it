@@ -40,6 +40,9 @@ static func meets(def: RankDef, prog: Progression) -> bool:
 ## cada uno pide el anterior). Nunca baja de `from`.
 static func earned(prog: Progression, from: int = 0) -> int:
 	var r: int = clampi(from, 0, last())
+	# La partida terminada da el rango final de una vez (y con él, todos los de antes).
+	if RANKS[last()].or_finished and prog.is_crystal_destroyed():
+		return last()
 	while r < last() and meets(RANKS[r + 1], prog):
 		r += 1
 	return r

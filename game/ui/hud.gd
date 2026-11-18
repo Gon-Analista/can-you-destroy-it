@@ -438,8 +438,9 @@ func _process(delta: float) -> void:
 	)
 	_crosshair.visible = captured and not menu.is_open()
 	var title: bool = menu.mode == GameMenu.Mode.TITLE
-	_essence.visible = not title and not _loop.intro
-	_essence_title.visible = not title and not _loop.intro
+	var hide_top: bool = title or _loop.intro or mirror_screen.is_open
+	_essence.visible = not hide_top
+	_essence_title.visible = not hide_top
 	_rank_badge.visible = not _loop.intro
 	_update_menu_hint(captured and not title and not menu.is_open(), delta)
 	if _caster:

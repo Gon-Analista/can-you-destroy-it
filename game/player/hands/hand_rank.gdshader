@@ -62,15 +62,23 @@ void fragment() {
 		// Tela nueva (blanco = la de siempre).
 		rgb = sleeve_color.r > 0.99 && sleeve_color.g > 0.99 ? SLEEVE : sleeve_color.rgb;
 		vec2 px = TEXTURE_PIXEL_SIZE;
-		vec4 up1 = texture(TEXTURE, UV - vec2(0.0, px.y));
-		vec4 up2 = texture(TEXTURE, UV - vec2(0.0, px.y * 2.0));
-		vec4 up3 = texture(TEXTURE, UV - vec2(0.0, px.y * 3.0));
-		vec4 up4 = texture(TEXTURE, UV - vec2(0.0, px.y * 4.0));
-		// Ribete justo bajo el brazalete (oro encima, quizá tras su línea negra), no bajo los
-		// pliegues de la manga.
-		bool top = !is_sleeve(up1, local.y - 1.0) && (is_gold(up1) || is_gold(up2) || is_gold(up3));
-		bool second = !top && !is_sleeve(up2, local.y - 2.0)
-				&& (is_gold(up2) || is_gold(up3) || is_gold(up4));
+		// Ribete en las dos primeras filas de manga bajo el brazalete: por encima, tras la línea
+		// negra, tiene que haber oro (así no sale bajo los pliegues de la manga).
+		int run = 0;
+		for (int i = 1; i <= 2; i++) {
+			vec4 up = texture(TEXTURE, UV - vec2(0.0, px.y * float(i)));
+			if (!is_sleeve(up, local.y - float(i)) || run < i - 1) {
+				break;
+			}
+			run = i;
+		}
+		bool gold_above = false;
+		for (int i = 1; i <= 6; i++) {
+			vec4 up = texture(TEXTURE, UV - vec2(0.0, px.y * float(run + i)));
+			gold_above = gold_above || is_gold(up);
+		}
+		bool top = run == 0 && gold_above;
+		bool second = run == 1 && gold_above;
 		if ((top || second) && trim_color.a > 0.0) {
 			// Ribete de dos píxeles: claro arriba, oscuro abajo.
 			rgb = top ? trim_color.rgb : trim_color.rgb * 0.62;
