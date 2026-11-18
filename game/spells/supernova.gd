@@ -13,6 +13,8 @@ const POOL: int = 2
 ## Distancia a la superficie a la que flota la estrella (m) y su tamaño al contraerse.
 const LIFT: float = 1.6
 const STAR_SCALE: float = 7.0
+## A partir de esta distancia (m) la estrella crece con ella: desde lejos también se ve.
+const SEEN_FROM: float = 22.0
 
 ## Los círculos mágicos del lanzador (un sello gira bajo la estrella).
 var circles: MagicCircles
@@ -25,6 +27,7 @@ var _crystals: Array[MotherCrystal] = []
 var _age: PackedFloat32Array = PackedFloat32Array()
 var _sec: PackedFloat32Array = PackedFloat32Array()
 var _anchor: PackedVector3Array = PackedVector3Array()
+var _base_scale: PackedFloat32Array = PackedFloat32Array()
 var _camera: Camera3D
 
 
@@ -71,6 +74,7 @@ func _ready() -> void:
 	_age.resize(POOL)
 	_sec.resize(POOL)
 	_anchor.resize(POOL)
+	_base_scale.resize(POOL)
 	set_process(false)
 
 
@@ -90,9 +94,11 @@ func ignite(hit: SpellHit, crystal: MotherCrystal, camera: Camera3D) -> void:
 	var star: SpellOrb = _stars[i]
 	_anchor[i] = at
 	star.global_position = at
-	star.scale = Vector3.ONE * STAR_SCALE * hit.size
+	var far: float = camera.global_position.distance_to(at) / SEEN_FROM if camera else 1.0
+	_base_scale[i] = STAR_SCALE * hit.size * maxf(1.0, far)
+	star.scale = Vector3.ONE * _base_scale[i] * 1.4
 	star.appear()
-	star.charge = 0.15
+	star.charge = 0.6
 	_swirls[i].global_position = at
 	_swirls[i].emitting = true
 	_lights[i].global_position = at
@@ -137,8 +143,9 @@ func _process(delta: float) -> void:
 		_age[i] += delta
 		var k: float = clampf(_age[i] / _sec[i], 0.0, 1.0)
 		var star: SpellOrb = _stars[i]
-		# Se contrae (más brillante) y tiembla cada vez más.
-		star.charge = lerpf(0.15, 1.0, k * k)
+		# Se contrae (más pequeña y más brillante) y tiembla cada vez más.
+		star.charge = lerpf(0.6, 1.0, k)
+		star.scale = Vector3.ONE * _base_scale[i] * lerpf(1.4, 0.5, k * k)
 		var jitter: float = k * 0.25
 		star.global_position = (
 			_anchor[i]
