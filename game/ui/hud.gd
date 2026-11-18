@@ -18,13 +18,19 @@ const C_FIRE := Color("#ff9a3a")
 const DISCOVERY_SFX: AudioStream = preload("res://audio/sfx/sfx_combo_discovered_01.ogg")
 ## Duración del aviso de combinación descubierta (s).
 const DISCOVERY_SEC: float = 2.8
+## Segundos de juego que se enseña "ESC: MENÚ" mientras no se haya abierto nunca el menú.
+const MENU_HINT_SEC: float = 40.0
 
 ## Menú de título y pausa (encima de todo el HUD).
 var menu: GameMenu
+## Menú de depuración (Alt+F1; sólo en builds de desarrollo o con `--debug-menu`).
+var debug_menu: DebugMenu
 ## Tutorial del principio (pasos con el ratón, recoger, triturar, primera mejora).
 var tutorial: Tutorial
 ## Muestra el HUD de juego aunque el ratón no esté capturado (modo demo).
 var force_captured_look: bool = false
+## Ayuda "ESC: MENÚ" la primera vez (el modo demo la quita salvo con `--menu-hint`).
+var show_menu_hint: bool = true
 
 ## Capa del último golpe (la que nombra el título de la esencia).
 var _shown_layer: int = 0
@@ -36,7 +42,10 @@ var _streak: Label
 var _banner: Label
 var _pickup_prompt: Label
 var _fps: Label
-var _debug: Label
+var _shown_fps: int = -1
+## Ayuda "ESC: MENÚ" abajo a la izquierda y cuánto lleva enseñándose.
+var _menu_hint: Label
+var _menu_hint_t: float = 0.0
 var _prompt: Label
 var _crosshair: Crosshair
 var _shown_essence: float = 0.0
@@ -74,10 +83,12 @@ func _ready() -> void:
 	_pickup_prompt.visible = false
 	_fps = _label("", SMALL, C_CYAN, HORIZONTAL_ALIGNMENT_RIGHT)
 	_place(_fps, Control.PRESET_TOP_RIGHT, Rect2(-70, 5, 62, UiFonts.LINE))
-	_fps.visible = OS.is_debug_build()
-	_debug = _label("", SMALL, Color(C_TEXT, 0.75), HORIZONTAL_ALIGNMENT_LEFT)
-	_place(_debug, Control.PRESET_BOTTOM_LEFT, Rect2(8, -18, 400, UiFonts.LINE))
-	_debug.visible = OS.is_debug_build()
+	_fps.visible = false
+	_menu_hint = _label(
+		"ESC: MENÚ Y OPCIONES", SMALL, Color(C_TEXT, 0.8), HORIZONTAL_ALIGNMENT_LEFT
+	)
+	_place(_menu_hint, Control.PRESET_BOTTOM_LEFT, Rect2(8, -18, 300, UiFonts.LINE))
+	_menu_hint.visible = false
 	_crosshair = Crosshair.new()
 	_crosshair.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_crosshair)
@@ -137,6 +148,9 @@ func _ready() -> void:
 	tutorial.name = "Tutorial"
 	add_child(tutorial)
 	move_child(tutorial, _grimoire.get_index())
+	debug_menu = DebugMenu.new()
+	debug_menu.name = "DebugMenu"
+	add_child(debug_menu)
 	menu = GameMenu.new()
 	menu.name = "GameMenu"
 	add_child(menu)
@@ -156,6 +170,7 @@ func bind(camera: Camera3D, caster: SpellCaster) -> void:
 	_loop.bind(camera)
 
 
+## (Opciones enseña las mismas frases, sueltas, en su pestaña de controles.)
 func _controls_text() -> String:
 	return (
 		tr("CLIC PARA EMPEZAR  ·  WASD MOVERSE  ·  SHIFT CORRER  ·  ESPACIO SALTAR")
@@ -169,6 +184,7 @@ func _controls_text() -> String:
 ## Textos fijos del HUD con el idioma nuevo (los que cambian solos se rehacen al actualizarse).
 func _relocalize() -> void:
 	_prompt.text = _controls_text()
+	_menu_hint.text = tr("ESC: MENÚ Y OPCIONES")
 	_discovery_title.text = tr("¡COMBINACIÓN NUEVA!")
 	_set_layer_title(GameState.LAYERS[_shown_layer])
 
@@ -189,7 +205,7 @@ func _on_burned(damage: int, at: Vector3) -> void:
 	_floater_style(f, false)
 	_floater_pos[i] = at + Vector3(randf_range(-0.6, 0.6), 0.8, 0.0)
 	_floater_age[i] = 0.0
-	f.visible = true
+	f.visible = Settings.damage_numbers
 
 
 ## "+5 MANÁ" que sube desde la boca del Pilón con cada fragmento entregado.
@@ -309,7 +325,7 @@ func _on_impact(hit: SpellHit) -> void:
 	_floater_style(f, hit.resonant)
 	_floater_pos[i] = hit.position + hit.normal * 0.6
 	_floater_age[i] = 0.0
-	f.visible = true
+	f.visible = Settings.damage_numbers
 	if not hit.by_player:
 		return
 	if hit.resonant:
@@ -377,14 +393,16 @@ func _show_banner(text: String, color: Color) -> void:
 
 func _process(delta: float) -> void:
 	var captured: bool = force_captured_look or Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
-	_prompt.visible = not captured and not _grimoire.is_open and not menu.is_open()
+	_prompt.visible = (
+		not captured and not _grimoire.is_open and not menu.is_open() and not debug_menu.is_open()
+	)
 	# Con un libro abierto, el HUD del bucle (Pilón, bolsa, manos) asomaba por los bordes.
 	_loop.visible = not _grimoire.is_open and not _book.is_open and not menu.is_open()
 	_crosshair.visible = captured and not menu.is_open()
 	var title: bool = menu.mode == GameMenu.Mode.TITLE
 	_essence.visible = not title and not _loop.intro
 	_essence_title.visible = not title and not _loop.intro
-	_debug.visible = OS.is_debug_build() and not title
+	_update_menu_hint(captured and not title and not menu.is_open(), delta)
 	if _caster:
 		_crosshair.charge = _caster.charge_ratio()
 	# Esencia: el número baja rodando y el texto da un golpe de escala y color.
@@ -416,12 +434,28 @@ func _process(delta: float) -> void:
 			_banner.visible = false
 	_update_discovery(delta)
 	_update_floaters(delta)
+	# FPS (Opciones o menú de depuración): el texto sólo se rehace cuando cambia el número.
+	_fps.visible = Settings.show_fps and not title
 	if _fps.visible:
-		_fps.text = "%d FPS" % Engine.get_frames_per_second()
-	if _debug.visible and _caster:
-		_debug.text = (
-			tr("DEBUG  1-5: NIVEL DE CHISPA (%d)  ·  G: +100 MANÁ") % (_caster.tier_index + 1)
-		)
+		var fps: int = roundi(Engine.get_frames_per_second())
+		if fps != _shown_fps:
+			_shown_fps = fps
+			_fps.text = "%d FPS" % fps
+
+
+## "ESC: MENÚ Y OPCIONES" mientras se juega, hasta que se abra el menú por primera vez (o
+## pasen MENU_HINT_SEC de juego en esta sesión). Entra y sale fundiéndose.
+func _update_menu_hint(playing: bool, delta: float) -> void:
+	if not show_menu_hint or Settings.menu_hint_seen or _menu_hint_t >= MENU_HINT_SEC:
+		_menu_hint.visible = false
+		return
+	if playing:
+		_menu_hint_t += delta
+	var a: float = (
+		clampf(_menu_hint_t / 0.6, 0.0, 1.0) * clampf(MENU_HINT_SEC - _menu_hint_t, 0.0, 1.0)
+	)
+	_menu_hint.visible = playing and a > 0.0
+	_menu_hint.modulate.a = a
 
 
 ## El nombre entra grande y con rebote, se queda y se desvanece. Tiempo real: el aviso

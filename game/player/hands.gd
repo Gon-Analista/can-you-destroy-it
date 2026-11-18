@@ -26,7 +26,9 @@ const JOINED_POS := Vector2(158, 188)
 const FLAME_IN_SPRITE := Vector2(116, 0)
 ## El hechizo combinado flota sobre las palmas juntas: altura respecto al borde superior.
 const ORB_ABOVE_SPRITE_TOP: float = 38.0
+## Distancia a la cámara de las llamas con el FOV de serie (ver `orb_depth`).
 const ORB_DEPTH: float = 0.85
+const ORB_DEPTH_FOV: float = 70.0
 ## Entre las palmas, el fuego es una bola que gira con lenguas cortas: largas, subirían hasta
 ## la mira y taparían el blanco.
 const COMBO_FLOW: float = 0.4
@@ -85,6 +87,13 @@ func _ready() -> void:
 		func() -> void:
 			_grimoire_open = false
 			_play_level_up()
+	)
+	# El FOV de Opciones cambia en pausa: las llamas se recolocan a su nueva distancia (diferido,
+	# cuando la cámara ya tiene el FOV nuevo).
+	Settings.changed.connect(
+		func() -> void:
+			if _camera:
+				_place_orbs.call_deferred()
 	)
 	layer = 0
 	for side: int in 2:
@@ -291,6 +300,13 @@ func play_ready() -> void:
 
 ## Punto de la pantalla del que sale el hechizo: la llama de esa mano, o el centro entre las
 ## palmas si `side` es 2 (hechizo combinado).
+## Distancia a la que van las llamas para que se vean siempre del mismo tamaño en pantalla que
+## las manos 2D, sea cual sea el campo de visión (Opciones): más cerca cuanto más abierto.
+static func orb_depth(cam: Camera3D) -> float:
+	var ref: float = tan(deg_to_rad(ORB_DEPTH_FOV) * 0.5)
+	return ORB_DEPTH * ref / tan(deg_to_rad(clampf(cam.fov, 20.0, 150.0)) * 0.5)
+
+
 func palm_screen_position(side: int) -> Vector2:
 	if side >= 2:
 		return _combo_screen_position()
@@ -422,7 +438,7 @@ func _place_orbs() -> void:
 
 
 func _place(orb: SpellOrb, screen: Vector2) -> void:
-	var world: Vector3 = _camera.project_position(screen, ORB_DEPTH)
+	var world: Vector3 = _camera.project_position(screen, orb_depth(_camera))
 	orb.position = _camera.to_local(world)
 
 

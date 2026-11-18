@@ -12,8 +12,11 @@ extends TextureRect
 
 ## Capa visual (bit) de todo lo que es magia HD.
 const MAGIC_LAYER: int = 1 << 10
+const GLOW_INTENSITY: float = 0.6
 
 var _viewport: SubViewport
+## Escala de destellos con la que se puso el resplandor (se rehace sólo si cambia).
+var _glow_scale: float = -1.0
 var _camera: Camera3D
 var _source: Camera3D
 
@@ -47,6 +50,8 @@ func _ready() -> void:
 	texture = _viewport.get_texture()
 	get_window().size_changed.connect(_resize)
 	_resize()
+	# También en pausa: el FOV de Opciones se ve en vivo detrás del menú.
+	process_mode = Node.PROCESS_MODE_ALWAYS
 
 
 ## La cámara del jugador (la del valle) a la que se pega la de la magia.
@@ -66,6 +71,10 @@ func _process(_delta: float) -> void:
 	_camera.far = _source.far
 	_camera.h_offset = _source.h_offset
 	_camera.v_offset = _source.v_offset
+	# "Reducir destellos" (accesibilidad) baja también el resplandor de toda la magia.
+	if _glow_scale != HdFx.flash_scale:
+		_glow_scale = HdFx.flash_scale
+		_camera.environment.glow_intensity = GLOW_INTENSITY * sqrt(_glow_scale)
 
 
 ## Resolución nativa de la zona de juego (640x360 escalado por enteros).
@@ -81,7 +90,7 @@ func _make_environment() -> Environment:
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_DISABLED
 	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	env.glow_enabled = true
-	env.glow_intensity = 0.6
+	env.glow_intensity = GLOW_INTENSITY
 	env.glow_strength = 1.0
 	env.glow_bloom = 0.0
 	env.glow_hdr_threshold = 1.2

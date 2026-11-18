@@ -1,5 +1,9 @@
 extends Node
-## Opciones del jugador (accesibilidad, audio). Se guardan en user://settings.cfg.
+## Opciones del jugador (vídeo, audio, controles, accesibilidad). Se guardan en
+## user://settings.cfg. Quien cambie una opción llama a `apply_all()` (o a la de su grupo) y
+## `changed` avisa a lo que la lee de forma diferida (resplandor de la magia, FPS del HUD...).
+
+signal changed
 
 const PATH: String = "user://settings.cfg"
 ## Carpeta con los idiomas: `strings.csv` (una columna por idioma) que Godot importa como
@@ -7,13 +11,39 @@ const PATH: String = "user://settings.cfg"
 ## una columna al CSV (ver localization/README.md).
 const LOCALIZATION_DIR: String = "res://localization"
 const DEFAULT_LOCALE: String = "en"
+## Campo de visión vertical de la cámara (grados) y sus límites en Opciones.
+const DEFAULT_FOV: float = 70.0
+const FOV_MIN: float = 60.0
+const FOV_MAX: float = 110.0
+## Límites de FPS que ofrece Opciones (0 = sin límite).
+const FPS_LIMITS: PackedInt32Array = [30, 60, 120, 144, 0]
+## Con "reducir destellos", cuánto queda de cada destello (luz de impacto, cristal, resplandor).
+const REDUCED_FLASH: float = 0.35
 
+## Archivo de opciones (los tests lo cambian para no tocar el del jugador).
+var path: String = PATH
 var screen_shake: float = 1.0
-var reduce_flashes: bool = false
+## Los efectos leen la escala de destellos de `HdFx.flash_scale` (no pueden nombrar el autoload).
+var reduce_flashes: bool = false:
+	set(value):
+		reduce_flashes = value
+		HdFx.flash_scale = REDUCED_FLASH if value else 1.0
+## Números de daño que saltan del cristal.
+var damage_numbers: bool = true
+## true: se mantiene el clic para cargar el combinado y sale al soltar; false: un clic lo
+## empieza a cargar y el siguiente lo lanza.
 var hold_to_charge: bool = true
 ## Multiplicador de la sensibilidad del ratón (1 = la de serie).
 var mouse_sensitivity: float = 1.0
+var invert_y: bool = false
 var fullscreen: bool = false
+var vsync: bool = true
+## FPS máximos (0 = sin límite).
+var fps_limit: int = 0
+var show_fps: bool = false
+var fov: float = DEFAULT_FOV
+## Ya se abrió alguna vez el menú con Esc (deja de enseñarse la ayuda "ESC: MENÚ").
+var menu_hint_seen: bool = false
 ## Código del idioma elegido ("" = el del sistema si lo tenemos, si no inglés).
 var locale: String = ""
 var bus_volumes: Dictionary[String, float] = {
@@ -105,9 +135,41 @@ func _translations() -> Array[Translation]:
 	return out
 
 
+## Vuelve a los valores de serie (menos el idioma) y los aplica.
+func restore_defaults() -> void:
+	screen_shake = 1.0
+	reduce_flashes = false
+	damage_numbers = true
+	hold_to_charge = true
+	mouse_sensitivity = 1.0
+	invert_y = false
+	fullscreen = false
+	vsync = true
+	fps_limit = 0
+	show_fps = false
+	fov = DEFAULT_FOV
+	bus_volumes = {"Master": 1.0, "Music": 0.8, "SFX": 1.0, "UI": 1.0, "Ambience": 0.8}
+	apply_all()
+
+
+func apply_all() -> void:
+	apply_audio()
+	apply_video()
+	changed.emit()
+
+
+## Cuánto queda de un destello con la opción de accesibilidad (1 = entero).
+func flash_scale() -> float:
+	return REDUCED_FLASH if reduce_flashes else 1.0
+
+
 func apply_video() -> void:
+	Engine.max_fps = maxi(fps_limit, 0)
 	if DisplayServer.get_name() == "headless":
 		return
+	DisplayServer.window_set_vsync_mode(
+		DisplayServer.VSYNC_ENABLED if vsync else DisplayServer.VSYNC_DISABLED
+	)
 	var mode: DisplayServer.WindowMode = (
 		DisplayServer.WINDOW_MODE_FULLSCREEN if fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
 	)
@@ -126,24 +188,38 @@ func save_settings() -> void:
 	var cfg := ConfigFile.new()
 	cfg.set_value("accessibility", "screen_shake", screen_shake)
 	cfg.set_value("accessibility", "reduce_flashes", reduce_flashes)
+	cfg.set_value("accessibility", "damage_numbers", damage_numbers)
 	cfg.set_value("controls", "hold_to_charge", hold_to_charge)
 	cfg.set_value("controls", "mouse_sensitivity", mouse_sensitivity)
+	cfg.set_value("controls", "invert_y", invert_y)
 	cfg.set_value("video", "fullscreen", fullscreen)
+	cfg.set_value("video", "vsync", vsync)
+	cfg.set_value("video", "fps_limit", fps_limit)
+	cfg.set_value("video", "show_fps", show_fps)
+	cfg.set_value("video", "fov", fov)
 	cfg.set_value("general", "locale", locale)
+	cfg.set_value("general", "menu_hint_seen", menu_hint_seen)
 	for bus_name: String in bus_volumes:
 		cfg.set_value("audio", bus_name, bus_volumes[bus_name])
-	cfg.save(PATH)
+	cfg.save(path)
 
 
 func load_settings() -> void:
 	var cfg := ConfigFile.new()
-	if cfg.load(PATH) != OK:
+	if cfg.load(path) != OK:
 		return
 	screen_shake = float(cfg.get_value("accessibility", "screen_shake", screen_shake))
 	reduce_flashes = bool(cfg.get_value("accessibility", "reduce_flashes", reduce_flashes))
+	damage_numbers = bool(cfg.get_value("accessibility", "damage_numbers", damage_numbers))
 	hold_to_charge = bool(cfg.get_value("controls", "hold_to_charge", hold_to_charge))
 	mouse_sensitivity = float(cfg.get_value("controls", "mouse_sensitivity", mouse_sensitivity))
+	invert_y = bool(cfg.get_value("controls", "invert_y", invert_y))
 	fullscreen = bool(cfg.get_value("video", "fullscreen", fullscreen))
+	vsync = bool(cfg.get_value("video", "vsync", vsync))
+	fps_limit = maxi(int(cfg.get_value("video", "fps_limit", fps_limit)), 0)
+	show_fps = bool(cfg.get_value("video", "show_fps", show_fps))
+	fov = clampf(float(cfg.get_value("video", "fov", fov)), FOV_MIN, FOV_MAX)
 	locale = String(cfg.get_value("general", "locale", locale))
+	menu_hint_seen = bool(cfg.get_value("general", "menu_hint_seen", menu_hint_seen))
 	for bus_name: String in bus_volumes:
 		bus_volumes[bus_name] = float(cfg.get_value("audio", bus_name, bus_volumes[bus_name]))

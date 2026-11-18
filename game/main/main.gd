@@ -1,6 +1,8 @@
+class_name Main
 extends Node3D
 ## Escena del prototipo "El golpe": el valle, el Cristal Madre, el mago y el HUD.
-## Captura el ratón al hacer clic y lo suelta con Esc.
+## Captura el ratón al hacer clic y lo suelta con Esc. Los trucos de depuración (menú Alt+F1 y
+## modo demo) comparten las funciones `debug_*` de aquí.
 
 ## Música del valle por capas (tools/music_synth.py): 1 Aprendiz ... 5 Archimago.
 const MUSIC_LAYERS: Array[AudioStream] = [
@@ -54,6 +56,7 @@ func _ready() -> void:
 	milestones.name = "ValleyMilestones"
 	_world.add_child(milestones)
 	_hud.bind(_player.get_camera(), _player.get_caster())
+	_hud.debug_menu.bind(self, _player, _day_night, _hut)
 	# Hasta que exista el sistema de rangos, se empieza en Aprendiz (1 capa).
 	AudioDirector.play_music(MUSIC_LAYERS, _arg_int("--music-layers=", 1))
 	GameState.emit_all()
@@ -102,6 +105,10 @@ func _setup_autoplay() -> void:
 	if tier > 0:
 		_player.get_caster().set_tier(tier)
 	_hud.force_captured_look = true
+	# --menu-hint: enseña "ESC: MENÚ Y OPCIONES" aunque ya se haya abierto el menú alguna vez.
+	_hud.show_menu_hint = args.has("--menu-hint")
+	if _hud.show_menu_hint:
+		Settings.menu_hint_seen = false
 	# Estado de partida para probar el bucle: --mana=N, --bag=N (astillas), --warp=x,z.
 	for a: String in args:
 		if a.begins_with("--mana="):
@@ -134,15 +141,7 @@ func _setup_autoplay() -> void:
 			_demo_dig.call_deferred(int(a.get_slice("=", 1)))
 		elif a == "--geode":
 			# --geode: túnel hasta la geoda más cercana y el jugador mirándola desde la boca.
-			var mc: MotherCrystal = _world.get_node(^"MotherCrystal")
-			var spots: Array[Vector3] = CrystalDemo.tunnel_to_geode(mc, _player.global_position)
-			var mouth: Vector3 = spots[0]
-			_player.global_position = Vector3(mouth.x, maxf(mouth.y - 1.2, 0.2), mouth.z)
-			var to_geode: Vector3 = spots[1] - (_player.global_position + Vector3.UP * 1.6)
-			_player.rotation.y = atan2(-to_geode.x, -to_geode.z)
-			(_player.get_node(^"Head") as Node3D).rotation.x = atan2(
-				to_geode.y, Vector2(to_geode.x, to_geode.z).length()
-			)
+			debug_geode()
 		elif a.begins_with("--vein="):
 			# --vein=N: túnel hasta la Vena Resonante N (0 Chispa, 1 Escarcha, 2 Rayo, 3 Tierra,
 			# 4 Arcano), el jugador en la boca mirando al fondo y las manos con ese elemento.
@@ -183,11 +182,21 @@ func _setup_autoplay() -> void:
 				func() -> void: (_hud.get_node(^"SpellBook") as SpellBook).open()
 			)
 		elif a.begins_with("--menu="):
-			# --menu=title|pause|options: abre ese menú (para capturas de la interfaz). Espera a
+			# --menu=title|pause|options[N]: abre ese menú (options2: la pestaña 2, Controles,
+			# para capturas de la interfaz). Espera a
 			# que acabe la pantalla de carga: la pausa pararía el precalentado.
 			get_tree().create_timer(3.2).timeout.connect(
 				_hud.menu.demo_open.bind(a.get_slice("=", 1))
 			)
+		elif a == "--debug-open":
+			# --debug-open: abre el menú de depuración al acabar la pantalla de carga.
+			get_tree().create_timer(3.2).timeout.connect(_hud.debug_menu.open)
+		elif a == "--debug-buy":
+			# --debug-buy: a los 3,6 s, "COMPRAR TODO Y HECHIZOS AL MÁXIMO" del menú de depuración.
+			get_tree().create_timer(3.6).timeout.connect(_hud.debug_menu.buy_everything)
+		elif a.begins_with("--fov="):
+			# --fov=N: campo de visión (sin guardarlo en las opciones).
+			Settings.fov = clampf(float(a.get_slice("=", 1)), Settings.FOV_MIN, Settings.FOV_MAX)
 		elif a.begins_with("--scatter="):
 			# --scatter=N: N fragmentos sueltos por el suelo delante del cristal (familiares).
 			_demo_scatter.call_deferred(int(a.get_slice("=", 1)))
@@ -201,7 +210,7 @@ func _setup_autoplay() -> void:
 			)
 		elif a.begins_with("--pylon="):
 			# --pylon=0.6: el Pilón ya lleno a ese punto (hitos del valle incluidos, sin fiesta).
-			_demo_pylon(float(a.get_slice("=", 1)))
+			debug_set_pylon(float(a.get_slice("=", 1)))
 		elif a.begins_with("--pylon-bolt="):
 			# --pylon-bolt=s: a los s segundos el Pilón dispara su rayo (y luego cada 3 s).
 			var pylon: ManaPylon = _world.get_node(^"ManaPylon")
@@ -345,8 +354,8 @@ func _print_report() -> void:
 
 func _process(_delta: float) -> void:
 	# Red de seguridad: el tiempo nunca se queda ralentizado fuera de un hit-stop.
-	if Engine.time_scale != 1.0 and not HitStop.is_active():
-		Engine.time_scale = 1.0
+	if Engine.time_scale != HitStop.base_scale and not HitStop.is_active():
+		Engine.time_scale = HitStop.base_scale
 
 
 ## Clic para capturar el ratón. En `_input` (no en `_unhandled_input`): el clic lo consume
@@ -358,6 +367,7 @@ func _input(event: InputEvent) -> void:
 		and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED
 		and not (_hud.get_node(^"Grimoire") as Grimoire).is_open
 		and not _hud.menu.is_open()
+		and not _hud.debug_menu.is_open()
 	):
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		get_viewport().set_input_as_handled()
@@ -511,8 +521,38 @@ func _demo_vein(sector: int) -> void:
 		caster.set_tier(caster.tier_index)
 
 
-## Demo: pone el Pilón a `ratio` sin celebrar los hitos (el valle ya cambiado).
-func _demo_pylon(ratio: float) -> void:
+## Depuración y demo: túnel hasta la geoda más cercana y el jugador mirándola desde la boca.
+func debug_geode() -> void:
+	var mc: MotherCrystal = _world.get_node(^"MotherCrystal")
+	var spots: Array[Vector3] = CrystalDemo.tunnel_to_geode(mc, _player.global_position)
+	var mouth: Vector3 = spots[0]
+	debug_teleport(Vector3(mouth.x, maxf(mouth.y - 1.2, 0.2), mouth.z), spots[1])
+
+
+## Depuración: túnel hasta la capa siguiente del cristal (como la tecla L) y el jugador en la
+## boca, mirando dentro. Devuelve el índice de la capa a la que llega.
+func debug_next_layer() -> int:
+	var mc: MotherCrystal = _world.get_node(^"MotherCrystal")
+	var idx: int = mini(GameState.layer_index() + 1, GameState.LAYERS.size() - 2)
+	CrystalDemo.tunnel_to_layer(mc, idx)
+	var ray: Array[Vector3] = CrystalDemo.tunnel_ray(mc, idx)
+	var mouth: Vector3 = mc.to_global(ray[0])
+	mouth.y = Valley.ground_height(mouth.x, mouth.z) + 0.2
+	debug_teleport(mouth, mc.to_global(ray[0] + ray[1] * 30.0))
+	return idx
+
+
+## Pone al mago en `at` (sin velocidad) mirando hacia `look_at`.
+func debug_teleport(at: Vector3, look_at: Vector3) -> void:
+	_player.global_position = at
+	_player.velocity = Vector3.ZERO
+	var to: Vector3 = look_at - (at + Vector3.UP * 1.6)
+	_player.rotation.y = atan2(-to.x, -to.z)
+	(_player.get_node(^"Head") as Node3D).rotation.x = atan2(to.y, Vector2(to.x, to.z).length())
+
+
+## Depuración y demo: pone el Pilón a `ratio` sin celebrar los hitos (el valle ya cambiado).
+func debug_set_pylon(ratio: float) -> void:
 	var prog: Progression = GameState.progression
 	prog.pylon_progress = roundi(clampf(ratio, 0.0, 1.0) * float(prog.total_essence))
 	GameState.emit_all()

@@ -2,8 +2,9 @@ class_name GameMenu
 extends Control
 ## Menú del juego: pantalla de título (sobre el valle vivo, al arrancar) y pausa (Esc).
 ## Título: CONTINUAR / NUEVA PARTIDA / OPCIONES / SALIR. Pausa: REANUDAR / OPCIONES / GUARDAR Y
-## SALIR. Opciones: volúmenes, sensibilidad del ratón, sacudida de cámara y pantalla completa
-## (se guardan en Settings). Todo a píxel entero con las fuentes del HUD.
+## SALIR. Las opciones (en pestañas: vídeo, audio, controles y accesibilidad) son un
+## `OptionsMenu`. Todo a píxel entero con las fuentes del HUD. El tema y el marco del panel los
+## comparte el menú de depuración (`make_theme`, `draw_panel`).
 
 enum Mode { HIDDEN, TITLE, PAUSE }
 
@@ -18,9 +19,6 @@ const C_GOLD_LIGHT := Color("#ffd27a")
 const C_TEXT := Color("#f2f6ff")
 const C_CYAN := Color("#a5dae5")
 const C_PINK := Color("#ff7ad9")
-## Ancho del panel de opciones y de la columna de nombres de cada opción.
-const OPTIONS_W: float = 300.0
-const OPTION_LABEL_W: float = 150.0
 ## Agarrador de las barras en píxeles (el de Godot es un círculo suave que desentona).
 ## "#" contorno, "+" brillo, "=" cuerpo, "o" sombra.
 const GRABBER: PackedStringArray = [
@@ -43,7 +41,7 @@ static var skip_title_once: bool = false
 var mode: Mode = Mode.HIDDEN
 
 var _main_box: VBoxContainer
-var _options_box: VBoxContainer
+var _options_box: OptionsMenu
 var _logo: TitleLogo
 var _theme: Theme
 
@@ -52,7 +50,7 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	_theme = _make_theme()
+	_theme = make_theme()
 	theme = _theme
 	_logo = TitleLogo.new()
 	_logo.name = "TitleLogo"
@@ -62,13 +60,13 @@ func _ready() -> void:
 	_main_box.size = Vector2(160, 120)
 	_main_box.add_theme_constant_override(&"separation", 6)
 	add_child(_main_box)
-	_options_box = VBoxContainer.new()
-	_options_box.position = Vector2(roundf((640.0 - OPTIONS_W) * 0.5), 84)
-	_options_box.size = Vector2(OPTIONS_W, 190)
-	_options_box.add_theme_constant_override(&"separation", 5)
+	_options_box = OptionsMenu.new()
+	_options_box.name = "Options"
+	_options_box.position = Vector2(roundf((640.0 - OptionsMenu.W) * 0.5), 82)
 	_options_box.visible = false
 	add_child(_options_box)
-	_build_options()
+	_options_box.back_requested.connect(_show_main)
+	_options_box.locale_switched.connect(_relocalize)
 	visible = false
 
 
@@ -79,15 +77,22 @@ func show_title() -> void:
 	_open()
 
 
-## Modo demo (capturas): "title", "pause" u "options" (las opciones desde la pausa).
+## Modo demo (capturas): "title", "pause" u "options" (las opciones desde la pausa);
+## "options2" abre la pestaña 2 (0 vídeo, 1 audio, 2 controles, 3 accesibilidad) y
+## "options-tour" las recorre todas, una cada 0,5 s.
 func demo_open(which: String) -> void:
 	if which == "title":
 		show_title()
 		return
 	mode = Mode.PAUSE
 	_open()
-	if which == "options":
+	if which == "options-tour":
 		_show_options()
+		for i: int in range(1, OptionsMenu.TABS.size()):
+			get_tree().create_timer(0.5 * i).timeout.connect(_options_box.select_tab.bind(i))
+	elif which.begins_with("options"):
+		_show_options()
+		_options_box.select_tab(int(which.trim_prefix("options")))
 
 
 func _open() -> void:
@@ -99,6 +104,12 @@ func _open() -> void:
 	Events.menu_opened.emit()
 	if mode == Mode.PAUSE:
 		get_tree().paused = true
+		# Ya sabe dónde está el menú: el HUD deja de enseñar "ESC: MENÚ".
+		# En modo demo (no se guarda la partida) tampoco se tocan las opciones del jugador.
+		if not Settings.menu_hint_seen:
+			Settings.menu_hint_seen = true
+			if SaveSystem.enabled:
+				Settings.save_settings()
 
 
 func _close() -> void:
@@ -118,11 +129,12 @@ func is_open() -> bool:
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_action_pressed(&"ui_cancel"):
 		return
-	if mode == Mode.PAUSE:
-		if _options_box.visible:
-			_show_main()
-		else:
-			_close()
+	if mode != Mode.HIDDEN and _options_box.visible:
+		AudioDirector.play_sfx(TICK_SFX, -10.0)
+		_show_main()
+		get_viewport().set_input_as_handled()
+	elif mode == Mode.PAUSE:
+		_close()
 		get_viewport().set_input_as_handled()
 	elif mode == Mode.HIDDEN and _can_pause():
 		mode = Mode.PAUSE
@@ -147,7 +159,7 @@ func _rebuild_main() -> void:
 		)
 		if has_save:
 			_button("CONTINUAR", _close, true)
-		_button("NUEVA PARTIDA", _new_game, not has_save)
+		_button("NUEVA PARTIDA", new_game, not has_save)
 	else:
 		var pause: Label = _label("PAUSA", UiFonts.TITLE, UiFonts.HEAD, C_GOLD_LIGHT)
 		pause.custom_minimum_size = Vector2(160, 20)
@@ -182,7 +194,8 @@ func _button(text: String, action: Callable, primary: bool = false) -> Button:
 	return b
 
 
-func _new_game() -> void:
+## Empieza de cero (la usa también el menú de depuración).
+func new_game() -> void:
 	GameState.reset()
 	SaveSystem.save_game()
 	skip_title_once = true
@@ -200,10 +213,7 @@ func _show_options() -> void:
 	_main_box.visible = false
 	_options_box.visible = true
 	_logo.visible = false
-	for c: Node in _options_box.get_children():
-		if c is HSlider:
-			(c as HSlider).grab_focus()
-			break
+	_options_box.focus_first()
 
 
 func _show_main() -> void:
@@ -213,110 +223,11 @@ func _show_main() -> void:
 	_rebuild_main()
 
 
-func _build_options() -> void:
-	var title: Label = _label("OPCIONES", UiFonts.TITLE, UiFonts.HEAD, C_GOLD_LIGHT)
-	remove_child(title)
-	title.custom_minimum_size = Vector2(OPTIONS_W, 20)
-	_options_box.add_child(title)
-	_language_button()
-	for bus: Array in [
-		[tr("VOLUMEN GENERAL"), "Master"],
-		[tr("MÚSICA"), "Music"],
-		[tr("EFECTOS"), "SFX"],
-		[tr("AMBIENTE"), "Ambience"]
-	]:
-		var bus_name: String = bus[1]
-		_slider(
-			bus[0],
-			Settings.bus_volumes.get(bus_name, 1.0),
-			func(v: float) -> void:
-				Settings.bus_volumes[bus_name] = v
-				Settings.apply_audio()
-		)
-	_slider(
-		"SENSIBILIDAD DEL RATÓN",
-		inverse_lerp(0.3, 2.5, Settings.mouse_sensitivity),
-		func(v: float) -> void: Settings.mouse_sensitivity = lerpf(0.3, 2.5, v)
-	)
-	_slider(
-		"SACUDIDA DE CÁMARA",
-		Settings.screen_shake,
-		func(v: float) -> void: Settings.screen_shake = v
-	)
-	var fs := CheckButton.new()
-	fs.text = tr("PANTALLA COMPLETA")
-	fs.button_pressed = Settings.fullscreen
-	fs.toggled.connect(
-		func(on: bool) -> void:
-			Settings.fullscreen = on
-			Settings.apply_video()
-	)
-	_options_box.add_child(fs)
-	var back := Button.new()
-	back.text = tr("VOLVER")
-	back.custom_minimum_size = Vector2(OPTIONS_W, 20)
-	back.pressed.connect(_show_main)
-	_options_box.add_child(back)
-
-
-## "IDIOMA: ESPAÑOL": cada clic pasa al siguiente idioma cargado y rehace los menús.
-func _language_button() -> void:
-	var codes: PackedStringArray = Settings.locales()
-	if codes.size() < 2:
-		return
-	var lang := Button.new()
-	lang.text = tr("IDIOMA: %s") % Settings.language_name(Settings.current_locale())
-	lang.custom_minimum_size = Vector2(OPTIONS_W, 20)
-	lang.add_theme_color_override(&"font_color", C_GOLD_LIGHT)
-	lang.pressed.connect(
-		func() -> void:
-			var i: int = codes.find(Settings.current_locale())
-			Settings.set_locale(codes[wrapi(i + 1, 0, codes.size())])
-			AudioDirector.play_sfx(OK_SFX, -10.0)
-			_relocalize()
-	)
-	_options_box.add_child(lang)
-
-
 ## Rehace los textos de los menús con el idioma nuevo y avisa al resto (HUD, Grimorio...).
 func _relocalize() -> void:
-	for c: Node in _options_box.get_children():
-		_options_box.remove_child(c)
-		c.queue_free()
-	_build_options()
 	_rebuild_main()
 	_logo.relocalize()
 	Events.locale_changed.emit()
-	for c: Node in _options_box.get_children():
-		if c is Button:
-			(c as Button).grab_focus()
-			break
-
-
-## Una fila por opción: el nombre a la izquierda y la barra a la derecha.
-func _slider(text: String, value: float, on_change: Callable) -> void:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override(&"separation", 8)
-	_options_box.add_child(row)
-	var l: Label = _label(text, UiFonts.BOLD, UiFonts.SMALL, C_CYAN)
-	remove_child(l)
-	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	l.custom_minimum_size = Vector2(OPTION_LABEL_W, UiFonts.LINE)
-	row.add_child(l)
-	var s := HSlider.new()
-	s.min_value = 0.0
-	s.max_value = 1.0
-	s.step = 0.05
-	s.value = clampf(value, 0.0, 1.0)
-	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	s.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	s.custom_minimum_size = Vector2(0, 10)
-	s.value_changed.connect(
-		func(v: float) -> void:
-			on_change.call(v)
-			AudioDirector.play_sfx(TICK_SFX, -14.0, lerpf(0.8, 1.4, v))
-	)
-	row.add_child(s)
 
 
 func _process(_delta: float) -> void:
@@ -338,19 +249,23 @@ func _draw() -> void:
 	# Marco del panel.
 	var box: Control = _options_box if _options_box.visible else _main_box
 	var r := Rect2(box.position - Vector2(12, 10), box.size + Vector2(24, 20))
-	if box == _main_box:
-		r.size.y = _main_box.get_combined_minimum_size().y + 20
-	draw_rect(r.grow(2), C_BG)
-	draw_rect(r, C_PANEL)
-	draw_rect(Rect2(r.position, Vector2(r.size.x, 2)), C_GOLD)
-	draw_rect(Rect2(r.position + Vector2(0, r.size.y - 2), Vector2(r.size.x, 2)), C_GOLD)
+	r.size.y = box.get_combined_minimum_size().y + 20
+	draw_panel(self, r)
+
+
+## Marco de los paneles del juego: violeta con filetes y esquinas doradas.
+static func draw_panel(ci: CanvasItem, r: Rect2) -> void:
+	ci.draw_rect(r.grow(2), C_BG)
+	ci.draw_rect(r, C_PANEL)
+	ci.draw_rect(Rect2(r.position, Vector2(r.size.x, 2)), C_GOLD)
+	ci.draw_rect(Rect2(r.position + Vector2(0, r.size.y - 2), Vector2(r.size.x, 2)), C_GOLD)
 	for corner: Vector2 in [
 		r.position,
 		r.position + Vector2(r.size.x - 6, 0),
 		r.position + Vector2(0, r.size.y - 6),
 		r.end - Vector2(6, 6)
 	]:
-		draw_rect(Rect2(corner, Vector2(6, 6)), C_GOLD_LIGHT)
+		ci.draw_rect(Rect2(corner, Vector2(6, 6)), C_GOLD_LIGHT)
 
 
 func _label(text: String, font: Font, font_size: int, color: Color) -> Label:
@@ -369,7 +284,7 @@ func _label(text: String, font: Font, font_size: int, color: Color) -> Label:
 
 
 ## Tema pixel: botones de panel violeta con borde dorado al pasar por encima.
-func _make_theme() -> Theme:
+static func make_theme() -> Theme:
 	var t := Theme.new()
 	t.default_font = UiFonts.BOLD
 	t.default_font_size = UiFonts.SMALL
@@ -407,6 +322,19 @@ func _make_theme() -> Theme:
 	t.set_icon(&"grabber_highlight", &"HSlider", _grabber_icon(C_TEXT, C_GOLD_LIGHT, C_GOLD))
 	t.set_icon(&"checked", &"CheckButton", _switch_icon(true))
 	t.set_icon(&"unchecked", &"CheckButton", _switch_icon(false))
+	# Barra de desplazamiento fina: carril oscuro y agarrador dorado.
+	var rail := StyleBoxFlat.new()
+	rail.bg_color = C_BG
+	rail.content_margin_left = 2
+	rail.content_margin_right = 2
+	var thumb := StyleBoxFlat.new()
+	thumb.bg_color = C_GOLD
+	var thumb_hi: StyleBoxFlat = thumb.duplicate()
+	thumb_hi.bg_color = C_GOLD_LIGHT
+	t.set_stylebox(&"scroll", &"VScrollBar", rail)
+	t.set_stylebox(&"grabber", &"VScrollBar", thumb)
+	t.set_stylebox(&"grabber_highlight", &"VScrollBar", thumb_hi)
+	t.set_stylebox(&"grabber_pressed", &"VScrollBar", thumb_hi)
 	return t
 
 

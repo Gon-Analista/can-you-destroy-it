@@ -1,7 +1,9 @@
 class_name CameraRig
 extends Camera3D
 ## Sacudida de cámara por "trauma" (se suma con cada golpe y decae) y golpe de FOV.
-## Respeta Settings.screen_shake (accesibilidad).
+## Respeta Settings.screen_shake (accesibilidad). El campo de visión base es el de Opciones
+## (Settings.fov); la capa de magia HD lo copia cada fotograma y las manos y los hechizos se
+## anclan con project_position, así que todo sigue alineado a cualquier FOV.
 
 @export var max_offset: float = 0.06
 @export var max_roll_deg: float = 1.2
@@ -13,7 +15,6 @@ var sprint: float = 0.0
 var bob: Vector2 = Vector2.ZERO
 
 var _trauma: float = 0.0
-var _base_fov: float
 var _fov_kick: float = 0.0
 var _noise := FastNoiseLite.new()
 var _t: float = 0.0
@@ -22,9 +23,10 @@ var _dip_vel: float = 0.0
 
 
 func _ready() -> void:
-	_base_fov = fov
 	_noise.frequency = 1.6
 	Events.spell_impacted.connect(_on_impact)
+	# Opciones cambia el FOV con el juego en pausa (sin _process): se aplica ya.
+	Settings.changed.connect(_apply_fov)
 	Events.spell_cast.connect(_on_cast)
 
 
@@ -61,7 +63,11 @@ func _process(delta: float) -> void:
 	v_offset = max_offset * shake * _noise.get_noise_2d(0.0, _t) + bob.y + _dip
 	rotation.z = deg_to_rad(max_roll_deg) * shake * _noise.get_noise_2d(_t, _t)
 	_fov_kick = lerpf(_fov_kick, 0.0, 1.0 - exp(-delta * 10.0))
-	fov = _base_fov + _fov_kick + sprint * 7.0
+	_apply_fov()
+
+
+func _apply_fov() -> void:
+	fov = Settings.fov + _fov_kick + sprint * 7.0
 
 
 ## Aterrizar: la cámara se hunde y rebota, más cuanto más fuerte la caída.

@@ -9,6 +9,8 @@ extends RefCounted
 
 const MAX_FREEZE_SEC: float = 0.5
 
+## Velocidad normal del juego (1; el menú de depuración la sube a x2 o x5).
+static var base_scale: float = 1.0
 static var _until_msec: int = 0
 static var _tree: SceneTree
 
@@ -20,7 +22,7 @@ static func trigger(tree: SceneTree, duration_sec: float, time_scale: float = 0.
 	duration_sec = minf(duration_sec, MAX_FREEZE_SEC)
 	var end: int = Time.get_ticks_msec() + int(ceil(duration_sec * 1000.0))
 	_until_msec = maxi(_until_msec, end)
-	Engine.time_scale = time_scale
+	Engine.time_scale = time_scale * base_scale
 	_schedule(duration_sec)
 
 
@@ -39,4 +41,4 @@ static func _release() -> void:
 	if remaining_ms > 0 and remaining_ms <= int(MAX_FREEZE_SEC * 1000.0):
 		_schedule(remaining_ms / 1000.0)
 		return
-	Engine.time_scale = 1.0
+	Engine.time_scale = base_scale

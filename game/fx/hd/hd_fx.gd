@@ -7,6 +7,9 @@ const FIRE_SHADER: Shader = preload("res://fx/hd/hd_fire.gdshader")
 const GLOW_SHADER: Shader = preload("res://fx/hd/hd_glow.gdshader")
 const RING_SHADER: Shader = preload("res://fx/hd/hd_ring.gdshader")
 
+## Cuánto queda de cada destello (1 entero; menos con "reducir destellos"). Lo pone `Settings`;
+## vive aquí para que los efectos no nombren el autoload (los tests `--script` no lo ven).
+static var flash_scale: float = 1.0
 static var _dot: Texture2D
 static var _billow: Texture2D
 static var _star: Texture2D

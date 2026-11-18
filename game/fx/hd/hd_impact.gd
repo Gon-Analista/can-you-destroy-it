@@ -107,7 +107,7 @@ func play(
 	_size[i] = size
 	# El destello suma luz: sobre el cristal claro, poco o lo lava todo a blanco. El que se tiene
 	# que ver es el fuego (opaco, con color).
-	_peak[i] = 0.45 + (0.45 if resonant else 0.0) - (0.15 if big else 0.0)
+	_peak[i] = (0.45 + (0.45 if resonant else 0.0) - (0.15 if big else 0.0)) * HdFx.flash_scale
 	_fire_k[i] = 1.35 if big else 1.0
 	var ramp: Gradient = tier.trail_ramp if tier.trail_ramp else _default_ramp
 	var glow: Color = Color("#ffd27a") if resonant else tier.color_glow
