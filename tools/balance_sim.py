@@ -340,6 +340,39 @@ def load():
     return elements, recipes, upgrades, shards, balance
 
 
+# Minuto en que el GDD 8 pone cada rango (inicio de su franja; Leyenda, al final).
+GDD_RANK_MIN = {"apprentice": 0, "initiate": 5, "sorcerer": 20, "magus": 50, "archmage": 90, "legend": None}
+
+
+def load_ranks() -> list[dict]:
+    """Rangos del mago (data/ranks/rank_*.tres, RankDef), en orden."""
+    ranks = []
+    for p in sorted((DATA / "ranks").glob("rank_*.tres")):
+        main, _ = parse_tres(p)
+        ranks.append(main)
+    return ranks
+
+
+def rank_meets(r: dict, s: "State", total: float) -> bool:
+    """WizardRanks.meets (core/wizard_ranks.gd)."""
+    if r.get("or_finished") == "true" and s.essence <= 0:
+        return True
+    if 1 - s.essence / total < float(r.get("min_destroyed", 0.0)):
+        return False
+    pylon = s.pylon / total
+    if pylon >= float(r.get("pylon_alone", 2.0)):
+        return True
+    key = r.get("key_upgrade", "")
+    return (not key or s.levels.get(key, 0) > 0) and pylon >= float(r.get("key_pylon", 0.0))
+
+
+def check_rank(game, s: "State") -> None:
+    """GameState.check_rank: sube por orden mientras se cumpla el siguiente."""
+    while s.rank + 1 < len(game.ranks) and rank_meets(game.ranks[s.rank + 1], s, game.total):
+        s.rank += 1
+        s.ranks.append((s.t / 60, game.ranks[s.rank]["id"]))
+
+
 TUNING = None  # módulo con una propuesta de números (--tuning), para probar antes de tocar los .tres
 
 
@@ -394,11 +427,15 @@ class State:
     essence: float = 1_000_000.0
     pylon: float = 0.0
     t: float = 0.0
+    rank: int = 0
+    # (minuto, nombre) de cada subida de rango (ver check_rank).
+    ranks: list = field(default_factory=list)
 
 
 class Game:
     def __init__(self) -> None:
         self.elements, self.recipes, self.upgrades, self.shards, self.balance = load()
+        self.ranks = load_ranks()
         self.total = float(self.balance.get("total_essence", 1_000_000))
         self.res_mult = int(self.balance.get("resonant_damage_mult", 3))
         self.familiars = self.balance.get("_familiars", {})
@@ -1005,6 +1042,7 @@ def simulate(game: Game, verbose: bool = False, max_hours: float = 6.0):
         s.pylon = min(game.total, s.pylon + pylon_rate * step)
         s.essence = max(0.0, s.essence - ess_rate * step)
         s.t += step
+        check_rank(game, s)
         if s.t >= next_sample:
             timeline.append((s.t, s.mana, s.essence, s.pylon, f"{attack} {rate:.0f}/s"))
             next_sample += 30.0
@@ -1038,6 +1076,9 @@ def simulate(game: Game, verbose: bool = False, max_hours: float = 6.0):
             s.t += P["buy"]
             bought += 1
             log.append((s.t, best.id, s.levels[best.id], c, base))
+        check_rank(game, s)
+    # Leyenda: el final (la simulación para con el cristal abierto hasta el Núcleo).
+    check_rank(game, s)
     return s, log, timeline
 
 
@@ -1078,6 +1119,7 @@ def summary(game: Game, s: State, log, timeline, name: str) -> dict:
         "mana_sin_gastar": round(s.mana),
         "pilon_final_pct": round(s.pylon / game.total * 100, 1),
         "nota": round(objective(s, log)),
+        "rangos_min": {rid: round(m, 1) for m, rid in s.ranks},
         "maná_por_s": income,
         "sin_comprar": sorted(
             f"{u.id} {s.levels.get(u.id, 0)}/{len(u.costs)}"
@@ -1112,6 +1154,10 @@ def report(game: Game, s: State, log, timeline, show_log: bool) -> None:
             print(f"  {fmt(t)}  {names[0]:<20} pilón {pylon / game.total * 100:5.1f} %  ({attack})")
             marks.pop(0)
             names.pop(0)
+    print("\nRangos (GDD 8):")
+    for m, rid in s.ranks:
+        gdd = GDD_RANK_MIN.get(rid)
+        print(f"  {fmt(m * 60)}  {rid:<10} (GDD: {'final' if gdd is None else f'{gdd} min'})")
     print("\nCada 15 min:")
     for t, mana, ess, pylon, attack in timeline:
         if int(t) % 900 < 30 and t >= 30:
