@@ -61,7 +61,7 @@ Tecnologías ya previstas (validar la versión al integrarlas):
 | Cristal destructible | `tools/crystal_volume.py` (numpy + scipy) -> `game/crystal/data/crystal_volume.bin`; en el juego `CrystalVolume` + `CrystalChunks` | La forma, las capas, las geodas y las densidades se cambian en el script y se vuelve a hornear. |
 | Textos e idiomas | `tools/extract_strings.py` -> `game/localization/strings.csv` | Conserva las traducciones; prueba: `localization_smoke.gd`. |
 | Estelas de hechizos | `spells/vfx/spell_trail.gd` (`ImmediateMesh` orientada a cámara + `spell_trail.gdshader`) | Píxeles sólidos con bandas; se estrecha cerca de la cámara. |
-| Fuentes | Silkscreen (8 px) y Pixelify Sans, OFL | Importadas sin antialiasing, hinting ni subpíxel. |
+| Fuentes | Fusion Pixel (Ark Pixel) 10 px normal y negrita y 12 px negrita, OFL, por `ui/ui_fonts.gd` (`UiFonts.BODY/BOLD/TITLE`); Pixelify Sans sólo en el logotipo | Importadas sin antialiasing, hinting ni subpíxel; 1 píxel de fuente = 1 píxel del juego. `tools/make_ui_fonts.py` las prepara. |
 | Sprites pixel art (manos, efectos) | **Sprite AI** (MCP `sprite-ai` en `.mcp.json`, o `tools/sprite_ai/sai.py`) | No hay artista: es la fuente de arte 2D. Ver sección 15 y `docs/sprite_ai.md`. |
 | VFX de hechizos | `spells/vfx/spell_orb.gd` + un `SpellVisualDef` (`.tres`) | Núcleo, cintas, destellos y luz; píxeles sólidos y animación a `anim_fps`. Probar en `tests/vfx_gallery/`. |
 

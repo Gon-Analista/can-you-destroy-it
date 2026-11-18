@@ -143,7 +143,7 @@ en el Grimorio del Santuario mejoras que cambian los hechizos. Lo que hay:
 - **Efectos** (`fx/`): shader toon, contorno de post-proceso (profundidad + normales), `ImpactFx` (estrellas,
   esquirlas, anillo y luz en pool), `HitStop`.
 - **HUD** (`ui/`): Esencia con número rodante, mira con anillo de carga y marcador de impacto, racha, avisos,
-  números flotantes, Pilón, FPS y ayuda de debug. Fuentes Silkscreen (texto pequeño) y Pixelify Sans (números).
+  números flotantes, Pilón, FPS y ayuda de debug. Fuente Fusion Pixel 10/12 px (`UiFonts`).
 - **Música** (`audio/music/`): tema del valle en La mayor, 84 BPM, en 5 capas sincronizadas (una por rango) con
   `AudioDirector.play_music` / `set_music_layers`. En debug, la tecla M suma capas.
 - **Audio** (`audio/sfx/`): 20 OGG sintetizados (tink ×4, fragmentos, chispa, campanitas, acorde resonante,
@@ -274,6 +274,9 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-17 | `SpellHit.by_player = false` en golpes de familiares y del rayo del Pilón: no tocan racha, cámara, mirilla, levitación ni avisos. | Lo automático no debe sentirse como el jugador. |
 | 2026-11-18 | Carga por etapas en las combinaciones (`ChargeStages`, `BalanceConfig.charge_stages_by_level`): el daño va por el último escalón completado sobre la curva de siempre; el tiempo extra de cargar sale de la recarga. | Pedido del equipo: cada círculo mágico es un escalón con sonido y golpe; misma potencia media para no mover el balance. |
 | 2026-11-18 | Sombras del sol con `shadow_reverse_cull_face` y sin pancake. | El suelo se sombreaba a sí mismo con el sol alto (rayas que bailaban con la sacudida de cámara) y el valle quedaba negro al amanecer. Un cartel o plano de una cara que deba hacer sombra necesita `SHADOW_CASTING_SETTING_DOUBLE_SIDED`. |
+| 2026-11-18 | Fuente de la interfaz: Fusion Pixel (latín de Ark Pixel) 10 px y 12 px en rejilla exacta, por `UiFonts`; sustituye a Silkscreen 8 px y Pixelify 16 px. | El equipo no entendía el texto: Silkscreen tenía mayúsculas de 5 px y Pixelify a 16 px no cuadraba con su rejilla de 11 px. Fusion Pixel tiene minúsculas, tildes, ñ, ¡ y ¿. |
+| 2026-11-18 | El sol sale en t = 0,25 y se pone en 0,75 (`DayNight._sun_dir`), con mediodía en `NOON_SUN`. | Antes salía en 0,387: la partida empezaba con luz de luna bajo un cielo de día. |
+| 2026-11-18 | Halos y anillos de impacto con `cover` (tiñen el fondo en vez de sumar luz) y fuego con 5 capas saturadas sin pasar de 1. | El fuego se veía como una mancha blanca o crema y el anillo de choque fundía la pantalla a blanco. |
 
 ## 10. Preguntas abiertas
 

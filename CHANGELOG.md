@@ -2,6 +2,23 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-18 · Texto que se lee, fuego con color y un día que empieza de día
+
+**Qué hay nuevo** (revisión de lo anterior y lo que pidió el equipo)
+
+- **Fuente nueva**: Fusion Pixel 10 y 12 px (con minúsculas, tildes, ñ, ¡ y ¿) en todo el HUD, el tutorial, el
+  Grimorio, el Libro, los menús y la pantalla de carga, a través de `UiFonts`. Cada píxel de la letra cae en un
+  píxel del juego; las mayúsculas pasan de 5 a 7-9 px. Las barras y el interruptor de Opciones se dibujan en
+  píxeles.
+- **Fuego**: 5 capas saturadas (borde rojo oscuro, rojo, naranja, amarillo y núcleo blanco pequeño) en vez del
+  interior color crema. El anillo de choque de los impactos ya no funde la pantalla a blanco (`hd_ring` `cover`).
+- **Carga por etapas**: el círculo del blanco de Meteoro, Trueno y Lluvia sale desde el principio de la carga;
+  con pocas etapas los anillos se abren por fuera del orbe y la onda final queda contenida.
+- **Día y noche**: el sol sale al amanecer de verdad (antes la partida empezaba con luz de luna bajo un cielo de
+  día) y las cascadas de sombra están afinadas.
+
+**Pruebas**: todas en verde.
+
 ## 2026-11-18 · Fuego nuevo, meteorito de verdad, carga por etapas y suelo sin rayas
 
 **Qué hay nuevo** (lo que pidió el equipo al probar)
