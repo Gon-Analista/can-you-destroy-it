@@ -189,8 +189,17 @@ en el Grimorio del Santuario mejoras que cambian los hechizos. Lo que hay:
 - **Movimiento**: correr (Shift), saltar (Espacio), pasos y aterrizaje. **Día y noche** (`world/day_night.gd`) con
   paisaje sonoro (`tools/sfx_ambience.py`). **Pantalla de carga** que precalienta efectos (`Main._warm_up`).
 
-**Aún no hay**: Rayo, Tierra y Arcano, familiares, simulador de balance (M2), trozos de cristal que caen al
-quedarse sueltos (cortar la base de una punta) ni la mecánica propia de las Venas Resonantes.
+- **Contenido del GDD ya dentro** (detalle en `CHANGELOG.md`): los cinco elementos (Chispa, Escarcha, Rayo,
+  Tierra, Arcano) con sus combinaciones (17 en el Libro: parejas y triples), familiares recolectores y
+  hechiceros, venas, Pureza, hitos del Pilón, simulador de balance (`tools/balance_sim.py`), carga por
+  escalones, menú de depuración y opciones, guía de objetivos, **bichos del valle** (`critters/`), **Lágrimas del
+  Núcleo** y la página Núcleo del Grimorio, **Báculo** con triples (`StaffCombos`, `SpellDelivery`), **rangos de
+  mago** y **Espejo del Archimago**, y **el final** (`ending/`: Núcleo expuesto, Gran Convergencia, fiesta y
+  pantalla "Yes, you could.").
+
+**Aún no hay**: la Vitrina del Báculo como estación física (las mejoras del báculo viven en el Grimorio), trozos de
+cristal que caen al quedarse sueltos, logros de Steam, créditos definitivos ni modo tras el final más allá de
+"Seguir en el valle".
 
 ## 8. Hitos
 
@@ -198,9 +207,9 @@ quedarse sueltos (cortar la base de una punta) ni la mecánica propia de las Ven
 |---|---|---|
 | **M1a El golpe** ✅ | Arte base del valle y del cristal, una chispa con 5 niveles y la reacción completa del cristal (GDD 10.3 y 10.4). | Golpear el cristal ya da gusto sin nada más. |
 | **M1b Prototipo** ✅ (falta validar jugando) | Recoger y entregar fragmentos, Pilón, 5 mejoras. | Los primeros 5 minutos ya son divertidos. 60 fps estables. |
-| **M2 Vertical slice** | Santuario básico, 2 elementos, 1 combinación, telequinesis, capa Corteza completa. | 30 minutos sin baches. |
-| **M3 Contenido** | 5 elementos, todas las combinaciones, 7 ramas, familiares, todas las capas. | Se puede terminar de principio a fin. |
-| **M4 Final y pulido** | Gran Convergencia, balance, audio, logros de Steam. | 2 a 3 h; el final emociona. |
+| **M2 Vertical slice** ✅ | Santuario básico, 2 elementos, 1 combinación, telequinesis, capa Corteza completa. | 30 minutos sin baches. |
+| **M3 Contenido** ✅ | 5 elementos, todas las combinaciones, 7 ramas, familiares, todas las capas. | Se puede terminar de principio a fin. |
+| **M4 Final y pulido** (en curso: final y balance hechos) | Gran Convergencia, balance, audio, logros de Steam. | 2 a 3 h; el final emociona. |
 
 ## 9. Registro de decisiones
 
@@ -282,6 +291,10 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-18 | Menú de depuración (Alt+F1, `DebugMenu`) en builds de debug o con `--debug-menu`; "comprar todo" pasa por `GameState.buy_upgrade` y el nivel 10 de hechizos es sólo de la sesión. | Pedido del equipo para probar rápido; quita el texto de ayuda de debug del HUD. |
 | 2026-11-18 | Guía de objetivos (`Guidance`, `ObjectiveGuide`): un solo marcador que elige el siguiente paso; los avisos con tecla se aprenden (`Progression.learned`, umbrales en `data/ui/guidance.tres`). | El tutorial repetía "[F]" a cada rato; el equipo pidió que te guíe a dónde ir. |
 | 2026-11-18 | Bichos del valle (`CritterHerd` bajo el viewport del mundo, sin autoload nuevo): capa de colisión `1 << 4` que sólo ven la mira y el Haz; población cerca del mago (`despawn_distance`); opción `Settings.cartoon_gore`; 2-3 astillas por bicho. | Pedido del equipo: monstruitos graciosos e inofensivos que revientan con los hechizos, sin tocar el balance ni robar golpes al cristal. |
+| 2026-11-18 | Lágrimas del Núcleo: segunda moneda (`Progression.tears`), sólo en el Corazón, con piedad; `UpgradeNode.currency` para los nodos del Núcleo; los familiares no las recogen. | GDD 6.1 y 8: desbloquean los nodos finales. |
+| 2026-11-18 | Final (`EndingDirector`): ningún golpe baja la esencia del 99 % (`GameState.core_floor`); desde el 95 % una comprobación cada 15 s expone el Núcleo si queda < 0,6 % golpeable. "Yes, you could." se queda en inglés en todos los idiomas. Partida terminada guardada (`game_complete`, `ending_seen`). | Con la rejilla real ~2-3 % de la esencia no se puede golpear: sin la red, el 99 % podía no llegar. |
+| 2026-11-18 | Báculo: la entrega de los hechizos pasa a `SpellDelivery` y las triples a `StaffCombos` (sólo una Tormenta a la vez); el elemento de la gema con R / rueda. | `spell_caster.gd` estaba en el límite de líneas y métodos; GDD 5.2. |
+| 2026-11-18 | Rangos por progreso (`WizardRanks`, `data/ranks/*.tres`), una capa de música por rango; Leyenda al romper el Núcleo. Cifras del Espejo y de la pantalla final en un solo sitio (`Progression.stats`; `time_played`, `spells_cast` y `shards_collected` son propiedades sobre él; los ecos del Arcano no cuentan como hechizos). | GDD 8 y 11.4; dos ramas contaban lo mismo por separado. |
 
 ## 10. Preguntas abiertas
 

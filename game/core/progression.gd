@@ -287,6 +287,12 @@ func load_dict(data: Dictionary) -> void:
 	var saved_recipes: Array = data.get("discovered_recipes", [])
 	for r: Variant in saved_recipes:
 		discover_recipe(StringName(str(r)))
+	# El rango guardado tal cual; las partidas de antes de los rangos reciben el que les toca,
+	# sin ceremonia.
+	if data.has("rank"):
+		rank = clampi(int(data["rank"]), 0, WizardRanks.last())
+	else:
+		rank = WizardRanks.earned(self)
 
 
 static func _vec_list(points: PackedVector3Array) -> Array:
@@ -294,9 +300,3 @@ static func _vec_list(points: PackedVector3Array) -> Array:
 	for p: Vector3 in points:
 		out.append([p.x, p.y, p.z])
 	return out
-	# El rango guardado tal cual; las partidas de antes de los rangos reciben el que les toca,
-	# sin ceremonia.
-	if data.has("rank"):
-		rank = clampi(int(data["rank"]), 0, WizardRanks.last())
-	else:
-		rank = WizardRanks.earned(self)

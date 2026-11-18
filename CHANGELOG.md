@@ -2,6 +2,54 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-18 · Segunda tanda del GDD: Lágrimas del Núcleo, el final, el Báculo con triples, rangos y la Bola de Fuego nueva
+
+**Qué hay nuevo**
+
+- **Bola de Fuego en vuelo** (`spells/vfx/fireball_flight.gd`, `fx/hd/hd_fireball.gdshader`, `hd_fire_puff.gdshader`):
+  cuerpo de fuego que hierve con borde rojo oscuro, lenguas que salen hacia las manos en pantalla, núcleo
+  pequeño y caliente, cola de bocanadas que se enfrían, chispas y un hilo de humo; crece y se calienta con el
+  nivel (`SpellHit.level`) y el Eco de Fuego va en magenta. Ilumina el cristal al acercarse (`FireGlow`,
+  parámetros globales `fire_glow`). Sale del mismo tamaño que la bola entre las manos. El Meteoro suena con un
+  solo estruendo y su roca y las bolas se crean en la pantalla de carga.
+- **Lágrimas del Núcleo** (`core/tear_drops.gd`, `crystal/core_tears.gd`, `ui/tear_counter.gd`): segunda moneda.
+  Sólo caen de combinados en el Corazón Cristalino (daño / 15000, con piedad a los 110 s de buen juego), laten
+  como un corazón, se recogen con F o telequinesis (los familiares no) y van al contador junto al maná. Pagan la
+  página nueva **Núcleo** del Grimorio: Ojo del Núcleo, Fractura del Corazón, Corazón Vidente y la **Gran
+  Convergencia**, que sólo aparece al 99 %. Los iconos del Grimorio pasan a `ui/grimoire_icons.gd`.
+- **El final** (`game/ending/`, GDD 9):
+  - Al 99 % el cristal se resquebraja, se desprende a trozos y deja el **Núcleo** expuesto: una esfera violeta que
+    no cede ("EL NÚCLEO NO CEDE"). Música tensa y el valle se tiñe. Ningún golpe baja del 99 %, y una red de
+    seguridad expone el Núcleo si lo que queda del cristal ya no se puede golpear.
+  - Con la Gran Convergencia, los cinco elementos acuden a las manos; mantener los dos botones mirando al Núcleo
+    carga 5,5 s en cinco escalones (un anillo y una nota por elemento). Soltar antes se deshace sin coste.
+  - El Núcleo estalla, el cristal se deshace en lluvia de fragmentos, el Pilón llega al 100 %, una columna de
+    maná abre las nubes, auroras, fuegos artificiales, farolillos, campanas y coro; los bichos bailan.
+  - **Pantalla final**: "Yes, you could." (en inglés en todos los idiomas; debajo "Sí, pudiste."), tiempo
+    jugado, combinaciones, mejoras, fragmentos y hechizos; **Créditos**, **Seguir en el valle** y **Nueva
+    partida**. Se guarda: al cargar vuelves al valle de fiesta sin cristal.
+- **Báculo y combinaciones triples** (`player/wizard_staff.gd`, `spells/staff_combos.gd`, `spell_delivery.gd`,
+  `elemental_storm.gd`, `supernova.gd`): el hito **Báculo** (Elementos, con la Tierra y el Pilón al 10 %; ~min 68)
+  da un báculo en primera persona con una gema; **R o la rueda** cambian su elemento. Juntar las manos con la gema
+  encendida lanza una triple: **Tormenta Elemental** (Chispa+Escarcha+Rayo, nube que descarga rayos, granizo y
+  fuego), **Supernova**, **Glaciar Tronante**, **Lluvia de Estrellas** y **Erupción**, cada una con su
+  descubrimiento, entrada del Libro (pestañas PAREJAS / TRIPLES), efectos y sonidos. Página **Báculo** en el
+  Grimorio con Gema viva y Foco. Las triples revientan bichos.
+- **Rangos de mago** (`core/wizard_ranks.gd`, `data/ranks/`, `ui/rank/`): Aprendiz, Iniciado, Hechicero, Magus,
+  Archimago y Leyenda, por progreso (elemento despertado + Pilón). Ceremonia con escudo, "¡ERES X!", coro,
+  columna de luz y golpe de cámara; las manos cambian de gema, ribete y runas; la música suma una capa por rango;
+  escudo del rango bajo la barra del Pilón. Romper el Núcleo te hace **Leyenda** con su ceremonia en plena fiesta.
+- **Espejo del Archimago** (`sanctum/archmage_mirror.gd`, `ui/rank/mirror_screen.gd`) junto al Santuario: F abre
+  las cifras (tiempo, rango y siguiente requisito, combinaciones, mejoras, hechizos, fragmentos, maná, mejor
+  racha, resonantes, geodas, venas, bichos reventados, capa, cristal). Son las mismas cifras que la pantalla final
+  (`Progression.stats`).
+- **Depuración**: filas FINAL ("IR AL NÚCLEO (99 %)", "LANZAR GRAN CONVERGENCIA") y "SUBIR DE RANGO"; demo
+  `--tears=N`, `--destroyed=`, `--core-exposed`, `--ending[=s]`, `--ending-screen`, `--complete`, `--rank=N`,
+  `--rank-up=N`, `--mirror`, `--stats`.
+- Pruebas nuevas: `fireball_flight_smoke`, `core_tears_smoke`, `ending_smoke`, `staff_smoke`, `ranks_smoke`.
+- Simulador: normal ~141 min (hueco máx. 171 s, maná sin gastar < 2 %, Pilón al 100 %), eficiente ~105 min; todas
+  las Lágrimas necesarias llegan antes del final; rangos en 5,9 / 20,4 / 48,2 / 89,1 / 138,6 min.
+
 ## 2026-11-18 · Bichos del valle: monstruitos de ojos saltones que revientan con los hechizos
 
 **Qué hay nuevo** (pedido del equipo: "monstruos graciosos con caras chistosas y ojitos grandes")
