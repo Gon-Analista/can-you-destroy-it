@@ -34,6 +34,8 @@ var _motto: Label
 var _count: Label
 var _aura: RankAura
 var _sparks: PackedVector3Array = []
+## Triángulo de un rayo, reutilizado (sin asignar en cada fotograma).
+var _tri := PackedVector2Array([Vector2.ZERO, Vector2.ZERO, Vector2.ZERO])
 
 
 func _ready() -> void:
@@ -195,9 +197,10 @@ func _draw_rays(def: RankDef, out: float) -> void:
 		var p1: Vector2 = CREST_CENTER + Vector2(cos(a - w), sin(a - w)) * length
 		var p2: Vector2 = CREST_CENTER + Vector2(cos(a + w), sin(a + w)) * length
 		var col: Color = Color(def.color if i % 2 == 0 else def.color_light, 0.28 * out)
-		draw_colored_polygon(
-			PackedVector2Array([CREST_CENTER.round(), p1.round(), p2.round()]), col
-		)
+		_tri[0] = CREST_CENTER.round()
+		_tri[1] = p1.round()
+		_tri[2] = p2.round()
+		draw_colored_polygon(_tri, col)
 
 
 ## Chispitas que salen del escudo hacia fuera (cuadrados de 1-2 px).

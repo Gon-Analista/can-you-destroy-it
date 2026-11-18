@@ -1,8 +1,8 @@
 shader_type spatial;
 // Columna de luz de la subida de rango (capa de magia HD), vista desde dentro: el mago está en su
 // centro. En vez de una pared de luz (taparía la pantalla), haces finos que suben alrededor con
-// bandas de maná, más intensos abajo y que se pierden hacia el cielo. Suma luz (alfa 0
-// premultiplicado) y respeta la profundidad (dev guidelines 5.4).
+// bandas de maná, más intensos abajo y que se pierden hacia el cielo. Alfa premultiplicado con
+// algo de alfa (tiñe, no lava) y respeta la profundidad (dev guidelines 5.4).
 render_mode unshaded, blend_premul_alpha, depth_draw_never, cull_disabled, fog_disabled, shadows_disabled;
 
 uniform vec4 color : source_color = vec4(0.8, 0.6, 1.0, 1.0);
@@ -41,9 +41,13 @@ void fragment() {
 	float bands = 0.6 + 0.4 * step(0.5, fract(h * 9.0 - TIME * (1.2 + r * 1.4) + r * 3.0));
 	float rise = 1.0 - smoothstep(reach - 0.06, reach, h);
 	float fade = pow(1.0 - h, 1.6) * rise;
-	float base = 1.0 + 1.5 * (1.0 - smoothstep(0.0, 0.04, h));
-	// Color del rango; sólo el pie de cada haz se acerca al blanco.
-	vec3 c = mix(color.rgb, color_hot.rgb, (1.0 - smoothstep(0.0, 0.08, h)) * 0.7);
-	ALBEDO = c * beam * bands * fade * base * intensity;
-	ALPHA = 0.0;
+	// El pie (en metros: el primero y medio) brilla más y se acerca al blanco. A la altura de los
+	// ojos del mago ya es color del rango, o la pantalla entera se lavaba a blanco.
+	float foot = 1.0 - smoothstep(0.0, 1.5, h * height);
+	float base = 1.0 + 1.5 * foot;
+	vec3 c = mix(color.rgb, color_hot.rgb, foot * 0.7);
+	float a = beam * bands * fade * intensity;
+	ALBEDO = c * a * base;
+	// Algo de alfa: el haz tiñe lo de detrás con su color en vez de sumar blanco sobre el cielo.
+	ALPHA = clamp(a * 0.5, 0.0, 0.6);
 }
