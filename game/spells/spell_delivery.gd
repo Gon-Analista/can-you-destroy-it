@@ -17,6 +17,8 @@ const BEAM_TICK: float = 0.09
 const STORM_FRONT: float = 4.0
 const STORM_RISE: float = 0.3
 const STORM_MIN_RISE: float = 7.0
+## Inclinación de la lluvia de las triples (m de lado por m de altura).
+const RAIN_SLANT: float = 0.45
 ## Lado que usan las señales y las manos para el hechizo combinado.
 const BOTH_HANDS: int = 2
 
@@ -215,12 +217,19 @@ func _deliver_rain(recipe: SpellRecipe, hit: SpellHit) -> void:
 	var each: int = maxi(1, roundi(float(hit.damage) / float(n)))
 	var space: PhysicsDirectSpaceState3D = camera.get_world_3d().direct_space_state
 	var element: StringName = recipe.strike_element if recipe.strike_element != &"" else &"frost"
+	# Las estalactitas caen a plomo; lo de las triples (estrellas fugaces), en diagonal.
+	var slant := Vector3.ZERO
+	if recipe.is_triple():
+		var side: Vector3 = camera.global_basis.x
+		side.y = 0.0
+		slant = side.normalized() * sky_side * recipe.sky_height * RAIN_SLANT
 	for i: int in n:
 		var a: float = _rng.randf() * TAU
 		var rr: float = sqrt(_rng.randf()) * recipe.rain_radius * hit.size
 		var ground: Vector3 = center + Vector3(cos(a), 0.0, sin(a)) * rr
-		var sky: Vector3 = ground + Vector3.UP * recipe.sky_height
-		var q := PhysicsRayQueryParameters3D.create(sky, ground - Vector3.UP * 30.0, 1 | (1 << 1))
+		var sky: Vector3 = ground + Vector3.UP * recipe.sky_height + slant
+		var end: Vector3 = ground + (ground - sky).normalized() * 30.0
+		var q := PhysicsRayQueryParameters3D.create(sky, end, 1 | (1 << 1))
 		var r: Dictionary = space.intersect_ray(q)
 		if r.is_empty():
 			continue
@@ -234,7 +243,7 @@ func _deliver_rain(recipe: SpellRecipe, hit: SpellHit) -> void:
 		sub.resonant = hit.resonant and i == 0
 		sub.position = r["position"]
 		sub.normal = r["normal"]
-		sub.direction = Vector3.DOWN
+		sub.direction = (sub.position - sky).normalized()
 		var delay: float = 0.08 * i + _rng.randf() * 0.05
 		get_tree().create_timer(delay).timeout.connect(
 			func() -> void:

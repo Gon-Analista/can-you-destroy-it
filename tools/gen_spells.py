@@ -494,7 +494,7 @@ RECIPES = [
          cooldown=3.8, visual="vfx_star_rain", circle=(1.8, 0.9, 1.6), hot=(2.4, 2.1, 2.2), cast=["sfx_star_rain_01"],
          impact=["sfx_arcane_impact_01"], loop="amb_arcane_charge_loop", staff=True,
          tier=dict(damage=4, speed=55.0, wobble=0.0, shards_min=1, shards_max=2, impact_particles=30, light_energy=3.0,
-                   crack_radius=1.0, shake=0.08, orb_scale=4.5, trail_width=0.5, trail_length=0.35,
+                   crack_radius=1.0, shake=0.08, orb_scale=7.0, trail_width=1.0, trail_length=0.5,
                    core=(1, 0.95, 0.9), glow=(1, 0.55, 0.85), tint=(1, 0.8, 0.9),
                    ramp=[(2.8, 2.6, 2.4), (2.4, 1.6, 0.9), (1.8, 0.7, 1.4), (0.8, 0.3, 1.1), (0.25, 0.08, 0.4)])),
     dict(id="eruption", name="Erupción", elements=["spark", "earth", "earth"], delivery=5,
