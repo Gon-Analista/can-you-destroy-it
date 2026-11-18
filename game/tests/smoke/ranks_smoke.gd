@@ -227,7 +227,10 @@ func _in_game() -> void:
 		await process_frame
 	var vals: Array = screen.get(&"_vals")
 	_check(String((vals[6] as Label).text) == "x14", "el espejo enseña la mejor racha")
-	_check(String((vals[1] as Label).text).ends_with("/ 17"), "combinaciones x / total")
+	_check(
+		String((vals[1] as Label).text).ends_with("/ 22"),
+		"combinaciones x / total (parejas y triples)"
+	)
 	_check(String((vals[10] as Label).text) == "9", "el espejo enseña los bichos reventados")
 	_check(String((vals[0] as Label).text).contains("min"), "tiempo jugado en el espejo")
 	# Con el espejo abierto, B no abre el Libro de Hechizos encima y Esc lo cierra (no la pausa).

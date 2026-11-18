@@ -130,7 +130,9 @@ func _refresh() -> void:
 		_next.add_theme_color_override(&"font_color", nd.color)
 		_req.text = requirement_text(nd)
 	var found: int = 0
-	for r: SpellRecipe in SpellCaster.RECIPES:
+	var all: Array[SpellRecipe] = SpellCaster.RECIPES.duplicate()
+	all.append_array(StaffCombos.TRIPLES)  # parejas y triples del báculo, como el HUD
+	for r: SpellRecipe in all:
 		if prog.discovered_recipes.has(r.id):
 			found += 1
 	var max_levels: int = 0
@@ -140,7 +142,7 @@ func _refresh() -> void:
 	# i18n
 	var rows: Array[Array] = [
 		[tr("TIEMPO JUGADO"), time_text(prog.stats.play_time)],
-		[tr("COMBINACIONES"), "%d / %d" % [found, SpellCaster.RECIPES.size()]],
+		[tr("COMBINACIONES"), "%d / %d" % [found, all.size()]],
 		[tr("MEJORAS COMPRADAS"), "%d / %d" % [GameState.total_upgrade_levels(), max_levels]],
 		[tr("HECHIZOS LANZADOS"), Hud.format_int(prog.stats.tally(GameState.STAT_SPELLS))],
 		[tr("FRAGMENTOS RECOGIDOS"), Hud.format_int(prog.stats.tally(GameState.STAT_SHARDS))],
