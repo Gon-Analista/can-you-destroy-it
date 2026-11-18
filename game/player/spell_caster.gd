@@ -131,6 +131,7 @@ func _ready() -> void:
 	var echo_pool: Array[SparkProjectile] = []
 	for i: int in ECHO_PROJECTILE_POOL:
 		echo_pool.append(_make_projectile("Echo%d" % i))
+		echo_pool[i].prepare_combo(false)  # Los ecos del Eco de Fuego son bolas de fuego.
 	_echoes = SpellEchoes.new()
 	_echoes.name = "Echoes"
 	add_child(_echoes)

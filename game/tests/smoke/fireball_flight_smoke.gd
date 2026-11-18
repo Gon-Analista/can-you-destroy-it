@@ -35,6 +35,13 @@ func _run() -> void:
 		_check(
 			p.has_node(^"Meteor") and p.has_node(^"Fireball"), "%s ya lleva bola y roca" % p.name
 		)
+	# Los ecos del Eco de Fuego también vuelan como bola: la suya ya está creada (sin la roca).
+	var echoes: int = 0
+	for c: Node in caster.get_children():
+		if c is Node3D and c.name.begins_with("Echo") and c.has_method(&"prepare_combo"):
+			echoes += 1
+			_check(c.has_node(^"Fireball"), "%s ya lleva su bola" % c.name)
+	_check(echoes > 0, "hay proyectiles de eco")
 	var p: Node3D = combos[0]
 	var cam: Camera3D = caster.get(&"camera")
 	for i: int in 200:
@@ -66,6 +73,24 @@ func _run() -> void:
 			await create_timer(0.1).timeout
 		_check(not p.get(&"active") and not ball.visible, "nivel %d: llega y se apaga" % level)
 	_check(scales[1] > scales[0] * 1.2, "a nivel 10 es más grande (%s)" % [scales])
+	# La luz sobre el cristal se enciende al acercarse y se apaga al llegar (no se queda pegada).
+	var real: SpellHit = _hit(fireball, 5, to)
+	real.warmup = false
+	p.call(&"launch", from, to, real, null)
+	var lit: float = 0.0
+	for i: int in 80:
+		if not p.get(&"active"):
+			break
+		lit = maxf(lit, FireGlow.strength())
+		await process_frame
+	_check(lit > 0.3, "la bola tiñe el cristal al acercarse (%.2f)" % lit)
+	for i: int in 3:
+		await process_frame
+	_check(FireGlow.strength() == 0.0, "y la luz se apaga al llegar (%.2f)" % FireGlow.strength())
+	for i: int in 40:
+		if not p.get(&"active"):
+			break
+		await create_timer(0.1).timeout
 	p.call(&"launch", from, to, _hit(echo, 4, to), null)
 	_check(_count(p) == nodes_before, "lanzar no crea nodos (%d -> %d)" % [nodes_before, _count(p)])
 	var rock: Node = p.get_node(^"Meteor")

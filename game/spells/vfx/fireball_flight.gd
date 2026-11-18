@@ -155,7 +155,7 @@ func glow_crystal(target: Vector3) -> void:
 	var d: float = global_position.distance_to(target)
 	var k: float = 1.0 - smoothstep(4.0, GLOW_FROM, d)
 	var radius: float = _base * lerpf(14.0, 22.0, _level)
-	FireGlow.put(global_position, radius, _color, k * lerpf(0.65, 1.0, _level))
+	FireGlow.put(self, global_position, radius, _color, k * lerpf(0.65, 1.0, _level))
 	_glow_on = true
 
 
@@ -176,6 +176,11 @@ func stop() -> void:
 	set_process(false)
 
 
+func _exit_tree() -> void:
+	# Al reiniciar la escena con la bola en vuelo, el cristal nuevo no debe quedarse naranja.
+	_glow_off()
+
+
 func _process(delta: float) -> void:
 	if _release_t < 0.0:
 		return
@@ -193,7 +198,7 @@ func _process(delta: float) -> void:
 
 func _glow_off() -> void:
 	if _glow_on:
-		FireGlow.put(global_position, 1.0, _color, 0.0)
+		FireGlow.clear(self)
 		_glow_on = false
 
 

@@ -57,6 +57,8 @@ var _falls: bool = false
 ## Bola de Fuego (`SpellVisualDef.fireball_flight`): esfera de fuego en vez del orbe.
 var _fireball: FireballFlight
 var _ball_on: bool = false
+## Ancho de bola con el que se dimensionaron las brasas (-1: nunca): sólo se rehacen si cambia.
+var _embers_for: float = -1.0
 
 
 func _ready() -> void:
@@ -148,9 +150,10 @@ func launch(from: Vector3, to: Vector3, p_hit: SpellHit, collider: Object) -> vo
 	set_process(true)
 
 
-## Crea la roca del Meteoro y la Bola de Fuego si faltan (pantalla de carga: nunca al lanzar).
-func prepare_combo() -> void:
-	if _meteor == null:
+## Crea la Bola de Fuego y (con `meteor`) la roca del Meteoro si faltan; se llama al cargar,
+## nunca al lanzar. Los ecos no necesitan la roca: ningún eco es un Meteoro.
+func prepare_combo(meteor: bool = true) -> void:
+	if meteor and _meteor == null:
 		_meteor = MeteorRock.new()
 		_meteor.name = "Meteor"
 		add_child(_meteor)
@@ -225,7 +228,7 @@ func _process(delta: float) -> void:
 func _set_orb(def: SpellVisualDef) -> void:
 	_ball_on = def != null and def.fireball_flight
 	if _ball_on:
-		prepare_combo()
+		prepare_combo(false)
 		_fireball.setup(def)
 		if _orb:
 			_orb.visible = false
@@ -308,6 +311,9 @@ func _ball_size() -> float:
 ## Brasas y chispas a la escala del hechizo (`ball`: ancho de la Bola de Fuego en vuelo, m; 0 el
 ## resto): las de la bola, que vuela lejos y es enorme, tienen que verse y salir disparadas.
 func _size_embers(ball: float) -> void:
+	if absf(ball - _embers_for) < 0.001:
+		return
+	_embers_for = ball
 	var big: bool = ball > 0.0
 	(_embers.draw_pass_1 as QuadMesh).size = Vector2.ONE * (ball * 0.07 if big else 0.09)
 	var ribbon: RibbonTrailMesh = _sparks.draw_pass_1
