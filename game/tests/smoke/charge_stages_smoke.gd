@@ -146,21 +146,19 @@ func _check_circles() -> void:
 	circles.call(&"cancel")
 	await create_timer(0.5).timeout
 	_check(_visible(circles) == 0, "al cancelar se apagan")
-	circles.call(
-		&"charging_sky",
-		0.5,
-		4,
-		to,
-		Vector3.BACK,
-		to + Vector3(0, 40, 10),
-		Color.RED,
-		Color.WHITE,
-		2
+	var sky := to + Vector3(0, 40, 10)
+	circles.call(&"charging_sky", 0.05, 4, to, Vector3.BACK, sky, Color.RED, Color.WHITE, 2)
+	_check(
+		_visible(circles) == 1,
+		"cielo: el círculo del blanco marca dónde caerá desde el principio (%d)" % _visible(circles)
 	)
+	circles.call(&"charging_sky", 0.5, 4, to, Vector3.BACK, sky, Color.RED, Color.WHITE, 2)
 	_check(
 		_visible(circles) == 2,
-		"cielo, 4 círculos en 2 etapas: la 1.ª abre 2 (%d)" % _visible(circles)
+		"cielo, 4 círculos en 2 etapas: la 1.ª abre el primero del camino (%d)" % _visible(circles)
 	)
+	circles.call(&"charging_sky", 1.0, 4, to, Vector3.BACK, sky, Color.RED, Color.WHITE, 2)
+	_check(_visible(circles) == 4, "cielo: con la última, todos (%d)" % _visible(circles))
 	circles.call(&"release")
 	await create_timer(0.7).timeout
 	_check(_visible(circles) == 0, "al lanzar destellan y se apagan")
