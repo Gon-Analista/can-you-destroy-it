@@ -377,6 +377,8 @@ func _update_pickup(delta: float) -> void:
 			_pickup_cooldown = 0.4
 		else:
 			_collect(target)
+			# Recogido con la tecla: el aviso "[F] RECOGER" se va retirando (ver Hud).
+			GameState.progression.learn(&"pickup")
 	_update_telekinesis(delta)
 
 

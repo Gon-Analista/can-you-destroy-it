@@ -105,6 +105,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		and player_in_range()
 	):
 		get_viewport().set_input_as_handled()
+		GameState.progression.learn(&"grimoire")
 		Events.grimoire_requested.emit(true)
 
 

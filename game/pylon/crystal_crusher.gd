@@ -26,6 +26,8 @@ const CRUNCH_SFX: Array[AudioStream] = [
 	preload("res://audio/sfx/sfx_crunch_03.ogg"),
 	preload("res://audio/sfx/sfx_crunch_04.ogg"),
 ]
+## Cuándo se deja de explicar mantener / tocar F (ver `Guidance.prompt_mode`).
+const GUIDE: GuidanceDef = preload("res://data/ui/guidance.tres")
 const LEVER_SFX: AudioStream = preload("res://audio/sfx/sfx_lever_pull_01.ogg")
 const START_SFX: AudioStream = preload("res://audio/sfx/sfx_machine_start_01.ogg")
 const LOOP_SFX: AudioStream = preload("res://audio/sfx/amb_crusher_loop.ogg")
@@ -74,6 +76,8 @@ var _press_t: float = -1.0
 var _clink_gap: float = 0.0
 var _crunch_gap: float = 0.0
 var _was_pressed: bool = false
+## Esta pulsación ya ha echado algo a la tolva (cuenta como "aprendido" al soltar).
+var _fed_this_press: bool = false
 var _feed_timer: float = 0.0
 var _clink_chain: int = 0
 var _clink_timer: float = 0.0
@@ -145,21 +149,44 @@ func player_in_range() -> bool:
 	return d.length() <= use_radius
 
 
-## Texto para el HUD según lo que se puede hacer ahora.
+## Texto para el HUD según lo que se puede hacer ahora. Cada acción se explica sólo mientras el
+## jugador no la conoce; después queda la tecla pequeña (`prompt_icon`) o nada.
 func prompt() -> String:
 	if not player_in_range():
 		return ""
+	var feed: int = _mode(&"feed", GUIDE.feed_learn, GUIDE.feed_forget)
+	var lever: int = _mode(&"lever", GUIDE.lever_learn, GUIDE.lever_forget)
 	if _state != 0:
-		return tr("TRITURANDO...  %d") % _hopper.size()
+		return tr("TRITURANDO...  %d") % _hopper.size() if lever == Guidance.Prompt.FULL else ""
 	var bag: int = GameState.progression.bag_count()
 	var parts: PackedStringArray = []
-	if bag > 0:
+	if bag > 0 and feed == Guidance.Prompt.FULL:
 		parts.append(tr("MANTÉN [F] ECHAR (%d)") % bag)
-	if _hopper.size() > 0:
+	if _hopper.size() > 0 and lever == Guidance.Prompt.FULL:
 		parts.append(tr("TOCA [F] PALANCA (%d)") % _hopper.size())
 	if parts.is_empty():
-		return tr("TRAE CRISTALES PARA TRITURAR")
+		var nothing: bool = bag == 0 and _hopper.is_empty()
+		return (
+			tr("TRAE CRISTALES PARA TRITURAR") if nothing and feed == Guidance.Prompt.FULL else ""
+		)
 	return "  ·  ".join(parts)
+
+
+## Sin texto pero con algo que hacer aquí y una acción aún reciente: sólo la tecla.
+func prompt_icon() -> bool:
+	if not player_in_range() or _state != 0:
+		return false
+	var feed: int = _mode(&"feed", GUIDE.feed_learn, GUIDE.feed_forget)
+	var lever: int = _mode(&"lever", GUIDE.lever_learn, GUIDE.lever_forget)
+	var bag: int = GameState.progression.bag_count()
+	return (
+		(bag > 0 and feed == Guidance.Prompt.ICON)
+		or (not _hopper.is_empty() and lever == Guidance.Prompt.ICON)
+	)
+
+
+static func _mode(action: StringName, learn_at: int, forget_at: int) -> int:
+	return Guidance.prompt_mode(GameState.progression.times(action), learn_at, forget_at)
 
 
 ## Punto donde caen los cristales (la boca de la tolva).
@@ -248,6 +275,7 @@ func _update_input(delta: float) -> void:
 	if just_pressed:
 		_press_t = 0.0
 		_feed_timer = 0.0
+		_fed_this_press = false
 	if _press_t < 0.0:
 		return
 	if pressed:
@@ -268,10 +296,14 @@ func _update_input(delta: float) -> void:
 					pylon.launch_mote(type, hopper_mouth(), self)
 					Events.shard_sent_to_pylon.emit(type)
 					_toss_hands()
+					_fed_this_press = true
 	else:
 		# Tocar F (soltar enseguida): tirar de la palanca.
 		if _press_t < TAP_SEC:
-			pull_lever()
+			if pull_lever():
+				GameState.progression.learn(&"lever")
+		elif _fed_this_press:
+			GameState.progression.learn(&"feed")
 		_press_t = -1.0
 		_hold_t = 0.0
 

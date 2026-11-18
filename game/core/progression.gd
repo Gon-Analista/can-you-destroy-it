@@ -23,6 +23,9 @@ var geodes: Dictionary[int, int] = {}
 var hut_door_open: bool = false
 ## Paso del tutorial del principio (ver Tutorial.Step; 8 = terminado).
 var tutorial_step: int = 0
+## Veces que el jugador ya ha hecho cada acción con su tecla (recoger, echar a la tolva, palanca,
+## abrir el Grimorio...). Con eso el HUD deja de repetir instrucciones que ya se saben.
+var learned: Dictionary[StringName, int] = {}
 
 
 func _init(p_total_essence: int) -> void:
@@ -139,6 +142,18 @@ func pylon_ratio() -> float:
 	return float(pylon_progress) / float(total_essence)
 
 
+## Suma una vez la acción `key` (ver `learned`) y devuelve cuántas van.
+func learn(key: StringName) -> int:
+	var n: int = learned.get(key, 0) + 1
+	learned[key] = n
+	return n
+
+
+## Cuántas veces se ha hecho la acción `key`.
+func times(key: StringName) -> int:
+	return learned.get(key, 0)
+
+
 func is_crystal_destroyed() -> bool:
 	return essence <= 0
 
@@ -155,6 +170,7 @@ func to_dict() -> Dictionary:
 		"geodes": geodes.duplicate(),
 		"hut_door_open": hut_door_open,
 		"tutorial_step": tutorial_step,
+		"learned": learned.duplicate(),
 	}
 
 
@@ -173,6 +189,10 @@ func load_dict(data: Dictionary) -> void:
 	deepest_layer = maxi(int(data.get("deepest_layer", 0)), 0)
 	hut_door_open = bool(data.get("hut_door_open", false))
 	tutorial_step = int(data.get("tutorial_step", 8 if pylon_progress > 0 else 0))
+	learned.clear()
+	var saved_learned: Dictionary = data.get("learned", {})
+	for key: Variant in saved_learned:
+		learned[StringName(str(key))] = maxi(int(saved_learned[key]), 0)
 	geodes.clear()
 	var saved_geodes: Dictionary = data.get("geodes", {})
 	for key: Variant in saved_geodes:
