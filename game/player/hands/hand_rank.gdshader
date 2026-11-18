@@ -26,6 +26,10 @@ void vertex() {
 	v_mod = COLOR;
 }
 
+bool is_gold(vec4 c) {
+	return c.a > 0.5 && c.r > 0.3 && c.r > c.b * 3.0 && c.g > c.b * 1.5;
+}
+
 bool is_sleeve(vec4 c, float y) {
 	return c.a > 0.5 && y > SLEEVE_TOP && distance(c.rgb, SLEEVE) < 0.08;
 }
@@ -51,8 +55,8 @@ void fragment() {
 		if (prismatic > 0.5) {
 			tint = mix(hue(t * 0.25 + local.y * 0.04), vec3(1.0), 0.35);
 		}
-		// Sombra, medio y brillo de la gema original, con el color nuevo.
-		rgb = mix(tint * 0.45, mix(tint, vec3(1.0), 0.6), smoothstep(0.25, 0.75, lum));
+		// Sombra, medio y brillo de la gema original (tres tonos), con el color nuevo.
+		rgb = lum < 0.42 ? tint * 0.55 : (lum < 0.65 ? tint : mix(tint, vec3(1.0), 0.6));
 		rgb = mix(rgb, vec3(1.0), flash * 0.8);
 	} else if (is_sleeve(c, local.y)) {
 		// Tela nueva (blanco = la de siempre).
@@ -60,21 +64,26 @@ void fragment() {
 		vec2 px = TEXTURE_PIXEL_SIZE;
 		vec4 up1 = texture(TEXTURE, UV - vec2(0.0, px.y));
 		vec4 up2 = texture(TEXTURE, UV - vec2(0.0, px.y * 2.0));
-		bool trim = !is_sleeve(up1, local.y - 1.0) || !is_sleeve(up2, local.y - 2.0);
-		if (trim && trim_color.a > 0.0) {
+		vec4 up3 = texture(TEXTURE, UV - vec2(0.0, px.y * 3.0));
+		vec4 up4 = texture(TEXTURE, UV - vec2(0.0, px.y * 4.0));
+		// Ribete justo bajo el brazalete (oro encima, quizá tras su línea negra), no bajo los
+		// pliegues de la manga.
+		bool top = !is_sleeve(up1, local.y - 1.0) && (is_gold(up1) || is_gold(up2) || is_gold(up3));
+		bool second = !top && !is_sleeve(up2, local.y - 2.0)
+				&& (is_gold(up2) || is_gold(up3) || is_gold(up4));
+		if ((top || second) && trim_color.a > 0.0) {
 			// Ribete de dos píxeles: claro arriba, oscuro abajo.
-			bool top = !is_sleeve(up1, local.y - 1.0);
 			rgb = top ? trim_color.rgb : trim_color.rgb * 0.62;
 		} else if (rune_color.a > 0.0) {
 			// Runas en el puño: un glifo de 3 x 4 por celda de 5 x 6 (bits del hash de la celda).
 			vec2 cell = floor(local / vec2(5.0, 6.0));
 			vec2 in_cell = local - cell * vec2(5.0, 6.0);
 			float band = local.y - SLEEVE_TOP;
-			if (band > 8.0 && band < 32.0 && in_cell.x >= 1.0 && in_cell.x <= 3.0
+			if (band > 22.0 && band < 52.0 && in_cell.x >= 1.0 && in_cell.x <= 3.0
 					&& in_cell.y >= 1.0 && in_cell.y <= 4.0) {
 				float bit = (in_cell.y - 1.0) * 3.0 + (in_cell.x - 1.0);
 				float h = hash(cell);
-				float on = step(0.5, fract(h * exp2(bit + 1.0)));
+				float on = step(0.5, fract(h * exp2(bit + 1.0))) * step(0.35, hash(cell + 7.0));
 				float pulse = 0.65 + 0.35 * sin(t * 2.5 + cell.x * 1.7 + cell.y * 0.9);
 				rgb = mix(rgb, rune_color.rgb * pulse, on * rune_color.a);
 			}

@@ -5,10 +5,10 @@ extends Node3D
 ## gira, motas que suben en espiral y una luz que baña el valle cercano. Sigue al mago mientras
 ## dura (`DURATION`). Se crea una vez (RankCeremony) y se reutiliza.
 
-const PILLAR_SHADER: Shader = preload("res://pylon/pylon_pillar.gdshader")
+const COLUMN_SHADER: Shader = preload("res://fx/hd/rank_column.gdshader")
 const CIRCLE_SHADER: Shader = preload("res://fx/hd/hd_magic_circle.gdshader")
 const HEIGHT: float = 90.0
-const RADIUS: float = 1.7
+const RADIUS: float = 3.2
 const DURATION: float = 4.6
 
 ## El mago (el aura va a sus pies).
@@ -33,9 +33,8 @@ func _ready() -> void:
 
 ## Enciende el aura con los colores de `def`.
 func play(def: RankDef) -> void:
-	_pillar_mat.set_shader_parameter("color_core", def.color_light)
-	_pillar_mat.set_shader_parameter("color_edge", def.color)
-	_pillar_mat.set_shader_parameter("color_top", def.color_light.lerp(Color.WHITE, 0.4))
+	_pillar_mat.set_shader_parameter("color", def.color)
+	_pillar_mat.set_shader_parameter("color_hot", def.color_light)
 	_circle_mat.set_shader_parameter("color", def.color)
 	_circle_mat.set_shader_parameter("color_hot", def.color_light)
 	_circle_mat.set_shader_parameter("rune_seed", float(def.emblem) + 3.0)
@@ -65,14 +64,16 @@ func _process(delta: float) -> void:
 	var rise: float = clampf(_t / 0.35, 0.0, 1.0)
 	var fade: float = 1.0 - smoothstep(0.55, 1.0, k)
 	_pillar_mat.set_shader_parameter("reach", rise)
-	_pillar_mat.set_shader_parameter("intensity", (0.55 + 0.45 * (1.0 - rise)) * fade)
-	_pillar.scale = Vector3(1.0 + 0.6 * (1.0 - rise), 1.0, 1.0 + 0.6 * (1.0 - rise))
+	# Entra con un golpe de luz y se queda suave (el mago está dentro: no debe tapar la vista).
+	var punch: float = maxf(0.0, 1.0 - _t * 2.5)
+	_pillar_mat.set_shader_parameter("intensity", (0.2 + 0.45 * punch) * fade)
+	_pillar.scale = Vector3(1.0 + 0.4 * punch, 1.0, 1.0 + 0.4 * punch)
 	_circle_mat.set_shader_parameter("appear", clampf(_t / 0.6, 0.0, 1.0))
 	_circle_mat.set_shader_parameter("spin", _t * 0.9)
 	_circle_mat.set_shader_parameter("flash", maxf(0.0, 1.0 - _t * 2.0))
 	_circle_mat.set_shader_parameter("fade", fade)
 	_circle.scale = Vector3.ONE * (0.6 + 0.4 * (1.0 - pow(1.0 - clampf(_t / 0.5, 0.0, 1.0), 3.0)))
-	_light.light_energy = (6.0 * maxf(0.0, 1.0 - _t * 1.5) + 2.0) * fade * HdFx.flash_scale
+	_light.light_energy = (2.0 * maxf(0.0, 1.0 - _t * 1.5) + 0.8) * fade * HdFx.flash_scale
 	if k >= 1.0:
 		_t = -1.0
 		visible = false
@@ -86,7 +87,7 @@ func _follow() -> void:
 
 func _build() -> void:
 	var cyl := CylinderMesh.new()
-	cyl.top_radius = RADIUS * 1.6
+	cyl.top_radius = RADIUS * 1.25
 	cyl.bottom_radius = RADIUS
 	cyl.height = HEIGHT
 	cyl.radial_segments = 20
@@ -97,7 +98,7 @@ func _build() -> void:
 	_pillar.name = "Pillar"
 	_pillar.mesh = cyl
 	_pillar_mat = ShaderMaterial.new()
-	_pillar_mat.shader = PILLAR_SHADER
+	_pillar_mat.shader = COLUMN_SHADER
 	_pillar_mat.render_priority = 3
 	_pillar_mat.set_shader_parameter("height", HEIGHT)
 	_pillar.material_override = _pillar_mat
@@ -121,8 +122,8 @@ func _build() -> void:
 	var pm: ParticleProcessMaterial = _embers.process_material
 	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_RING
 	pm.emission_ring_axis = Vector3.UP
-	pm.emission_ring_radius = RADIUS * 1.1
-	pm.emission_ring_inner_radius = RADIUS * 0.7
+	pm.emission_ring_radius = RADIUS * 0.9
+	pm.emission_ring_inner_radius = RADIUS * 0.4
 	pm.emission_ring_height = 0.4
 	pm.direction = Vector3.UP
 	pm.spread = 8.0
