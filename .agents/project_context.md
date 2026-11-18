@@ -272,6 +272,8 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-17 | Venas Resonantes (`CrystalVeins`, `CrystalLayerDef.vein_*`): elemento débil por sector, x2 de daño y Fragmentos Resonantes por valor de la mitad del daño (`vein_bonus`). | GDD 6.1 ("premia combinar"); proporcional al daño para que no rompa la economía (maná = esencia). |
 | 2026-11-17 | Pureza multiplica sólo el maná (`GameState.shard_value`); el Pilón suma el valor sin Pureza (`Progression.deliver(value, pylon_value)`). | El Pilón es la barra de victoria y debe ir con el cristal; la Pureza es la moneda extra de la rama del Pilón (GDD 7). |
 | 2026-11-17 | `SpellHit.by_player = false` en golpes de familiares y del rayo del Pilón: no tocan racha, cámara, mirilla, levitación ni avisos. | Lo automático no debe sentirse como el jugador. |
+| 2026-11-18 | Carga por etapas en las combinaciones (`ChargeStages`, `BalanceConfig.charge_stages_by_level`): el daño va por el último escalón completado sobre la curva de siempre; el tiempo extra de cargar sale de la recarga. | Pedido del equipo: cada círculo mágico es un escalón con sonido y golpe; misma potencia media para no mover el balance. |
+| 2026-11-18 | Sombras del sol con `shadow_reverse_cull_face` y sin pancake. | El suelo se sombreaba a sí mismo con el sol alto (rayas que bailaban con la sacudida de cámara) y el valle quedaba negro al amanecer. Un cartel o plano de una cara que deba hacer sombra necesita `SHADOW_CASTING_SETTING_DOUBLE_SIDED`. |
 
 ## 10. Preguntas abiertas
 

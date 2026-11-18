@@ -2,6 +2,36 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-18 · Fuego nuevo, meteorito de verdad, carga por etapas y suelo sin rayas
+
+**Qué hay nuevo** (lo que pidió el equipo al probar)
+
+- **Fuego por capas** (`fx/hd/hd_fire.gdshader`): borde rojo oscuro, rojo, naranja y amarillo con un núcleo
+  blanco pequeño (lo único que brilla). Ya no se corta en línea recta arriba (se apaga antes del borde del quad),
+  las lenguas salen en la dirección del movimiento y el humo tiene volumen sin ser una mancha gris. Los halos de
+  fuego tiñen el fondo en vez de quemarlo a blanco (`hd_glow` `cover`). La Bola de Fuego entre las manos va más
+  baja y compacta y no tapa la mira; en vuelo sus llamas van hacia arriba.
+- **Meteorito** (Chispa + Tierra): una roca que gira con grietas de lava (`MeteorRock`), cola de cometa, humo y
+  gotas de lava; entra alto sobre el cristal y de lado (`SkyPath`, comprobando que no atraviesa el cristal),
+  acelera al caer, destella en el cielo con un tintineo, silba y revienta con bola de fuego, onda, polvo,
+  escombros, cráter que brilla y un estruendo grave (`tools/sfx_meteor.py`).
+- **Carga por etapas** (`spells/charge_stages.gd`, `player/charge_feedback.gd`): al juntar las manos la carga va
+  por escalones, un círculo mágico por escalón (`BalanceConfig.charge_stages_by_level`: 1 a nivel 2, 5 a nivel
+  10). Cada escalón suena (campana de cristal más aguda cada vez; el último, un acorde de "máxima potencia"),
+  destella, da un golpe de cámara con pulso de FOV, las manos retroceden y brillan y se enciende un rombo bajo la
+  mira. El daño va por el último escalón completado; el tiempo de más de una carga larga sale de la recarga.
+  Cancelar (pausa, Grimorio, Libro, perder el foco) no gasta la recarga.
+- **Suelo sin rayas ni parpadeo**: las sombras del sol tenían "acné" con el sol alto (el suelo se sombreaba a sí
+  mismo y, con la sacudida de cámara de cada hechizo, casi la mitad de sus píxeles cambiaban cada fotograma) y
+  "pancaking" al amanecer (todo el valle negro). Arreglado con `shadow_reverse_cull_face` y sin pancake
+  (`DayNight._setup_sun_shadows`).
+
+**Pruebas**: nuevas `charge_stages_smoke` y `meteor_smoke`; laboratorio de fuego en `tests/vfx_gallery/fire_lab`.
+Todas en verde.
+
+**Sigue en marcha**: fuente más legible, menú debug (Alt+F1), opciones con FOV, tutorial que guía y el balance
+final.
+
 ## 2026-11-17 · Venas Resonantes, la rama del Pilón y un valle que celebra
 
 **Qué hay nuevo** (GDD 6, 6.1, 4.2 y 7; oleada 1 del GDD)

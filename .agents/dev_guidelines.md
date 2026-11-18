@@ -52,6 +52,8 @@ Tecnologías ya previstas (validar la versión al integrarlas):
 | Balance | `tools/balance_sim.py` | Simula la partida con los datos reales; ver sección 8. |
 | SFX de combinaciones | `tools/sfx_combos.py` (rayo, roca, trueno, meteoro, terremoto, magnetismo, lanza, plasma, cargas) | Semillas fijas. |
 | SFX de venas y Pilón | `tools/sfx_veins.py` (campanas de vena, carga y rayo del Pilón, coro de los hitos) | Semillas fijas. |
+| SFX de la carga por etapas | `tools/sfx_charge_stages.py` (campana por escalón en pentatónica de La, acorde de máxima potencia) | Semillas fijas. |
+| SFX del meteorito | `tools/sfx_meteor.py` (destello en el cielo, silbido de caída, estruendo) | Semillas fijas. |
 | SFX de familiares | `tools/sfx_familiars.py` (ululatos, píos, aleteo, recoger, invocar) | Semillas fijas. |
 | SFX de movimiento | `tools/sfx_move.py` (doble salto, levitación en bucle, carga agotada) | Semillas fijas. |
 | SFX de la casucha | `tools/sfx_hut.py` (puerta, viento, revelación, ambiente de dentro) | Igual que el resto: semillas fijas. |
@@ -310,6 +312,9 @@ godot --headless --path game --script res://tests/smoke/progression_smoke.gd
   `tests/smoke/arcane_smoke.gd`, el Arcano, sus ecos, la Gravedad y la Resonancia Arcana;
   `tests/smoke/familiars_smoke.gd`, los familiares recolectores y hechiceros, la tolva y la palanca;
   `tests/smoke/veins_pylon_smoke.gd`, las venas, la Pureza, los hitos y el rayo del Pilón;
+  `tests/smoke/charge_stages_smoke.gd`, los escalones de carga por nivel, que cada uno suena una vez y que el
+  daño no baja al subir de escalón;
+  `tests/smoke/meteor_smoke.gd`, la trayectoria del meteorito (entra alto, de lado y sin atravesar el cristal);
   `tests/smoke/crystal_volume_smoke.gd`, que el volumen del cristal reparte el 1.000.000, se excava, respeta el
   Núcleo, se malla y se guarda.
 - Ojo en los tests `--script`: los autoloads no existen al compilar el script, así que no se pueden nombrar
