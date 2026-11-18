@@ -3,8 +3,9 @@ extends Control
 ## Estadísticas del Espejo del Archimago (GDD 4.3): se abre con F junto al espejo del Santuario.
 ## Un espejo alto con marco de oro en arco; en el cristal, el escudo y el nombre del rango, qué
 ## pide el siguiente con su barra, y las cifras de la partida (tiempo jugado, combinaciones,
-## mejoras, hechizos, fragmentos, maná, racha, geodas, venas...), que aparecen una a una con un
-## tic. Un brillo cruza el cristal cada pocos segundos. F, Esc o Tab lo cierran.
+## mejoras, hechizos, fragmentos, maná, racha, geodas, venas, bichos...), que aparecen una a
+## una con un tic; el tiempo jugado sigue corriendo mientras está abierto. Un brillo cruza el
+## cristal cada pocos segundos. F, Esc o Tab lo cierran.
 
 const OPEN_SFX: AudioStream = preload("res://audio/sfx/sfx_mirror_open_01.ogg")
 const CLOSE_SFX: AudioStream = preload("res://audio/sfx/sfx_mirror_close_01.ogg")
@@ -21,11 +22,15 @@ const C_SOFT := Color("#a5b4e6")
 const FRAME := Rect2(170, 8, 300, 344)
 const GLASS := Rect2(178, 22, 284, 322)
 const ROW_Y: float = 153.0
-const ROW_H: float = 13.0
-const ROWS: int = 13
+const ROW_H: float = 12.0
+const ROWS: int = 14
 const BAR := Rect2(232, 130, 176, 4)
 ## Segundos entre una fila y la siguiente al abrir.
 const ROW_SEC: float = 0.045
+
+## El espejo es otro libro para el mago (bloquea manos y movimiento con `grimoire_opened`), pero
+## mirarlo no es ver las mejoras: mientras emite esas señales, la guía no las da por vistas.
+static var emitting_book_signal: bool = false
 
 var is_open: bool = false
 
@@ -43,6 +48,8 @@ var _footer: Label
 var _keys: Array[Label] = []
 var _vals: Array[Label] = []
 var _shown_rows: int = 0
+## Segundo jugado que enseña la primera fila (sólo se reescribe al cambiar).
+var _shown_sec: int = -1
 
 
 func _ready() -> void:
@@ -95,7 +102,9 @@ func open() -> void:
 	_shown_rows = 0
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	AudioDirector.play_sfx(OPEN_SFX, -3.0)
+	emitting_book_signal = true
 	Events.grimoire_opened.emit()
+	emitting_book_signal = false
 	_refresh()
 	set_process(true)
 
@@ -145,10 +154,12 @@ func _refresh() -> void:
 		[tr("GOLPES RESONANTES"), Hud.format_int(prog.stats.tally(GameState.STAT_RESONANT))],
 		[tr("GEODAS ROTAS"), Hud.format_int(prog.stats.tally(GameState.STAT_GEODES))],
 		[tr("VENAS GOLPEADAS"), Hud.format_int(prog.stats.tally(GameState.STAT_VEINS))],
+		[tr("BICHOS REVENTADOS"), Hud.format_int(prog.critters_popped)],
 		[tr("CAPA MÁS PROFUNDA"), tr(GameState.current_layer().display_name).to_upper()],
 		[tr("CRISTAL DESTRUIDO"), percent_text(destroyed)],
 		[tr("PILÓN DE MANÁ"), percent_text(prog.pylon_ratio())],
 	]
+	_shown_sec = floori(prog.stats.play_time)
 	for i: int in ROWS:
 		_keys[i].text = rows[i][0]
 		_vals[i].text = rows[i][1]
@@ -213,10 +224,16 @@ func _process(delta: float) -> void:
 			visible = false
 			set_process(false)
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+			emitting_book_signal = true
 			Events.grimoire_closed.emit()
+			emitting_book_signal = false
 			return
 	else:
 		_open_t = minf(0.3, _open_t + delta)
+	var sec: int = floori(GameState.progression.stats.play_time)
+	if sec != _shown_sec:
+		_shown_sec = sec
+		_vals[0].text = time_text(GameState.progression.stats.play_time)
 	# Las cifras aparecen una a una, con un tic.
 	var rows: int = clampi(floori((_t - 0.25) / ROW_SEC), 0, ROWS)
 	if rows > _shown_rows and not _closing:

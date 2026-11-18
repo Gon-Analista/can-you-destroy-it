@@ -4,7 +4,8 @@ extends SceneTree
 ##   Leyenda al final; nunca se salta un rango ni se baja;
 ## - en la partida: la subida se emite una sola vez, lanza la ceremonia, la música suma su capa y
 ##   las manos cambian; las cifras del Espejo se cuentan, se guardan y se cargan (con el rango y
-##   sin repetir la ceremonia); el espejo del Santuario abre sus estadísticas.
+##   sin repetir la ceremonia); el espejo del Santuario abre sus estadísticas (con los bichos
+##   reventados) y la guía de objetivos no lleva a él ni lo cuenta como ver el Grimorio.
 ## No toca la partida guardada.
 ## godot --headless --path game --script res://tests/smoke/ranks_smoke.gd
 
@@ -184,6 +185,26 @@ func _in_game() -> void:
 	await process_frame
 	_check(bool(mirror.call(&"player_in_range")), "el jugador está junto al espejo")
 	_check(String(mirror.call(&"prompt")) != "", "aviso [F] junto al espejo")
+	# La guía no lleva al espejo: con una mejora sin ver, junto al espejo, apunta al Santuario.
+	fresh.critters_popped = 9
+	fresh.mana = 1_000_000
+	fresh.seen_upgrades.clear()
+	var hud: Node = current_scene.get_node(HUD)
+	hud.call(&"set_intro", false)
+	(hud.get(&"tutorial") as Node).call(&"skip")
+	gs.call(&"emit_all")
+	var guide: Node = current_scene.get_node(HUD).find_child("Guide", true, false)
+	for i: int in 30:
+		await process_frame
+	var aim: Vector3 = guide.get(&"target")
+	_check(
+		int(guide.get(&"kind")) == Guidance.Kind.SANCTUM,
+		"con mejoras sin ver, la guía lleva al Santuario (%d)" % int(guide.get(&"kind"))
+	)
+	_check(
+		not aim.is_finite() or aim.distance_to(mirror.global_position) > 4.0,
+		"la guía no apunta al espejo"
+	)
 	var screen: Node = current_scene.get_node(HUD).get(&"mirror_screen")
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	var ev := InputEventAction.new()
@@ -201,12 +222,15 @@ func _in_game() -> void:
 	var vals: Array = screen.get(&"_vals")
 	_check(String((vals[6] as Label).text) == "x14", "el espejo enseña la mejor racha")
 	_check(String((vals[1] as Label).text).ends_with("/ 17"), "combinaciones x / total")
+	_check(String((vals[10] as Label).text) == "9", "el espejo enseña los bichos reventados")
+	_check(String((vals[0] as Label).text).contains("min"), "tiempo jugado en el espejo")
 	screen.call(&"close")
 	for i: int in 600:
 		await process_frame
 		if not bool(screen.get(&"is_open")):
 			break
 	_check(not bool(screen.get(&"is_open")), "se cierra")
+	_check(fresh.seen_upgrades.is_empty(), "mirar el espejo no da las mejoras por vistas")
 
 
 func _check(cond: bool, what: String) -> void:

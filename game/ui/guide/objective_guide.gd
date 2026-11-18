@@ -146,8 +146,11 @@ func _recheck_upgrades() -> void:
 			return
 
 
-## Al abrir o cerrar el Grimorio, lo que se puede pagar ya está visto.
+## Al abrir o cerrar el Grimorio, lo que se puede pagar ya está visto (el Espejo del Archimago no
+## cuenta: no enseña mejoras).
 func _mark_seen() -> void:
+	if MirrorScreen.emitting_book_signal:
+		return
 	var prog: Progression = GameState.progression
 	for n: UpgradeNode in GameState.UPGRADES:
 		if prog.purchase_block(n) == &"":
