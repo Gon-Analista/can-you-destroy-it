@@ -198,12 +198,17 @@ func _build_fireworks() -> void:
 		_fw_to.append(Vector3.ZERO)
 
 
-## Farolillos de papel que suben desde cada barrio de la aldea.
+## Farolillos de papel que suben desde cada barrio de la aldea y desde el borde del claro (los
+## de la aldea, tan lejos, apenas se veían).
 func _build_lanterns() -> void:
-	for site: Vector3 in LAUNCH_SITES:
+	var sites: Array[Vector3] = LAUNCH_SITES.duplicate()
+	sites.append_array(CLEARING_SITES)
+	for si: int in sites.size():
+		var site: Vector3 = sites[si]
+		var near: bool = si >= LAUNCH_SITES.size()
 		var p := GPUParticles3D.new()
 		p.name = "SkyLanterns"
-		p.amount = 40
+		p.amount = 18 if near else 40
 		p.lifetime = 45.0
 		p.local_coords = false
 		p.emitting = false
@@ -233,7 +238,7 @@ func _build_lanterns() -> void:
 		)
 		p.process_material = pm
 		var q := QuadMesh.new()
-		q.size = Vector2.ONE * 2.2
+		q.size = Vector2.ONE * (1.6 if near else 3.6)
 		q.material = HdFx.additive_particle_material(1.4)
 		p.draw_pass_1 = q
 		p.position = Vector3(site.x, Valley.ground_height(site.x, site.z) + 6.0, site.z)

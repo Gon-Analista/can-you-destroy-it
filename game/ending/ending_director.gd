@@ -37,6 +37,9 @@ var _tension_tween: Tween
 var _finale_tween: Tween
 ## Partida terminada cargada sin haber visto la pantalla final: sale al cerrar el título.
 var _screen_pending: bool = false
+## Segundos que la mirada se va sola (suave) hacia la columna de maná si no se ve (ver
+## _look_at_column); el ratón sigue mandando encima.
+var _look_t: float = 0.0
 
 
 func setup(main: Main, world: SubViewport, player: Player, hud: Hud, day_night: DayNight) -> void:
@@ -183,7 +186,10 @@ func _process(delta: float) -> void:
 	if _flash_k > 0.0:
 		_flash_k = maxf(0.0, _flash_k - delta / 1.1)
 		_flash.visible = _flash_k > 0.0
-		_flash.color.a = pow(_flash_k, 1.8) * 0.85 * HdFx.flash_scale
+		_flash.color.a = pow(_flash_k, 2.2) * 0.6 * HdFx.flash_scale
+	if _look_t > 0.0:
+		_look_t -= delta
+		_steer_view(delta)
 
 
 ## ¡El Núcleo estalla! El momento grande y, en cadena, la fiesta y la pantalla final.
@@ -212,6 +218,7 @@ func _on_struck(_at: Vector3) -> void:
 	var tree: SceneTree = get_tree()
 	tree.create_timer(1.2, false).timeout.connect(_pylon_full)
 	tree.create_timer(1.6, false).timeout.connect(_celebration.raise_column)
+	tree.create_timer(1.9, false).timeout.connect(_look_at_column)
 	tree.create_timer(2.2, false).timeout.connect(
 		func() -> void:
 			_set_tension(0.0, 3.0)
@@ -226,6 +233,34 @@ func _on_struck(_at: Vector3) -> void:
 	tree.create_timer(GameState.BALANCE.ending_screen_delay_sec, false).timeout.connect(
 		show_final_screen
 	)
+
+
+## Hacia dónde mirar para ver la columna de maná subir (su pie y el cielo).
+func _column_view_point() -> Vector3:
+	return _pylon.crown_position() + Vector3.UP * 38.0
+
+
+## La columna sale del Pilón, que suele quedar a un lado o detrás del Núcleo: si no se ve, la
+## mirada gira sola y despacio hacia ella un par de segundos (el gran momento no se pierde).
+func _look_at_column() -> void:
+	var cam: Camera3D = _player.get_camera()
+	var to: Vector3 = (_column_view_point() - cam.global_position).normalized()
+	if (-cam.global_basis.z).dot(to) < 0.85:
+		_look_t = 2.2
+
+
+func _steer_view(delta: float) -> void:
+	var cam: Camera3D = _player.get_camera()
+	var head: Node3D = cam.get_parent() as Node3D
+	var to: Vector3 = _column_view_point() - cam.global_position
+	var yaw: float = atan2(-to.x, -to.z)
+	var pitch: float = atan2(to.y, Vector2(to.x, to.z).length())
+	# Arranca y acaba suave; el ratón del jugador sigue sumando encima.
+	var w: float = sin(clampf(_look_t / 2.2, 0.0, 1.0) * PI)
+	var k: float = 1.0 - exp(-delta * 3.2 * w)
+	_player.rotation.y = lerp_angle(_player.rotation.y, yaw, k)
+	if head:
+		head.rotation.x = lerpf(head.rotation.x, clampf(pitch, -1.2, 1.2), k)
 
 
 ## La pantalla final, sin las manos delante (vuelven al seguir en el valle).
