@@ -82,6 +82,8 @@ var _combos: CrystalCombos
 ## Venas Resonantes: golpes con el elemento débil de cada vena (ver CrystalVeins).
 var _veins: CrystalVeins
 var _geodes: CrystalGeodes
+## Lágrimas del Núcleo y nodos del Núcleo en el Corazón (ver CoreTears).
+var _tears: CoreTears
 var _shards: ShardPool
 var _fx: ImpactFx
 var _hd_fx: HdImpact
@@ -173,6 +175,10 @@ func _ready() -> void:
 	_veins.name = "Veins"
 	add_child(_veins)
 	_veins.setup(self, _arcs, _shards)
+	_tears = CoreTears.new()
+	_tears.name = "CoreTears"
+	_tears.setup(self)
+	add_child(_tears)
 	_arcs.setup_ambient(
 		global_position + Vector3(0.0, volume.top * 0.4, 0.0),
 		Vector3(
@@ -343,6 +349,7 @@ func receive_hit(hit: SpellHit) -> void:
 	_combos.check_temper(hit)
 	_geodes.check_hit(hit)
 	_veins.apply(hit)
+	_tears.apply(hit)
 	var removed: float = _dig(
 		hit.position, hit.normal, float(hit.damage), hit.recipe != null, hit.size
 	)
@@ -408,6 +415,7 @@ func receive_hit(hit: SpellHit) -> void:
 	_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.size)
 	_crystal_reacts(hit)
 	_veins.react(hit)
+	_tears.react(hit)
 	if hit.resonant or hit.recipe != null or _now - _last_hd >= 0.12:
 		_last_hd = _now
 		_hd_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.recipe != null, hit.size)
@@ -676,6 +684,7 @@ func _allowed_mask(combo: bool) -> int:
 ## El golpe rebota: chispazo, "clonk" grave y, de vez en cuando, por qué.
 func _too_hard(hit: SpellHit) -> void:
 	var layer: CrystalLayerDef = GameState.LAYERS[_hit_layer]
+	_tears.react_hard(hit, _hit_layer)
 	_hits[_hit_index] = Vector4(hit.position.x, hit.position.y, hit.position.z, _now)
 	_hit_resonant[_hit_index] = 0.0
 	_hit_index = (_hit_index + 1) % MAX_HITS

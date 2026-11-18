@@ -231,6 +231,32 @@ func _setup_autoplay() -> void:
 			get_tree().create_timer(0.4).timeout.connect(
 				_hud.tutorial.jump_to.bind(int(a.get_slice("=", 1)))
 			)
+		elif a.begins_with("--tears="):
+			# --tears=N: Lágrimas del Núcleo para gastar (página del Núcleo del Grimorio).
+			GameState.progression.tears = int(a.get_slice("=", 1))
+			GameState.progression.tears_total = maxi(GameState.progression.tears_total, 1)
+		elif a.begins_with("--destroyed="):
+			# --destroyed=0.99: el cristal ya destruido a esa fracción (sólo la cuenta de esencia).
+			var prog: Progression = GameState.progression
+			prog.essence = roundi(prog.total_essence * (1.0 - float(a.get_slice("=", 1))))
+		elif a == "--tear-pity":
+			# --tear-pity: el siguiente combinado en el Corazón suelta una Lágrima seguro.
+			GameState.progression.tear_pity = 1.0e6
+		elif a == "--heart-close":
+			# --heart-close (con --layer=3): dentro del túnel, a unos metros del fondo del Corazón.
+			get_tree().create_timer(1.0).timeout.connect(_demo_heart_close)
+		elif a.begins_with("--tear-drop="):
+			# --tear-drop=s: a los s segundos brota una Lágrima donde mira la cámara (en el cristal).
+			get_tree().create_timer(float(a.get_slice("=", 1))).timeout.connect(_demo_tear_drop)
+		elif a.begins_with("--tear-pick="):
+			# --tear-pick=s: a los s segundos mantiene F 0,4 s (recoger la Lágrima apuntada).
+			var tp: float = float(a.get_slice("=", 1))
+			get_tree().create_timer(tp).timeout.connect(
+				func() -> void: Input.action_press(&"interact")
+			)
+			get_tree().create_timer(tp + 0.4).timeout.connect(
+				func() -> void: Input.action_release(&"interact")
+			)
 		elif a.begins_with("--time="):
 			_day_night.time_of_day = float(a.get_slice("=", 1))
 		elif a.begins_with("--warp="):
@@ -530,6 +556,34 @@ func _demo_vein(sector: int) -> void:
 		caster.hand_element[0] = sector
 		caster.hand_element[1] = sector
 		caster.set_tier(caster.tier_index)
+
+
+func _demo_tear_drop() -> void:
+	var cam: Camera3D = _player.get_camera()
+	var from: Vector3 = cam.global_position
+	var q := PhysicsRayQueryParameters3D.create(from, from - cam.global_basis.z * 60.0, 1 << 1)
+	var r: Dictionary = _player.get_world_3d().direct_space_state.intersect_ray(q)
+	var tears: CoreTears = get_tree().get_first_node_in_group(&"core_tears") as CoreTears
+	if not r.is_empty() and tears:
+		tears.drop(r["position"], r["normal"])
+
+
+## Demo (`--heart-close`): el mago dentro del túnel de `--layer=3`, mirando al fondo.
+func _demo_heart_close() -> void:
+	var mc: MotherCrystal = _world.get_node(^"MotherCrystal")
+	var ray: Array[Vector3] = CrystalDemo.tunnel_ray(mc, TearDrops.HEART_LAYER)
+	# El túnel está hueco desde la boca: el primer punto sólido del rayo es el fondo.
+	var t: float = 0.0
+	while t < 90.0 and not mc.volume.is_solid(ray[0] + ray[1] * t):
+		t += 0.4
+	var end: Vector3 = mc.to_global(ray[0] + ray[1] * t)
+	var stand: Vector3 = end - mc.global_basis * ray[1] * 7.0
+	_player.global_position = stand - Vector3.UP * 1.3
+	var to_end: Vector3 = end - stand
+	_player.rotation.y = atan2(-to_end.x, -to_end.z)
+	(_player.get_node(^"Head") as Node3D).rotation.x = atan2(
+		to_end.y, Vector2(to_end.x, to_end.z).length()
+	)
 
 
 ## Depuración y demo: túnel hasta la geoda más cercana y el jugador mirándola desde la boca.

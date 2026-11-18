@@ -45,3 +45,20 @@ var charge_stages_by_level: PackedInt32Array = PackedInt32Array([0, 1, 1, 2, 2, 
 @export var pylon_bolt_damage_max: int = 600
 ## Tiempo que el Pilón carga el rayo (brilla y zumba) antes de dispararlo.
 @export var pylon_bolt_charge_sec: float = 0.9
+
+@export_group("Lágrimas del Núcleo")
+## Esencia que arrancan de media los combinados del Corazón por cada Lágrima: un golpe de daño D
+## tiene D / tear_essence de probabilidad de soltar una (GDD 6.1). Ver tools/balance_sim.py.
+@export var tear_essence: float = 12000.0
+## Tope de esa probabilidad por golpe (un golpe enorme no da una Lágrima segura).
+@export_range(0.0, 1.0) var tear_chance_max: float = 0.35
+## Segundos de buen juego en el Corazón sin Lágrima tras los que la siguiente sale seguro.
+@export var tear_pity_sec: float = 100.0
+## Entre dos golpes al Corazón cuenta como buen juego como mucho esto (pasear no carga la
+## piedad).
+@export var tear_active_gap_sec: float = 6.0
+## Con el Núcleo expuesto y sin Lágrimas para la Gran Convergencia, el Núcleo llora una cada
+## tantos segundos de golpes combinados (nunca se queda la partida sin final).
+@export var core_tear_pity_sec: float = 15.0
+## Fracción del cristal destruida con la que el Núcleo queda expuesto (último 1 %, GDD 9).
+@export_range(0.0, 1.0) var core_exposed_ratio: float = 0.99

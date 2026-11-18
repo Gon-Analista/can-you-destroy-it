@@ -33,7 +33,14 @@ const UPGRADES: Array[UpgradeNode] = [
 	preload("res://data/upgrades/familiar.tres"),
 	preload("res://data/upgrades/familiar_wings.tres"),
 	preload("res://data/upgrades/familiar_caster.tres"),
+	# Página del Núcleo: se pagan con Lágrimas del Núcleo (GDD 6.1 y 8).
+	preload("res://data/upgrades/core_eye.tres"),
+	preload("res://data/upgrades/heart_fracture.tres"),
+	preload("res://data/upgrades/grand_convergence.tres"),
+	preload("res://data/upgrades/heart_seer.tres"),
 ]
+## Nodo hito del final: al inscribirlo se puede lanzar la Gran Convergencia (GDD 9).
+const GRAND_CONVERGENCE: StringName = &"grand_convergence"
 
 ## Capas del Cristal Madre, de fuera a dentro (GDD 6).
 const LAYERS: Array[CrystalLayerDef] = [
@@ -45,6 +52,13 @@ const LAYERS: Array[CrystalLayerDef] = [
 ]
 
 var progression: Progression = Progression.new(BALANCE.total_essence)
+## True con el Núcleo expuesto: el cristal destruido al 99 % (`BalanceConfig.core_exposed_ratio`,
+## GDD 9). Desde ahí se ve y se puede inscribir la Gran Convergencia (nodo `grand_convergence`;
+## al inscribirlo, `Events.grand_convergence_unlocked` y `has_upgrade(GRAND_CONVERGENCE)`).
+var core_exposed: bool:
+	get:
+		var left: float = float(progression.total_essence) * (1.0 - BALANCE.core_exposed_ratio)
+		return float(progression.essence) <= left + 0.5
 
 
 ## Fracción del cristal ya destruida (0..1).
@@ -62,13 +76,22 @@ func current_layer() -> CrystalLayerDef:
 
 
 func hit_crystal(damage: int, at: Vector3) -> int:
+	var exposed: bool = core_exposed
 	var removed: int = progression.damage_crystal(damage)
 	if removed > 0:
 		Events.crystal_hit.emit(removed, at)
 		Events.essence_changed.emit(progression.essence, progression.total_essence)
+		if not exposed and core_exposed:
+			Events.grimoire_final_revealed.emit()
 		if progression.is_crystal_destroyed():
 			Events.crystal_destroyed.emit()
 	return removed
+
+
+## True si la mejora `id` tiene al menos un nivel (p. ej. &"grand_convergence": el hechizo final
+## ya se puede lanzar).
+func has_upgrade(id: StringName) -> bool:
+	return progression.get_level(id) > 0
 
 
 ## Valor actual de una estadística de mejora (p. ej. &"bag_capacity"), o `fallback`.
@@ -160,6 +183,10 @@ func buy_upgrade(node: UpgradeNode) -> bool:
 	Events.upgrade_bought.emit(node.id, progression.get_level(node.id))
 	Events.mana_changed.emit(progression.mana)
 	Events.bag_changed.emit(progression.bag_count(), bag_capacity())
+	if node.pays_with_tears():
+		Events.tears_changed.emit(progression.tears)
+	if node.id == GRAND_CONVERGENCE:
+		Events.grand_convergence_unlocked.emit()
 	return true
 
 
@@ -196,3 +223,4 @@ func emit_all() -> void:
 	Events.mana_changed.emit(progression.mana)
 	Events.pylon_changed.emit(progression.pylon_progress, progression.pylon_ratio())
 	Events.bag_changed.emit(progression.bag_count(), bag_capacity())
+	Events.tears_changed.emit(progression.tears)

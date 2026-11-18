@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="ShardType" format=3]
+
+[ext_resource type="Script" path="res://data/defs/shard_type.gd" id="1_t3ar0"]
+
+[resource]
+script = ExtResource("1_t3ar0")
+id = &"core_tear"
+display_name = "Lágrima del Núcleo"
+display_name_plural = "lágrimas del núcleo"
+min_damage = 0
+value = 0
+radius = 0.22
+height = 0.5
+tip = 0.3
+sides = 8
+pickup_pitch = 0.8
+launch_speed = 1.0

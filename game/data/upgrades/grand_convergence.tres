@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"grand_convergence"
+display_name = "Gran Convergencia"
+description = "La última página del Grimorio. Los cinco elementos en tus manos a la vez: el único hechizo que puede romper el Núcleo."
+branch = 2
+element = &"core"
+star_pos = Vector2i(118, 214)
+costs = PackedInt32Array(3)
+currency = 1
+reveal_destroyed_ratio = 0.99
+stat = &"grand_convergence"
+values = PackedFloat32Array(0, 1)
+value_format = "%s"
+level_names = PackedStringArray("Sellada", "Despierta")

@@ -254,6 +254,7 @@ func _build() -> void:
 	row = _row(box, tr("BOLSA"))
 	_button(row, tr("LLENAR"), _fill_bag)
 	_button(row, tr("VACIAR"), _empty_bag)
+	_button(row, tr("+3 LÁGRIMAS"), _add_tears)
 	# Niveles 1-5 y AUTO arriba, 6-10 debajo, en la misma rejilla.
 	row = _row(box, tr("HECHIZOS"))
 	var grid := GridContainer.new()
@@ -464,17 +465,23 @@ func buy_everything() -> void:
 	SaveSystem.enabled = false
 	var bought: int = 0
 	var progress: bool = true
+	# También la página del Núcleo (con Lágrimas) y la Gran Convergencia aunque aún no se vea.
+	prog.reveal_all = true
 	while progress:
 		progress = false
 		for node: UpgradeNode in GameState.UPGRADES:
-			while prog.purchase_block(node) == &"mana" or prog.purchase_block(node) == &"":
+			while prog.purchase_block(node) in [&"mana", &"tears", &""]:
 				var cost: int = node.cost_for_level(prog.get_level(node.id))
-				prog.mana += cost
+				var tears: bool = node.pays_with_tears()
+				prog.tears += cost if tears else 0
+				prog.mana += 0 if tears else cost
 				if not GameState.buy_upgrade(node):
-					prog.mana -= cost
+					prog.tears -= cost if tears else 0
+					prog.mana -= 0 if tears else cost
 					break
 				bought += 1
 				progress = true
+	prog.reveal_all = false
 	SaveSystem.enabled = saving
 	SaveSystem.save_game()
 	if _player:
@@ -491,6 +498,14 @@ func _add_mana(amount: int) -> void:
 	GameState.progression.mana += amount
 	Events.mana_changed.emit(GameState.progression.mana)
 	_feedback(tr("+%s MANÁ") % Hud.format_int(amount), MANA_SFX)
+
+
+## Lágrimas del Núcleo para probar la página del Núcleo.
+func _add_tears() -> void:
+	GameState.progression.tears += 3
+	GameState.progression.tears_total += 3
+	Events.tears_changed.emit(GameState.progression.tears)
+	_feedback(tr("+3 LÁGRIMAS DEL NÚCLEO"), MANA_SFX)
 
 
 func _fill_bag() -> void:

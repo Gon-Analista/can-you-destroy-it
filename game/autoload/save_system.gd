@@ -13,6 +13,9 @@ var _autosave: Timer
 
 
 func _ready() -> void:
+	# Una Lágrima del Núcleo es rara: se guarda en cuanto se recoge (save_game no hace nada si el
+	# guardado está apagado).
+	Events.tear_collected.connect(_on_tear_collected)
 	if not enabled:
 		return
 	load_game()
@@ -28,6 +31,10 @@ func _ready() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		save_game()
+
+
+func _on_tear_collected(_at: Vector3) -> void:
+	save_game()
 
 
 func save_game() -> bool:

@@ -54,6 +54,9 @@ var refill_flash: float = 0.0
 var _gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 var _shards: ShardPool
 var _target_shard: int = -1
+## Lágrimas del Núcleo (CoreTears): se recogen con F antes que cualquier fragmento.
+var _tears: CoreTears
+var _target_tear: int = -1
 var _pickup_cooldown: float = 0.0
 var _grab_point: Marker3D
 ## Con el Grimorio abierto el mago no se mueve ni mira.
@@ -255,6 +258,11 @@ func get_camera() -> Camera3D:
 	return _camera
 
 
+## Punto delante de la mano izquierda al que vuela lo que se recoge.
+func grab_point() -> Node3D:
+	return _grab_point
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if (
 		OS.is_debug_build()
@@ -348,6 +356,8 @@ func _update_pickup(delta: float) -> void:
 			return
 	var from: Vector3 = _camera.global_position
 	var forward: Vector3 = -_camera.global_basis.z
+	if _update_tear_pickup(from, forward, delta):
+		return
 	var query := PhysicsRayQueryParameters3D.create(
 		from, from + forward * pickup_range, ShardPool.SHARD_LAYER | 1 | (1 << 1)
 	)
@@ -379,6 +389,38 @@ func _update_pickup(delta: float) -> void:
 			# Recogido con la tecla: el aviso "[F] RECOGER" se va retirando (ver Hud).
 			GameState.progression.learn(&"pickup")
 	_update_telekinesis(delta)
+
+
+## Una Lágrima del Núcleo a la vista tiene prioridad: se resalta y F la recoge (no ocupa la
+## bolsa). Devuelve true si hay una apuntada (entonces no se miran los fragmentos).
+func _update_tear_pickup(from: Vector3, forward: Vector3, delta: float) -> bool:
+	if _tears == null:
+		_tears = get_tree().get_first_node_in_group(&"core_tears") as CoreTears
+		if _tears == null:
+			return false
+	var tear: int = _tears.target(from, forward, pickup_range * 1.6)
+	if tear < 0:
+		var ahead: Vector3 = global_position + Vector3(forward.x, 0.0, forward.z).normalized() * 1.2
+		tear = _tears.nearest(ahead, pickup_assist_radius * 1.4)
+	if tear != _target_tear:
+		_target_tear = tear
+		_tears.set_highlight(tear)
+		if tear >= 0 and _target_shard >= 0:
+			_target_shard = -1
+			_shards.set_highlight(-1)
+		Events.shard_targeted.emit(CoreTears.TEAR_TYPE if tear >= 0 else null)
+	if tear < 0:
+		return false
+	_pickup_cooldown = maxf(0.0, _pickup_cooldown - delta)
+	if not _locked and _pickup_cooldown <= 0.0 and Input.is_action_pressed(&"interact"):
+		_pickup_cooldown = pickup_repeat_sec * 2.0
+		_tears.collect(tear, _grab_point)
+		_hands.play_grab()
+		_camera.punch_fov(-2.5)
+		_target_tear = -1
+		Events.shard_targeted.emit(null)
+	_update_telekinesis(delta)
+	return true
 
 
 func _collect(index: int) -> void:

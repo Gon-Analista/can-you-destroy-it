@@ -13,10 +13,14 @@ const CLOSE_SFX: AudioStream = preload("res://audio/sfx/sfx_book_close_01.ogg")
 const TICK_SFX: AudioStream = preload("res://audio/sfx/sfx_ui_tick_01.ogg")
 const DENY_SFX: AudioStream = preload("res://audio/sfx/sfx_ui_deny_01.ogg")
 const BUY_SFX: AudioStream = preload("res://audio/sfx/sfx_upgrade_buy_01.ogg")
+const TEAR_BUY_SFX: AudioStream = preload("res://audio/sfx/sfx_tear_spend_01.ogg")
 
 const BOOK := Rect2i(70, 34, 500, 292)
 const LEFT_PAGE := Rect2i(80, 42, 236, 276)
 const RIGHT_PAGE := Rect2i(324, 42, 236, 276)
+## Última página: los nodos finales, pagados con Lágrimas del Núcleo (GDD 6.1). Se abre al llegar
+## al Corazón Cristalino; la Gran Convergencia sólo aparece con el Núcleo expuesto.
+const CORE_PAGE: StringName = &"core"
 ## Páginas del Grimorio: una constelación por elemento (y la del Mago, con lo general).
 ## [id del elemento ("" = Mago), nombre, color del título, cielo, cielo profundo, se abre con
 ## el Pilón al...].
@@ -28,6 +32,7 @@ const PAGES: Array[Array] = [
 	[&"bolt", "RAYO", "#ffe66b", "#2a2450", "#1b1838", 0.25],
 	[&"earth", "TIERRA", "#c9a26b", "#2e2a24", "#1f1c18", 0.5],
 	[&"arcane", "ARCANO", "#c79bff", "#24164a", "#170e33", 0.75],
+	[CORE_PAGE, "NÚCLEO", "#ff7ad9", "#1e0c33", "#12061f", 0.8],
 ]
 # i18n
 const PAGE_TITLES: PackedStringArray = [
@@ -37,8 +42,9 @@ const PAGE_TITLES: PackedStringArray = [
 	"CONSTELACIÓN DEL RAYO",
 	"CONSTELACIÓN DE LA TIERRA",
 	"CONSTELACIÓN DEL ARCANO",
+	"CONSTELACIÓN DEL NÚCLEO",
 ]
-const TAB_W: int = 36
+const TAB_W: int = 31
 const SMALL: int = UiFonts.SMALL
 const LINE: int = UiFonts.LINE
 ## Primera línea de la descripción de la página derecha (debajo, AHORA y SIGUIENTE se colocan
@@ -64,263 +70,7 @@ const C_LOCKED := Color("#4a4f80")
 const C_PINK := Color("#ff7ad9")
 const C_RED := Color("#c8423a")
 const C_SHADOW := Color("#14183a")
-
-## Iconos de cada rama (8x8): '#' color, '+' brillo, '.' vacío.
-## Mejoras de Tamaño: una bolita que se hace grande.
-const SIZE_ICON: PackedStringArray = [
-	"....####", "...#++##", "..#++###", ".#.#####", "#.#.####", ".#..###.", "#.#.....", ".#......"
-]
-const ICONS: Dictionary[StringName, PackedStringArray] = {
-	&"spark_size": SIZE_ICON,
-	&"fireball_size": SIZE_ICON,
-	&"frost_size": SIZE_ICON,
-	&"thermal_size": SIZE_ICON,
-	&"purity":
-	[
-		"...#....",
-		"..#+#...",
-		".#+++#..",
-		"#++++##.",
-		"#+++###.",
-		"#++####.",
-		".#####..",
-		"..###..."
-	],
-	&"pylon_resonance":
-	[
-		"#..#..#.",
-		".#.#.#..",
-		"..###...",
-		"..#+#...",
-		"..#+#...",
-		"..#+#...",
-		".#####..",
-		"#######."
-	],
-	&"crystal_impulse":
-	[
-		"...##...",
-		"..#++#..",
-		".#++++#.",
-		"..#++#..",
-		"...##...",
-		".#.##.#.",
-		"..####..",
-		"...##..."
-	],
-	&"bag":
-	[
-		"..##.#..",
-		".#..#...",
-		"..####..",
-		".######.",
-		"##+#####",
-		"#+######",
-		"########",
-		".######."
-	],
-	&"spark_power":
-	[
-		"...#....",
-		"...##...",
-		"..###.#.",
-		".#####..",
-		".##+###.",
-		"##+++###",
-		"##+++##.",
-		".#####.."
-	],
-	&"channeling":
-	[
-		"########",
-		".#++++#.",
-		"..#++#..",
-		"...##...",
-		"...##...",
-		"..#..#..",
-		".#.++.#.",
-		"########"
-	],
-	&"resonance":
-	[
-		"...##...",
-		"...##...",
-		"..#++#..",
-		"########",
-		".##++##.",
-		"..####..",
-		".##..##.",
-		"##....##"
-	],
-	&"fireball_power":
-	[
-		"..#..#..",
-		".#.##.#.",
-		"..####..",
-		".##++##.",
-		"#+++++##",
-		"#+++++##",
-		".##+###.",
-		"..####.."
-	],
-	&"telekinesis":
-	[
-		".######.",
-		"#......#",
-		"#.####.#",
-		"#.#..#.#",
-		"#.#.+#.#",
-		"#.#....#",
-		"#.######",
-		"#......."
-	],
-	&"double_jump":
-	[
-		"#.....##",
-		"##...##.",
-		".#####..",
-		"..###...",
-		"..###...",
-		"..####..",
-		"..#####.",
-		"..#####."
-	],
-	&"awaken_arcane":
-	[
-		"..####..",
-		".#....#.",
-		"#..##..#",
-		"#.#++#.#",
-		"#..##..#",
-		".#....#.",
-		"..####..",
-		"........"
-	],
-	# Potencia arcana: anillos de eco alrededor de un núcleo.
-	&"arcane_power":
-	[
-		"..####..",
-		".#....#.",
-		"#.####.#",
-		"#.#++#.#",
-		"#.#++#.#",
-		"#.####.#",
-		".#....#.",
-		"..####.."
-	],
-	&"familiar":
-	[
-		"#......#",
-		"##....##",
-		".######.",
-		"#+#..#+#",
-		"########",
-		".#++++#.",
-		".#++++#.",
-		"..#..#..",
-	],
-	&"familiar_wings":
-	[
-		"......##",
-		"....###.",
-		"..####..",
-		".####+..",
-		"####++..",
-		"###++...",
-		"#.#.#...",
-		"........",
-	],
-	&"familiar_caster":
-	[
-		"#..+...#",
-		"##.+..##",
-		".######.",
-		"#+#..#+#",
-		"########",
-		".#....#.",
-		".#.++.#.",
-		"..####..",
-	],
-	&"levitation":
-	[
-		"...##...",
-		"..####..",
-		"...##...",
-		"..####..",
-		"...##...",
-		"..#..#..",
-		"+.+..+.+",
-		".+.++.+."
-	],
-}
-const PAGE_ICONS: Array[PackedStringArray] = [
-	[
-		"...#....",
-		"..###...",
-		".#####..",
-		"########",
-		"...#....",
-		"..###...",
-		".#...#..",
-		"#.....#."
-	],
-	[
-		"...#....",
-		"...##...",
-		"..###.#.",
-		".#####..",
-		".##+###.",
-		"##+++###",
-		"##+++##.",
-		".#####.."
-	],
-	[
-		"#..#..#.",
-		".#.#.#..",
-		"..###...",
-		"#######.",
-		"..###...",
-		".#.#.#..",
-		"#..#..#.",
-		"........"
-	],
-	[
-		"....##..",
-		"...##...",
-		"..##....",
-		".######.",
-		"....##..",
-		"...##...",
-		"..##....",
-		".##....."
-	],
-	[
-		"........",
-		"..####..",
-		".##++##.",
-		"###++###",
-		"########",
-		".######.",
-		"..####..",
-		"........"
-	],
-	[
-		"..####..",
-		".#....#.",
-		"#..##..#",
-		"#.#++#.#",
-		"#..##..#",
-		".#....#.",
-		"..####..",
-		"........"
-	],
-]
-const LOCK_ICON: PackedStringArray = [
-	"..###...", ".#...#..", ".#...#..", "#######.", "##+++##.", "###+###.", "#######.", "........"
-]
-const MANA_ICON: PackedStringArray = [
-	"...#....", "..###...", "..###...", ".##+##..", ".#+####.", ".#+####.", "..####..", "........"
-]
+const C_TEAR := Color("#8a4fe0")
 
 var is_open: bool = false
 
@@ -391,6 +141,7 @@ func _ready() -> void:
 	_footer = _label(_footer_text(), SMALL, C_CYAN, Rect2(10, 329, 620, LINE), 1, true)
 	Events.grimoire_requested.connect(open)
 	Events.mana_changed.connect(func(_m: int) -> void: _refresh())
+	Events.tears_changed.connect(func(_n: int) -> void: _refresh())
 	Events.locale_changed.connect(func() -> void: _footer.text = _footer_text())
 	set_process(false)
 
@@ -498,7 +249,8 @@ func _page_nodes() -> Array[int]:
 	var out: Array[int] = []
 	var el: StringName = PAGES[_page][0]
 	for i: int in GameState.UPGRADES.size():
-		if GameState.UPGRADES[i].element == el:
+		var n: UpgradeNode = GameState.UPGRADES[i]
+		if n.element == el and GameState.progression.is_revealed(n):
 			out.append(i)
 	return out
 
@@ -511,7 +263,15 @@ func _page_of(node: UpgradeNode) -> int:
 
 
 func _page_locked() -> bool:
-	return _page_nodes().is_empty()
+	return _page_sealed(_page) or _page_nodes().is_empty()
+
+
+## La página del Núcleo duerme hasta llegar al Corazón Cristalino (o tener alguna Lágrima).
+func _page_sealed(page: int) -> bool:
+	var prog: Progression = GameState.progression
+	if PAGES[page][0] == CORE_PAGE:
+		return prog.deepest_layer < TearDrops.HEART_LAYER and prog.tears_total == 0
+	return not _has_nodes(page)
 
 
 func _step_star(dir: int) -> void:
@@ -524,6 +284,8 @@ func _step_star(dir: int) -> void:
 
 ## Elige una estrella (con sonido y la página que se reescribe).
 func select(i: int) -> void:
+	if not GameState.progression.is_revealed(GameState.UPGRADES[i]):
+		return
 	_selected = i
 	_write_t = 0.0
 	_write_speed = 5.0
@@ -545,6 +307,8 @@ func try_buy() -> void:
 	if not GameState.buy_upgrade(node):
 		return
 	AudioDirector.play_sfx(BUY_SFX, -1.0)
+	if node.pays_with_tears():
+		AudioDirector.play_sfx(TEAR_BUY_SFX, -2.0)
 	_flash_t[_selected] = 1.0
 	_write_t = 0.0
 	_write_speed = 1.6
@@ -583,7 +347,10 @@ func _process(delta: float) -> void:
 	_shown_mana = lerpf(_shown_mana, target, 1.0 - exp(-delta * 12.0))
 	if absf(_shown_mana - target) < 0.5:
 		_shown_mana = target
-	_mana.text = tr("MANÁ  %s") % Hud.format_int(roundi(_shown_mana))
+	if PAGES[_page][0] == CORE_PAGE:
+		_mana.text = tr("LÁGRIMAS  %d") % GameState.progression.tears
+	else:
+		_mana.text = tr("MANÁ  %s") % Hud.format_int(roundi(_shown_mana))
 	_update_particles(delta)
 	_content.position = _ofs()
 	# El coste tiembla en rojo si no se puede inscribir.
@@ -609,7 +376,7 @@ func _refresh() -> void:
 		var n: UpgradeNode = GameState.UPGRADES[i]
 		var lvl: int = prog.get_level(n.id)
 		var label: Label = _star_labels[i]
-		label.visible = n.element == page[0]
+		label.visible = n.element == page[0] and prog.is_revealed(n) and not _page_locked()
 		var block: StringName = prog.purchase_block(n)
 		label.text = tr(n.display_name).to_upper() if block != &"locked" else "?"
 		var c: Color = C_DIM
@@ -630,6 +397,14 @@ func _refresh() -> void:
 			tr("Su constelación aún no brilla. Despertará cuando el Pilón de Maná llegue al %d %%.")
 			% roundi(float(page[5]) * 100.0)
 		)
+		if page[0] == CORE_PAGE:
+			_level.text = tr("PÁGINA SELLADA")
+			_desc.text = tr(
+				(
+					"Late muy dentro del Cristal Madre. Excava hasta el Corazón Cristalino: allí lloran"
+					+ " las Lágrimas del Núcleo que abren esta página."
+				)
+			)
 		_now.text = ""
 		_next.text = ""
 		_cost.text = ""
@@ -652,7 +427,8 @@ func _refresh() -> void:
 	if level < max_level:
 		var cost: int = node.cost_for_level(level)
 		_cost.text = Hud.format_int(cost)
-		_cost.add_theme_color_override(&"font_color", C_INK if prog.can_afford(cost) else C_RED)
+		var ok: bool = (prog.tears if node.pays_with_tears() else prog.mana) >= cost
+		_cost.add_theme_color_override(&"font_color", C_INK if ok else C_RED)
 	else:
 		_cost.text = ""
 	match block_sel:
@@ -663,6 +439,11 @@ func _refresh() -> void:
 		&"mana":
 			_button.text = (
 				tr("TE FALTAN %s DE MANÁ") % Hud.format_int(node.cost_for_level(level) - prog.mana)
+			)
+		&"tears":
+			var missing: int = node.cost_for_level(level) - prog.tears
+			_button.text = (
+				tr("TE FALTA 1 LÁGRIMA") if missing == 1 else tr("TE FALTAN %d LÁGRIMAS") % missing
 			)
 		_:
 			_button.text = (
@@ -777,7 +558,7 @@ func _draw_left_page(o: Vector2) -> void:
 	_draw_tabs(o)
 	if _page_locked():
 		# Elemento dormido: un sello grande en el centro.
-		_draw_icon(LOCK_ICON, page.get_center() - Vector2(16, 24), 4, C_LOCKED)
+		_draw_icon(GrimoireIcons.LOCK_ICON, page.get_center() - Vector2(16, 24), 4, C_LOCKED)
 		return
 	# Trazos de la constelación: punteados; dorados entre estrellas ya despiertas.
 	var prog: Progression = GameState.progression
@@ -805,12 +586,14 @@ func _draw_tabs(o: Vector2) -> void:
 		var r := Rect2(_tab_rect(i).position + o, _tab_rect(i).size)
 		var col := Color(PAGES[i][2] as String)
 		var open_tab: bool = i == _page
-		var empty: bool = not _has_nodes(i)
+		var empty: bool = _page_sealed(i)
 		draw_rect(r.grow(1), C_SHADOW)
 		draw_rect(r, Color(PAGES[i][3] as String) if open_tab else C_COVER_DARK)
 		if open_tab:
 			draw_rect(Rect2(r.position + Vector2(0, r.size.y - 2), Vector2(r.size.x, 2)), col)
-		var icon: PackedStringArray = LOCK_ICON if empty else PAGE_ICONS[i]
+		var icon: PackedStringArray = (
+			GrimoireIcons.LOCK_ICON if empty else GrimoireIcons.PAGE_ICONS[i]
+		)
 		var ic: Color = col if not empty else C_LOCKED
 		if not open_tab and not empty:
 			ic = col.darkened(0.35)
@@ -850,6 +633,14 @@ func _draw_star(i: int, c: Vector2) -> void:
 		var w: int = r - absi(k)
 		draw_rect(Rect2(c.x - w, c.y + k, w * 2 + 1, 1), col)
 	draw_rect(Rect2(c.x, c.y, 1, 1), Color.WHITE)
+	if node.id == GameState.GRAND_CONVERGENCE and level == 0:
+		# El hito final: cinco rayos de los colores de los elementos que giran y laten.
+		for k: int in 5:
+			var a: float = floor(_t * 6.0) * TAU / 48.0 + TAU * float(k) / 5.0
+			var ray: float = r * 3.0 + 3.0 + fmod(_t * 2.0, 1.0) * 4.0
+			for j: int in range(r * 2 + 2, roundi(ray), 2):
+				var p := (c + Vector2(cos(a), sin(a)) * float(j)).round()
+				draw_rect(Rect2(p, Vector2(1, 1)), Color(PAGES[k + 1][2] as String))
 	# Anillo giratorio de la estrella elegida (8 puntos que avanzan a 8 fps).
 	if i == _selected:
 		var rr: float = r * 2.0 + 6.0
@@ -901,7 +692,12 @@ func _draw_right_page(o: Vector2) -> void:
 		var lock_at: Vector2 = page.position + Vector2(10, 8)
 		draw_rect(Rect2(lock_at - Vector2(2, 2), Vector2(32, 32)), C_PAGE_EDGE)
 		draw_rect(Rect2(lock_at, Vector2(28, 28)), C_COVER_DARK)
-		_draw_icon(PAGE_ICONS[_page], lock_at + Vector2(2, 2), 3, Color(PAGES[_page][2] as String))
+		_draw_icon(
+			GrimoireIcons.PAGE_ICONS[_page],
+			lock_at + Vector2(2, 2),
+			3,
+			Color(PAGES[_page][2] as String)
+		)
 		return
 	var node: UpgradeNode = GameState.UPGRADES[_selected]
 	var prog: Progression = GameState.progression
@@ -911,7 +707,12 @@ func _draw_right_page(o: Vector2) -> void:
 	var icon_at: Vector2 = page.position + Vector2(10, 8)
 	draw_rect(Rect2(icon_at - Vector2(2, 2), Vector2(32, 32)), C_GOLD)
 	draw_rect(Rect2(icon_at, Vector2(28, 28)), C_SKY)
-	_draw_icon(ICONS.get(node.id, ICONS[&"resonance"]), icon_at + Vector2(2, 2), 3, C_GOLD_LIGHT)
+	_draw_icon(
+		GrimoireIcons.ICONS.get(node.id, GrimoireIcons.ICONS[&"resonance"]),
+		icon_at + Vector2(2, 2),
+		3,
+		C_GOLD_LIGHT
+	)
 	# Pips de nivel.
 	for k: int in max_level:
 		var p: Vector2 = page.position + Vector2(46 + k * 9, 44)
@@ -923,7 +724,10 @@ func _draw_right_page(o: Vector2) -> void:
 	# Coste con la gota de maná.
 	if level < max_level:
 		var cost_at: Vector2 = page.position + Vector2(14, 178)
-		_draw_icon(MANA_ICON, cost_at, 2, C_PINK)
+		if node.pays_with_tears():
+			_draw_icon(GrimoireIcons.TEAR_ICON, cost_at, 2, C_TEAR)
+		else:
+			_draw_icon(GrimoireIcons.MANA_ICON, cost_at, 2, C_PINK)
 	# Botón.
 	var b := Rect2(_button_rect().position + o, _button_rect().size)
 	var block: StringName = prog.purchase_block(node)

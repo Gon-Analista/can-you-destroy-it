@@ -322,11 +322,11 @@ func _draw() -> void:
 			var page: int = ELEMENT_PAGE.get(r.elements[k], 0)
 			var col := Color(Grimoire.PAGES[page][2] as String)
 			if st == &"found":
-				_icon(Grimoire.PAGE_ICONS[page], at, col)
+				_icon(GrimoireIcons.PAGE_ICONS[page], at, col)
 			elif st == &"locked":
-				_icon(Grimoire.LOCK_ICON, at, C_LOCKED)
+				_icon(GrimoireIcons.LOCK_ICON, at, C_LOCKED)
 			else:
-				_icon(Grimoire.PAGE_ICONS[page], at, Color(col, 0.35))
+				_icon(GrimoireIcons.PAGE_ICONS[page], at, Color(col, 0.35))
 		if r.is_reaction:
 			draw_rect(Rect2(row.end.x - 6, y + floorf(ROW_H * 0.5) - 2, 4, 4), C_PINK)
 	# Estrellita que late en lo descubierto (detalle del libro).
@@ -339,7 +339,7 @@ func _draw() -> void:
 		for k: int in mini(sel.elements.size(), 2):
 			var page: int = ELEMENT_PAGE.get(sel.elements[k], 0)
 			_icon(
-				Grimoire.PAGE_ICONS[page],
+				GrimoireIcons.PAGE_ICONS[page],
 				Vector2(RIGHT.end.x - 52 + k * 22, 58),
 				Color(Grimoire.PAGES[page][2] as String),
 				2

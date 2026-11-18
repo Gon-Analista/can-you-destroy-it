@@ -18,6 +18,20 @@ signal pylon_milestone(index: int, mark: float)
 ## La Resonancia del Pilón lanza un rayo al cristal (`at`: dónde da).
 signal pylon_bolt(at: Vector3)
 
+# --- Lágrimas del Núcleo (GDD 6.1) y el final ---
+## Brota una Lágrima del Núcleo del Corazón Cristalino (aún hay que recogerla).
+signal tear_dropped(position: Vector3)
+## El jugador recoge una Lágrima: ya está en el contador.
+signal tear_collected(position: Vector3)
+## Cambian las Lágrimas para gastar (al recoger o al inscribir con ellas).
+signal tears_changed(tears: int)
+## El cristal llega al 99 %: el Núcleo queda expuesto y el Grimorio enseña la Gran Convergencia.
+## Una sola vez por partida (al cruzar el umbral).
+signal grimoire_final_revealed
+## Se inscribe la Gran Convergencia (nodo `grand_convergence`): ya se puede lanzar el hechizo
+## final. Equivale a `GameState.has_upgrade(&"grand_convergence")` pasando a true.
+signal grand_convergence_unlocked
+
 # --- Sensación del golpe (prototipo de la chispa) ---
 signal spell_cast(tier: SpellTier, hand_side: int)
 signal spell_ready

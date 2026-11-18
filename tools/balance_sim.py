@@ -21,6 +21,11 @@ Lee los datos reales del juego (game/data/**.tres) y reproduce las reglas del c�
 - Logística: recoger (Telequinesis en paralelo, Gravedad), bolsa, viaje a la trituradora, echar y triturar
   (Engranajes), Envío directo, viajes al Santuario para comprar.
 - Capas: el Corazón (80-99 %) sólo cede a combinaciones; el Núcleo (último 1 %) es el final.
+- Lágrimas del Núcleo (`TearDrops`, `CoreTears`): en el Corazón, los combinados sueltan una con
+  probabilidad daño / tear_essence (x1,5 con el Ojo del Núcleo) y la piedad da una cada
+  tear_pity_sec de juego como mucho; pagan los nodos del Núcleo (Fractura del Corazón: x daño de los
+  combinados en el Corazón; Corazón Vidente: + golpes resonantes en el Corazón) y la Gran
+  Convergencia, que se ve al 99 %: el informe dice si al llegar al Núcleo hay Lágrimas para ella.
 
 El jugador simulado elige siempre el ataque que más maná por segundo le da y compra la mejora con mejor
 relación ganancia / coste (las de movimiento, cuando son baratas). No es un jugador real: es una cota
@@ -59,6 +64,9 @@ FEED_START, FEED_MIN, FEED_RAMP = 0.4, 0.09, 2.4
 LEVER_SEC = 1.0
 NEW_SHARDS = True  # regla nueva: el maná de un golpe es más o menos su daño (ver hit_yield)
 MAX_PIECES, MAX_EXTRA = 10, 3  # ShardPool
+# Parte de la esencia de los combinados que llega por golpes que pasan por receive_hit (los que
+# pueden soltar Lágrimas; el resto son saltos, túneles y pulsos).
+TEAR_MAIN_FRACTION = 0.75
 VEIN_FOCUS = 0.6  # parte de los golpes que el jugador da en la vena de su elemento (capa de venas)
 VEIN_BONUS = None  # CrystalLayerDef.vein_bonus; None = el de data/crystal/layer_resonant_veins.tres
 DIRECT_SEND_LEVER_EVERY = 90.0  # con Envío directo, se va a tirar de la palanca cada tanto
@@ -225,6 +233,8 @@ class Upgrade:
     values: list[float]
     stat: str
     prereq: list[str]
+    currency: int = 0  # UpgradeNode.Currency: 0 maná, 1 Lágrimas del Núcleo
+    reveal: float = 0.0  # UpgradeNode.reveal_destroyed_ratio
 
 
 @dataclass
@@ -316,12 +326,16 @@ def load():
             main.get("values", []),
             main.get("stat", ""),
             main.get("prerequisites", []),
+            int(main.get("currency", 0)),
+            float(main.get("reveal_destroyed_ratio", 0.0)),
         )
     shards = []
     resonant = None
     for p in (DATA / "shards").glob("*.tres"):
         main, _ = parse_tres(p)
         st = ShardT(main["id"], int(main.get("min_damage", 0)), int(main.get("value", 1)))
+        if st.id == "core_tear":
+            continue  # la Lágrima del Núcleo no sale por daño (ver tear_rate)
         # ShardPool.TYPES (la escalera por daño) no lleva el Fragmento Resonante de las venas.
         if st.id == "resonant":
             resonant = st
@@ -394,6 +408,8 @@ class State:
     essence: float = 1_000_000.0
     pylon: float = 0.0
     t: float = 0.0
+    tears: float = 0.0
+    tears_total: float = 0.0
 
 
 class Game:
@@ -620,6 +636,9 @@ class Game:
                 dmg = round(dmg * self.stat(s, r.power_stat, 1.0))
             size = self.stat(s, r.size_stat, 1.0) if r.size_stat else 1.0
             dmg = self.sized(dmg, size)
+            if self._heart:
+                # Fractura del Corazón (CoreTears.apply): x daño de los combinados en el Corazón.
+                dmg = max(1, gd_round(dmg * self.stat(s, "heart_combo_mult", 1.0)))
         cdm = self.stat(s, "cooldown_mult", 1.0)
         return dmg, size, max(r.cooldown * cdm, t0.cooldown * cdm)
 
@@ -690,6 +709,10 @@ class Game:
 
     def _attacks(self, s: State):
         res_p = self.stat(s, "resonant_percent", float(self.balance.get("resonant_chance", 0.07)) * 100) / 100
+        if self._heart:
+            # Corazón Vidente (CoreTears.apply): los combinados que no resonaban, con esa probabilidad.
+            seer = self.stat(s, "heart_resonant_percent", 0.0) / 100
+            res_p = res_p + (1.0 - res_p) * seer
         out = self._attack_list(s, res_p)
         # Resonancia Arcana (spell_caster.gd _start_resonance): un golpe siempre resonante con pulso,
         # y buff_sec s en los que todo golpe del mago es resonante; no se puede repetir hasta
@@ -958,9 +981,23 @@ class Game:
             out.append((m * f, e * f, v * f, name, group))
         return out
 
+    def tear_rate(self, s: State, ess_rate: float) -> float:
+        """Lágrimas por segundo en el Corazón (TearDrops): azar por esencia de los golpes que pasan por
+        receive_hit y piedad cada tear_pity_sec (los viajes a la trituradora, de menos de
+        tear_active_gap_sec, también cuentan). Intervalo medio con piedad T: (1 - e^-λT) / λ."""
+        if s.essence / self.total >= 0.2 or ess_rate <= 0:
+            return 0.0
+        e = float(self.balance.get("tear_essence", 12000.0))
+        eye = 1.5 if self.stat(s, "tear_eye", 0.0) > 0.5 else 1.0
+        lam = ess_rate * TEAR_MAIN_FRACTION / e * eye
+        pity = float(self.balance.get("tear_pity_sec", 100.0))
+        return lam / max(1e-9, 1.0 - math.exp(-lam * pity))
+
     # -- mejoras --
     def available(self, s: State, u: Upgrade) -> bool:
         if s.levels.get(u.id, 0) >= len(u.costs):
+            return False
+        if u.reveal > 0 and 1.0 - s.essence / self.total < u.reveal - 1e-9:
             return False
         for pr in u.prereq:
             if pr.startswith("recipe:"):
@@ -973,6 +1010,9 @@ class Game:
 
     def cost(self, s: State, u: Upgrade) -> int:
         return u.costs[s.levels.get(u.id, 0)]
+
+    def funds(self, s: State, u: Upgrade) -> float:
+        return math.floor(s.tears + 1e-9) if u.currency == 1 else s.mana
 
     def score(self, s: State, u: Upgrade, base: float) -> float:
         s2 = State(dict(s.levels), s.mana, s.essence, s.pylon, s.t)
@@ -1002,20 +1042,29 @@ def simulate(game: Game, verbose: bool = False, max_hours: float = 6.0):
         # El Pilón suma el valor de los fragmentos sin la Pureza (mana_pylon.gd receive_mana).
         gain = rate * step
         s.mana += gain
+        dt_tears = game.tear_rate(s, ess_rate) * step
+        s.tears += dt_tears
+        s.tears_total += dt_tears
         s.pylon = min(game.total, s.pylon + pylon_rate * step)
         s.essence = max(0.0, s.essence - ess_rate * step)
         s.t += step
         if s.t >= next_sample:
             timeline.append((s.t, s.mana, s.essence, s.pylon, f"{attack} {rate:.0f}/s"))
             next_sample += 30.0
-        # ¿Toca ir al Santuario?
-        cands = [u for u in game.upgrades.values() if game.available(s, u)]
-        if not cands:
+        # ¿Toca ir al Santuario? (también con Lágrimas para un nodo del Núcleo)
+        tear_ready = any(
+            u.currency == 1 and game.available(s, u) and game.cost(s, u) <= game.funds(s, u)
+            for u in game.upgrades.values()
+        )
+        cands = [u for u in game.upgrades.values() if u.currency == 0 and game.available(s, u)]
+        if not cands and not tear_ready:
             continue
         v = game.value(s)
         scored = sorted(((game.score(s, u, v), u) for u in cands), key=lambda x: -x[0])
-        target = scored[0][1]
-        if s.mana < game.cost(s, target):
+        target = scored[0][1] if scored else None
+        if tear_ready:
+            pass
+        elif s.mana < game.cost(s, target):
             # Compra impulsiva: algo barato y útil mientras se ahorra.
             cheap = [u for sc, u in scored if game.cost(s, u) <= s.mana and sc >= scored[0][0] * 0.5]
             if not cheap:
@@ -1024,16 +1073,25 @@ def simulate(game: Game, verbose: bool = False, max_hours: float = 6.0):
         s.t += SANCTUM_EXTRA / P["speed"]
         bought = 0
         while True:
-            cands = [u for u in game.upgrades.values() if game.available(s, u) and game.cost(s, u) <= s.mana]
+            # Los nodos del Núcleo se pagan con Lágrimas (no compiten con el maná): el mejor primero.
+            cands = [
+                u
+                for u in game.upgrades.values()
+                if game.available(s, u) and game.cost(s, u) <= game.funds(s, u)
+            ]
             if not cands:
                 break
             base = game.effective(s)[0]
             v = game.value(s)
-            best = max(cands, key=lambda u: game.score(s, u, v))
-            if bought and game.score(s, best, v) <= 0:
+            tear_cands = [u for u in cands if u.currency == 1]
+            best = max(tear_cands or cands, key=lambda u: game.score(s, u, v))
+            if bought and best.currency == 0 and game.score(s, best, v) <= 0:
                 break
             c = game.cost(s, best)
-            s.mana -= c
+            if best.currency == 1:
+                s.tears -= c
+            else:
+                s.mana -= c
             s.levels[best.id] = s.levels.get(best.id, 0) + 1
             s.t += P["buy"]
             bought += 1
@@ -1079,11 +1137,33 @@ def summary(game: Game, s: State, log, timeline, name: str) -> dict:
         "pilon_final_pct": round(s.pylon / game.total * 100, 1),
         "nota": round(objective(s, log)),
         "maná_por_s": income,
+        "lagrimas": tear_summary(game, s, log),
         "sin_comprar": sorted(
             f"{u.id} {s.levels.get(u.id, 0)}/{len(u.costs)}"
             for u in game.upgrades.values()
             if s.levels.get(u.id, 0) < len(u.costs)
         ),
+    }
+
+
+def tear_summary(game: Game, s: State, log) -> dict:
+    """Lágrimas del Núcleo: cuántas cayeron, cuándo se compró cada nodo del Núcleo (min) y si la Gran
+    Convergencia quedó inscrita al llegar al Núcleo (si no, cuántas faltaban)."""
+    tear_ids = {u.id for u in game.upgrades.values() if u.currency == 1}
+    bought = {f"{uid} {lv}": round(t / 60, 1) for t, uid, lv, *_ in log if uid in tear_ids}
+    gc = game.upgrades.get("grand_convergence")
+    missing = 0
+    if gc is not None and s.levels.get(gc.id, 0) < len(gc.costs):
+        missing = max(0, gc.costs[0] - math.floor(s.tears + 1e-9))
+    pending = sorted(
+        u.id for u in game.upgrades.values() if u.currency == 1 and s.levels.get(u.id, 0) < len(u.costs)
+    )
+    return {
+        "total": round(s.tears_total, 1),
+        "sobrantes": round(s.tears, 1),
+        "compras_min": bought,
+        "sin_comprar": pending,
+        "faltan_para_convergencia": missing,
     }
 
 
@@ -1100,6 +1180,11 @@ def report(game: Game, s: State, log, timeline, show_log: bool) -> None:
     print(f"Partida: {fmt(s.t)} (min:s) hasta el Núcleo · {len(log)} compras · maná sin gastar {int(s.mana)}")
     print(f"Pilón al llegar al Núcleo: {s.pylon / game.total * 100:.1f} %")
     print(f"Primera mejora: {fmt(first)}")
+    ts = tear_summary(game, s, log)
+    print(
+        f"Lágrimas del Núcleo: {ts['total']:.1f} recogidas, {ts['sobrantes']:.1f} sin gastar; nodos sin "
+        f"comprar: {', '.join(ts['sin_comprar']) or 'ninguno'}"
+    )
     if hour_gaps:
         print(f"1.ª hora: hueco medio {sum(hour_gaps) / len(hour_gaps):.0f} s, máximo {max(hour_gaps):.0f} s")
     print(f"Hueco máximo: {max_gap[0]:.0f} s (a los {fmt(max_gap[1]).strip()})")
@@ -1126,6 +1211,8 @@ def report(game: Game, s: State, log, timeline, show_log: bool) -> None:
         problems.append(f"en la 1.ª hora hay un hueco de {max(hour_gaps):.0f} s (GDD: < 60 s)")
     if max_gap[0] > 180:
         problems.append(f"hueco de {max_gap[0]:.0f} s (GDD: nunca > 3 min)")
+    if ts["sin_comprar"]:
+        problems.append(f"al llegar al Núcleo faltan nodos del Núcleo: {', '.join(ts['sin_comprar'])}")
     if not 2 * 3600 <= s.t <= 3 * 3600:
         problems.append(f"la partida dura {s.t / 3600:.2f} h (GDD: 2-3 h)")
     print(f"Nota (0 = perfecto; huecos de más y duración lejos de 2,5 h): {objective(s, log):.0f}")

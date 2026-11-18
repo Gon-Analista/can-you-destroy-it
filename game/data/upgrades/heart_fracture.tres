@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"heart_fracture"
+display_name = "Fractura del Corazón"
+description = "Las Lágrimas te enseñan dónde se rompe el Corazón Cristalino: tus hechizos combinados le hacen más daño."
+branch = 0
+element = &"core"
+star_pos = Vector2i(56, 132)
+costs = PackedInt32Array(1, 2, 2)
+currency = 1
+stat = &"heart_combo_mult"
+values = PackedFloat32Array(1, 1.15, 1.3, 1.45)
+value_format = "x%.2f de daño en el Corazón"

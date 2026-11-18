@@ -9,7 +9,7 @@ extends RefCounted
 ## La usa `ObjectiveGuide` (ui/guide/) cada fotograma con un `Situation` reutilizado.
 
 ## Objetivos de la guía.
-enum Kind { NONE, CRYSTAL, SHARD, CRUSHER, SANCTUM }
+enum Kind { NONE, CRYSTAL, SHARD, CRUSHER, SANCTUM, TEAR }
 ## Fase del tutorial que importa a la guía (traducida desde `Tutorial.Step` por quien llama).
 enum Phase { DONE, DOOR, CAST, PICKUP, CRUSH, EARN, BUY }
 ## Cómo se enseña una tecla: texto entero, icono pequeño o nada.
@@ -34,6 +34,8 @@ class Situation:
 	var pickup_learned: bool = false
 	## Hay familiares recolectores: ellos tiran de la palanca cuando la tolva tiene bastante.
 	var auto_lever: bool = false
+	## Flota una Lágrima del Núcleo cerca: es rara y no la recogen los familiares.
+	var tear_near: bool = false
 
 	func bag_full() -> bool:
 		return not direct_send and bag >= capacity
@@ -69,7 +71,10 @@ static func pick(s: Situation) -> int:
 			if s.shard_near:
 				return Kind.SHARD
 			return Kind.CRYSTAL
-	# Partida normal: lo urgente primero; si no hay nada que hacer fuera del cristal, nada.
+	# Partida normal: lo urgente primero; si no hay nada que hacer fuera del cristal, nada. Una
+	# Lágrima del Núcleo, antes que nada (no ocupa la bolsa y nadie más la recoge).
+	if s.tear_near:
+		return Kind.TEAR
 	if s.bag_full():
 		return Kind.CRUSHER
 	if s.new_upgrade:
@@ -92,7 +97,7 @@ static func is_urgent(kind: int, s: Situation) -> bool:
 	match kind:
 		Kind.CRUSHER:
 			return s.bag_full() or s.lever_forgotten()
-		Kind.SANCTUM:
+		Kind.SANCTUM, Kind.TEAR:
 			return true
 	return false
 

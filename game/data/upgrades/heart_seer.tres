@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"heart_seer"
+display_name = "Corazón Vidente"
+description = "Ves latir el Corazón Cristalino por dentro: más de tus golpes en el Corazón dan en su punto débil y resuenan."
+branch = 6
+element = &"core"
+star_pos = Vector2i(180, 132)
+costs = PackedInt32Array(1, 2)
+currency = 1
+prerequisites = Array[StringName]([&"heart_fracture"])
+stat = &"heart_resonant_percent"
+values = PackedFloat32Array(0, 12, 25)
+value_format = "+%d %% de golpes resonantes en el Corazón"

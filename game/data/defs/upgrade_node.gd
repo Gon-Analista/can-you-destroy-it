@@ -4,6 +4,8 @@ extends Resource
 ## valor que da a una estadística (`stat`). Todo número de diseño vive en el `.tres`.
 
 enum Branch { POWER, CHANNELING, ELEMENTS, TELEKINESIS, FAMILIARS, PYLON, RESONANCE }
+## Con qué se paga: maná o Lágrimas del Núcleo (los nodos finales, GDD 6.1 y 8).
+enum Currency { MANA, TEARS }
 
 @export var id: StringName
 @export var display_name: String
@@ -20,6 +22,11 @@ enum Branch { POWER, CHANNELING, ELEMENTS, TELEKINESIS, FAMILIARS, PYLON, RESONA
 @export var base_cost: int = 5
 @export var cost_growth: float = 1.2
 @export var max_level: int = 1
+## Moneda de los costes: maná (casi todo) o Lágrimas del Núcleo (página del Núcleo).
+@export var currency: Currency = Currency.MANA
+## > 0: la estrella no se ve ni se puede comprar hasta que el cristal esté destruido a esa
+## fracción (la Gran Convergencia, con el Núcleo expuesto al 99 %).
+@export_range(0.0, 1.0) var reveal_destroyed_ratio: float = 0.0
 ## Ids de mejoras que hay que tener, o "recipe:<id>" para una combinación ya descubierta.
 @export var prerequisites: Array[StringName] = []
 ## Estadística que modifica (p. ej. &"bag_capacity").
@@ -35,6 +42,10 @@ enum Branch { POWER, CHANNELING, ELEMENTS, TELEKINESIS, FAMILIARS, PYLON, RESONA
 
 func get_max_level() -> int:
 	return costs.size() if not costs.is_empty() else max_level
+
+
+func pays_with_tears() -> bool:
+	return currency == Currency.TEARS
 
 
 func cost_for_level(level: int) -> int:

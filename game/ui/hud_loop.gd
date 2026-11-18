@@ -53,6 +53,8 @@ var _prompt: Label
 ## La tecla pequeña que queda cuando la acción ya se sabe.
 var _key: KeyHint
 var _guide: ObjectiveGuide
+## Lágrimas del Núcleo, a la izquierda del maná.
+var _tears: TearCounter
 ## Elemento de cada mano (sólo cuando conoces más de uno).
 var _hand_tags: Array[Label] = []
 var _shown_fill: float = 0.0
@@ -90,6 +92,9 @@ func _ready() -> void:
 	_guide.suppressed = intro
 	add_child(_guide)
 	move_child(_guide, 0)
+	_tears = TearCounter.new()
+	_tears.name = "Tears"
+	add_child(_tears)
 	_hand_tags.append(_label("", SMALL, C_TEXT, Rect2(8, 298, 160, LINE), 0))
 	_hand_tags.append(_label("", SMALL, C_TEXT, Rect2(472, 298, 160, LINE), 2))
 	Events.shard_delivered.connect(_on_delivered)
@@ -119,6 +124,7 @@ func _on_first_collect(_type: ShardType, _count: int, _at: Vector3) -> void:
 func bind(camera: Camera3D) -> void:
 	_camera = camera
 	_guide.bind(camera)
+	_tears.bind(camera)
 
 
 func _on_delivered(value: int) -> void:
@@ -176,6 +182,8 @@ func _process(delta: float) -> void:
 	_mana_punch = maxf(0.0, _mana_punch - delta * 5.0)
 	_mana.add_theme_color_override(&"font_color", C_TEXT.lerp(C_PINK, _mana_punch))
 	_mana.position.y = MANA_Y - roundi(_mana_punch * 2.0)
+	_tears.right_x = 452.0 + 176.0 - _mana_text_width() - 22.0 - 10.0
+	_tears.y = MANA_Y
 	_gain_t = maxf(0.0, _gain_t - delta)
 	_mana_gain.visible = _gain_t > 0.0
 	_mana_gain.text = "+%s" % Hud.format_int(_gain)

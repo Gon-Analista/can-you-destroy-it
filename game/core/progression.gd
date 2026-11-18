@@ -29,6 +29,17 @@ var learned: Dictionary[StringName, int] = {}
 ## Mejoras pagables que el jugador ya ha visto en el Grimorio: id -> nivel que se ofrecía. La
 ## guía sólo lleva al Santuario por las que no ha visto (también tras volver a cargar).
 var seen_upgrades: Dictionary[StringName, int] = {}
+## Lágrimas del Núcleo (GDD 6.1): segunda moneda, sólo cae en el Corazón Cristalino y paga los
+## nodos finales del Grimorio. `tears` es lo que hay para gastar; `tears_total`, las recogidas.
+var tears: int = 0
+var tears_total: int = 0
+## Segundos de buen juego en el Corazón desde la última Lágrima (ver TearDrops): si llegan al
+## tope, la siguiente sale seguro. Se guarda para que salir del juego no lo reinicie.
+var tear_pity: float = 0.0
+## Lágrimas que han caído y siguen flotando (posiciones globales): al volver a cargar, siguen ahí.
+var loose_tears: PackedVector3Array = PackedVector3Array()
+## Depuración ("comprar todo"): compra también lo que aún no se ve (la Gran Convergencia).
+var reveal_all: bool = false
 
 
 func _init(p_total_essence: int) -> void:
@@ -103,20 +114,33 @@ func spend(cost: int) -> bool:
 	return true
 
 
+## Si la estrella ya se ve: las que piden el cristal destruido a cierta fracción (la Gran
+## Convergencia, con el Núcleo expuesto) están ocultas hasta entonces. Medio punto de esencia de
+## margen: al 99 % justo ya se ve.
+func is_revealed(node: UpgradeNode) -> bool:
+	if reveal_all or node.reveal_destroyed_ratio <= 0.0:
+		return true
+	return float(essence) <= float(total_essence) * (1.0 - node.reveal_destroyed_ratio) + 0.5
+
+
 func get_level(upgrade_id: StringName) -> int:
 	return upgrade_levels.get(upgrade_id, 0)
 
 
-## Por qué no se puede comprar (o &"" si se puede): &"max", &"locked" o &"mana".
+## Por qué no se puede comprar (o &"" si se puede): &"max", &"hidden" (aún no se ve),
+## &"locked", &"mana" o &"tears" (faltan Lágrimas).
 func purchase_block(node: UpgradeNode) -> StringName:
 	var level: int = get_level(node.id)
 	if level >= node.get_max_level():
 		return &"max"
+	if not is_revealed(node):
+		return &"hidden"
 	for req: StringName in node.prerequisites:
 		if not _has_requirement(req):
 			return &"locked"
-	if not can_afford(node.cost_for_level(level)):
-		return &"mana"
+	var funds: int = tears if node.pays_with_tears() else mana
+	if funds < node.cost_for_level(level):
+		return &"tears" if node.pays_with_tears() else &"mana"
 	return &""
 
 
@@ -129,13 +153,13 @@ func _has_requirement(req: StringName) -> bool:
 
 
 func buy_upgrade(node: UpgradeNode) -> bool:
-	var level: int = get_level(node.id)
-	if level >= node.get_max_level():
+	if purchase_block(node) != &"":
 		return false
-	for req: StringName in node.prerequisites:
-		if not _has_requirement(req):
-			return false
-	if not spend(node.cost_for_level(level)):
+	var level: int = get_level(node.id)
+	var cost: int = node.cost_for_level(level)
+	if node.pays_with_tears():
+		tears -= cost
+	elif not spend(cost):
 		return false
 	upgrade_levels[node.id] = level + 1
 	return true
@@ -175,6 +199,10 @@ func to_dict() -> Dictionary:
 		"tutorial_step": tutorial_step,
 		"learned": learned.duplicate(),
 		"seen_upgrades": seen_upgrades.duplicate(),
+		"tears": tears,
+		"tears_total": tears_total,
+		"tear_pity": tear_pity,
+		"loose_tears": _vec_list(loose_tears),
 	}
 
 
@@ -201,6 +229,15 @@ func load_dict(data: Dictionary) -> void:
 	var saved_seen: Dictionary = data.get("seen_upgrades", {})
 	for key: Variant in saved_seen:
 		seen_upgrades[StringName(str(key))] = maxi(int(saved_seen[key]), 0)
+	tears = maxi(int(data.get("tears", 0)), 0)
+	tears_total = maxi(int(data.get("tears_total", tears)), tears)
+	tear_pity = maxf(float(data.get("tear_pity", 0.0)), 0.0)
+	loose_tears.clear()
+	var saved_loose: Array = data.get("loose_tears", [])
+	for v: Variant in saved_loose:
+		var xyz: Array = v if v is Array else []
+		if xyz.size() == 3:
+			loose_tears.append(Vector3(float(xyz[0]), float(xyz[1]), float(xyz[2])))
 	geodes.clear()
 	var saved_geodes: Dictionary = data.get("geodes", {})
 	for key: Variant in saved_geodes:
@@ -209,3 +246,10 @@ func load_dict(data: Dictionary) -> void:
 	var saved_recipes: Array = data.get("discovered_recipes", [])
 	for r: Variant in saved_recipes:
 		discover_recipe(StringName(str(r)))
+
+
+static func _vec_list(points: PackedVector3Array) -> Array:
+	var out: Array = []
+	for p: Vector3 in points:
+		out.append([p.x, p.y, p.z])
+	return out

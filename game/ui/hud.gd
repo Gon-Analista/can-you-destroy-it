@@ -296,6 +296,9 @@ func _on_shard_targeted(type: ShardType) -> void:
 		if type
 		else Guidance.Prompt.NONE
 	)
+	if type and type.id == CoreTears.TEAR_TYPE.id and GameState.progression.tears_total < 3:
+		# Las primeras Lágrimas del Núcleo se nombran siempre: son raras y no van a la bolsa.
+		mode = Guidance.Prompt.FULL
 	_pickup_prompt.visible = mode == Guidance.Prompt.FULL
 	_pickup_key.shown = mode == Guidance.Prompt.ICON
 	if _pickup_prompt.visible:

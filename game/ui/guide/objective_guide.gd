@@ -85,6 +85,9 @@ var _tag: Label
 var _dist: Label
 var _player: Node3D
 var _pool: ShardPool
+## Lágrimas del Núcleo y la que se señala (índice en CoreTears, -1 = ninguna).
+var _tears: CoreTears
+var _tear: int = -1
 var _crusher: CrystalCrusher
 var _sanctum: Sanctum
 var _tutorial: Tutorial
@@ -169,6 +172,8 @@ func _find_nodes() -> bool:
 		_tutorial = tree.get_first_node_in_group(&"tutorial") as Tutorial
 	if _flock == null:
 		_flock = tree.get_first_node_in_group(&"familiar_flock") as FamiliarFlock
+	if _tears == null:
+		_tears = tree.get_first_node_in_group(&"core_tears") as CoreTears
 	return _player != null and _camera != null
 
 
@@ -237,6 +242,8 @@ func _fill_situation(at: Vector3, delta: float) -> void:
 			):
 				_shard = best
 	_sit.shard_near = _shard >= 0
+	_tear = _tears.nearest(at, DEF.shard_radius_m * 2.0) if _tears else -1
+	_sit.tear_near = _tear >= 0
 
 
 func _switch_to(k: int) -> void:
@@ -268,6 +275,8 @@ func _refresh_tag() -> void:
 			_tag.text = tr("¡MEJORA!")
 		Guidance.Kind.CRYSTAL:
 			_tag.text = tr("CRISTAL MADRE")
+		Guidance.Kind.TEAR:
+			_tag.text = tr("¡LÁGRIMA!")
 		_:
 			_tag.text = ""
 
@@ -285,6 +294,9 @@ func _target_of(k: int) -> Vector3:
 				return _sanctum.marker_position() + Vector3.UP * 0.5
 		Guidance.Kind.CRYSTAL:
 			return CRYSTAL_AT
+		Guidance.Kind.TEAR:
+			if _tear >= 0 and _tears:
+				return _tears.position_of(_tear)
 	return target if target != Vector3.INF else CRYSTAL_AT
 
 
@@ -293,7 +305,7 @@ func _goal_alpha(at: Vector3) -> float:
 	var flat := Vector2(target.x - at.x, target.z - at.z)
 	var d: float = flat.length()
 	match kind:
-		Guidance.Kind.SHARD:
+		Guidance.Kind.SHARD, Guidance.Kind.TEAR:
 			return smoothstep(1.8, 4.5, d)
 		Guidance.Kind.CRUSHER:
 			if _crusher and _crusher.player_in_range():
@@ -329,6 +341,8 @@ func _color() -> Color:
 			return C_GOLD if _sit.bag_full() else C_PINK
 		Guidance.Kind.SANCTUM:
 			return C_GOLD
+		Guidance.Kind.TEAR:
+			return C_PINK
 	return C_VIOLET
 
 
