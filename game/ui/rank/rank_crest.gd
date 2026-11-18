@@ -28,86 +28,76 @@ const SHIELD: PackedStringArray = [
 	".......oro.......",
 	"........o........",
 ]
-## Emblemas (9 x 10, en la esquina (4, 3) del escudo): e color, l claro, w blanco.
-const EMBLEMS: Array[PackedStringArray] = [
+## Emblemas (9 x 10, en la esquina (4, 3) del escudo), uno tras otro de 10 en 10 filas:
+## e color, l claro, w blanco.
+const EMBLEM_ROWS: int = 10
+const EMBLEMS: PackedStringArray = [
 	# Aprendiz: la chispita.
-	[
-		"....l....",
-		"....l....",
-		"...lel...",
-		"...lel...",
-		"..lewel..",
-		"..ewwwe..",
-		".lewwwel.",
-		".eewwwee.",
-		"..eeeee..",
-		"...eee...",
-	],
+	"....l....",
+	"....l....",
+	"...lel...",
+	"...lel...",
+	"..lewel..",
+	"..ewwwe..",
+	".lewwwel.",
+	".eewwwee.",
+	"..eeeee..",
+	"...eee...",
 	# Iniciado: el copo de la Escarcha.
-	[
-		"....w....",
-		".l..l..l.",
-		"..e.l.e..",
-		"...lwl...",
-		"wlllwlllw",
-		"...lwl...",
-		"..e.l.e..",
-		".l..l..l.",
-		"....w....",
-		".........",
-	],
+	"....w....",
+	".l..l..l.",
+	"..e.l.e..",
+	"...lwl...",
+	"wlllwlllw",
+	"...lwl...",
+	"..e.l.e..",
+	".l..l..l.",
+	"....w....",
+	".........",
 	# Hechicero: el rayo.
-	[
-		".....lw..",
-		"....lw...",
-		"...lw....",
-		"..lwl....",
-		".lwwwwl..",
-		"....wl...",
-		"...wl....",
-		"..wl.....",
-		".wl......",
-		".l.......",
-	],
+	".....lw..",
+	"....lw...",
+	"...lw....",
+	"..lwl....",
+	".lwwwwl..",
+	"....wl...",
+	"...wl....",
+	"..wl.....",
+	".wl......",
+	".l.......",
 	# Magus: la montaña y el meteoro.
-	[
-		"......lw.",
-		".....le..",
-		"....e....",
-		".........",
-		"....l....",
-		"...lwl...",
-		"..lweel..",
-		".lweeeel.",
-		"lweeeeeel",
-		"eeeeeeeee",
-	],
+	"......lw.",
+	".....le..",
+	"....e....",
+	".........",
+	"....l....",
+	"...lwl...",
+	"..lweel..",
+	".lweeeel.",
+	"lweeeeeel",
+	"eeeeeeeee",
 	# Archimago: el ojo arcano que irradia.
-	[
-		"....w....",
-		".l..l..l.",
-		"..l...l..",
-		"...lll...",
-		".lleeell.",
-		"leeewweel",
-		".lleeell.",
-		"...lll...",
-		"..l...l..",
-		".l..l..l.",
-	],
+	"....w....",
+	".l..l..l.",
+	"..l...l..",
+	"...lll...",
+	".lleeell.",
+	"leeewweel",
+	".lleeell.",
+	"...lll...",
+	"..l...l..",
+	".l..l..l.",
 	# Leyenda: la corona con su estrella.
-	[
-		"....w....",
-		"...lwl...",
-		"....l....",
-		"l...e...l",
-		"ll.lel.ll",
-		"lelleelle",
-		"leeweweel",
-		"lllllllll",
-		"ewewewewe",
-		"lllllllll",
-	],
+	"....w....",
+	"...lwl...",
+	"....l....",
+	"l...e...l",
+	"ll.lel.ll",
+	"lelleelle",
+	"leeweweel",
+	"lllllllll",
+	"ewewewewe",
+	"lllllllll",
 ]
 const C_OUTLINE := Color("#14183a")
 
@@ -143,9 +133,9 @@ static func texture(rank: int) -> ImageTexture:
 				# Campo con un brillo arriba a la izquierda (la luz del juego viene de ahí).
 				var lit: bool = x + y < 12
 				img.set_pixel(x, y, field.lightened(0.08) if lit else field)
-	var emblem: PackedStringArray = EMBLEMS[clampi(def.emblem, 0, EMBLEMS.size() - 1)]
-	for y: int in emblem.size():
-		var row: String = emblem[y]
+	var first_row: int = clampi(def.emblem, 0, EMBLEMS.size() / EMBLEM_ROWS - 1) * EMBLEM_ROWS
+	for y: int in EMBLEM_ROWS:
+		var row: String = EMBLEMS[first_row + y]
 		for x: int in row.length():
 			var ch: String = row[x]
 			if ch != ".":
