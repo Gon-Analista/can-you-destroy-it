@@ -146,6 +146,18 @@ func _setup_autoplay() -> void:
 				if el.unlock_upgrade != &"":
 					GameState.progression.upgrade_levels[el.unlock_upgrade] = 1
 			caster.set_tier(caster.tier_index)
+		elif a.begins_with("--staff="):
+			# --staff=N: el báculo con la gema en el elemento N (índice de SpellCaster.ELEMENTS,
+			# como --hands), despierto. Con --hands=0,1 --staff=2 --combo sale la Tormenta.
+			_demo_staff(int(a.get_slice("=", 1)))
+		elif a.begins_with("--staff-cycle="):
+			# --staff-cycle=s: cada s segundos la gema pasa al siguiente elemento (como la R).
+			var every: float = float(a.get_slice("=", 1))
+			var cycler := Timer.new()
+			cycler.wait_time = every
+			cycler.autostart = true
+			cycler.timeout.connect(func() -> void: _player.get_caster().call(&"_cycle_staff", 1))
+			add_child(cycler)
 		elif a.begins_with("--litter="):
 			# --litter=N: N fragmentos sueltos por el suelo alrededor del mago (para la Gravedad).
 			_demo_litter.call_deferred(int(a.get_slice("=", 1)))
@@ -194,9 +206,14 @@ func _setup_autoplay() -> void:
 			# --discover=fireball,meteor: combinaciones ya descubiertas (Libro de Combinaciones).
 			for id: String in a.get_slice("=", 1).split(","):
 				GameState.progression.discover_recipe(StringName(id))
-		elif a == "--book":
+		elif a == "--book" or a == "--book-triples":
+			# --book-triples: el Libro abierto por la página de las triples.
+			var page: int = 1 if a == "--book-triples" else 0
 			get_tree().create_timer(0.8).timeout.connect(
-				func() -> void: (_hud.get_node(^"SpellBook") as SpellBook).open()
+				func() -> void:
+					var book: SpellBook = _hud.get_node(^"SpellBook")
+					book.open()
+					book.open_page(page)
 			)
 		elif a.begins_with("--menu="):
 			# --menu=title|pause|options[N]: abre ese menú (options2: la pestaña 2, Controles,
@@ -378,6 +395,17 @@ func _setup_autoplay() -> void:
 		)
 	if args.has("--report"):
 		get_tree().create_timer(4.0, true, false, true).timeout.connect(_print_report)
+
+
+## Demo: el báculo comprado y su gema en el elemento `idx` (despierto).
+func _demo_staff(idx: int) -> void:
+	GameState.progression.upgrade_levels[StaffCombos.UNLOCK_UPGRADE] = 1
+	var el: ElementDef = SpellCaster.ELEMENTS[clampi(idx, 0, SpellCaster.ELEMENTS.size() - 1)]
+	if el.unlock_upgrade != &"":
+		GameState.progression.upgrade_levels[el.unlock_upgrade] = 1
+	var caster: SpellCaster = _player.get_caster()
+	caster.staff.element_index = SpellCaster.ELEMENTS.find(el)
+	caster.set_tier(caster.tier_index)
 
 
 ## Demo: `count` fragmentos repartidos por el suelo entre 6 y 30 m del mago (delante y a los

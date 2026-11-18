@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"staff_power"
+display_name = "Gema viva"
+description = "La gema del báculo arde más: las combinaciones triples golpean más fuerte y su carga suma círculos."
+branch = 0
+element = &"staff"
+star_pos = Vector2i(58, 196)
+costs = PackedInt32Array(15000, 32000, 60000, 110000, 190000, 320000)
+prerequisites = Array[StringName]([&"staff"])
+stat = &"staff_mult"
+values = PackedFloat32Array(1, 1.05, 1.1, 1.15, 1.2, 1.25, 1.3)
+value_format = "daño x%.2f"

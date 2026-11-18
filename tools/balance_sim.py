@@ -26,6 +26,11 @@ Lee los datos reales del juego (game/data/**.tres) y reproduce las reglas del c�
   tear_pity_sec de juego como mucho; pagan los nodos del Núcleo (Fractura del Corazón: x daño de los
   combinados en el Corazón; Corazón Vidente: + golpes resonantes en el Corazón) y la Gran
   Convergencia, que se ve al 99 %: el informe dice si al llegar al Núcleo hay Lágrimas para ella.
+- Báculo y triples (`StaffCombos`): el Báculo pide la Tierra y el Pilón al 10 %; una triple suma el
+  daño de sus tres elementos, la Potencia del báculo (staff_mult) y su carga se acorta con el Foco
+  (staff_focus). La Tormenta Elemental reparte su daño en descargas (rayo, granizo de 3 y fuego, cada
+  una con sus saltos) durante `storm_sec` y, como sólo puede haber una, se juega en rotación: la
+  tormenta y, mientras descarga, el mejor otro ataque (como la Resonancia Arcana).
 
 El jugador simulado elige siempre el ataque que más maná por segundo le da y compra la mejora con mejor
 relación ganancia / coste (las de movimiento, cuando son baratas). No es un jugador real: es una cota
@@ -84,7 +89,10 @@ TK_INTERVAL = 0.14  # player.gd telekinesis_interval_sec: un fragmento cada 0,14
 TK_FULL_REACH = 12.0  # radio con el que la Telequinesis alcanza todo lo que cae (el del último nivel)
 POOL_SIZE, GRAVITY_BATCH = 128, 100  # shard_pool.gd pool_size; fragmentos que se juntan para la Gravedad
 # SpellRecipe.Delivery
-FRONT, SKY, RAIN, LANCE, BEAM, GROUND, MAGNET, GRAVITY, RESONANCE = range(9)
+FRONT, SKY, RAIN, LANCE, BEAM, GROUND, MAGNET, GRAVITY, RESONANCE, STORM, NOVA = range(11)
+HAIL_PER_VOLLEY = 2  # elemental_storm.gd: bolas de granizo de cada ráfaga
+STORM_PARTNERS = 8  # combinaciones que se prueban junto a la Tormenta
+STAFF_UPGRADE = "staff"  # StaffCombos.UNLOCK_UPGRADE
 ZERO = (0.0, 0.0, 0.0, 0.0)
 
 
@@ -224,6 +232,8 @@ class Recipe:
     shatter_sec: float = 0.0
     buff_sec: float = 0.0
     buff_lockout: float = 0.0
+    storm_sec: float = 0.0  # Tormenta Elemental: segundos de descargas y cada cuánto
+    storm_interval: float = 0.5
 
 
 @dataclass
@@ -289,9 +299,11 @@ def load():
             int(main.get("echo_count", 0)) if main.get("echo_of") else 0,
             float(main.get("echo_damage", 0.0)),
             main.get("echo_of", ""),
-            # spell_caster.gd: hit.element = elements[0], salvo la lluvia, cuyas estalactitas son
-            # de Escarcha (_deliver_rain: sub.element = &"frost").
-            "frost" if int(main.get("delivery", FRONT)) == RAIN else main["elements"][0],
+            # spell_caster.gd: hit.element = elements[0], salvo la lluvia, cuyos golpes son de
+            # `strike_element` (spell_delivery.gd _deliver_rain; vacío = Escarcha, las estalactitas).
+            (main.get("strike_element") or "frost")
+            if int(main.get("delivery", FRONT)) == RAIN
+            else main["elements"][0],
             int(main.get("delivery", FRONT)),
             float(main.get("pierce_depth", 0.0)),
             float(main.get("beam_sec", 0.0)),
@@ -299,6 +311,8 @@ def load():
             float(main.get("shatter_sec", 0.0)),
             float(main.get("buff_sec", 0.0)),
             float(main.get("buff_lockout_sec", 0.0)),
+            float(main.get("storm_sec", 0.0)),
+            float(main.get("storm_interval", 0.5)),
         )
     # Eco de X (spell_caster.gd _launch_combine, spell_echoes.gd echo_recipe): el daño sale de la
     # receta del eco, la potencia y el tamaño también salvo que no los tenga (entonces los de X), y
@@ -625,13 +639,15 @@ class Game:
         return out
 
     def _combo_damage(self, s: State, r: Recipe):
-        """(daño sin resonancia, tamaño, enfriamiento del ciclo) de una combinación cargada."""
+        """(daño sin resonancia, tamaño, enfriamiento del ciclo) de una combinación cargada. Las
+        triples suman el daño del elemento de la gema (SpellRecipe.damage_for)."""
         els = [self.elements[x] for x in r.elements]
         t0, t1 = self.tier(s, els[0]), self.tier(s, els[1])
+        gem = self.tier(s, els[2]).damage if len(els) == 3 else 0
         if t0.damage <= 0 and t1.damage <= 0:
             dmg, size = 1, 0.45  # tutorial: juntar sin daño hace 1
         else:
-            dmg = max(1, round((t0.damage + t1.damage) * r.mult * P["charge"]))
+            dmg = max(1, round((t0.damage + t1.damage + gem) * r.mult * P["charge"]))
             if r.power_stat:
                 dmg = round(dmg * self.stat(s, r.power_stat, 1.0))
             size = self.stat(s, r.size_stat, 1.0) if r.size_stat else 1.0
@@ -648,6 +664,7 @@ class Game:
         """(rendimiento medio de un lanzamiento, ciclo en s). `zone`: zona en la que cae
         ("frost", x) o ("shatter", x); `temper`: cae sobre una quemadura al rojo."""
         dmg, size, cd = self._combo_damage(s, r)
+        charge = self.charge_sec(s, r)
         if size < 0.6:
             res_p = 0.0  # las dos chispitas del tutorial nunca resuenan
         elif r.delivery == RESONANCE:
@@ -662,6 +679,22 @@ class Game:
         kw = dict(chain=r.chain, pierce=r.pierce, area=r.area_hits, pulse=r.delivery == RESONANCE)
 
         def delivered(h: float, mult_all: float, stm: bool, first: float, tmp: bool):
+            if r.storm_sec > 0:
+                # Tormenta (elemental_storm.gd): n descargas de h / n por turno de elementos; el
+                # granizo, en HAIL_PER_VOLLEY bolas. Cada una con los saltos de la receta.
+                n = max(1, math.floor(r.storm_sec / max(r.storm_interval, 0.05)))
+                each = max(1, gd_round(h / n))
+                y = ZERO
+                for k in range(n):
+                    first = r.elements.index("bolt") if "bolt" in r.elements else 0
+                    el = r.elements[(k + first) % len(r.elements)]  # empieza por el rayo
+                    if el == "frost":
+                        hail = max(1, gd_round(each / HAIL_PER_VOLLEY))
+                        for _ in range(HAIL_PER_VOLLEY):
+                            y = yadd(y, self._receive(hail, r.tier, size, r.shard_bonus, mult_all, **kw))
+                    else:
+                        y = yadd(y, self._receive(each, r.tier, size, r.shard_bonus, mult_all, **kw))
+                return y
             if r.beam_sec > 0:
                 # Haz: un golpe cada 0,1 s durante beam_sec, de daño x BEAM_TICK / beam_sec.
                 tick = math.ceil(BEAM_TICK / FRAME - 1e-9) * FRAME
@@ -697,7 +730,11 @@ class Game:
                         delivered(de * (self.res_mult if res else 1), emult, False, 1.0, False),
                         p * r.echo_count,
                     )
-        return out, r.charge + cd
+        return out, charge + cd
+
+    def charge_sec(self, s: State, r: Recipe) -> float:
+        """StaffCombos.charge_sec: el Foco del báculo acorta la carga de las triples."""
+        return r.charge * (self.stat(s, "staff_focus", 1.0) if len(r.elements) == 3 else 1.0)
 
     def attacks(self, s: State):
         """Lista de (nombre, esencia/s, maná/s, fragmentos/s, valor/s, sólo_combinación, grupo)."""
@@ -740,9 +777,28 @@ class Game:
                 tot = yadd(tot, b0[1:5], t_rest)
             tot = yadd(ZERO, tot, 1.0 / period)
             out.append((f"{r.id}[{b1[0] if b1 else '-'}]",) + tot + (True, r.id))
+        # Tormenta Elemental (elemental_storm.gd): sólo una a la vez (buff_lockout_sec). Rotación:
+        # cargar y soltar la tormenta y, mientras descarga sola, otra combinación. Se prueban las
+        # mejores (la logística, que se aplica en rates(), decide cuál sale mejor).
+        base = list(out)
+        for r in self.recipes.values():
+            if r.storm_sec <= 0 or not self._recipe_awake(s, r):
+                continue
+            y, cycle = self.cast_yield(s, r, res_p)
+            period = max(r.buff_lockout, cycle)
+            # Mientras descarga, las manos siguen con combinaciones (no con disparos sueltos).
+            others = sorted((a for a in base if a[5]), key=lambda a: -a[2])[:STORM_PARTNERS]
+            for b0 in others or [None]:
+                tot = yadd(ZERO, y, P["accuracy"])
+                if b0:
+                    tot = yadd(tot, b0[1:5], period - cycle)
+                tot = yadd(ZERO, tot, 1.0 / period)
+                out.append((f"{r.id}[{b0[0] if b0 else '-'}]",) + tot + (True, r.id))
         return out
 
     def _recipe_awake(self, s: State, r: Recipe) -> bool:
+        if len(r.elements) == 3 and s.levels.get(STAFF_UPGRADE, 0) <= 0:
+            return False  # las triples piden el báculo
         return all(x in self.elements and self.awake(s, self.elements[x]) for x in r.elements)
 
     def _attack_list(self, s: State, res_p: float):
@@ -793,8 +849,11 @@ class Game:
         combos = [
             r
             for r in self.recipes.values()
-            if r.mult > 0 and self._recipe_awake(s, r) and not (r.delivery == RESONANCE and r.buff_sec > 0)
-        ]  # mult 0: utilidades (Gravedad, Magnetismo); la Resonancia Arcana va aparte
+            if r.mult > 0
+            and self._recipe_awake(s, r)
+            and not (r.delivery == RESONANCE and r.buff_sec > 0)
+            and r.storm_sec <= 0
+        ]  # mult 0: utilidades (Gravedad, Magnetismo); la Resonancia Arcana y la Tormenta, aparte
         alone = {}
         for r in combos:
             y, cycle = self.cast_yield(s, r, res_p)
@@ -1000,6 +1059,11 @@ class Game:
         if u.reveal > 0 and 1.0 - s.essence / self.total < u.reveal - 1e-9:
             return False
         for pr in u.prereq:
+            if pr.startswith("pylon:"):
+                # Progression._has_requirement: el Pilón (progreso real) hasta esa marca.
+                if s.pylon / self.total + 1e-6 < float(pr[6:]):
+                    return False
+                continue
             if pr.startswith("recipe:"):
                 r = self.recipes.get(pr[7:])
                 if r is None or any(not self.awake(s, self.elements[x]) for x in r.elements):
@@ -1021,7 +1085,7 @@ class Game:
         if u.id in MOVEMENT_UPGRADES:
             gain = max(gain, 0.04)  # gusto por moverse: se compran cuando salen baratas
         # Desbloqueos (despertar un elemento): curiosidad, aunque al principio rinda poco.
-        if u.stat.endswith("_awake"):
+        if u.stat.endswith("_awake") or u.stat == "staff_owned":
             gain = max(gain, 0.15)
         return gain / self.cost(s, u)
 

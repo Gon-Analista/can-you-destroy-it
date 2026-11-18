@@ -12,8 +12,10 @@ extends Resource
 ## MAGNET: utilidad, atrae los fragmentos. GRAVITY: pozo de gravedad que se traga en espiral
 ## todos los fragmentos sueltos del valle. RESONANCE: golpe que hace vibrar el cristal entero y
 ## deja unos segundos en los que todo golpe es resonante.
+## STORM (triple): una nube de tormenta sobre el blanco que descarga rayos, granizo y fuego
+## durante `storm_sec`. NOVA (triple): una estrella vuela al blanco, se contrae y estalla.
 ## Los Ecos no son una entrega: usan la de la receta que repiten (`echo_of`).
-enum Delivery { FRONT, SKY, RAIN, LANCE, BEAM, GROUND, MAGNET, GRAVITY, RESONANCE }
+enum Delivery { FRONT, SKY, RAIN, LANCE, BEAM, GROUND, MAGNET, GRAVITY, RESONANCE, STORM, NOVA }
 
 @export var id: StringName
 @export var display_name: String
@@ -24,9 +26,11 @@ enum Delivery { FRONT, SKY, RAIN, LANCE, BEAM, GROUND, MAGNET, GRAVITY, RESONANC
 ## Reacción: no se lanza; se descubre al golpear con un elemento la huella de otro.
 @export var is_reaction: bool = false
 @export var delivery: Delivery = Delivery.FRONT
-## Ids de ElementDef. El orden no importa.
+## Ids de ElementDef. El orden no importa. Dos: pareja (las manos); tres: combinación triple
+## (las dos manos y el báculo, GDD 5.2).
 @export var elements: Array[StringName] = []
-## Daño = (daño mano izquierda + daño mano derecha) x multiplicador x potencia de la carga.
+## Daño = (daño mano izquierda + daño mano derecha [+ daño del báculo]) x multiplicador x
+## potencia de la carga.
 @export var damage_multiplier: float = 1.0
 ## Radio de la explosión en el cristal (m). 0 = golpe puntual.
 @export var area_radius: float = 0.0
@@ -61,6 +65,8 @@ enum Delivery { FRONT, SKY, RAIN, LANCE, BEAM, GROUND, MAGNET, GRAVITY, RESONANC
 ## RAIN: proyectiles que caen y radio de la zona (m).
 @export var rain_count: int = 0
 @export var rain_radius: float = 4.0
+## RAIN: elemento de cada golpe de la lluvia (vacío = Escarcha, las estalactitas).
+@export var strike_element: StringName
 ## LANCE: profundidad del túnel (m); `freeze_trail` congela las paredes.
 @export var pierce_depth: float = 0.0
 @export var freeze_trail: bool = false
@@ -90,6 +96,16 @@ enum Delivery { FRONT, SKY, RAIN, LANCE, BEAM, GROUND, MAGNET, GRAVITY, RESONANC
 ## GRAVITY: segundos hasta que el pozo se cierra (los fragmentos tardan eso en llegar).
 @export var gravity_sec: float = 2.5
 
+@export_group("Triples")
+## STORM: segundos que dura la tormenta, cada cuánto descarga y radio de la zona (m). Las
+## descargas se reparten el daño y van por turno por sus elementos (rayo, granizo, fuego).
+## Sólo puede haber una: `buff_lockout_sec` es lo que tarda en poder repetirse.
+@export var storm_sec: float = 0.0
+@export var storm_interval: float = 0.5
+@export var storm_radius: float = 7.0
+## NOVA: segundos que la estrella se contrae en el blanco antes de estallar.
+@export var nova_sec: float = 0.0
+
 @export_group("Carga")
 ## Tiempo manteniendo las dos manos juntas hasta la carga completa (s).
 @export var charge_sec: float = 0.7
@@ -112,10 +128,30 @@ enum Delivery { FRONT, SKY, RAIN, LANCE, BEAM, GROUND, MAGNET, GRAVITY, RESONANC
 @export var impact_sfx: Array[AudioStream] = []
 
 
-## Daño de la combinación según el daño de cada mano y la carga (0..1). Nunca menos de 1.
-func damage_for(left_damage: int, right_damage: int, charge: float) -> int:
+## Daño de la combinación según el daño de cada mano (y del báculo, en las triples) y la carga
+## (0..1). Nunca menos de 1.
+func damage_for(left_damage: int, right_damage: int, charge: float, staff_damage: int = 0) -> int:
 	var power: float = lerpf(min_power, 1.0, clampf(charge, 0.0, 1.0))
-	return maxi(1, roundi(float(left_damage + right_damage) * damage_multiplier * power))
+	var total: int = left_damage + right_damage + (staff_damage if is_triple() else 0)
+	return maxi(1, roundi(float(total) * damage_multiplier * power))
+
+
+## Combinación triple: dos manos y el báculo.
+func is_triple() -> bool:
+	return elements.size() == 3 and not is_reaction
+
+
+## True si estos tres elementos (en cualquier orden, con repeticiones) forman esta triple.
+func matches_triple(element_a: StringName, element_b: StringName, element_c: StringName) -> bool:
+	if not is_triple():
+		return false
+	var want: Array[StringName] = elements.duplicate()
+	for e: StringName in [element_a, element_b, element_c]:
+		var at: int = want.find(e)
+		if at < 0:
+			return false
+		want.remove_at(at)
+	return true
 
 
 ## True si estos dos elementos (en cualquier orden) forman esta receta.

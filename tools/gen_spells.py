@@ -10,7 +10,8 @@ Escribe en game/data/:
   completa hasta el 10).
 - spells/recipe_*.tres: Lanza de Hielo, Juicio del Trueno, Meteoro, Lluvia de Estalactitas, Haz de
   Plasma, Lanza Cargada, Terremoto, Magnetismo, los Ecos (Fuego, Hielo, Trueno: repiten otra
-  receta con `echo_of`), Gravedad, Resonancia Arcana y las reacciones Vapor y Temple.
+  receta con `echo_of`), Gravedad, Resonancia Arcana, las triples del báculo (Tormenta Elemental,
+  Glaciar Tronante, Supernova, Lluvia de Estrellas, Erupción) y las reacciones Vapor y Temple.
 Los números (daño, áreas, tiempos) y los textos se ajustan aquí y se vuelve a generar. La Bola de
 Fuego y el Choque Térmico siguen escritos a mano.
 """
@@ -149,6 +150,37 @@ VISUALS = {
                       [(1, 0.7, 1), (0.85, 0.6, 1), (1, 1, 1), (0.7, 0.5, 1)],
                       {"flare_color": c(2.8, 2.5, 3.0, 1), "light_color": c(0.9, 0.7, 1, 1), "core_spin": "1.2",
                        "core_swirl": "0.3", "ribbon_speed": "1.6", "seed": "137", "style": "1", "glow_rays": "1.0"}),
+    # Triples del báculo (GDD 5.2).
+    # Tormenta Elemental: nube violeta oscura con relámpagos blancos, fuego y hielo dentro.
+    "vfx_elemental_storm": ("vfx_arcane_orb", [(2.7, 2.7, 2.9), (1.2, 1.6, 2.4), (1.5, 0.7, 1.7), (0.5, 0.35, 1.0), (0.12, 0.1, 0.3)],
+                            [(2.4, 2.4, 2.6), (1.8, 1.0, 0.4), (0.8, 1.4, 2.0), (1.2, 1.1, 0.5)],
+                            [(1, 0.6, 0.25), (0.6, 0.85, 1), (1, 0.95, 0.45), (0.8, 0.6, 1)],
+                            {"flare_color": c(2.6, 2.5, 2.8, 1), "light_color": c(0.85, 0.85, 1, 1), "light_energy": "0.9",
+                             "core_spin": "2.2", "core_swirl": "0.45", "core_arms": "3.0", "ribbon_speed": "2.8",
+                             "seed": "149", "style": "1", "glow_rays": "0.9", "ribbon_count": "6"}),
+    # Glaciar Tronante: hielo azul profundo con venas de rayo amarillo.
+    "vfx_thunder_glacier": ("vfx_frost_3", [(2.5, 2.7, 2.9), (1.0, 1.7, 2.3), (0.4, 0.9, 1.8), (0.2, 0.4, 1.1), (0.06, 0.12, 0.45)],
+                            [(2.4, 2.5, 2.6), (1.6, 1.5, 0.6), (0.8, 1.3, 1.8), (0.6, 1.0, 1.6)],
+                            [(0.7, 0.95, 1), (1, 0.95, 0.45), (1, 1, 1), (0.5, 0.75, 1)],
+                            {"flare_color": c(2.4, 2.6, 2.8, 1), "light_color": c(0.7, 0.9, 1, 1), "light_energy": "0.9",
+                             "core_spin": "1.6", "ribbon_speed": "2.4", "seed": "151", "style": "1"}),
+    # Supernova: estrella blanca y dorada con borde rosa.
+    "vfx_supernova": ("vfx_magic_flame", [(3.0, 2.9, 2.6), (2.6, 2.0, 1.0), (2.0, 0.9, 0.9), (1.0, 0.3, 0.9), (0.3, 0.06, 0.4)],
+                      [(2.8, 2.6, 2.0), (2.2, 1.4, 0.6), (1.8, 0.8, 1.4), (1.2, 0.5, 1.4)],
+                      [(1, 0.9, 0.5), (1, 0.55, 0.85), (1, 1, 1), (0.85, 0.5, 1)],
+                      {"flare_color": c(3.0, 2.8, 2.4, 1), "light_color": c(1, 0.85, 0.7, 1), "light_energy": "1.0",
+                       "core_spin": "1.4", "seed": "157", "glow_rays": "1.2"}),
+    # Lluvia de Estrellas: estrellitas rosa y oro.
+    "vfx_star_rain": ("vfx_arcane_orb", [(2.8, 2.6, 2.4), (2.4, 1.6, 0.9), (1.8, 0.7, 1.4), (0.8, 0.3, 1.1), (0.25, 0.08, 0.4)],
+                      [(2.6, 2.4, 1.8), (2.0, 1.2, 0.6), (1.6, 0.7, 1.5), (1.0, 0.6, 1.5)],
+                      [(1, 0.85, 0.4), (1, 0.5, 0.9), (1, 1, 1), (0.8, 0.55, 1)],
+                      {"flare_color": c(2.8, 2.6, 2.2, 1), "light_color": c(1, 0.8, 0.8, 1), "core_spin": "1.8",
+                       "seed": "163", "style": "1", "glow_rays": "1.0"}),
+    # Erupción: lava naranja con costra de roca.
+    "vfx_eruption": ("vfx_fireball", [(2.6, 1.9, 0.9), (2.0, 0.9, 0.2), (1.3, 0.35, 0.05), (0.55, 0.15, 0.05), (0.2, 0.07, 0.04)],
+                     [(1.8, 1.1, 0.4), (1.3, 0.6, 0.15), (0.9, 0.4, 0.15), (0.5, 0.25, 0.12)],
+                     [(1, 0.55, 0.15), (0.75, 0.4, 0.2), (1, 0.85, 0.35), (0.5, 0.3, 0.15)],
+                     {"seed": "167", "light_color": c(1, 0.5, 0.2, 1)}),
 }
 
 
@@ -416,6 +448,67 @@ RECIPES = [
                    crack_radius=1.3, shake=0.4, orb_scale=7.0, trail_width=0.8, trail_length=0.3,
                    core=(1, 0.95, 1), glow=(0.85, 0.5, 1), tint=(0.95, 0.7, 1),
                    ramp=[(2.9, 2.7, 3.0), (2.3, 1.3, 2.5), (1.5, 0.65, 2.0), (0.75, 0.3, 1.3), (0.25, 0.1, 0.55)])),
+    # Triples del báculo (GDD 5.2): las dos manos y la gema del báculo. Su daño suma los tres
+    # elementos, lo sube la Potencia del báculo (staff_mult, que también da su nivel) y el Foco
+    # acorta su carga.
+    dict(id="elemental_storm", name="Tormenta Elemental", elements=["spark", "frost", "bolt"], delivery=9,
+         description="Triple. Una nube de tormenta se queda sobre el cristal y descarga, por turnos, rayos que saltan, "
+                     "granizo que congela y bolas de fuego que lo dejan ardiendo. Mientras dura, sigue lanzando.",
+         riddle="Fuego, hielo y rayo no caben en dos manos. Con un tercero, el cielo entero se enfada.",
+         dmg=39.6, chain=2, burn=3.0, storm=9.0, storm_interval=1.0, storm_radius=7.0, lockout=13.0,
+         sky_height=30.0, sky_circles=3, charge=1.6, cooldown=3.0, visual="vfx_elemental_storm",
+         circle=(1.3, 1.1, 1.9), hot=(2.2, 2.2, 2.5), cast=["sfx_storm_strike_01"],
+         impact=["sfx_storm_strike_01", "sfx_storm_strike_02", "sfx_storm_strike_03"], loop="amb_storm_charge_loop",
+         staff=True,
+         tier=dict(damage=8, speed=60.0, wobble=0.0, shards_min=2, shards_max=3, impact_particles=50, light_energy=6.0,
+                   crack_radius=1.6, shake=0.3, orb_scale=9.0, trail_width=0.8, trail_length=0.3,
+                   core=(1, 1, 1), glow=(0.75, 0.6, 1), tint=(0.9, 0.85, 1),
+                   ramp=[(2.7, 2.7, 2.9), (1.2, 1.6, 2.4), (1.5, 0.7, 1.7), (0.5, 0.35, 1.0), (0.12, 0.1, 0.3)])),
+    dict(id="thunder_glacier", name="Glaciar Tronante", elements=["frost", "earth", "bolt"], delivery=1,
+         description="Triple. Un glaciar entero cae del cielo envuelto en rayos: perfora un túnel helado, se parte en "
+                     "esquirlas y los rayos saltan por todo el cristal.",
+         riddle="El hielo pesa si le das piedra. Y si además le das un rayo, cae tronando.",
+         dmg=1.65, area=3.5, area_hits=8, chain=6, pierce=9.0, freeze=True, shard_bonus=1, sky_height=62.0, fall=1.1,
+         sky_circles=4, charge=1.6, cooldown=4.0, visual="vfx_thunder_glacier", circle=(0.8, 1.2, 1.8),
+         hot=(1.9, 2.0, 2.2), cast=["sfx_meteor_fall_01"], impact=["sfx_glacier_crash_01"], loop="amb_sky_charge_loop",
+         staff=True,
+         tier=dict(damage=12, speed=60.0, wobble=0.0, shards_min=4, shards_max=6, shard_scale=1.4, impact_particles=90,
+                   light_energy=6.0, crack_radius=3.0, shake=0.6, orb_scale=24.0, trail_width=4.0, trail_length=0.6,
+                   trail_smoke=0.6, core=(0.95, 1, 1), glow=(0.5, 0.8, 1), tint=(0.75, 0.9, 1),
+                   ramp=[(2.5, 2.7, 2.9), (1.0, 1.7, 2.3), (0.4, 0.9, 1.8), (0.2, 0.4, 1.1), (0.06, 0.12, 0.45)])),
+    dict(id="supernova", name="Supernova", elements=["spark", "earth", "arcane"], delivery=10,
+         description="Triple. Una estrella diminuta vuela al cristal, se queda quieta, se traga la luz de alrededor y "
+                     "revienta en una explosión enorme que deja el cristal ardiendo.",
+         riddle="El fuego quema, la piedra pesa y lo arcano amplifica. Junta los tres y nace una estrella... que muere.",
+         dmg=6.66, area=6.0, area_hits=12, burn=4.0, nova=0.9, charge=1.8, cooldown=4.5, visual="vfx_supernova",
+         circle=(1.9, 1.3, 0.8), hot=(2.6, 2.4, 2.0), cast=["sfx_echo_cast_01"], impact=["sfx_nova_blast_01"],
+         loop="amb_arcane_charge_loop", staff=True,
+         tier=dict(damage=12, speed=30.0, wobble=0.02, shards_min=5, shards_max=7, shard_scale=1.5, impact_particles=120,
+                   light_energy=8.0, crack_radius=3.6, shake=0.8, orb_scale=14.0, trail_width=1.4, trail_length=0.5,
+                   trail_smoke=0.3, core=(1, 1, 0.95), glow=(1, 0.7, 0.4), tint=(1, 0.8, 0.6),
+                   ramp=[(3.0, 2.9, 2.6), (2.6, 2.0, 1.0), (2.0, 0.9, 0.9), (1.0, 0.3, 0.9), (0.3, 0.06, 0.4)])),
+    dict(id="star_rain", name="Lluvia de Estrellas", elements=["arcane", "arcane", "spark"], delivery=2,
+         description="Triple. Se abre el cielo y caen una docena de estrellas fugaces sobre toda la zona; cada una deja una "
+                     "quemadura de luz.",
+         riddle="Dos veces lo arcano, y una chispa para encenderlo. Pide un deseo antes de mirar arriba.",
+         dmg=7.26, rain=12, rain_radius=7.0, strike="spark", burn=2.0, sky_height=46.0, sky_circles=3, charge=1.5,
+         cooldown=3.8, visual="vfx_star_rain", circle=(1.8, 0.9, 1.6), hot=(2.4, 2.1, 2.2), cast=["sfx_star_rain_01"],
+         impact=["sfx_arcane_impact_01"], loop="amb_arcane_charge_loop", staff=True,
+         tier=dict(damage=4, speed=55.0, wobble=0.0, shards_min=1, shards_max=2, impact_particles=30, light_energy=3.0,
+                   crack_radius=1.0, shake=0.08, orb_scale=7.0, trail_width=1.0, trail_length=0.5,
+                   core=(1, 0.95, 0.9), glow=(1, 0.55, 0.85), tint=(1, 0.8, 0.9),
+                   ramp=[(2.8, 2.6, 2.4), (2.4, 1.6, 0.9), (1.8, 0.7, 1.4), (0.8, 0.3, 1.1), (0.25, 0.08, 0.4)])),
+    dict(id="eruption", name="Erupción", elements=["spark", "earth", "earth"], delivery=5,
+         description="Triple. Golpeas el suelo y la tierra se abre hasta el cristal: su base revienta en un volcán de lava "
+                     "que lo deja ardiendo y suelta fragmentos más grandes.",
+         riddle="Piedra contra piedra hace temblar. ¿Y si en la grieta cae una chispa?",
+         dmg=3.63, area=4.5, area_hits=10, burn=6.0, shard_bonus=1, charge=1.5, cooldown=4.0, visual="vfx_eruption",
+         circle=(1.8, 0.8, 0.3), hot=(2.2, 1.6, 0.8), cast=["sfx_quake_01"], impact=["sfx_eruption_01"],
+         loop="amb_sky_charge_loop", staff=True,
+         tier=dict(damage=10, speed=26.0, wobble=0.0, shards_min=4, shards_max=6, shard_scale=1.4, impact_particles=90,
+                   light_energy=5.0, crack_radius=3.0, shake=0.6, orb_scale=12.0, trail_width=1.8, trail_length=0.5,
+                   trail_smoke=1.0, core=(1, 0.85, 0.5), glow=(1, 0.4, 0.1), tint=(1, 0.6, 0.25),
+                   ramp=[(2.6, 1.9, 0.9), (2.0, 0.9, 0.2), (1.3, 0.35, 0.05), (0.55, 0.15, 0.05), (0.2, 0.07, 0.04)])),
     # Reacciones: no se lanzan; se descubren al provocarlas en el cristal.
     dict(id="steam", name="Explosión de Vapor", elements=["spark", "frost"], reaction=True,
          description="Reacción: el fuego sobre cristal congelado lo hace estallar en vapor: más daño y una lluvia de "
@@ -479,6 +572,16 @@ def write_recipe(r):
         res += [f"buff_sec = {r['buff']}", f"buff_lockout_sec = {r['lockout']}"]
     if r.get("gravity"):
         res.append(f"gravity_sec = {r['gravity']}")
+    if r.get("strike"):
+        res.append(f'strike_element = &"{r["strike"]}"')
+    if r.get("storm"):
+        res += [f"storm_sec = {r['storm']}", f"storm_interval = {r['storm_interval']}",
+                f"storm_radius = {r['storm_radius']}", f"buff_lockout_sec = {r['lockout']}"]
+    if r.get("nova"):
+        res.append(f"nova_sec = {r['nova']}")
+    if r.get("staff"):
+        # Las triples suben con el báculo: su Potencia multiplica el daño y da su nivel.
+        res += ['power_stat = &"staff_mult"', 'power_upgrade = &"staff_power"']
     write_resource(SPELLS / f"recipe_{r['id']}.tres", "SpellRecipe", "res://data/defs/spell_recipe.gd", subs, res, ext)
 
 

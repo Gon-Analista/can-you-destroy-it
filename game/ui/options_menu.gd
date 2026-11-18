@@ -227,6 +227,7 @@ func _key_list(page: VBoxContainer) -> void:
 	)
 	items.append_array(second.split("  ·  "))
 	items.append(tr("Q / E: ELEMENTO DE CADA MANO"))
+	items.append(tr("R / RUEDA: ELEMENTO DEL BÁCULO"))
 	items.append(tr("B: LIBRO DE COMBINACIONES"))
 	items.append(tr("ESC: MENÚ Y OPCIONES"))
 	var grid := GridContainer.new()

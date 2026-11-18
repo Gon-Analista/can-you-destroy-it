@@ -7,9 +7,13 @@ extends Node
 ## Choque Térmico), que se carga mientras se mantiene y sale al soltar. Desde el nivel 2 la
 ## carga va por etapas, un círculo mágico por etapa con su golpe (ChargeStages, ChargeFeedback).
 ##
+## Con el báculo (StaffCombos) la gema lleva un tercer elemento (R o la rueda lo cambian): si
+## las dos manos y la gema forman una receta triple, al juntar las manos sale la triple.
+##
 ## Para no perder la combinación, un clic con las dos manos listas espera `combine_window_sec`
 ## por si llega el otro; si se suelta antes, sale en el acto. Enfriamiento con "buffer" (si
-## pulsas un poco antes de tiempo, sale en cuanto se pueda), golpe resonante y pools.
+## pulsas un poco antes de tiempo, sale en cuanto se pueda), golpe resonante y pools. Cómo llega
+## cada hechizo al cristal está en SpellDelivery.
 
 const ELEMENT: ElementDef = preload("res://data/elements/spark.tres")
 const RECIPE: SpellRecipe = preload("res://data/spells/recipe_fireball.tres")
@@ -43,6 +47,11 @@ const RECIPES: Array[SpellRecipe] = [
 	preload("res://data/spells/recipe_temper.tres"),
 ]
 const SWITCH_SFX: AudioStream = preload("res://audio/sfx/sfx_spell_combine_01.ogg")
+const STAFF_SFX: Array[AudioStream] = [
+	preload("res://audio/sfx/sfx_staff_cycle_01.ogg"),
+	preload("res://audio/sfx/sfx_staff_cycle_02.ogg"),
+]
+const TRIPLE_SFX: AudioStream = preload("res://audio/sfx/sfx_triple_combine_01.ogg")
 const CAST_SFX: Array[AudioStream] = [
 	preload("res://audio/sfx/sfx_spark_cast_01.ogg"),
 	preload("res://audio/sfx/sfx_spark_cast_02.ogg"),
@@ -50,21 +59,25 @@ const CAST_SFX: Array[AudioStream] = [
 ]
 const READY_SFX: AudioStream = preload("res://audio/sfx/sfx_spark_ready_01.ogg")
 const FIZZLE_SFX: AudioStream = preload("res://audio/sfx/sfx_spark_fizzle_01.ogg")
-const PROJECTILE_POOL: int = 24
-const COMBO_PROJECTILE_POOL: int = 6
 ## Ecos fantasma del Arcano en vuelo a la vez (disparos sueltos y Ecos de X).
 const ECHO_PROJECTILE_POOL: int = 10
 const ARCANE_COLOR := Color(1.4, 0.7, 1.9)
 const ARCANE_HOT := Color(2.2, 1.8, 2.4)
-const PLASMA_SFX: AudioStream = preload("res://audio/sfx/amb_plasma_loop.ogg")
-## Cada cuánto golpea el Haz de Plasma (s).
-const BEAM_TICK: float = 0.09
 const RAY_LENGTH: float = 250.0
 const ACTIONS: Array[StringName] = [&"cast_left", &"cast_right"]
 ## Lado que usan las señales y las manos para el hechizo combinado.
 const BOTH_HANDS: int = 2
+## La rueda del ratón (o un panel táctil, que manda muchos pasos seguidos) cambia la gema como
+## mucho una vez cada tanto (ms).
+const WHEEL_STEP_MS: int = 140
 
-@export var camera: Camera3D
+@export var camera: Camera3D:
+	set(value):
+		camera = value
+		if _delivery:
+			_delivery.camera = value
+		if _stage_fx:
+			_stage_fx.camera = value
 @export var hands: WizardHands
 
 ## Nivel de la Chispa (lo da la Potencia; en debug, las teclas 1-5 lo fuerzan en todos).
@@ -75,6 +88,8 @@ var hand_element: Array[int] = [0, 0]
 var debug_recipe_level: int = -1
 ## Depuración (modo dios): las manos recargan al instante.
 var debug_no_cooldown: bool = false
+## El báculo: elemento de su gema y las recetas triples.
+var staff := StaffCombos.new()
 var _debug_tier: int = -1
 var _active_recipe: SpellRecipe = RECIPE
 var _cast_sounds: Dictionary[ElementDef, AudioStreamRandomizer] = {}
@@ -95,26 +110,19 @@ var _combine_full_announced: bool = false
 var _stages := ChargeStages.new()
 var _stage_fx: ChargeFeedback
 var _combine_by_input: bool = false
-var _projectiles: Array[SparkProjectile] = []
-var _combo_projectiles: Array[SparkProjectile] = []
 var _cast_random: AudioStreamRandomizer
 var _combo_cast_random: AudioStreamRandomizer
 var _charge_player: AudioStreamPlayer
 var _rng := RandomNumberGenerator.new()
-## Haz de Plasma en curso: segundos que le quedan, golpe de plantilla y reloj de golpes.
-var _beam_left: float = 0.0
-var _beam_hit: SpellHit
-var _beam_tick: float = 0.0
 ## Círculos mágicos de los niveles 6 a 10.
 var _circles: MagicCircles
-## Ecos del Arcano (disparos sueltos y Ecos de X) y pozo de Gravedad.
+## Ecos del Arcano (disparos sueltos y Ecos de X) y cómo llega cada hechizo al cristal.
 var _echoes: SpellEchoes
-var _gravity: GravityWell
+var _delivery: SpellDelivery
 ## Resonancia Arcana: segundos en los que todo golpe es resonante y hasta poder repetirla.
 var _resonance_left: float = 0.0
 var _resonance_lock: float = 0.0
-## Lado por el que entra el próximo hechizo del cielo (se alterna en cada lanzamiento).
-var _sky_side: float = 1.0
+var _wheel_at: int = -WHEEL_STEP_MS
 
 
 func _ready() -> void:
@@ -124,30 +132,30 @@ func _ready() -> void:
 	_circles = MagicCircles.new()
 	_circles.name = "MagicCircles"
 	add_child(_circles)
-	for i: int in PROJECTILE_POOL:
-		_projectiles.append(_make_projectile("Spark%d" % i))
-	for i: int in COMBO_PROJECTILE_POOL:
-		_combo_projectiles.append(_make_projectile("Combo%d" % i))
+	_delivery = SpellDelivery.new()
+	_delivery.name = "Delivery"
+	add_child(_delivery)
+	_delivery.setup(camera, _circles, _aim, _hand_origin)
 	var echo_pool: Array[SparkProjectile] = []
 	for i: int in ECHO_PROJECTILE_POOL:
-		echo_pool.append(_make_projectile("Echo%d" % i))
+		echo_pool.append(_delivery.make_projectile("Echo%d" % i))
 		echo_pool[i].prepare_combo(false)  # Los ecos del Eco de Fuego son bolas de fuego.
 	_echoes = SpellEchoes.new()
 	_echoes.name = "Echoes"
 	add_child(_echoes)
 	_echoes.setup(
-		self, _circles, echo_pool, [_aim, _hand_origin, _deliver, _deliver_sky, _resonant_chance]
+		self,
+		_circles,
+		echo_pool,
+		[_aim, _hand_origin, _delivery.deliver, _delivery.deliver_sky, _resonant_chance]
 	)
-	_gravity = GravityWell.new()
-	_gravity.name = "GravityWell"
-	add_child(_gravity)
 	_cast_random = _randomizer(CAST_SFX, 1.15)
 	_combo_cast_random = _randomizer(RECIPE.cast_sfx, 1.08)
 	for el: ElementDef in ELEMENTS:
 		_cast_sounds[el] = (
 			_randomizer(el.cast_sfx, 1.12) if not el.cast_sfx.is_empty() else _cast_random
 		)
-	for r: SpellRecipe in RECIPES:
+	for r: SpellRecipe in RECIPES + StaffCombos.TRIPLES:
 		if not r.is_reaction:
 			_combo_sounds[r] = _randomizer(r.cast_sfx, 1.08)
 	_charge_player = AudioStreamPlayer.new()
@@ -184,7 +192,10 @@ func element_of(side: int) -> ElementDef:
 
 ## Nivel del hechizo de una mano: según la mejora de Potencia de su elemento.
 func tier_for(side: int) -> SpellTier:
-	var el: ElementDef = element_of(side)
+	return _element_tier(element_of(side))
+
+
+func _element_tier(el: ElementDef) -> SpellTier:
 	var idx: int = tier_index if el == ELEMENT else roundi(GameState.stat(el.power_stat, 0.0))
 	if _debug_tier >= 0:
 		idx = _debug_tier
@@ -247,8 +258,20 @@ func _hand_origin(side: int) -> Vector3:
 	return camera.global_position + camera.global_basis * Vector3(0, -0.17, -0.6)
 
 
-## Receta para la pareja de elementos de las manos (el orden no importa), o null.
+## Receta para los elementos de las manos (el orden no importa), o null. Con el báculo, si las
+## manos y la gema forman una triple, la triple.
 func recipe_for_hands() -> SpellRecipe:
+	var gem: ElementDef = staff.element(ELEMENTS)
+	if gem:
+		var triple: SpellRecipe = StaffCombos.triple_for(element_of(0).id, element_of(1).id, gem.id)
+		# Con la tormenta aún rugiendo, las manos siguen con su pareja (no se pierde el clic).
+		var raging: bool = (
+			triple
+			and triple.delivery == SpellRecipe.Delivery.STORM
+			and _delivery.storm().lock_left() > 0.0
+		)
+		if triple and not raging:
+			return triple
 	for r: SpellRecipe in RECIPES:
 		if r.matches(element_of(0).id, element_of(1).id):
 			return r
@@ -282,6 +305,25 @@ func cycle_element(side: int) -> void:
 	Events.hint.emit(
 		tr("AÚN NO CONOCES OTRO ELEMENTO: DESPIÉRTALO EN EL GRIMORIO"), Color("#a5dae5")
 	)
+
+
+## R / rueda: la gema del báculo pasa al siguiente elemento despierto (`dir` -1: al anterior).
+func _cycle_staff(dir: int) -> void:
+	if _combining or not StaffCombos.owned():
+		return
+	var idx: int = staff.cycle(ELEMENTS, dir)
+	if idx < 0:
+		Events.hint.emit(tr("LA GEMA NO CONOCE OTRO ELEMENTO"), Color("#ffc46b"))
+		return
+	var el: ElementDef = ELEMENTS[idx]
+	if hands and hands.staff:
+		hands.staff.set_element(el, true)
+	AudioDirector.play_sfx(STAFF_SFX[idx % STAFF_SFX.size()], -6.0, 0.9 + 0.06 * idx)
+	var triple: SpellRecipe = recipe_for_hands()
+	var msg: String = "%s: %s" % [tr("BÁCULO"), tr(el.display_name).to_upper()]
+	if triple and triple.is_triple():
+		msg += "  ·  " + tr("¡LAS MANOS Y LA GEMA RESUENAN!")
+	Events.hint.emit(msg, el.color)
 
 
 ## Carga de una mano: 0 = recién lanzada, 1 = lista. Sin `side`, la media de las dos
@@ -318,6 +360,14 @@ func _refresh_hands(celebrate: bool, only_side: int = -1) -> void:
 		if only_side >= 0 and side != only_side:
 			continue
 		hands.set_flame_visual(tier_for(side).visual, celebrate, side)
+	if hands.staff and only_side < 0:
+		var first: bool = staff.ensure_element(ELEMENTS)
+		hands.staff.set_element(staff.element(ELEMENTS), celebrate)
+		if first and celebrate:
+			Events.hint.emit(
+				tr("¡BÁCULO! R O LA RUEDA: ELEMENTO DE LA GEMA · JUNTA LAS MANOS PARA UNA TRIPLE"),
+				Color("#ffc46b")
+			)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -328,6 +378,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed(&"cycle_element_right"):
 		cycle_element(1)
+		return
+	if _staff_input(event):
 		return
 	for side: int in 2:
 		if event.is_action_pressed(ACTIONS[side]):
@@ -345,6 +397,22 @@ func _unhandled_input(event: InputEvent) -> void:
 		var key: Key = (event as InputEventKey).physical_keycode
 		if key >= KEY_1 and key <= KEY_5:
 			set_tier(key - KEY_1, true)
+
+
+## R o la rueda del ratón: cambia el elemento de la gema del báculo. Devuelve si era eso.
+func _staff_input(event: InputEvent) -> bool:
+	if event.is_action_pressed(&"cycle_staff"):
+		_cycle_staff(1)
+		return true
+	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+		var wheel: MouseButton = (event as InputEventMouseButton).button_index
+		if wheel == MOUSE_BUTTON_WHEEL_UP or wheel == MOUSE_BUTTON_WHEEL_DOWN:
+			var now: int = Time.get_ticks_msec()
+			if now - _wheel_at >= WHEEL_STEP_MS:
+				_wheel_at = now
+				_cycle_staff(1 if wheel == MOUSE_BUTTON_WHEEL_UP else -1)
+			return true
+	return false
 
 
 ## Lanza con una mano, sin esperar a la combinación (lo usa el modo demo).
@@ -431,8 +499,6 @@ func _process(delta: float) -> void:
 			_cast_single(side)
 	if _combining:
 		_update_combine(delta)
-	if _beam_left > 0.0:
-		_update_beam(delta)
 	_resonance_lock = maxf(0.0, _resonance_lock - delta)
 	if _resonance_left > 0.0:
 		_resonance_left -= delta
@@ -479,7 +545,7 @@ func _cast_single(side: int) -> void:
 	_start_cooldown(side, _cooldown_for(tier))
 	_buffered[side] = false
 	_buffer_time[side] = 0.0
-	var projectile: SparkProjectile = _free_projectile(_projectiles)
+	var projectile: SparkProjectile = SpellDelivery.free_projectile(_delivery.projectiles)
 	if projectile == null:
 		return
 	var hit := SpellHit.new()
@@ -490,7 +556,7 @@ func _cast_single(side: int) -> void:
 	hit.damage = base_damage * (GameState.BALANCE.resonant_damage_mult if hit.resonant else 1)
 	hit.element = el.id
 	hit.element_def = el
-	_launch(projectile, hit, side)
+	_delivery.launch(projectile, hit, side)
 	if tier.echoes > 0:
 		_echoes.echo_single(side, hit, base_damage, projectile.target_collider, tier.echoes)
 	if _resonance_left > 0.0:
@@ -498,7 +564,7 @@ func _cast_single(side: int) -> void:
 		_circles.muzzle(_hand_origin(side), hit.position, 1, ARCANE_COLOR, ARCANE_HOT)
 	# El Rayo es casi instantáneo: se ve el rayo de la mano al blanco.
 	if el.chain_count > 0:
-		var crystal: MotherCrystal = _crystal()
+		var crystal: MotherCrystal = _delivery.crystal()
 		if crystal:
 			crystal.draw_bolt(_hand_origin(side), hit.position, 0.06, tier.color_glow, 0.12)
 	# Nivel 6+: círculos de runas que salen de la mano (uno más a nivel 8 y a nivel 10).
@@ -535,6 +601,16 @@ func _begin_combine(by_input: bool = true) -> void:
 		)
 		AudioDirector.play_sfx(FIZZLE_SFX, -6.0, 1.2)
 		return
+	var storm_lock: float = _delivery.storm().lock_left()
+	var gem: ElementDef = staff.element(ELEMENTS)
+	if storm_lock > 0.0 and gem and not _active_recipe.is_triple():
+		# Sólo una tormenta a la vez: mientras la nube descarga (o el cielo se calma), las manos
+		# lanzan su pareja; se avisa de por qué no sale la Tormenta.
+		var t: SpellRecipe = StaffCombos.triple_for(element_of(0).id, element_of(1).id, gem.id)
+		if t and t.delivery == SpellRecipe.Delivery.STORM:
+			Events.hint.emit(
+				tr("EL CIELO AÚN RUGE: ESPERA %d S") % ceili(storm_lock), Color("#c9b8ff")
+			)
 	_combining = true
 	_combine_by_input = by_input
 	_combine_time = 0.0
@@ -542,12 +618,17 @@ func _begin_combine(by_input: bool = true) -> void:
 	var bal: BalanceConfig = GameState.BALANCE
 	_stages.reset(
 		ChargeStages.count_for_level(charge_level(_active_recipe), bal.charge_stages_by_level),
-		_active_recipe.charge_sec,
+		StaffCombos.charge_sec(_active_recipe),
 		bal.charge_stage_min_sec
 	)
 	_stage_fx.begin(_stages.count)
 	if hands:
 		hands.begin_combine(_active_recipe.visual)
+	if _active_recipe.is_triple():
+		# Las manos y la gema: acorde de tres notas y la llama del báculo viaja al orbe.
+		AudioDirector.play_sfx(TRIPLE_SFX, -2.0)
+		if hands and hands.staff:
+			hands.staff.begin_triple()
 	AudioDirector.play_sfx(_active_recipe.combine_sfx, -3.0)
 	_charge_player.stream = _active_recipe.charge_loop_sfx
 	_charge_player.pitch_scale = 0.85
@@ -582,17 +663,24 @@ func _update_combine(delta: float) -> void:
 			r.sky_circles + maxi(0, lvl - ElementDef.ASCENDED_LEVEL + 1),
 			aim["position"],
 			aim["normal"],
-			_sky_origin(r, aim["position"], aim["normal"]),
+			_delivery.sky_origin(r, aim["position"], aim["normal"]),
 			r.circle_color,
 			r.circle_hot,
 			_stages.count
 		)
 		if camera is CameraRig:
 			(camera as CameraRig).add_trauma(delta * 0.25 * k)
-	elif _stages.is_staged() or lvl >= ElementDef.ASCENDED_LEVEL or _is_arcane_recipe(r):
+	elif (
+		_stages.is_staged()
+		or lvl >= ElementDef.ASCENDED_LEVEL
+		or _is_arcane_recipe(r)
+		or r.is_triple()
+	):
 		# Círculos mágicos que se abren hacia donde apuntas mientras cargas: uno por etapa (y
-		# siempre en los arcanos: los Ecos, uno por eco).
-		var arcane_n: int = maxi(r.echo_count, 2) if _is_arcane_recipe(r) else 0
+		# siempre en los arcanos, uno por eco, y en las triples, uno por elemento).
+		var arcane_n: int = (
+			3 if r.is_triple() else (maxi(r.echo_count, 2) if _is_arcane_recipe(r) else 0)
+		)
 		_circles.charging(
 			k,
 			maxi(maxi(_stages.count, lvl - ElementDef.ASCENDED_LEVEL + 1), arcane_n),
@@ -626,6 +714,8 @@ func _launch_combine() -> void:
 	_start_cooldown(1, cd)
 	if hands:
 		hands.release_combine()
+		if hands.staff and recipe.is_triple():
+			hands.staff.release_triple()
 	var tier: SpellTier = recipe.tier
 	# Eco de X: sale X (con el aspecto del eco) y en el cristal hace lo que hace X.
 	var base: SpellRecipe = SpellEchoes.base_of(recipe)
@@ -638,7 +728,9 @@ func _launch_combine() -> void:
 	hit.resonant = (
 		recipe.delivery == SpellRecipe.Delivery.RESONANCE or _rng.randf() < _resonant_chance()
 	)
-	var damage: int = recipe.damage_for(tier_for(0).damage, tier_for(1).damage, power)
+	var gem: ElementDef = staff.element(ELEMENTS)
+	var gem_damage: int = _element_tier(gem).damage if gem and recipe.is_triple() else 0
+	var damage: int = recipe.damage_for(tier_for(0).damage, tier_for(1).damage, power, gem_damage)
 	var power_stat: StringName = (
 		recipe.power_stat if recipe.power_stat != &"" else effect.power_stat
 	)
@@ -654,14 +746,14 @@ func _launch_combine() -> void:
 		hit.resonant = false
 		damage = 1
 	hit.damage = damage * (GameState.BALANCE.resonant_damage_mult if hit.resonant else 1)
-	_deliver(effect, hit, power)
+	_delivery.deliver(effect, hit, power)
 	if base:
 		_echoes.echo_recipe(recipe, base, hit, damage, power)
 		AudioDirector.play_sfx(_combo_sounds[base], lerpf(-7.0, -3.0, power))
 	if recipe.delivery == SpellRecipe.Delivery.RESONANCE:
 		_start_resonance(recipe)
 	_circles.release()
-	_sky_side = -_sky_side
+	_delivery.sky_side = -_delivery.sky_side
 	AudioDirector.play_sfx(_combo_sounds[recipe], lerpf(-4.0, 0.0, power))
 	GameState.progression.spells_cast += 1
 	Events.spell_cast.emit(tier, BOTH_HANDS)
@@ -680,147 +772,9 @@ func _cancel_combine() -> void:
 	_stage_fx.end()
 	if hands:
 		hands.cancel_combine()
+		if hands.staff:
+			hands.staff.cancel_triple()
 	AudioDirector.play_sfx(FIZZLE_SFX, -10.0, 0.75)
-
-
-## Cada combinación llega al cristal a su manera (ver SpellRecipe.Delivery).
-func _deliver(recipe: SpellRecipe, hit: SpellHit, charge: float) -> void:
-	match recipe.delivery:
-		SpellRecipe.Delivery.SKY:
-			_deliver_sky(recipe, hit, charge)
-		SpellRecipe.Delivery.RAIN:
-			_deliver_rain(recipe, hit)
-		SpellRecipe.Delivery.BEAM:
-			_beam_hit = hit
-			_beam_left = recipe.beam_sec
-			_beam_tick = 0.0
-			_charge_player.stream = PLASMA_SFX
-			_charge_player.pitch_scale = 1.0
-			_charge_player.volume_db = -4.0
-			_charge_player.play()
-		SpellRecipe.Delivery.MAGNET:
-			var player: Node = get_tree().get_first_node_in_group(&"player")
-			var n: int = int(player.call(&"magnet_pull", 45.0)) if player else 0
-			var crystal: MotherCrystal = _crystal()
-			if crystal:
-				crystal.magnet_pulse(camera.global_position - Vector3(0, 1.4, 0), n)
-		SpellRecipe.Delivery.GROUND:
-			_deliver_ground(hit, charge)
-		SpellRecipe.Delivery.GRAVITY:
-			# El pozo se abre delante del mago, algo por encima de la mirada.
-			var flat: Vector3 = -camera.global_basis.z
-			flat.y = 0.0
-			flat = flat.normalized() if flat.length() > 0.1 else Vector3.FORWARD
-			var center: Vector3 = camera.global_position + flat * 6.0 + Vector3.UP * 0.6
-			_gravity.open(center, (camera.global_position - center).normalized(), recipe, _circles)
-			if camera is CameraRig:
-				(camera as CameraRig).add_trauma(0.3)
-		_:
-			var projectile: SparkProjectile = _free_projectile(_combo_projectiles)
-			if projectile:
-				# Misma carga que el orbe entre las manos (WizardHands): sale del mismo tamaño.
-				projectile.orb_charge = lerpf(0.15, 1.0, charge)
-				_launch(projectile, hit, BOTH_HANDS)
-
-
-func _crystal() -> MotherCrystal:
-	return get_tree().get_first_node_in_group(&"mother_crystal") as MotherCrystal
-
-
-## Meteoro, Trueno: cae desde lo alto sobre el punto que miras (en diagonal, para que se vea).
-## `aim` (opcional): otro blanco, como el de un eco.
-func _deliver_sky(
-	recipe: SpellRecipe, hit: SpellHit, charge: float, aim: Dictionary = {}
-) -> Vector3:
-	if aim.is_empty():
-		aim = _aim()
-	var target: Vector3 = aim["position"]
-	var origin: Vector3 = _sky_origin(recipe, target, aim["normal"])
-	hit.position = target
-	hit.normal = aim["normal"]
-	hit.direction = (target - origin).normalized()
-	var projectile: SparkProjectile = _free_projectile(_combo_projectiles)
-	if projectile:
-		projectile.orb_charge = lerpf(0.4, 1.0, charge)
-		projectile.launch(origin, target, hit, aim["collider"])
-	var crystal: MotherCrystal = _crystal()
-	if crystal and recipe.fall_sec < 0.3:
-		# El Trueno: el rayo baja ya, del cielo al blanco (violeta si es un eco).
-		var col: Color = recipe.circle_hot if hit.tier == recipe.tier else hit.tier.color_glow * 1.8
-		crystal.sky_bolt(origin, target, col)
-	return origin
-
-
-## De dónde cae un hechizo del cielo sobre `target`: alto, sobre el blanco y a un lado, para que
-## se vea caer en diagonal (ver SkyPath); sus círculos se abren por ese camino.
-func _sky_origin(recipe: SpellRecipe, target: Vector3, normal: Vector3) -> Vector3:
-	return SkyPath.origin(
-		camera.get_world_3d().direct_space_state,
-		camera.global_position,
-		target,
-		normal,
-		recipe.sky_height,
-		_sky_side
-	)
-
-
-## Lluvia de Estalactitas: caen escalonadas del cielo sobre una zona alrededor del blanco.
-func _deliver_rain(recipe: SpellRecipe, hit: SpellHit) -> void:
-	var aim: Dictionary = _aim()
-	var center: Vector3 = aim["position"]
-	var n: int = maxi(recipe.rain_count, 1)
-	var each: int = maxi(1, roundi(float(hit.damage) / float(n)))
-	var space: PhysicsDirectSpaceState3D = camera.get_world_3d().direct_space_state
-	for i: int in n:
-		var a: float = _rng.randf() * TAU
-		var rr: float = sqrt(_rng.randf()) * recipe.rain_radius * hit.size
-		var ground: Vector3 = center + Vector3(cos(a), 0.0, sin(a)) * rr
-		var sky: Vector3 = ground + Vector3.UP * recipe.sky_height
-		var q := PhysicsRayQueryParameters3D.create(sky, ground - Vector3.UP * 30.0, 1 | (1 << 1))
-		var r: Dictionary = space.intersect_ray(q)
-		if r.is_empty():
-			continue
-		var sub := SpellHit.new()
-		sub.tier = recipe.tier
-		sub.recipe = recipe
-		sub.element = &"frost"
-		sub.damage = each
-		sub.minor = i > 0
-		sub.size = hit.size
-		sub.position = r["position"]
-		sub.normal = r["normal"]
-		sub.direction = Vector3.DOWN
-		var delay: float = 0.08 * i + _rng.randf() * 0.05
-		get_tree().create_timer(delay).timeout.connect(
-			func() -> void:
-				var p: SparkProjectile = _free_projectile(_projectiles)
-				if p:
-					p.launch(sky, sub.position, sub, r["collider"])
-		)
-
-
-## Terremoto: la onda sale de tus pies, corre por el suelo y revienta la base del cristal en la
-## dirección en la que miras.
-func _deliver_ground(hit: SpellHit, charge: float) -> void:
-	var feet: Vector3 = camera.global_position - Vector3(0, 1.45, 0)
-	var flat: Vector3 = -camera.global_basis.z
-	flat.y = 0.0
-	flat = flat.normalized()
-	var from: Vector3 = feet + flat * 1.0 + Vector3.UP * 0.4
-	var q := PhysicsRayQueryParameters3D.create(from, from + flat * 120.0, 1 << 1)
-	var r: Dictionary = camera.get_world_3d().direct_space_state.intersect_ray(q)
-	if r.is_empty():
-		AudioDirector.play_sfx(FIZZLE_SFX, -6.0)
-		return
-	hit.position = r["position"]
-	hit.normal = r["normal"]
-	hit.direction = flat
-	var projectile: SparkProjectile = _free_projectile(_combo_projectiles)
-	if projectile:
-		projectile.orb_charge = lerpf(0.4, 1.0, charge)
-		projectile.launch(from, hit.position, hit, r["collider"])
-	if camera is CameraRig:
-		(camera as CameraRig).add_trauma(0.5)
 
 
 ## Resonancia Arcana: unos segundos en los que todo golpe es resonante.
@@ -833,39 +787,6 @@ func _start_resonance(recipe: SpellRecipe) -> void:
 ## Combinaciones del Arcano (llevan círculos al cargar siempre, no sólo desde el nivel 6).
 static func _is_arcane_recipe(r: SpellRecipe) -> bool:
 	return r.elements.has(&"arcane")
-
-
-## Haz de Plasma: golpea cada BEAM_TICK donde apunte la mirilla mientras dure.
-func _update_beam(delta: float) -> void:
-	_beam_left -= delta
-	_beam_tick -= delta
-	var origin: Vector3 = _hand_origin(BOTH_HANDS)
-	var aim: Dictionary = _aim()
-	var crystal: MotherCrystal = _crystal()
-	if crystal:
-		crystal.draw_beam(origin, aim["position"], _beam_hit.recipe.circle_color)
-	if _beam_tick <= 0.0:
-		_beam_tick = BEAM_TICK
-		var collider: Object = null if CritterHerd.beam(_beam_hit, aim) else aim["collider"]
-		if collider is Node and (collider as Node).has_meta(&"mother_crystal"):
-			var sub := SpellHit.new()
-			sub.tier = _beam_hit.tier
-			sub.recipe = _beam_hit.recipe
-			sub.element = &"spark"
-			sub.minor = true
-			sub.size = _beam_hit.size
-			sub.damage = maxi(
-				1,
-				roundi(float(_beam_hit.damage) * BEAM_TICK / maxf(_beam_hit.recipe.beam_sec, 0.1))
-			)
-			sub.position = aim["position"]
-			sub.normal = aim["normal"]
-			sub.direction = (sub.position - origin).normalized()
-			((collider as Node).get_meta(&"mother_crystal") as MotherCrystal).receive_hit(sub)
-	if camera is CameraRig:
-		(camera as CameraRig).add_trauma(delta * 0.6)
-	if _beam_left <= 0.0:
-		_charge_player.stop()
 
 
 ## Más grande, más cristal: la mitad del aumento de tamaño se suma al daño.
@@ -881,27 +802,6 @@ func _start_cooldown(side: int, seconds: float) -> void:
 	_was_ready[side] = false
 
 
-## Apunta por el centro de la pantalla y lanza el proyectil desde la mano `side`.
-func _launch(projectile: SparkProjectile, hit: SpellHit, side: int) -> void:
-	var result: Dictionary = _aim()
-	var target: Vector3 = result["position"]
-	hit.normal = result["normal"]
-	var collider: Object = result["collider"]
-	hit.position = target
-	var origin: Vector3 = _hand_origin(side)
-	hit.direction = (target - origin).normalized()
-	projectile.launch(origin, target, hit, collider)
-
-
-func _make_projectile(node_name: String) -> SparkProjectile:
-	var p := SparkProjectile.new()
-	p.name = node_name
-	p.top_level = true
-	p.arrived.connect(_on_projectile_arrived)
-	add_child(p)
-	return p
-
-
 func _randomizer(streams: Array[AudioStream], pitch: float) -> AudioStreamRandomizer:
 	var r := AudioStreamRandomizer.new()
 	for s: AudioStream in streams:
@@ -911,63 +811,8 @@ func _randomizer(streams: Array[AudioStream], pitch: float) -> AudioStreamRandom
 	return r
 
 
-func _free_projectile(pool: Array[SparkProjectile]) -> SparkProjectile:
-	for p: SparkProjectile in pool:
-		if not p.active:
-			return p
-	return null
-
-
-## Pantalla de carga: lanza un proyectil de cada aspecto distinto (niveles de cada elemento y
-## combinaciones) hacia `target` sin efecto de juego, para compilar shaders y partículas.
+## Pantalla de carga: un proyectil de cada aspecto (ver SpellDelivery.warm_up).
 func warm_up(target: Vector3) -> void:
-	var from: Vector3 = camera.global_position + camera.global_basis * Vector3(0.0, -0.3, -1.5)
-	var seen: Array[SpellVisualDef] = []
-	var k: int = 0
-	for p: SparkProjectile in _combo_projectiles:
-		p.prepare_combo()
-	for el: ElementDef in ELEMENTS:
-		for tier: SpellTier in el.tiers:
-			if seen.has(tier.visual) or k >= _projectiles.size():
-				continue
-			seen.append(tier.visual)
-			var hit := SpellHit.new()
-			hit.tier = tier
-			hit.warmup = true
-			hit.position = target
-			hit.normal = Vector3.BACK
-			_projectiles[k].launch(from, target, hit, null)
-			k += 1
-	var j: int = 0
-	for r: SpellRecipe in RECIPES:
-		if r.is_reaction or r.tier == null:
-			continue
-		var combo := SpellHit.new()
-		combo.tier = r.tier
-		combo.recipe = r
-		combo.warmup = true
-		combo.position = target
-		combo.normal = Vector3.BACK
-		if j < _combo_projectiles.size():
-			_combo_projectiles[j].launch(from, target, combo, null)
-			j += 1
-		elif k < _projectiles.size():
-			_projectiles[k].launch(from, target, combo, null)
-			k += 1
-	_circles.charging(1.0, 2, from, target, Color.ORANGE, Color.WHITE)
-	_circles.release()
-
-
-func _on_projectile_arrived(projectile: SparkProjectile) -> void:
-	if projectile.hit.warmup or CritterHerd.intercept(projectile.hit, projectile.target_collider):
-		return
-	var collider: Object = projectile.target_collider
-	if collider is Node and (collider as Node).has_meta(&"mother_crystal"):
-		var crystal: MotherCrystal = (collider as Node).get_meta(&"mother_crystal")
-		crystal.receive_hit(projectile.hit)
-		var r: SpellRecipe = projectile.hit.recipe
-		if r and r.delivery == SpellRecipe.Delivery.RESONANCE:
-			crystal.resonance_pulse(projectile.hit)
-	else:
-		AudioDirector.play_sfx(FIZZLE_SFX, -6.0)
-		Events.spell_fizzled.emit(projectile.hit.position)
+	var all: Array[SpellRecipe] = RECIPES.duplicate()
+	all.append_array(StaffCombos.TRIPLES)
+	_delivery.warm_up(target, ELEMENTS, all)

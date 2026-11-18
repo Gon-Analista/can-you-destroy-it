@@ -55,6 +55,8 @@ var orb_enabled: bool = true:
 	set(value):
 		orb_enabled = value
 		_apply_orb_visibility()
+## El báculo (aparece al comprarlo; ver WizardStaff), detrás de las manos.
+var staff: WizardStaff
 
 var _sprites: Array[Sprite2D] = []
 var _pending_flare: bool = false
@@ -128,6 +130,11 @@ func attach_camera(
 	_combo_orb.visible = false
 	_apply_orb_visibility()
 	_place_orbs()
+	staff = WizardStaff.new()
+	staff.name = "Staff"
+	add_child(staff)
+	move_child(staff, 0)
+	staff.setup(self, camera)
 
 
 ## Lanzar con una mano (0 izquierda, 1 derecha): su llama estalla y la mano da un empujón.

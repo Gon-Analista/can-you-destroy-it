@@ -57,6 +57,11 @@ var _guide: ObjectiveGuide
 var _tears: TearCounter
 ## Elemento de cada mano (sólo cuando conoces más de uno).
 var _hand_tags: Array[Label] = []
+## Elemento de la gema del báculo (cuando se tiene); late si manos y gema forman una triple.
+var _staff_tag: Label
+## Elemento que muestra ahora cada etiqueta (izquierda, derecha, gema): el texto sólo se rehace
+## cuando cambia (o el idioma), no en cada frame.
+var _tag_shown: Array[ElementDef] = [null, null, null]
 var _shown_fill: float = 0.0
 var _bar_flash: float = 0.0
 var _shown_mana: float = 0.0
@@ -97,11 +102,16 @@ func _ready() -> void:
 	add_child(_tears)
 	_hand_tags.append(_label("", SMALL, C_TEXT, Rect2(8, 298, 160, LINE), 0))
 	_hand_tags.append(_label("", SMALL, C_TEXT, Rect2(472, 298, 160, LINE), 2))
+	_staff_tag = _label("", SMALL, C_TEXT, Rect2(472, 298 - LINE, 160, LINE), 2)
 	Events.shard_delivered.connect(_on_delivered)
 	Events.bag_changed.connect(func(_c: int, _cap: int) -> void: _bag_punch = 1.0)
 	Events.bag_full.connect(_on_bag_full)
 	Events.hint.connect(_push_hint)
-	Events.locale_changed.connect(func() -> void: _pylon_title.text = tr("PILÓN DE MANÁ"))
+	Events.locale_changed.connect(
+		func() -> void:
+			_pylon_title.text = tr("PILÓN DE MANÁ")
+			_tag_shown.fill(null)
+	)
 	# El bucle lo enseña el Tutorial (ui/tutorial.gd); estos avisos quedan para partidas que lo
 	# saltaron (demo) y aún no han entregado nada.
 	if GameState.progression.pylon_progress == 0 and GameState.progression.tutorial_step >= 8:
@@ -150,9 +160,27 @@ func _push_hint(text: String, color: Color) -> void:
 	if _hint.visible and _hint.text == text:
 		_hint_t = maxf(_hint_t, HINT_SEC * 0.6)
 		return
+	# Un aviso nuevo del mismo tema (lo de antes de los dos puntos: "BÁCULO: ...", "EL CIELO AÚN
+	# RUGE: ...") sustituye al viejo en vez de hacer cola: al girar la gema varias veces seguidas
+	# sólo se lee la última.
+	var key: String = _hint_key(text)
+	for i: int in range(_hint_queue.size() - 1, -1, -1):
+		if _hint_key(String(_hint_queue[i][0])) == key:
+			_hint_queue.remove_at(i)
+	if _hint.visible and _hint_key(_hint.text) == key:
+		_hint.text = text
+		_hint.add_theme_color_override(&"font_color", color)
+		_hint_t = HINT_SEC
+		return
 	_hint_queue.append([text, color])
 	if not _hint.visible:
 		_next_hint()
+
+
+## Tema de un aviso: lo que va antes de los dos puntos (o el aviso entero).
+static func _hint_key(text: String) -> String:
+	var at: int = text.find(":")
+	return text.substr(0, at) if at > 0 else text
 
 
 func _next_hint() -> void:
@@ -236,9 +264,21 @@ func _update_hand_tags() -> void:
 		if not l.visible:
 			continue
 		var el: ElementDef = caster.element_of(side)
-		var name: String = tr(el.display_name).to_upper()
-		l.text = ("[Q] " + name) if side == 0 else (name + " [E]")
-		l.add_theme_color_override(&"font_color", el.color)
+		if el != _tag_shown[side]:
+			_tag_shown[side] = el
+			var name: String = tr(el.display_name).to_upper()
+			l.text = ("[Q] " + name) if side == 0 else (name + " [E]")
+			l.add_theme_color_override(&"font_color", el.color)
+	var gem: ElementDef = caster.staff.element(SpellCaster.ELEMENTS)
+	_staff_tag.visible = gem != null
+	if gem:
+		if gem != _tag_shown[2]:
+			_tag_shown[2] = gem
+			_staff_tag.text = "%s %s [R]" % [tr("BÁCULO"), tr(gem.display_name).to_upper()]
+			_staff_tag.add_theme_color_override(&"font_color", gem.color)
+		var recipe: SpellRecipe = caster.recipe_for_hands()
+		var ready: bool = recipe != null and recipe.is_triple()
+		_staff_tag.modulate.a = (0.75 + 0.25 * sin(_t * 9.0)) if ready else 0.8
 
 
 ## Aviso de la tecla junto a la mira: trituradora, puerta de la casucha o atril del Santuario.

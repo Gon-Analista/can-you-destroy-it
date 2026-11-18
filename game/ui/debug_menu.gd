@@ -465,6 +465,14 @@ func buy_everything() -> void:
 		hud.tutorial.skip()
 	for r: SpellRecipe in SpellCaster.RECIPES:
 		prog.discover_recipe(r.id)
+	for r: SpellRecipe in StaffCombos.TRIPLES:
+		prog.discover_recipe(r.id)
+	# Mejoras que piden el Pilón a cierta altura (el Báculo): sube hasta ahí.
+	for node: UpgradeNode in GameState.UPGRADES:
+		for req: StringName in node.prerequisites:
+			if String(req).begins_with("pylon:"):
+				var need: int = ceili(float(String(req).get_slice(":", 1)) * prog.total_essence)
+				prog.pylon_progress = maxi(prog.pylon_progress, need)
 	# Un solo guardado al final (no uno por nivel comprado).
 	var saving: bool = SaveSystem.enabled
 	SaveSystem.enabled = false

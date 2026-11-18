@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"staff"
+display_name = "Báculo"
+description = "Un báculo con una gema que guarda un tercer elemento (R o la rueda lo cambian). Junta las manos con la gema encendida y prueba combinaciones triples."
+branch = 2
+element = &"staff"
+star_pos = Vector2i(118, 84)
+costs = PackedInt32Array(22000)
+prerequisites = Array[StringName]([&"awaken_earth", &"pylon:0.1"])
+stat = &"staff_owned"
+values = PackedFloat32Array(0, 1)
+value_format = "%s"
+level_names = PackedStringArray("Sin báculo", "Báculo de aprendiz")

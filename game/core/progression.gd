@@ -155,11 +155,14 @@ func purchase_block(node: UpgradeNode) -> StringName:
 	return &""
 
 
-## Una mejora comprada, o "recipe:<id>": una combinación ya descubierta.
+## Una mejora comprada, "recipe:<id>": una combinación ya descubierta, o "pylon:<0..1>": el
+## Pilón lleno al menos hasta esa marca (progreso real, como sus hitos).
 func _has_requirement(req: StringName) -> bool:
 	var r: String = req
 	if r.begins_with("recipe:"):
 		return discovered_recipes.has(StringName(r.trim_prefix("recipe:")))
+	if r.begins_with("pylon:"):
+		return pylon_ratio() + 1e-6 >= float(r.trim_prefix("pylon:"))
 	return get_level(req) > 0
 
 
