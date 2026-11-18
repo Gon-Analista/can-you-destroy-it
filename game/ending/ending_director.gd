@@ -238,7 +238,7 @@ func _on_struck(_at: Vector3) -> void:
 
 ## Hacia dónde mirar para ver la columna de maná subir (su pie y el cielo).
 func _column_view_point() -> Vector3:
-	return _pylon.crown_position() + Vector3.UP * 38.0
+	return _pylon.crown_position() + Vector3.UP * 24.0
 
 
 ## La columna sale del Pilón, que suele quedar a un lado o detrás del Núcleo: si no se ve, la

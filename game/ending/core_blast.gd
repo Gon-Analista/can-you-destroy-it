@@ -172,13 +172,13 @@ func _process(delta: float) -> void:
 	var grow: float = 1.0 - pow(1.0 - clampf(_t / 0.35, 0.0, 1.0), 3.0)
 	var fade: float = 1.0 - smoothstep(0.25, 2.2, _t)
 	# Grande pero sin fundir la pantalla entera a blanco (antes, medio segundo todo blanco).
-	_flash.scale = Vector3.ONE * lerpf(12.0, 80.0, grow)
-	_flash_mat.set_shader_parameter("intensity", (1.5 * fade + 0.25 * fade * fade) * fs)
+	_flash.scale = Vector3.ONE * lerpf(12.0, 64.0, grow)
+	_flash_mat.set_shader_parameter("intensity", (1.2 * fade + 0.2 * fade * fade) * fs)
 	for i: int in _rings.size():
 		var k: float = clampf((_t - 0.12 * i) / (1.6 + 0.6 * i), 0.0, 1.0)
 		_rings[i].scale = Vector3.ONE * lerpf(20.0, 260.0 + 80.0 * i, k)
 		_ring_mats[i].set_shader_parameter("progress", k)
-		_ring_mats[i].set_shader_parameter("intensity", 2.4 * fs)
+		_ring_mats[i].set_shader_parameter("intensity", 1.8 * fs)
 		_rings[i].visible = k < 1.0
 	_light.light_energy = 18.0 * fade * fade
 	if _t >= LIFE_SEC:
