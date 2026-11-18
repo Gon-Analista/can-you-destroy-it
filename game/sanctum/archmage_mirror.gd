@@ -17,6 +17,9 @@ const C_GOLD_LIGHT := Color("#ffd27a")
 const C_GOLD_DARK := Color("#7a4f17")
 const C_BACK := Color("#2a1d4a")
 const C_NIGHT := Color("#0c1238")
+const C_WARM_LIGHT := Color("#fff1cf")
+## Luz propia del marco: el oro sigue siendo oro a contraluz y de noche.
+const FRAME_GLOW: float = 0.22
 ## Cristal (m): ancho, alto desde su base, altura de su base y del centro del arco.
 const GLASS_W: float = 1.32
 const GLASS_H: float = 2.74
@@ -124,7 +127,8 @@ func show_rank(rank: int) -> void:
 	_glass_mat.set_shader_parameter("color_mid", def.color_dark.lerp(def.color, 0.45))
 	_glass_mat.set_shader_parameter("color_light", def.color_light)
 	_crest.texture = RankCrest.texture(rank)
-	_light.light_color = def.color.lerp(Color.WHITE, 0.3)
+	# Luz cálida con un toque del rango: con el color puro, el oro del marco salía rosado.
+	_light.light_color = def.color.lerp(C_WARM_LIGHT, 0.65)
 	var pm: ParticleProcessMaterial = _motes.process_material
 	pm.color = def.color_light
 
@@ -185,7 +189,8 @@ func _build_frame() -> void:
 	MeshKit.add_prism(
 		st, Vector3(0, top_y, 0), Vector3.UP, 0.14, 0.14, 0.12, 6, C_GOLD, C_GOLD_LIGHT, _rng
 	)
-	_mesh("Frame", st)
+	var frame: MeshInstance3D = _mesh("Frame", st)
+	(frame.material_override as ShaderMaterial).set_shader_parameter("self_light", FRAME_GLOW)
 	# Colisión: el zócalo y el espejo (no se atraviesa).
 	var sb := StaticBody3D.new()
 	sb.name = "Collision"

@@ -12,6 +12,17 @@ const MUSIC_LAYERS: Array[AudioStream] = [
 	preload("res://audio/music/music_valley_4_magus.ogg"),
 	preload("res://audio/music/music_valley_5_archimago.ogg"),
 ]
+## Demo `--stats`: cifras del Espejo de una partida avanzada.
+const DEMO_STATS: Dictionary[StringName, int] = {
+	&"spells_cast": 6184,
+	&"shards_collected": 3411,
+	&"mana_earned": 128450,
+	&"best_streak": 47,
+	&"resonant_hits": 512,
+	&"geodes_broken": 6,
+	&"veins_hit": 233,
+	&"deliveries": 1210,
+}
 
 var _day_night: DayNight
 var _hut: ApprenticeHut
@@ -247,6 +258,13 @@ func _setup_autoplay() -> void:
 		elif a == "--mirror":
 			# --mirror: abre las estadísticas del Espejo del Archimago al acabar la carga.
 			get_tree().create_timer(3.3).timeout.connect(_hud.mirror_screen.open)
+		elif a == "--stats":
+			# --stats: cifras de una partida avanzada para el Espejo (capturas).
+			var st: PlayStats = GameState.progression.stats
+			st.play_time = 4931.0
+			for k: StringName in DEMO_STATS:
+				st.counts[k] = DEMO_STATS[k]
+			GameState.progression.critters_popped = 37
 		elif a.begins_with("--time="):
 			_day_night.time_of_day = float(a.get_slice("=", 1))
 		elif a.begins_with("--warp="):
