@@ -38,6 +38,8 @@ const JOIN_SPEED: float = 9.0
 const MERGED_AT: float = 0.8
 ## Tinte de las manos cuando el hechizo las ilumina (HDR suave).
 const HAND_GLOW := Color(1.35, 1.08, 0.82)
+## Destello de las manos cuando encaja una etapa de la carga (y más fuerte con la última).
+const STAGE_GLOW := Color(1.9, 1.55, 1.15)
 const NIGHT_TINT := Color(0.5, 0.55, 0.85)
 const LEVEL_UP_SFX: AudioStream = preload("res://audio/sfx/sfx_spell_combine_01.ogg")
 
@@ -69,6 +71,8 @@ var _kick_vel: PackedFloat32Array = PackedFloat32Array([0.0, 0.0])
 var _grab: float = 0.0
 var _grab_vel: float = 0.0
 var _ready_pop: float = 0.0
+## Destello de las manos al completar una etapa de la carga (decae).
+var _stage_glow: float = 0.0
 var _t: float = 0.0
 var _walk_phase: float = 0.0
 
@@ -159,6 +163,32 @@ func release_combine() -> void:
 	# El proyectil sale exactamente de donde estaba el orbe: éste se apaga sin estallar.
 	if _combo_orb:
 		_combo_orb.visible = false
+
+
+## Se completa una etapa de la carga (`stage` de `total`): las manos dan un tirón hacia abajo
+## (el círculo empuja), se iluminan y el orbe destella. La última, más fuerte.
+func play_charge_stage(stage: int, total: int) -> void:
+	var full: bool = stage >= total
+	var f: float = float(stage) / float(maxi(total, 1))
+	for side: int in 2:
+		_kick_vel[side] = -(6.0 + 6.0 * f) * (1.6 if full else 1.0)
+	_stage_glow = 1.0 if full else 0.55 + 0.3 * f
+	if full:
+		_ready_pop = 1.0
+	if _combo_orb and _combining:
+		_combo_orb.flare(0.55 if full else 0.2 + 0.15 * f)
+
+
+## Se deshace la combinación sin lanzar (se abre un menú a media carga): el orbe se apaga y
+## las llamas vuelven a cada mano, sin gastarse.
+func cancel_combine() -> void:
+	_combining = false
+	combine_charge = 0.0
+	_stage_glow = 0.0
+	if _combo_orb:
+		_combo_orb.visible = false
+	for side: int in 2:
+		_kick_vel[side] = -6.0
 
 
 ## Cambia la llama de las dos manos (al subir de nivel la Chispa pasa a Llama, a Llama mágica...).
@@ -271,6 +301,7 @@ func _process(delta: float) -> void:
 	_t += delta
 	_walk_phase += delta * move_speed * 1.7
 	_ready_pop = maxf(0.0, _ready_pop - delta * 3.0)
+	_stage_glow = maxf(0.0, _stage_glow - delta * 3.5)
 	for side: int in 2:
 		_spring_kick(side, delta)
 	_grab = _spring_grab(_grab, delta)
@@ -298,6 +329,8 @@ func _process(delta: float) -> void:
 		# De noche las manos se oscurecen (son 2D: no reciben luz), salvo lo que ilumina el hechizo.
 		var base: Color = Color.WHITE.lerp(NIGHT_TINT, _night)
 		sprite.modulate = base.lerp(HAND_GLOW, clampf(warm + _night * 0.25, 0.0, 1.0))
+		if _stage_glow > 0.0:
+			sprite.modulate = sprite.modulate.lerp(STAGE_GLOW, minf(_stage_glow, 1.0))
 	_update_orbs()
 
 

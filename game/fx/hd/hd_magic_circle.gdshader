@@ -17,6 +17,9 @@ uniform float fade = 1.0;
 uniform float rune_seed = 1.0;
 // Runas en la banda (y la mitad en el anillo interior).
 uniform float rune_count = 18.0;
+// Opacidad del contorno oscuro: más alta en los círculos de carga, que van delante del orbe
+// (sobre el fuego blanco, con poca tinta el trazo se pierde).
+uniform float ink_alpha = 0.55;
 
 float hash11(float n) {
 	return fract(sin(n * 127.1 + rune_seed * 31.7) * 43758.5453);
@@ -123,5 +126,5 @@ void fragment() {
 	float k = intensity * (1.0 + flash * 2.0);
 	vec3 c = mix(ink * outline, hot * k * (0.75 + 0.35 * core), core);
 	ALBEDO = c * fade;
-	ALPHA = clamp(outline * 0.55 * (1.0 - flash), 0.0, 1.0) * fade;
+	ALPHA = clamp(outline * ink_alpha * (1.0 - flash), 0.0, 1.0) * fade;
 }

@@ -22,6 +22,9 @@ signal pylon_bolt(at: Vector3)
 signal spell_cast(tier: SpellTier, hand_side: int)
 signal spell_ready
 signal spell_combine_started(recipe: SpellRecipe)
+## Carga por etapas de un combinado (ver ChargeStages): `stage` 0 al empezar (con `total`
+## etapas), 1..total al completar cada una y -1 al terminar (lanzada o cancelada).
+signal spell_charge_stage(stage: int, total: int)
 signal recipe_discovered(recipe: SpellRecipe)
 signal spell_impacted(hit: SpellHit)
 signal spell_fizzled(position: Vector3)

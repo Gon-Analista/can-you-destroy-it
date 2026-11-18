@@ -146,10 +146,11 @@ func release() -> void:
 
 
 ## Destello de transformación (al subir de nivel el hechizo): el halo se hincha, salta una
-## onda de choque y una lluvia de chispas, sin apagar el orbe.
-func flare() -> void:
-	_flare = 1.0
-	_sparks.amount_ratio = 1.0
+## onda de choque y una lluvia de chispas, sin apagar el orbe. `amount` < 1: un destello menor
+## (cada etapa de la carga de un combinado).
+func flare(amount: float = 1.0) -> void:
+	_flare = maxf(_flare, amount)
+	_sparks.amount_ratio = clampf(amount, 0.3, 1.0)
 	_sparks.restart()
 	_ring.visible = true
 	set_process(true)
