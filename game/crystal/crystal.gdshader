@@ -314,9 +314,15 @@ void fragment() {
 	// La Bola de Fuego que se acerca tiñe el cristal de naranja, en bandas como el resto.
 	if (fire_glow_color.a > 0.0) {
 		float gk = clamp(1.0 - distance(world_pos, fire_glow.xyz) / max(fire_glow.w, 0.01), 0.0, 1.0);
-		gk = gk * gk * fire_glow_color.a;
+		gk = pow(gk, 1.4) * fire_glow_color.a;
 		gk = floor(gk * 4.0 + hash13(floor(world_pos * 6.0)) * 0.5) * 0.25;
-		c = mix(c, c * fire_glow_color.rgb * 1.4 + fire_glow_color.rgb * 0.25, clamp(gk, 0.0, 0.85));
+		// Hacia el color del fuego con el brillo de la faceta: multiplicar el azul claro por
+		// naranja apenas se notaba (salía blanco o gris).
+		// Tono saturado (el color de la luz al cuadrado) y bandas que llegan a cubrir: mezclar poco
+		// un naranja con el azul daba un gris malva.
+		float lum = dot(c, vec3(0.3, 0.55, 0.15));
+		vec3 warm = fire_glow_color.rgb * fire_glow_color.rgb * (0.5 + lum * 0.9);
+		c = mix(c, warm, clamp(gk, 0.0, 0.8));
 	}
 
 	// Destellos y ondas de impacto.

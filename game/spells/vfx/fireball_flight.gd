@@ -23,7 +23,7 @@ const RELEASE_SEC: float = 0.16
 ## Lo que tarda en apagarse la cola tras la llegada (el proyectil espera antes de volver al pool).
 const TAIL_SEC: float = 0.5
 ## Distancia (m) al blanco a la que su luz empieza a teñir el cristal.
-const GLOW_FROM: float = 22.0
+const GLOW_FROM: float = 26.0
 ## Cuánto crece la bola de nivel 1 a nivel 10.
 const LEVEL_GROWTH: float = 0.35
 ## Cuerpo respecto al orbe de la mano (las lenguas y la corona lo agrandan).
@@ -31,6 +31,8 @@ const BODY_SCALE: float = 0.8
 ## Tamaño extra al salir de las manos para empalmar con la bola que había entre ellas (que lleva
 ## lenguas y destellos alrededor); se pierde al alejarse.
 const HAND_MATCH: float = 1.8
+## Tamaño extra lejos (a 50 m del cristal, sin él, la bola de nivel 1 llegaba como un punto).
+const FAR_SCALE: float = 1.25
 
 var _ball: Node3D
 var _body_mat: ShaderMaterial
@@ -123,9 +125,9 @@ func set_view_scale(s: float, final_scale: float) -> void:
 	# Sale del tamaño de la bola de las manos (sin el salto al soltar) y se ajusta a su tamaño de
 	# vuelo mientras se aleja.
 	var far: float = smoothstep(1.0, maxf(final_scale * 0.5, 1.5), s)
-	_ball.scale = Vector3.ONE * _base * s * lerpf(HAND_MATCH, lv, far)
+	_ball.scale = Vector3.ONE * _base * s * lerpf(HAND_MATCH, lv * FAR_SCALE, far)
 	# Las bocanadas nacen casi del tamaño de la bola ya lejos y menguan: la cola se afila.
-	var puff: float = _base * final_scale * lv * BODY_RADIUS * 2.0
+	var puff: float = _base * final_scale * lv * FAR_SCALE * BODY_RADIUS * 2.0
 	# Sólo si cambia (al salir de la mano): tocar el material cada fotograma lo rehace.
 	if absf(puff - _puff_size) > _puff_size * 0.02:
 		_puff_size = puff
@@ -159,9 +161,11 @@ func set_tail(on: bool, from: Vector3) -> void:
 ## Luz cálida en el cristal: crece al acercarse a `target`.
 func glow_crystal(target: Vector3) -> void:
 	var d: float = global_position.distance_to(target)
-	var k: float = 1.0 - smoothstep(4.0, GLOW_FROM, d)
-	var radius: float = _base * lerpf(14.0, 22.0, _level)
-	FireGlow.put(self, global_position, radius, _color, k * lerpf(0.65, 1.0, _level))
+	var k: float = 1.0 - smoothstep(2.0, GLOW_FROM, d)
+	# Unos 12 m de radio a nivel 1 (el cristal mide 108 m): con menos, la mancha naranja quedaba
+	# escondida detrás de la propia bola y no se veía.
+	var radius: float = _base * lerpf(28.0, 40.0, _level)
+	FireGlow.put(self, global_position, radius, _color, k * lerpf(0.85, 1.0, _level))
 	_glow_on = true
 
 
