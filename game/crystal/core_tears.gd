@@ -25,8 +25,9 @@ const BURSTS: int = 3
 ## Latido: periodo y separación del segundo golpe ("lub-dub").
 const BEAT_SEC: float = 1.15
 const DUB_SEC: float = 0.19
-## Flota a esta altura sobre el suelo (o el fondo del túnel) en el que cae.
-const HOVER_M: float = 1.25
+## Flota a esta altura sobre el suelo (o el fondo del túnel) en el que cae: la de los ojos, para que
+## quede en la mira y no detrás del aviso "[F] RECOGER".
+const HOVER_M: float = 1.5
 const PICK_SEC: float = 0.42
 ## Vuelo solo hacia el mago con el Ojo del Núcleo (m) y lo que alarga el de la Telequinesis.
 const EYE_RADIUS_M: float = 40.0

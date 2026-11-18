@@ -79,6 +79,12 @@ func _ready() -> void:
 		_fly_t.append(-1.0)
 	_shown = GameState.progression.tears
 	Events.tear_collected.connect(_on_collected)
+	# Las primeras caen en mitad de las llamas de los combinados: se avisa para que no se pierdan.
+	Events.tear_dropped.connect(
+		func(_at: Vector3) -> void:
+			if GameState.progression.tears_total < 2:
+				Events.hint.emit(tr("¡EL CORAZÓN HA LLORADO UNA LÁGRIMA!"), C_PINK)
+	)
 	Events.tears_changed.connect(_on_changed)
 	# El Núcleo queda expuesto: la última estrella del Grimorio se ve (la Gran Convergencia).
 	Events.grimoire_final_revealed.connect(
