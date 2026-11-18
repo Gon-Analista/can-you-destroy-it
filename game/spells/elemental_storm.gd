@@ -18,13 +18,14 @@ const FIRE_SFX: AudioStream = preload("res://audio/sfx/sfx_meteor_whistle_01.ogg
 const BOLT: ElementDef = preload("res://data/elements/bolt.tres")
 const FROST: ElementDef = preload("res://data/elements/frost.tres")
 const SPARK: ElementDef = preload("res://data/elements/spark.tres")
-const PUFFS: int = 22
+const PUFFS: int = 30
 ## Segundos que tarda en formarse la nube y en deshacerse.
 const FORM_SEC: float = 0.9
 const FADE_SEC: float = 1.4
 ## Bolas de granizo de cada ráfaga.
 const HAIL_PER_VOLLEY: int = 2
 const MASK_CRYSTAL: int = 1 << 1
+const BOLT_GOLD := Color(1.0, 0.9, 0.45)
 ## Suelo y cristal: la tormenta que se lanza sobre la hierba descarga en el suelo.
 const MASK_GROUND: int = 1 | (1 << 1)
 ## Probabilidad de que una descarga vaya a por un bicho que haya bajo la nube.
@@ -160,8 +161,8 @@ func start(
 	_ember = 0.0
 	for i: int in PUFFS:
 		var a: float = TAU * float(i) / float(PUFFS) + _rng.randf_range(-0.2, 0.2)
-		var ring: float = sqrt(_rng.randf()) * _radius * 1.25
-		_puff_base[i] = Vector4(a, ring, _rng.randf_range(-1.6, 1.6), _rng.randf_range(7.0, 11.0))
+		var ring: float = sqrt(_rng.randf()) * _radius * 1.5
+		_puff_base[i] = Vector4(a, ring, _rng.randf_range(-1.8, 2.2), _rng.randf_range(9.0, 14.0))
 		_puff_flash[i] = 0.0
 	visible = true
 	# El orbe sube de las manos a la nube (sólo se ve: el daño lo hacen las descargas).
@@ -177,9 +178,9 @@ func start(
 		p.launch(from, cloud, orb, null)
 	# Círculo mágico enorme bajo la nube, mirando abajo, que gira mientras dure.
 	_circles.stamp(
-		cloud - Vector3.UP * 2.5,
+		cloud - Vector3.UP * 3.0,
 		Vector3.DOWN,
-		_radius * 1.5,
+		_radius * 0.95,
 		recipe.circle_color,
 		recipe.circle_hot,
 		recipe.storm_sec + FORM_SEC,
@@ -278,6 +279,8 @@ func _strike(k: int) -> void:
 			var sub: SpellHit = _sub_hit(BOLT, _each, aim, from, false)
 			if crystal:
 				crystal.sky_bolt(from, sub.position, _recipe.circle_hot)
+				# Tronco grueso y dorado: se lee contra el azul del cristal y el gris de la nube.
+				crystal.draw_bolt(from + Vector3.UP * 2.0, sub.position, 1.2, BOLT_GOLD, 0.3)
 			_bolt_lands(sub, aim["collider"], crystal)
 			_flash_cloud(from, 1.0)
 			_delivery_trauma(0.12)
@@ -436,7 +439,7 @@ func _make_rain() -> GPUParticles3D:
 	pm.color = Color(0.75, 0.8, 1.2, 1.0)
 	p.process_material = pm
 	var q := QuadMesh.new()
-	q.size = Vector2(0.05, 1.3)
+	q.size = Vector2(0.12, 2.4)
 	var m := StandardMaterial3D.new()
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -444,7 +447,7 @@ func _make_rain() -> GPUParticles3D:
 	m.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y
 	m.billboard_keep_scale = true
 	m.vertex_color_use_as_albedo = true
-	m.albedo_color = Color(0.7, 0.75, 1.0, 0.35)
+	m.albedo_color = Color(0.7, 0.75, 1.0, 0.45)
 	m.disable_fog = true
 	m.render_priority = 2
 	q.material = m

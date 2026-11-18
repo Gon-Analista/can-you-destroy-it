@@ -15,8 +15,8 @@ const BEAM_TICK: float = 0.09
 ## La nube de la Tormenta: metros por delante de la cara del cristal y cuánto sube sobre el
 ## blanco por metro de distancia al mago (con un mínimo).
 const STORM_FRONT: float = 4.0
-const STORM_RISE: float = 0.24
-const STORM_MIN_RISE: float = 5.0
+const STORM_RISE: float = 0.3
+const STORM_MIN_RISE: float = 7.0
 ## Lado que usan las señales y las manos para el hechizo combinado.
 const BOTH_HANDS: int = 2
 

@@ -55,6 +55,8 @@ var _key: KeyHint
 var _guide: ObjectiveGuide
 ## Elemento de cada mano (sólo cuando conoces más de uno).
 var _hand_tags: Array[Label] = []
+## Elemento de la gema del báculo (cuando se tiene); late si manos y gema forman una triple.
+var _staff_tag: Label
 var _shown_fill: float = 0.0
 var _bar_flash: float = 0.0
 var _shown_mana: float = 0.0
@@ -92,6 +94,7 @@ func _ready() -> void:
 	move_child(_guide, 0)
 	_hand_tags.append(_label("", SMALL, C_TEXT, Rect2(8, 298, 160, LINE), 0))
 	_hand_tags.append(_label("", SMALL, C_TEXT, Rect2(472, 298, 160, LINE), 2))
+	_staff_tag = _label("", SMALL, C_TEXT, Rect2(472, 298 - LINE, 160, LINE), 2)
 	Events.shard_delivered.connect(_on_delivered)
 	Events.bag_changed.connect(func(_c: int, _cap: int) -> void: _bag_punch = 1.0)
 	Events.bag_full.connect(_on_bag_full)
@@ -231,6 +234,14 @@ func _update_hand_tags() -> void:
 		var name: String = tr(el.display_name).to_upper()
 		l.text = ("[Q] " + name) if side == 0 else (name + " [E]")
 		l.add_theme_color_override(&"font_color", el.color)
+	var gem: ElementDef = caster.staff.element(SpellCaster.ELEMENTS)
+	_staff_tag.visible = gem != null
+	if gem:
+		_staff_tag.text = "%s %s [R]" % [tr("BÁCULO"), tr(gem.display_name).to_upper()]
+		_staff_tag.add_theme_color_override(&"font_color", gem.color)
+		var recipe: SpellRecipe = caster.recipe_for_hands()
+		var ready: bool = recipe != null and recipe.is_triple()
+		_staff_tag.modulate.a = (0.75 + 0.25 * sin(_t * 9.0)) if ready else 0.8
 
 
 ## Aviso de la tecla junto a la mira: trituradora, puerta de la casucha o atril del Santuario.
