@@ -29,6 +29,10 @@ uniform float crack_scale = 1.7;
 uniform float global_flash = 0.0;
 // Luz del momento del día (DayNight): el cristal no usa la iluminación del motor.
 global uniform vec4 world_tint;
+// Luz cálida del fuego que se acerca (FireGlow): xyz = posición, w = radio (m); color con la
+// fuerza en el alfa (0: apagada).
+global uniform vec4 fire_glow;
+global uniform vec4 fire_glow_color;
 // Quemaduras del fuego: xyz = centro, w = instante (en `now`); w < 0: vacío.
 uniform vec4 burns[12];
 // Radio de cada quemadura (m).
@@ -305,6 +309,20 @@ void fragment() {
 		c = mix(c, col_ice_line.rgb * 1.4, line * frost * 0.9);
 		vec3 hot = mix(col_lava.rgb, col_lava_hot.rgb, 0.5) * 2.0;
 		c = mix(c, hot, line * shatter);
+	}
+
+	// La Bola de Fuego que se acerca tiñe el cristal de naranja, en bandas como el resto.
+	if (fire_glow_color.a > 0.0) {
+		float gk = clamp(1.0 - distance(world_pos, fire_glow.xyz) / max(fire_glow.w, 0.01), 0.0, 1.0);
+		gk = pow(gk, 1.4) * fire_glow_color.a;
+		gk = floor(gk * 4.0 + hash13(floor(world_pos * 6.0)) * 0.5) * 0.25;
+		// Hacia el color del fuego con el brillo de la faceta: multiplicar el azul claro por
+		// naranja apenas se notaba (salía blanco o gris).
+		// Tono saturado (el color de la luz al cuadrado) y bandas que llegan a cubrir: mezclar poco
+		// un naranja con el azul daba un gris malva.
+		float lum = dot(c, vec3(0.3, 0.55, 0.15));
+		vec3 warm = fire_glow_color.rgb * fire_glow_color.rgb * (0.5 + lum * 0.9);
+		c = mix(c, warm, clamp(gk, 0.0, 0.8));
 	}
 
 	// Destellos y ondas de impacto.

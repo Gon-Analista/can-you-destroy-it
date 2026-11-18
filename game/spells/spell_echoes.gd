@@ -66,6 +66,7 @@ func echo_single(side: int, hit: SpellHit, base_damage: int, collider: Object, c
 		echo.element = el.id
 		echo.element_def = el
 		echo.size = hit.size
+		echo.level = hit.level
 		echo.echo = true
 		echo.minor = true
 		echo.resonant = _rng.randf() < float(_resonant_chance.call(el.resonant_bonus))
@@ -97,6 +98,7 @@ func echo_recipe(
 		echo.recipe = base
 		echo.element = hit.element
 		echo.size = hit.size
+		echo.level = hit.level
 		echo.echo = true
 		# Sin pausa ni destello global: el golpe fuerte es el primero; los ecos llevan el ritmo.
 		echo.minor = true

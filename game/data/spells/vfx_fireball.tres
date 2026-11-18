@@ -57,3 +57,4 @@ glow_intensity = 0.22
 glow_rays = 0.15
 converge_amount = 60
 spark_amount = 140
+fireball_flight = true

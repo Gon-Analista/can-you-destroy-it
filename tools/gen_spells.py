@@ -93,7 +93,7 @@ VISUALS = {
     "vfx_meteor": ("vfx_fireball", [(2.4, 1.8, 1.0), (1.7, 0.8, 0.2), (1.1, 0.38, 0.06), (0.8, 0.2, 0.05), (0.42, 0.1, 0.05)],
                    [(1.3, 0.8, 0.35), (1.1, 0.5, 0.15), (0.8, 0.35, 0.12), (0.5, 0.22, 0.1)],
                    [(1, 0.6, 0.25), (0.8, 0.35, 0.12), (1, 0.85, 0.4), (0.55, 0.28, 0.15)],
-                   {"seed": "79", "meteor": "true"}),
+                   {"seed": "79", "meteor": "true", "fireball_flight": "false"}),
     "vfx_stalactite": ("vfx_frost_2", [(1.9, 2.1, 2.6), (0.8, 1.2, 2.0), (0.45, 0.6, 1.5), (0.25, 0.3, 1.0), (0.1, 0.1, 0.5)],
                        [(2.0, 2.1, 2.5), (1.0, 1.1, 1.6), (0.8, 0.8, 1.5), (0.6, 0.6, 1.4)],
                        [(0.85, 0.9, 1), (0.6, 0.7, 1), (0.9, 0.8, 1), (1, 1, 1)],
@@ -304,7 +304,8 @@ RECIPES = [
          riddle="El fuego solo vuela. Dale un cuerpo de piedra y caerá del cielo.",
          dmg=7.07, area=3.0, area_hits=7, burn=5.0, sky_height=70.0, fall=1.4, sky_circles=4, charge=1.4, cooldown=4.0,
          visual="vfx_meteor", circle=(1.6, 0.7, 0.25), hot=(1.9, 1.5, 0.9), cast=["sfx_meteor_fall_01"],
-         impact=["sfx_meteor_impact_01"], loop="amb_sky_charge_loop",
+         # Sin sonido de impacto en la receta: el estruendo lo pone MeteorRock (uno solo, no dos).
+         impact=[], loop="amb_sky_charge_loop",
          tier=dict(damage=10, speed=60.0, wobble=0.0, shards_min=4, shards_max=6, shard_scale=1.4, impact_particles=90,
                    light_energy=4.0, crack_radius=3.0, shake=0.6, orb_scale=26.0, trail_width=5.0, trail_length=0.7,
                    trail_smoke=1.0, core=(1, 0.9, 0.6), glow=(1, 0.4, 0.1), tint=(1, 0.6, 0.25),

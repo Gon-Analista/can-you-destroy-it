@@ -6,7 +6,6 @@
 [ext_resource type="Resource" path="res://data/spells/vfx_meteor.tres" id="vis"]
 [ext_resource type="AudioStream" path="res://audio/sfx/amb_sky_charge_loop.ogg" id="loop"]
 [ext_resource type="AudioStream" path="res://audio/sfx/sfx_meteor_fall_01.ogg" id="sfx_meteor_fall_01"]
-[ext_resource type="AudioStream" path="res://audio/sfx/sfx_meteor_impact_01.ogg" id="sfx_meteor_impact_01"]
 
 [sub_resource type="Gradient" id="ramp"]
 offsets = PackedFloat32Array(0, 0.2, 0.45, 0.72, 1)
@@ -71,4 +70,4 @@ visual = ExtResource("vis")
 combine_sfx = ExtResource("combine")
 charge_loop_sfx = ExtResource("loop")
 cast_sfx = Array[AudioStream]([ExtResource("sfx_meteor_fall_01")])
-impact_sfx = Array[AudioStream]([ExtResource("sfx_meteor_impact_01")])
+impact_sfx = Array[AudioStream]([])

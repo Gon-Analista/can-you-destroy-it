@@ -100,3 +100,6 @@ extends Resource
 ## cometa y humo, cae acelerando desde lo alto y estalla con onda de choque, polvo, cascotes y
 ## cráter encendido (ver `MeteorRock`).
 @export var meteor: bool = false
+## Bola de Fuego: en vuelo, en vez del orbe de la mano, una esfera de fuego que hierve con corona,
+## lenguas hacia atrás, cola de bocanadas y luz sobre el cristal (ver `FireballFlight`).
+@export var fireball_flight: bool = false
