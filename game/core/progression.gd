@@ -217,5 +217,9 @@ func load_dict(data: Dictionary) -> void:
 	var saved_recipes: Array = data.get("discovered_recipes", [])
 	for r: Variant in saved_recipes:
 		discover_recipe(StringName(str(r)))
-	# Partidas de antes de los rangos: el que corresponde, sin ceremonia.
-	rank = WizardRanks.earned(self, int(data.get("rank", 0)))
+	# El rango guardado tal cual; las partidas de antes de los rangos reciben el que les toca,
+	# sin ceremonia.
+	if data.has("rank"):
+		rank = clampi(int(data["rank"]), 0, WizardRanks.last())
+	else:
+		rank = WizardRanks.earned(self)

@@ -83,6 +83,12 @@ func _initialize() -> void:
 	_check(int(prog.call(&"bag_count")) == 0, "bolsa vacía")
 	menu.call(&"_set_pylon", 0.5)
 	_check(absf(float(prog.call(&"pylon_ratio")) - 0.5) < 0.001, "Pilón al 50 %")
+	# Las subidas de rango de lo comprado y entregado traen su ceremonia con un hit-stop: se espera.
+	for i: int in 600:
+		if not HitStop.is_active():
+			break
+		await process_frame
+	await create_timer(0.1, true, false, true).timeout
 	menu.call(&"_set_speed", 2.0)
 	await process_frame
 	_check(is_equal_approx(Engine.time_scale, 2.0), "velocidad x2")

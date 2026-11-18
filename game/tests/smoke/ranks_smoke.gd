@@ -71,7 +71,7 @@ func _rules() -> void:
 	var data: Dictionary = JSON.parse_string(JSON.stringify(p.to_dict()))
 	var r := Progression.new(total)
 	r.load_dict(data)
-	_check(r.rank == 5, "al cargar, el rango guardado (y el que ya se cumple) (%d)" % r.rank)
+	_check(r.rank == 4, "al cargar, el rango guardado (%d)" % r.rank)
 	_check(r.stats.tally(&"spells_cast") == 7, "hechizos guardados")
 	_check(r.stats.tally(&"best_streak") == 31, "mejor racha guardada (la más alta)")
 	_check(absf(r.stats.play_time - 125.5) < 0.01, "tiempo jugado guardado")
