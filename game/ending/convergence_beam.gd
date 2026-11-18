@@ -14,6 +14,7 @@ const TURNS: float = 2.5
 
 var _orb: SpellOrb
 var _trails: Array[SpellTrail] = []
+var _heads: Array[Node3D] = []
 var _light: OmniLight3D
 var _colors: PackedColorArray = []
 var _from: Vector3
@@ -26,6 +27,12 @@ var _prev: PackedVector3Array = []
 func _ready() -> void:
 	top_level = true
 	for i: int in STRANDS:
+		# Cada hebra es un punto que se mueve; su estela lo sigue sola.
+		var head := Node3D.new()
+		head.name = "StrandHead%d" % i
+		head.top_level = true
+		add_child(head)
+		_heads.append(head)
 		var strand := SpellTrail.new()
 		strand.hd = true
 		strand.name = "Strand%d" % i
@@ -33,7 +40,7 @@ func _ready() -> void:
 		strand.length_sec = 0.4
 		strand.near_depth = 2.0
 		strand.max_scale = 3.0
-		add_child(strand)
+		head.add_child(strand)
 		_trails.append(strand)
 		_prev.append(Vector3.ZERO)
 	_light = OmniLight3D.new()
@@ -73,6 +80,7 @@ func launch(
 		g.colors = PackedColorArray([Color(2.4, 2.3, 2.5), c * 1.6, Color(c * 0.6, 0.0)])
 		_trails[i].set_ramp(g)
 		_prev[i] = from
+		_heads[i].global_position = from
 		_trails[i].start(from)
 	_light.visible = true
 	_t = 0.0
@@ -108,7 +116,7 @@ func _process(delta: float) -> void:
 	for i: int in STRANDS:
 		var a: float = phase + TAU * float(i) / STRANDS
 		var p: Vector3 = head + (side * cos(a) + up * sin(a)) * braid
-		_trails[i].add_point(p)
+		_heads[i].global_position = p
 		if bolts and crystal:
 			crystal.draw_bolt(_prev[i], p, 0.09, _colors[i % _colors.size()] * 1.4, 0.12)
 			_prev[i] = p

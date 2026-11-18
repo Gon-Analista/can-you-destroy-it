@@ -159,7 +159,8 @@ func _build_fireworks() -> void:
 		trail.name = "RocketTrail%d" % i
 		trail.width = 0.7
 		trail.length_sec = 0.5
-		add_child(trail)
+		# La estela sigue sola a su padre (el cohete).
+		rocket.add_child(trail)
 		var g := Gradient.new()
 		g.offsets = PackedFloat32Array([0.0, 1.0])
 		g.colors = PackedColorArray([Color(2.0, 1.6, 1.0), Color(1.0, 0.4, 0.2, 0.0)])
@@ -327,7 +328,6 @@ func _update_fireworks(delta: float) -> void:
 			var k: float = t / ROCKET_SEC
 			var p: Vector3 = _fw_from[i].lerp(_fw_to[i], 1.0 - (1.0 - k) * (1.0 - k))
 			_rockets[i].global_position = p
-			_rocket_trails[i].add_point(p)
 		elif _rockets[i].visible:
 			_explode(i)
 		else:

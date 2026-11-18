@@ -278,7 +278,7 @@ func _setup_autoplay() -> void:
 				get_tree().create_timer(3.4).timeout.connect(
 					func() -> void:
 						_ending.demo_complete()
-						_ending.screen().open()
+						_ending.show_final_screen()
 				)
 			else:
 				var at: float = float(a.get_slice("=", 1)) if a.contains("=") else 3.4

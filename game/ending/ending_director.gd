@@ -177,11 +177,11 @@ func _process(delta: float) -> void:
 	var k: float = _convergence.charge_ratio()
 	_glow_k = move_toward(_glow_k, k, delta * 3.0)
 	_glow.visible = _glow_k > 0.005
-	_glow.modulate.a = _glow_k * _glow_k * 0.55 * HdFx.flash_scale
+	_glow.modulate.a = _glow_k * _glow_k * 0.4 * HdFx.flash_scale
 	if _flash_k > 0.0:
-		_flash_k = maxf(0.0, _flash_k - delta / 1.4)
+		_flash_k = maxf(0.0, _flash_k - delta / 1.1)
 		_flash.visible = _flash_k > 0.0
-		_flash.color.a = pow(_flash_k, 1.6) * HdFx.flash_scale
+		_flash.color.a = pow(_flash_k, 1.8) * 0.85 * HdFx.flash_scale
 
 
 ## ¡El Núcleo estalla! El momento grande y, en cadena, la fiesta y la pantalla final.
@@ -222,7 +222,15 @@ func _on_struck(_at: Vector3) -> void:
 			AudioDirector.set_music_layers(5, 3.0)
 			Events.hint.emit(tr("¡EL VALLE ENTERO LO CELEBRA!"), Color("#ffd27a"))
 	)
-	tree.create_timer(GameState.BALANCE.ending_screen_delay_sec).timeout.connect(_screen.open)
+	tree.create_timer(GameState.BALANCE.ending_screen_delay_sec).timeout.connect(show_final_screen)
+
+
+## La pantalla final, sin las manos delante (vuelven al seguir en el valle).
+func show_final_screen() -> void:
+	var hands: WizardHands = _player.get_caster().hands
+	hands.visible = false
+	hands.orb_enabled = false
+	_screen.open()
 
 
 ## La partida queda terminada: el cristal a cero, guardado.
@@ -277,6 +285,9 @@ func _on_menu_closed() -> void:
 
 
 func _on_continue() -> void:
+	var hands: WizardHands = _player.get_caster().hands
+	hands.visible = true
+	hands.orb_enabled = true
 	Events.hint.emit(tr("EL VALLE ES TUYO"), Color("#ffd27a"))
 
 

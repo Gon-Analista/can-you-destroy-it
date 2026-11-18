@@ -628,8 +628,17 @@ func _throw_debris(at: Vector3, size: float) -> void:
 	var out: Vector3 = at - core_position()
 	out.y = 0.0
 	out = out.normalized() if out.length() > 0.1 else Vector3.BACK
+	# Nunca hacia la cara del mago: los que irían hacia la cámara salen de lado.
+	var cam: Camera3D = get_viewport().get_camera_3d()
+	if cam:
+		var to_cam: Vector3 = cam.global_position - at
+		to_cam.y = 0.0
+		to_cam = to_cam.normalized()
+		var toward: float = out.dot(to_cam)
+		if toward > 0.2:
+			out = (out - to_cam * toward * 1.5).normalized()
 	d.global_position = at
-	d.scale = Vector3.ONE * size * _rng.randf_range(0.7, 1.0)
+	d.scale = Vector3.ONE * size * _rng.randf_range(0.45, 0.7)
 	d.rotation = Vector3(_rng.randf() * TAU, _rng.randf() * TAU, _rng.randf() * TAU)
 	d.visible = true
 	_deb_vel[i] = out * _rng.randf_range(7.0, 15.0) + Vector3.UP * _rng.randf_range(5.0, 11.0)
@@ -690,7 +699,7 @@ func _update_orb(delta: float) -> void:
 	)
 	_orb.scale = Vector3.ONE * lerpf(0.85, 1.0, _appear) * (1.0 + 0.015 * _pulse + 0.06 * charge)
 	_halo_mat.set_shader_parameter(
-		"intensity", _appear * (0.55 + 0.35 * _pulse + 1.4 * charge + _flash * 0.6)
+		"intensity", _appear * (0.55 + 0.35 * _pulse + 0.5 * charge + _flash * 0.6)
 	)
 	_halo.scale = Vector3.ONE * (1.0 + 0.4 * charge)
 	_light.light_energy = _appear * (2.0 + 2.5 * _pulse + 6.0 * charge + _flash * 3.0)

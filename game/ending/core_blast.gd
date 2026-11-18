@@ -171,8 +171,8 @@ func _process(delta: float) -> void:
 	# Destello: crece deprisa, se queda un instante y se apaga.
 	var grow: float = 1.0 - pow(1.0 - clampf(_t / 0.35, 0.0, 1.0), 3.0)
 	var fade: float = 1.0 - smoothstep(0.25, 2.2, _t)
-	_flash.scale = Vector3.ONE * lerpf(12.0, 150.0, grow)
-	_flash_mat.set_shader_parameter("intensity", (3.0 * fade + 0.4 * fade * fade) * fs)
+	_flash.scale = Vector3.ONE * lerpf(12.0, 110.0, grow)
+	_flash_mat.set_shader_parameter("intensity", (2.2 * fade + 0.3 * fade * fade) * fs)
 	for i: int in _rings.size():
 		var k: float = clampf((_t - 0.12 * i) / (1.6 + 0.6 * i), 0.0, 1.0)
 		_rings[i].scale = Vector3.ONE * lerpf(20.0, 260.0 + 80.0 * i, k)

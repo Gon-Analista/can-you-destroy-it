@@ -44,6 +44,14 @@ const STAGE_SFX: Array[AudioStream] = [
 const LOOP_SFX: AudioStream = preload("res://audio/sfx/amb_convergence_charge_loop.ogg")
 const RELEASE_SFX: AudioStream = preload("res://audio/sfx/sfx_convergence_release_01.ogg")
 const FIZZLE_SFX: AudioStream = preload("res://audio/sfx/sfx_convergence_fizzle_01.ogg")
+## Los mismos colores sin HDR para los círculos (con HDR se lavaban a blanco con tanta luz).
+const CIRCLE_COLORS: PackedColorArray = [
+	Color(1.0, 0.42, 0.1),
+	Color(0.35, 0.85, 1.0),
+	Color(1.0, 0.86, 0.15),
+	Color(0.7, 0.45, 0.2),
+	Color(0.78, 0.35, 1.0)
+]
 const STAGES: int = 5
 ## Segundos entre la asignación de un elemento y el siguiente.
 const ASSIGN_GAP: float = 0.28
@@ -332,10 +340,10 @@ func _update_charge(delta: float) -> void:
 		STAGES,
 		_hand_origin(),
 		reveal.core_position() if reveal else _hand_origin() - camera.global_basis.z,
-		ELEMENT_COLORS[4],
-		Color(2.0, 1.9, 2.2),
+		CIRCLE_COLORS[4],
+		Color(1.4, 1.3, 1.5),
 		STAGES,
-		ELEMENT_COLORS
+		CIRCLE_COLORS
 	)
 	if auto and _stages.is_full() and _time >= _stages.duration + 0.35:
 		release()
