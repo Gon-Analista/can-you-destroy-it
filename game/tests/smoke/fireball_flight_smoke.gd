@@ -27,7 +27,7 @@ func _run() -> void:
 		await process_frame
 	var caster: Node = main.get_node(^"WorldView/WorldViewport/Player").call(&"get_caster")
 	var combos: Array[Node3D] = []
-	for c: Node in caster.get_children():
+	for c: Node in caster.find_children("*", "", true, false):
 		if c is Node3D and c.name.begins_with("Combo") and c.has_method(&"prepare_combo"):
 			combos.append(c as Node3D)
 	_check(combos.size() > 0, "hay proyectiles de combinación")
@@ -37,7 +37,7 @@ func _run() -> void:
 		)
 	# Los ecos del Eco de Fuego también vuelan como bola: la suya ya está creada (sin la roca).
 	var echoes: int = 0
-	for c: Node in caster.get_children():
+	for c: Node in caster.find_children("*", "", true, false):
 		if c is Node3D and c.name.begins_with("Echo") and c.has_method(&"prepare_combo"):
 			echoes += 1
 			_check(c.has_node(^"Fireball"), "%s ya lleva su bola" % c.name)

@@ -136,7 +136,10 @@ func _initialize() -> void:
 	_check(listed.size() == 5, "el Libro tiene 5 triples")
 	var rows: Array = book.get(&"_rows")
 	_check(
-		String((rows[0] as Label).text) == "TORMENTA ELEMENTAL",
+		(
+			String((rows[0] as Label).text)
+			== TranslationServer.translate("Tormenta Elemental").to_upper()
+		),
 		"la Tormenta descubierta, con su nombre: %s" % (rows[0] as Label).text
 	)
 	_check(String((rows[3] as Label).text) == "???", "lo no descubierto, con acertijo")
