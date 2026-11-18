@@ -76,8 +76,13 @@ func _world(gs: Node, main: Node) -> void:
 	_check(prog.time_played > t0, "el tiempo jugado corre")
 	# Al 99 %: el cristal se resquebraja y se desprende.
 	director.call(&"debug_core")
-	_check(int(reveal.get(&"state")) == 1, "al 99 %: el cristal se resquebraja")
 	var waited: float = 0.0
+	while int(reveal.get(&"state")) == 0 and waited < 30.0:
+		await process_frame
+		waited += 1.0 / 60.0
+	_check(int(reveal.get(&"state")) == 1, "al 99 %: el cristal se resquebraja")
+	_check(prog.essence == int(gs.get(&"core_floor")), "la cuenta se para en el 99 %")
+	waited = 0.0
 	while int(reveal.get(&"state")) != 2 and waited < 60.0:
 		await create_timer(0.5).timeout
 		waited += 0.5
@@ -87,8 +92,12 @@ func _world(gs: Node, main: Node) -> void:
 	_check(bool(volume.call(&"is_solid", core_c)), "el Núcleo sigue ahí")
 	var stray: int = 0
 	for p: Vector3 in [
-		Vector3(0, 60, 0), Vector3(0, 20, 0), Vector3(12, 4, 0), Vector3(0, 4, -14),
-		core_c + Vector3(core_r + 1.5, 0, 0), Vector3(-20, 2, 10)
+		Vector3(0, 60, 0),
+		Vector3(0, 20, 0),
+		Vector3(12, 4, 0),
+		Vector3(0, 4, -14),
+		core_c + Vector3(core_r + 1.5, 0, 0),
+		Vector3(-20, 2, 10)
 	]:
 		if bool(volume.call(&"is_solid", p)):
 			stray += 1
@@ -110,9 +119,7 @@ func _world(gs: Node, main: Node) -> void:
 	_check(prog.essence == before, "el Núcleo no recibe daño (%d)" % prog.essence)
 	_check(int(crystal.call(&"hit_layer")) == 4, "el golpe da en el Núcleo")
 	var space: PhysicsDirectSpaceState3D = crystal.get_world_3d().direct_space_state
-	var q := PhysicsRayQueryParameters3D.create(
-		center + Vector3.BACK * 40.0, center, 1 << 1
-	)
+	var q := PhysicsRayQueryParameters3D.create(center + Vector3.BACK * 40.0, center, 1 << 1)
 	var r: Dictionary = space.intersect_ray(q)
 	_check(
 		not r.is_empty() and (r["collider"] as Node).has_meta(&"mother_crystal"),

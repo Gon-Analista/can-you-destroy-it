@@ -95,7 +95,12 @@ func debug_core() -> void:
 	if prog.game_complete:
 		return
 	if not GameState.core_exposed:
-		GameState.hit_crystal(prog.essence - GameState.core_floor, _reveal.core_position())
+		# Como al final de verdad: sólo queda una costra alrededor del Núcleo; luego el 99 %.
+		_reveal.debug_trim(
+			15.0,
+			func() -> void:
+				GameState.hit_crystal(prog.essence - GameState.core_floor, _reveal.core_position())
+		)
 	var core: Vector3 = _reveal.core_position()
 	var stand := Vector3(core.x + 4.0, 0.0, core.z + 30.0)
 	stand.y = Valley.ground_height(stand.x, stand.z) + 0.2

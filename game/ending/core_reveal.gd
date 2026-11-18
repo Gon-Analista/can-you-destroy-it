@@ -402,7 +402,10 @@ func _start_clear() -> void:
 
 ## Hilo: la rejilla con sólo el Núcleo (`sdf`), los trozos tocados (`chunks`) y dónde queda masa
 ## (`sites`: centro y tamaño, de arriba abajo). Estática: sólo lee `v` (no cambia) y la copia.
-static func compute_clear(v: CrystalVolume, src: PackedFloat32Array, out: Dictionary) -> void:
+## Con `keep` > 0 (depuración) deja además una costra irregular de ese radio alrededor.
+static func compute_clear(
+	v: CrystalVolume, src: PackedFloat32Array, out: Dictionary, keep: float = 0.0
+) -> void:
 	var sdf: PackedFloat32Array = src.duplicate()
 	var touched: Dictionary[int, bool] = {}
 	var bins: Dictionary[Vector3i, Vector4] = {}
@@ -417,6 +420,9 @@ static func compute_clear(v: CrystalVolume, src: PackedFloat32Array, out: Dictio
 				var old: float = sdf[i]
 				var p: Vector3 = v.origin + Vector3(x, y, z) * cell
 				var ds: float = p.distance_to(c) - r
+				if keep > 0.0:
+					var lump: float = sin(p.x * 0.23 + p.y * 0.17) * cos(p.z * 0.21 - p.y * 0.09)
+					ds = p.distance_to(c) - keep - 4.0 * lump
 				if ds <= old:
 					continue
 				var was_solid: bool = old < cell
@@ -446,6 +452,27 @@ static func compute_clear(v: CrystalVolume, src: PackedFloat32Array, out: Dictio
 	out["sdf"] = sdf
 	out["chunks"] = touched.keys()
 	out["sites"] = sites
+
+
+## Depuración ("IR AL NÚCLEO"): deja sólo una costra de `keep` m alrededor del Núcleo, como la
+## que queda al final de verdad (en otro hilo), y luego llama a `then`.
+func debug_trim(keep: float, then: Callable) -> void:
+	if _task >= 0 or state != State.HIDDEN:
+		then.call()
+		return
+	var v: CrystalVolume = _volume
+	var src: PackedFloat32Array = v.sdf
+	var out: Dictionary = {}
+	var task: int = WorkerThreadPool.add_task(
+		func() -> void: CoreReveal.compute_clear(v, src, out, keep), true, "core_trim"
+	)
+	while not WorkerThreadPool.is_task_completed(task):
+		await get_tree().process_frame
+	WorkerThreadPool.wait_for_task_completion(task)
+	_clear_result = out
+	GameState.progression.deepest_layer = maxi(GameState.progression.deepest_layer, 3)
+	_apply_clear()
+	then.call()
 
 
 ## Hilo: esencia que queda fuera del Núcleo y por encima del suelo (lo que aún se puede golpear),

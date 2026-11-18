@@ -79,6 +79,7 @@ var _gather: float = 0.0
 
 
 func _ready() -> void:
+	add_to_group(&"grand_convergence")
 	_circles = MagicCircles.new()
 	_circles.name = "ConvergenceCircles"
 	add_child(_circles)

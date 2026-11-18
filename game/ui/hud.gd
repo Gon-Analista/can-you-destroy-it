@@ -144,6 +144,11 @@ func _ready() -> void:
 	Events.shard_delivered.connect(_on_shard_delivered)
 	Events.crystal_burned.connect(_on_burned)
 	_set_layer_title(GameState.LAYERS[0])
+	# El final: con el Núcleo a la vista el título lo nombra; roto, el cristal ya no está.
+	Events.core_revealed.connect(_show_core_title)
+	Events.game_completed.connect(_relocalize)
+	if GameState.core_exposed:
+		_show_core_title()
 	Events.locale_changed.connect(_relocalize)
 	# El Grimorio, por encima de todo el HUD, y el menú (título y pausa) encima de todo.
 	_grimoire = Grimoire.new()
@@ -197,8 +202,17 @@ func _relocalize() -> void:
 	_set_layer_title(GameState.LAYERS[_shown_layer])
 
 
+func _show_core_title() -> void:
+	_shown_layer = GameState.LAYERS.size() - 1
+	_set_layer_title(GameState.LAYERS[_shown_layer])
+
+
 ## "CORTEZA · ESENCIA DEL CRISTAL": la capa en la que se está golpeando.
 func _set_layer_title(layer: CrystalLayerDef) -> void:
+	if GameState.progression.game_complete:
+		_essence_title.text = tr("EL CRISTAL MADRE YA NO EXISTE")
+		_essence_title.add_theme_color_override(&"font_color", Color("#ffd27a"))
+		return
 	_essence_title.text = tr("%s  ·  ESENCIA DEL CRISTAL") % tr(layer.display_name).to_upper()
 	_essence_title.add_theme_color_override(&"font_color", layer.col_light.lightened(0.25))
 

@@ -88,6 +88,8 @@ var _pool: ShardPool
 ## Lágrimas del Núcleo y la que se señala (índice en CoreTears, -1 = ninguna).
 var _tears: CoreTears
 var _tear: int = -1
+## La Gran Convergencia (para llevar al Núcleo cuando está armada).
+var _final: GrandConvergence
 var _crusher: CrystalCrusher
 var _sanctum: Sanctum
 var _tutorial: Tutorial
@@ -174,6 +176,8 @@ func _find_nodes() -> bool:
 		_flock = tree.get_first_node_in_group(&"familiar_flock") as FamiliarFlock
 	if _tears == null:
 		_tears = tree.get_first_node_in_group(&"core_tears") as CoreTears
+	if _final == null:
+		_final = tree.get_first_node_in_group(&"grand_convergence") as GrandConvergence
 	return _player != null and _camera != null
 
 
@@ -244,6 +248,7 @@ func _fill_situation(at: Vector3, delta: float) -> void:
 	_sit.shard_near = _shard >= 0
 	_tear = _tears.nearest(at, DEF.shard_radius_m * 2.0) if _tears else -1
 	_sit.tear_near = _tear >= 0
+	_sit.core_ready = _final != null and _final.is_armed()
 
 
 func _switch_to(k: int) -> void:
@@ -277,28 +282,36 @@ func _refresh_tag() -> void:
 			_tag.text = tr("CRISTAL MADRE")
 		Guidance.Kind.TEAR:
 			_tag.text = tr("¡LÁGRIMA!")
+		Guidance.Kind.CORE:
+			_tag.text = tr("¡EL NÚCLEO!")
 		_:
 			_tag.text = ""
 
 
 func _target_of(k: int) -> Vector3:
+	var at: Vector3 = target if target != Vector3.INF else CRYSTAL_AT
 	match k:
 		Guidance.Kind.SHARD:
 			if _shard >= 0 and _pool:
-				return _pool.position_of(_shard)
+				at = _pool.position_of(_shard)
 		Guidance.Kind.CRUSHER:
 			if _crusher:
-				return _crusher.marker_position()
+				at = _crusher.marker_position()
 		Guidance.Kind.SANCTUM:
 			if _sanctum:
-				return _sanctum.marker_position() + Vector3.UP * 0.5
+				at = _sanctum.marker_position() + Vector3.UP * 0.5
 		Guidance.Kind.CRYSTAL:
-			return CRYSTAL_AT
+			at = CRYSTAL_AT
 		Guidance.Kind.TEAR:
 			# El rombo encima de la gota, no delante: tapaba la propia Lágrima.
 			if _tear >= 0 and _tears:
-				return _tears.position_of(_tear) + Vector3.UP * 0.95
-	return target if target != Vector3.INF else CRYSTAL_AT
+				at = _tears.position_of(_tear) + Vector3.UP * 0.95
+		Guidance.Kind.CORE:
+			# Encima del Núcleo.
+			if _final and _final.reveal:
+				var r: float = _final.reveal.core_radius() + 2.0
+				at = _final.reveal.core_position() + Vector3.UP * r
+	return at
 
 
 ## Lo visible que debe estar: nada al llegar, menos cuanto más cerca.
@@ -318,6 +331,10 @@ func _goal_alpha(at: Vector3) -> float:
 			# Es enorme: sólo se señala cuando no está a la vista.
 			_project(target)
 			return 1.0 if _edge else 0.0
+		Guidance.Kind.CORE:
+			# Fuera de la vista o lejos; ya delante, sobra.
+			_project(target)
+			return 1.0 if _edge else smoothstep(28.0, 55.0, d)
 	var k: float = smoothstep(DEF.fade_near_m, DEF.fade_far_m, d)
 	return k if _urgent else k * 0.75
 
