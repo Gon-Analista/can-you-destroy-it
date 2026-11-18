@@ -239,6 +239,10 @@ func release() -> void:
 
 func _fizzle() -> void:
 	state = State.ARMED
+	# Hay que volver a juntar las dos manos (con "clic para cargar", el otro botón de un doble clic
+	# para soltar no vuelve a empezar la carga).
+	if not Settings.hold_to_charge:
+		_held = [false, false]
 	_loop.stop()
 	_feedback.end()
 	_circles.cancel()

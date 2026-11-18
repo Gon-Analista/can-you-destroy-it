@@ -70,8 +70,8 @@ var _menu_open: bool = false
 
 
 func _ready() -> void:
-	# Estadísticas de la pantalla final (Progression.time_played, spells_cast, shards_collected).
-	Events.spell_cast.connect(func(_t: SpellTier, _s: int) -> void: progression.spells_cast += 1)
+	# Estadísticas de la pantalla final (Progression.time_played y shards_collected; los hechizos
+	# lanzados los cuenta el SpellCaster, sin los ecos del Arcano).
 	Events.shard_collected.connect(
 		func(_t: ShardType, _n: int, _at: Vector3) -> void: progression.shards_collected += 1
 	)

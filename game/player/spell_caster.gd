@@ -520,6 +520,7 @@ func _cast_single(side: int) -> void:
 		AudioDirector.play_sfx(
 			_cast_sounds[el], -2.0 + lvl * 0.8, el.cast_pitch * (1.0 - lvl * 0.07)
 		)
+	GameState.progression.spells_cast += 1  # pantalla final (los ecos no cuentan)
 	Events.spell_cast.emit(tier, side)
 
 
@@ -662,6 +663,7 @@ func _launch_combine() -> void:
 	_circles.release()
 	_sky_side = -_sky_side
 	AudioDirector.play_sfx(_combo_sounds[recipe], lerpf(-4.0, 0.0, power))
+	GameState.progression.spells_cast += 1
 	Events.spell_cast.emit(tier, BOTH_HANDS)
 	GameState.register_recipe_cast(recipe)
 
