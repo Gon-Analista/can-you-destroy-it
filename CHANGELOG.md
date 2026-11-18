@@ -2,6 +2,34 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-18 · Bichos del valle: monstruitos de ojos saltones que revientan con los hechizos
+
+**Qué hay nuevo** (pedido del equipo: "monstruos graciosos con caras chistosas y ojitos grandes")
+
+- **Cinco especies** (`game/critters/`, datos en `data/critters/*.tres`): Gelatín (bola de gelatina), Dientón
+  (zanahoria con dientes de conejo), Pelusín (pompón con patitas), Babosín (babosa con ojos en antenas) y Cíclope
+  saltarín. Mallas procedurales con su propio shader toon (tinte y destello por instancia, contorno), ojos con
+  pupila en un muelle amortiguado que te miran y parpadean, respiración con squash & stretch, cada uno con su forma
+  de moverse y gestos (lengua y ojos bizcos, estornudo, bostezo, bailecito). No atacan nunca: si te acercas a 4 m o
+  cae un hechizo a 7 m chillan, saltan con los ojos desorbitados y huyen un poco.
+- **Aparición** (`CritterZones`, mismas reglas que el pasto): salen del suelo con un "boing" sólo en zonas verdes,
+  nunca en caminos, edificios ni junto al cristal. De 7 a 12 a la vez según el Pilón (Pelusín, Babosín y Cíclope se
+  desbloquean al 5, 20 y 40 %), cerca del mago; los lejanos y fuera de cámara se esconden para reaparecer cerca.
+- **Golpes**: capa de colisión propia (`Critter.LAYER = 1 << 4`) que sólo ven la mira y el Haz de Plasma. Un
+  hechizo suelto revienta al que toca; los de área (Bola de Fuego, Meteoro, Terremoto) revientan a todos en su radio
+  y en cadena; el Rayo salta de bicho en bicho, también desde un golpe al cristal. Un bicho detrás del cristal no
+  roba el golpe; los familiares y el rayo del Pilón no los tocan. La chispa sin daño del tutorial sólo les da un
+  coscorrón ("NI COSQUILLAS LE HACES").
+- **Reventones** (`CritterGore`): se inflan, ojos fuera, chillido y destello; luego pegotes con brillo húmedo,
+  manchas que se secan en ~22 s, gotitas, un diente o huesito, y los dos ojos salen rebotando y se quedan
+  mirándote. Sube un alma traslúcida con ojos en X y aureola. Por elemento: Escarcha congela y hace añicos, Rayo
+  muestra el esqueleto, Tierra los deja de panqueque, Fuego tostados con humo, Arcano rosa con dos ecos. Avisos
+  "¡DOBLE BICHO!", "¡TRIPLE BICHO!", "¡MASACRE DE BICHOS! ×N". Sonidos de `tools/sfx_critters.py`. Todo en pools.
+- **Opción "SANGRE DE CARICATURA"** (Accesibilidad, activada): apagada, revientan en confeti, estrellas y nube.
+- **Recompensa**: 2-3 astillas por bicho (no mueve el balance) y la estadística `Progression.critters_popped`.
+- **Depuración**: botón "BICHOS: APARECER 5" en Alt+F1; en la demo `--critters=N`, `--critter-*`, `--gore-off`.
+- Prueba nueva `tests/smoke/critters_smoke.gd` (por el camino real de la mira y los proyectiles).
+
 ## 2026-11-18 · Menú de depuración, opciones completas, un tutorial que guía y el balance final
 
 **Qué hay nuevo** (lo que pidió el equipo al probar)
