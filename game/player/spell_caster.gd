@@ -595,11 +595,15 @@ func _begin_combine(by_input: bool = true) -> void:
 		AudioDirector.play_sfx(FIZZLE_SFX, -6.0, 1.2)
 		return
 	var storm_lock: float = _delivery.storm().lock_left()
-	if _active_recipe.delivery == SpellRecipe.Delivery.STORM and storm_lock > 0.0:
-		# Sólo una tormenta a la vez: la nube aún descarga (o el cielo se está calmando).
-		Events.hint.emit(tr("EL CIELO AÚN RUGE: ESPERA %d S") % ceili(storm_lock), Color("#c9b8ff"))
-		AudioDirector.play_sfx(FIZZLE_SFX, -6.0, 1.2)
-		return
+	var gem: ElementDef = staff.element(ELEMENTS)
+	if storm_lock > 0.0 and gem and not _active_recipe.is_triple():
+		# Sólo una tormenta a la vez: mientras la nube descarga (o el cielo se calma), las manos
+		# lanzan su pareja; se avisa de por qué no sale la Tormenta.
+		var t: SpellRecipe = StaffCombos.triple_for(element_of(0).id, element_of(1).id, gem.id)
+		if t and t.delivery == SpellRecipe.Delivery.STORM:
+			Events.hint.emit(
+				tr("EL CIELO AÚN RUGE: ESPERA %d S") % ceili(storm_lock), Color("#c9b8ff")
+			)
 	_combining = true
 	_combine_by_input = by_input
 	_combine_time = 0.0
