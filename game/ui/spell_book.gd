@@ -113,9 +113,9 @@ func _ready() -> void:
 		)
 	for i: int in maxi(SpellCaster.RECIPES.size(), StaffCombos.TRIPLES.size()):
 		var r := Rect2(
-			LEFT.position.x + 40,
+			LEFT.position.x + 43,
 			LIST_Y + i * ROW_H + floorf((ROW_H - UiFonts.LINE) * 0.5),
-			LEFT.size.x - 48,
+			LEFT.size.x - 51,
 			UiFonts.LINE
 		)
 		_rows.append(_label("", UiFonts.BOLD, UiFonts.SMALL, C_CYAN, r, 0))
@@ -398,9 +398,12 @@ func _draw() -> void:
 		if i == _selected:
 			draw_rect(row, Color(C_GOLD, 0.25))
 			draw_rect(Rect2(row.position, Vector2(2, row.size.y)), C_GOLD_LIGHT)
-		var step: float = 14.0 if r.elements.size() < 3 else 11.0
+		# Tres iconos (triples) más juntos, para que no pisen el nombre.
+		var triple: bool = r.elements.size() >= 3
+		var step: float = 10.0 if triple else 14.0
+		var x0: float = row.position.x + (3.0 if triple else 6.0)
 		for k: int in mini(r.elements.size(), 3):
-			var at := Vector2(row.position.x + 6 + k * step, y + floorf((ROW_H - 9.0) * 0.5))
+			var at := Vector2(x0 + k * step, y + floorf((ROW_H - 9.0) * 0.5))
 			var page: int = ELEMENT_PAGE.get(r.elements[k], 0)
 			var col := Color(Grimoire.PAGES[page][2] as String)
 			if st == &"found":
