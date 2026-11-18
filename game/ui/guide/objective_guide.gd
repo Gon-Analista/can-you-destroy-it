@@ -295,8 +295,9 @@ func _target_of(k: int) -> Vector3:
 		Guidance.Kind.CRYSTAL:
 			return CRYSTAL_AT
 		Guidance.Kind.TEAR:
+			# El rombo encima de la gota, no delante: tapaba la propia Lágrima.
 			if _tear >= 0 and _tears:
-				return _tears.position_of(_tear)
+				return _tears.position_of(_tear) + Vector3.UP * 0.95
 	return target if target != Vector3.INF else CRYSTAL_AT
 
 
