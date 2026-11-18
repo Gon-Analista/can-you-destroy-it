@@ -285,6 +285,8 @@ func _build() -> void:
 	_god_button = _button(row, tr("MODO DIOS"), _toggle_god)
 	for b: Button in [_fps_button, _god_button]:
 		b.toggle_mode = true
+	row = _row(box, tr("BICHOS"))
+	_button(row, tr("APARECER 5"), _spawn_critters)
 	row = _row(box, tr("IR A"))
 	_button(row, tr("SANTUARIO"), _warp.bind(&"sanctum"))
 	_button(row, tr("PILÓN"), _warp.bind(&"pylon"))
@@ -587,6 +589,13 @@ func _toggle_god() -> void:
 		tr("MODO DIOS: SIN RECARGA Y VUELO INFINITO") if god_mode else tr("MODO DIOS: NO"),
 		BUY_SFX if god_mode else TICK_SFX
 	)
+
+
+## Cinco bichos delante del mago (critters/), con su ¡boing!.
+func _spawn_critters() -> void:
+	var herd: CritterHerd = CritterHerd.instance()
+	var n: int = herd.spawn_in_front(5) if herd else 0
+	_feedback(tr("¡%d BICHOS!") % n, PICKUP_SFX if n > 0 else DENY_SFX)
 
 
 ## Teletransporte delante del Santuario, del Pilón o del cristal, mirándolo.

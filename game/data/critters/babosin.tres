@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="CritterDef" format=3]
+
+[ext_resource type="Script" path="res://data/defs/critter_def.gd" id="1_cdef"]
+
+[resource]
+script = ExtResource("1_cdef")
+id = &"babosin"
+display_name = "Babosín"
+shape = 3
+gait = 3
+size = 0.55
+body_color = Color(1, 0.8235, 0.2471, 1)
+belly_color = Color(1, 0.9451, 0.6588, 1)
+accent_color = Color(1, 0.5412, 0.1647, 1)
+goo_color = Color(0.549, 1, 0.2471, 1)
+cheek_color = Color(1, 0.4784, 0.851, 1)
+eye_radius = 0.1
+pupil_ratio = 0.55
+eye_wobble = 1.6
+walk_speed = 0.35
+flee_speed = 1.6
+hop_height = 0.1
+hop_sec = 0.5
+idle_min_sec = 2.0
+idle_max_sec = 5.0
+voice_pitch = 0.95
+emotes = PackedInt32Array(0, 2, 3)
+weight = 0.9
+min_pylon = 0.2
+splinters = 2
+chunks = 8
+drops_tooth = false
+drops_bone = false

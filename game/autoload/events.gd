@@ -53,3 +53,7 @@ signal grimoire_opened
 signal grimoire_closed
 ## Mensaje para el HUD ("¡BOLSA LLENA!", "¡MEJORA DISPONIBLE!"...).
 signal hint(text: String, color: Color)
+
+# --- Bichos del valle ---
+## Un bicho reventó (`critter_id`: id de su CritterDef).
+signal critter_popped(at: Vector3, critter_id: StringName)
