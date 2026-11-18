@@ -84,6 +84,8 @@ var _veins: CrystalVeins
 var _geodes: CrystalGeodes
 ## Lágrimas del Núcleo y nodos del Núcleo en el Corazón (ver CoreTears).
 var _tears: CoreTears
+## El final: el Núcleo expuesto al 99 % (ver CoreReveal).
+var _reveal: CoreReveal
 var _shards: ShardPool
 var _fx: ImpactFx
 var _hd_fx: HdImpact
@@ -179,6 +181,10 @@ func _ready() -> void:
 	_tears.name = "CoreTears"
 	_tears.setup(self)
 	add_child(_tears)
+	_reveal = CoreReveal.new()
+	_reveal.name = "CoreReveal"
+	_reveal.setup(self)
+	add_child(_reveal)
 	_arcs.setup_ambient(
 		global_position + Vector3(0.0, volume.top * 0.4, 0.0),
 		Vector3(
@@ -686,6 +692,7 @@ func _allowed_mask(combo: bool) -> int:
 func _too_hard(hit: SpellHit) -> void:
 	var layer: CrystalLayerDef = GameState.LAYERS[_hit_layer]
 	_tears.react_hard(hit, _hit_layer)
+	var core_answered: bool = _reveal.react_hard(hit, _hit_layer)
 	_hits[_hit_index] = Vector4(hit.position.x, hit.position.y, hit.position.z, _now)
 	_hit_resonant[_hit_index] = 0.0
 	_hit_index = (_hit_index + 1) % MAX_HITS
@@ -699,7 +706,7 @@ func _too_hard(hit: SpellHit) -> void:
 	p.volume_db = -8.0
 	p.play()
 	_shudder = minf(1.0, _shudder + 0.2)
-	if hit.by_player and _now - _hard_hint_at > 5.0:
+	if hit.by_player and not core_answered and _now - _hard_hint_at > 5.0:
 		_hard_hint_at = _now
 		Events.hint.emit(
 			tr(layer.too_hard_hint) if layer.too_hard_hint != "" else tr("¡DEMASIADO DURO!"),

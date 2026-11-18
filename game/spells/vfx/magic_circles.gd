@@ -108,8 +108,16 @@ func _ready() -> void:
 ## Mientras se carga un hechizo combinado: `count` círculos (1..5) que aparecen con la carga `k`,
 ## de `origin` (las manos) hacia `aim`. Con `stages` > 0 aparecen por etapas (ver
 ## `ChargeStages`): cada uno encaja de golpe al completar la suya.
+## `palette` (opcional): un color por círculo (la Gran Convergencia, uno por elemento).
 func charging(
-	k: float, count: int, origin: Vector3, aim: Vector3, col: Color, hot: Color, stages: int = 0
+	k: float,
+	count: int,
+	origin: Vector3,
+	aim: Vector3,
+	col: Color,
+	hot: Color,
+	stages: int = 0,
+	palette: PackedColorArray = PackedColorArray()
 ) -> void:
 	count = clampi(count, 0, MAX_CHARGE_CIRCLES)
 	if _sky:
@@ -135,8 +143,11 @@ func charging(
 			# Cada uno más grande también en pantalla: se abren en cono hacia el blanco.
 			var ring: int = c + _ring_skip
 			_base_scale[i] = _dist(ring) * FIRST_SPAN * pow(SPAN_GROWTH, ring)
-			# Tonos alternos para distinguir cada anillo.
-			_mats[i].set_shader_parameter("color", col if c % 2 == 0 else col.lerp(hot, 0.45))
+			# Tonos alternos para distinguir cada anillo (o el de la paleta).
+			var ring_col: Color = col if c % 2 == 0 else col.lerp(hot, 0.45)
+			if not palette.is_empty():
+				ring_col = palette[c % palette.size()]
+			_mats[i].set_shader_parameter("color", ring_col)
 			_mats[i].set_shader_parameter("color_hot", hot)
 			_mats[i].set_shader_parameter("ink_alpha", CHARGE_INK if stages > 0 else 0.55)
 			_mats[i].set_shader_parameter("rune_count", 10.0 + c * 3.0)

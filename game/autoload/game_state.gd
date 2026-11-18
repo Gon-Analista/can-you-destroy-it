@@ -52,6 +52,11 @@ const LAYERS: Array[CrystalLayerDef] = [
 ]
 
 var progression: Progression = Progression.new(BALANCE.total_essence)
+## Esencia que guarda el Núcleo (el último 1 %): ningún golpe baja de aquí; sólo la Gran
+## Convergencia la rompe (ver EndingDirector).
+var core_floor: int:
+	get:
+		return roundi(float(progression.total_essence) * (1.0 - BALANCE.core_exposed_ratio))
 ## True con el Núcleo expuesto: el cristal destruido al 99 % (`BalanceConfig.core_exposed_ratio`,
 ## GDD 9). Desde ahí se ve y se puede inscribir la Gran Convergencia (nodo `grand_convergence`;
 ## al inscribirlo, `Events.grand_convergence_unlocked` y `has_upgrade(GRAND_CONVERGENCE)`).
@@ -59,6 +64,25 @@ var core_exposed: bool:
 	get:
 		var left: float = float(progression.total_essence) * (1.0 - BALANCE.core_exposed_ratio)
 		return float(progression.essence) <= left + 0.5
+
+## Con un menú abierto (título o pausa) no cuenta el tiempo jugado.
+var _menu_open: bool = false
+
+
+func _ready() -> void:
+	# Estadísticas de la pantalla final (Progression.time_played, spells_cast, shards_collected).
+	Events.spell_cast.connect(func(_t: SpellTier, _s: int) -> void: progression.spells_cast += 1)
+	Events.shard_collected.connect(
+		func(_t: ShardType, _n: int, _at: Vector3) -> void: progression.shards_collected += 1
+	)
+	Events.menu_opened.connect(func() -> void: _menu_open = true)
+	Events.menu_closed.connect(func() -> void: _menu_open = false)
+
+
+func _process(delta: float) -> void:
+	if not _menu_open and not progression.game_complete and not get_tree().paused:
+		# Tiempo real (sin hit-stop ni la velocidad de depuración).
+		progression.time_played += delta / maxf(Engine.time_scale, 0.01)
 
 
 ## Fracción del cristal ya destruida (0..1).
@@ -77,7 +101,11 @@ func current_layer() -> CrystalLayerDef:
 
 func hit_crystal(damage: int, at: Vector3) -> int:
 	var exposed: bool = core_exposed
-	var removed: int = progression.damage_crystal(damage)
+	# El Núcleo no cede: lo que queda de él no lo quita ningún golpe (si el volumen y la cuenta no
+	# cuadran del todo, la cuenta se para justo en el 99 %).
+	var removed: int = progression.damage_crystal(
+		mini(damage, maxi(0, progression.essence - core_floor))
+	)
 	if removed > 0:
 		Events.crystal_hit.emit(removed, at)
 		Events.essence_changed.emit(progression.essence, progression.total_essence)

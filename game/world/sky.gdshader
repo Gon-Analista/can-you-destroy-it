@@ -25,6 +25,13 @@ uniform float aurora = 0.0;
 uniform vec4 aurora_low : source_color = vec4(0.36, 1.0, 0.82, 1.0);
 uniform vec4 aurora_mid : source_color = vec4(0.78, 0.55, 1.0, 1.0);
 uniform vec4 aurora_high : source_color = vec4(1.0, 0.48, 0.85, 1.0);
+// 0..1: el final llena el cielo entero de auroras (más cortinas, más altas y por todo el cielo).
+uniform float aurora_fill = 0.0;
+// La columna de maná del final abre un agujero en las nubes (dirección desde el valle y tamaño:
+// coseno del ángulo; 0 = sin agujero) con un anillo de luz alrededor.
+uniform vec3 hole_dir = vec3(0.0, 1.0, 0.0);
+uniform float hole_size = 0.0;
+uniform vec4 hole_color : source_color = vec4(0.85, 0.66, 1.0, 1.0);
 
 float hash13(vec3 p) {
 	p = fract(p * 0.1031);
@@ -77,6 +84,21 @@ void sky() {
 		ac = mix(ac, aurora_high.rgb, smoothstep(0.5, 1.0, k));
 		float q = floor(a * 4.0 + dither) / 4.0;
 		col = mix(col, ac * 1.15, clamp(q, 0.0, 0.8));
+		if (aurora_fill > 0.01) {
+			// Dos cortinas más, altas y por todo el cielo (no sólo hacia el norte).
+			for (int c = 0; c < 2; c++) {
+				float fc = float(c);
+				float cen = 0.5 + fc * 0.22 + 0.06 * sin(az * (2.0 + fc) - tt * (0.1 + 0.05 * fc));
+				float dd = d.y - cen;
+				float cu = smoothstep(-0.04, 0.0, dd) * (1.0 - smoothstep(0.0, 0.2, dd));
+				float ry = 0.5 + 0.5 * sin(az * (40.0 + 13.0 * fc) + sin(az * 6.0 + tt * 0.3) * 3.0);
+				float a2 = cu * (0.3 + 0.7 * ry) * aurora_fill;
+				float k2 = clamp(dd / 0.2, 0.0, 1.0);
+				vec3 c2 = mix(aurora_mid.rgb, fc < 0.5 ? aurora_low.rgb : aurora_high.rgb, k2);
+				float q2 = floor(a2 * 4.0 + dither) / 4.0;
+				col = mix(col, c2 * 1.15, clamp(q2, 0.0, 0.75));
+			}
+		}
 	}
 	// Sol y luna: discos de píxeles con un halo en bandas.
 	float sd = dot(d, normalize(sun_dir));
@@ -108,7 +130,12 @@ void sky() {
 			if (n < cover + 0.03 || shade < n - 0.06) {
 				cc = cloud_shadow.rgb;
 			}
-			col = mix(col, cc * cloud_tint.rgb, step(0.02, h));
+			// Agujero de la columna: sin nubes cerca y un anillo de luz en el borde.
+			float hd = dot(d, normalize(hole_dir));
+			float in_hole = hole_size > 0.0 ? step(hole_size, hd) : 0.0;
+			col = mix(col, cc * cloud_tint.rgb, step(0.02, h) * (1.0 - in_hole));
+			float edge = hole_size > 0.0 ? step(hole_size - 0.012, hd) * (1.0 - in_hole) : 0.0;
+			col = mix(col, hole_color.rgb * 1.3, edge * 0.8);
 		}
 	}
 	if (d.y < 0.0) {

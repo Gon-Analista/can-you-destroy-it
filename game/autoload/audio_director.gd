@@ -144,6 +144,17 @@ func play_theme(stream: AudioStream, volume_db: float = -6.0) -> void:
 		_music.volume_db = -60.0
 
 
+## Sube o baja el tema (sin cambiar la música del valle, que sigue callada): la Gran Convergencia
+## apaga la música mientras se carga.
+func fade_theme(volume_db: float, fade_sec: float = 1.0) -> void:
+	if _theme == null or not _theme.playing:
+		return
+	if _theme_tween:
+		_theme_tween.kill()
+	_theme_tween = create_tween()
+	_theme_tween.tween_property(_theme, "volume_db", volume_db, maxf(fade_sec, 0.01))
+
+
 ## Funde el tema con la música del valle.
 func stop_theme(fade_sec: float = 2.5) -> void:
 	if _theme == null or not _theme.playing:

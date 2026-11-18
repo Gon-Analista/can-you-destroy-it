@@ -17,6 +17,8 @@ var _day_night: DayNight
 var _hut: ApprenticeHut
 var _flock: FamiliarFlock
 var _critters: CritterHerd
+## El final (GDD 9): Núcleo expuesto, Gran Convergencia, fiesta y pantalla final.
+var _ending: EndingDirector
 
 @onready var _world: SubViewport = $WorldView/WorldViewport
 @onready var _sun: DirectionalLight3D = $WorldView/WorldViewport/Sun
@@ -61,6 +63,10 @@ func _ready() -> void:
 	milestones.name = "ValleyMilestones"
 	_world.add_child(milestones)
 	_hud.bind(_player.get_camera(), _player.get_caster())
+	_ending = EndingDirector.new()
+	_ending.name = "EndingDirector"
+	_ending.setup(self, _world, _player, _hud, _day_night)
+	add_child(_ending)
 	_hud.debug_menu.bind(self, _player, _day_night, _hut)
 	# Hasta que exista el sistema de rangos, se empieza en Aprendiz (1 capa).
 	AudioDirector.play_music(MUSIC_LAYERS, _arg_int("--music-layers=", 1))
@@ -262,6 +268,24 @@ func _setup_autoplay() -> void:
 			get_tree().create_timer(tp + 0.4).timeout.connect(
 				func() -> void: Input.action_release(&"interact")
 			)
+		elif a == "--core-exposed":
+			# --core-exposed: el cristal al 99 % (con su momento) y el mago delante del Núcleo.
+			get_tree().create_timer(3.4).timeout.connect(_ending.debug_core)
+		elif a.begins_with("--ending"):
+			# --ending[=s]: además lanza sola la Gran Convergencia (a los s segundos, 3,4 por
+			# defecto); --ending-screen: la partida ya terminada y la pantalla final.
+			if a == "--ending-screen":
+				get_tree().create_timer(3.4).timeout.connect(
+					func() -> void:
+						_ending.demo_complete()
+						_ending.screen().open()
+				)
+			else:
+				var at: float = float(a.get_slice("=", 1)) if a.contains("=") else 3.4
+				get_tree().create_timer(at).timeout.connect(_ending.debug_convergence)
+		elif a == "--complete":
+			# --complete: la partida ya terminada (el valle de fiesta, sin cristal).
+			_ending.demo_complete.call_deferred()
 		elif a.begins_with("--time="):
 			_day_night.time_of_day = float(a.get_slice("=", 1))
 		elif a.begins_with("--warp="):
@@ -458,6 +482,7 @@ func _warm_up() -> void:
 	var tiers: Array[SpellTier] = SpellCaster.ELEMENT.tiers
 	crystal.warm_up(front, Vector3.BACK, tiers[tiers.size() - 1], caster.current_recipe().tier)
 	_critters.warm_up(cam.global_position.lerp(front, 0.2))
+	_ending.warm_up(front + Vector3.BACK * 6.0)
 	await _frames(24)
 	_aim(cam, front)
 	await _frames(12)

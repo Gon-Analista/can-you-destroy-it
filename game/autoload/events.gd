@@ -31,6 +31,12 @@ signal grimoire_final_revealed
 ## Se inscribe la Gran Convergencia (nodo `grand_convergence`): ya se puede lanzar el hechizo
 ## final. Equivale a `GameState.has_upgrade(&"grand_convergence")` pasando a true.
 signal grand_convergence_unlocked
+## El cristal ya se ha resquebrajado y desprendido: el Núcleo flota a la vista (ver CoreReveal).
+signal core_revealed
+## Las manos empiezan a cargar la Gran Convergencia (`charging` true) o dejan de hacerlo.
+signal convergence_charging(charging: bool)
+## La Gran Convergencia rompe el Núcleo: fin de la partida (GDD 9). Una sola vez.
+signal game_completed
 
 # --- Sensación del golpe (prototipo de la chispa) ---
 signal spell_cast(tier: SpellTier, hand_side: int)

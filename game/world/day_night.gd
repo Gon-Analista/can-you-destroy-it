@@ -29,6 +29,26 @@ const OWLS: Array[AudioStream] = [
 ]
 ## Mediodía: hacia dónde está el sol (arriba a la izquierda, como en la referencia).
 const NOON_SUN := Vector3(-0.55, 0.65, 0.52)
+## Colores del final: [cielo arriba, medio, horizonte, nubes, luz ambiente, niebla, tinte] con el
+## Núcleo expuesto (tensión) y en la fiesta (crepúsculo de auroras).
+const TENSION_COLORS: PackedColorArray = [
+	Color("#1d1450"),
+	Color("#3b2b78"),
+	Color("#7a5a9e"),
+	Color("#9a8ab8"),
+	Color("#8a70c8"),
+	Color("#4a3a72"),
+	Color("#c4b2ec")
+]
+const FINALE_COLORS: PackedColorArray = [
+	Color("#0a0a30"),
+	Color("#22186a"),
+	Color("#8a4f9e"),
+	Color("#6a5aa0"),
+	Color("#9a80e0"),
+	Color("#3a2a66"),
+	Color("#d2c0ff")
+]
 ## Fotogramas clave del día: [hora, cielo arriba, cielo medio, horizonte, nubes, color del sol,
 ## energía del sol, luz ambiente, energía ambiente, niebla, tinte del cristal, estrellas, noche].
 const KEYS: Array[Array] = [
@@ -175,6 +195,10 @@ const KEYS: Array[Array] = [
 @export_range(0.0, 1.0) var time_of_day: float = 0.33
 
 var night: float = 0.0
+## El final (GDD 9). `tension` (0..1): con el Núcleo expuesto el valle se oscurece hacia el
+## violeta. `finale` (0..1): tras romperlo, un crepúsculo violeta con el cielo lleno de auroras.
+var tension: float = 0.0
+var finale: float = 0.0
 
 var _sun: DirectionalLight3D
 var _moon: DirectionalLight3D
@@ -189,6 +213,7 @@ var _rng := RandomNumberGenerator.new()
 
 ## `sun`: la luz principal del valle; `env`: su entorno (cielo, ambiente y niebla).
 func setup(sun: DirectionalLight3D, env: Environment) -> void:
+	add_to_group(&"day_night")
 	_rng.randomize()
 	_sun = sun
 	_env = env
@@ -265,6 +290,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _apply() -> void:
 	var k: Array = _sample(time_of_day)
+	if tension > 0.001:
+		_blend_mood(k, TENSION_COLORS, tension * 0.75, 0.5)
+	if finale > 0.001:
+		_blend_mood(k, FINALE_COLORS, finale, 0.75)
 	var sun_to: Vector3 = _sun_dir(time_of_day)
 	var moon_to: Vector3 = -sun_to
 	# Luces: el sol se apaga bajo el horizonte; la luna toma el relevo.
@@ -291,13 +320,29 @@ func _apply() -> void:
 	# Auroras de maná: sólo de noche y más fuertes cuanto más lleno el Pilón (GDD 3).
 	_sky.set_shader_parameter(
 		"aurora",
-		float(k[11]) * ValleyMilestones.aurora_strength(GameState.progression.pylon_ratio())
+		maxf(
+			float(k[11]) * ValleyMilestones.aurora_strength(GameState.progression.pylon_ratio()),
+			finale
+		)
 	)
+	_sky.set_shader_parameter("aurora_fill", finale)
 	RenderingServer.global_shader_parameter_set(&"world_tint", k[10])
 	var n: float = k[12]
 	if absf(n - night) > 0.005:
 		night = n
 		get_tree().call_group(&"night_listeners", &"set_night", night)
+
+
+## Lleva los colores del momento `k` hacia los del final (`cols`, ver TENSION_COLORS) en `w`
+## (0..1) y apaga el sol en `dim`; con el final salen las estrellas.
+func _blend_mood(k: Array, cols: PackedColorArray, w: float, dim: float) -> void:
+	var idx: PackedInt32Array = [1, 2, 3, 4, 7, 9, 10]
+	for j: int in idx.size():
+		k[idx[j]] = (k[idx[j]] as Color).lerp(cols[j], w)
+	k[6] = float(k[6]) * (1.0 - dim * w)
+	k[8] = lerpf(float(k[8]), 0.55, w)
+	k[11] = maxf(float(k[11]), finale * 0.9)
+	k[12] = maxf(float(k[12]), w * 0.6)
 
 
 ## Dirección hacia el sol: recorre un círculo máximo inclinado que sale por el horizonte a las

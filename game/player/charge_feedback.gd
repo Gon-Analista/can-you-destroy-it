@@ -26,6 +26,9 @@ const LOOP_GLIDE: float = 7.0
 
 var camera: Camera3D
 var hands: WizardHands
+## Campanas propias, una por etapa (la última, la de la potencia completa): la Gran Convergencia
+## suena la nota de cada elemento. Vacío: las de siempre.
+var stage_sfx: Array[AudioStream] = []
 
 ## Nivel actual del bucle de carga (0..1).
 var _loop_level: float = 0.0
@@ -48,7 +51,10 @@ func stage(stage_index: int, total: int, sky: bool) -> void:
 	var full: bool = stage_index >= total
 	var f: float = float(stage_index) / float(maxi(total, 1))
 	var pitch: float = SKY_PITCH if sky else 1.0
-	if full:
+	if not stage_sfx.is_empty():
+		var own: AudioStream = stage_sfx[clampi(stage_index - 1, 0, stage_sfx.size() - 1)]
+		AudioDirector.play_sfx(own, -2.0 if full else lerpf(-6.0, -3.0, f))
+	elif full:
 		AudioDirector.play_sfx(FULL_SFX, -2.0, pitch)
 	else:
 		var idx: int = STAGE_SFX.size() - (total - stage_index)

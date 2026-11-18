@@ -42,6 +42,13 @@ var loose_tears: PackedVector3Array = PackedVector3Array()
 var reveal_all: bool = false
 ## Bichos del valle reventados (critters/).
 var critters_popped: int = 0
+## El final (GDD 9): la Gran Convergencia rompió el Núcleo. Al volver a cargar, el valle celebra.
+var game_complete: bool = false
+## Estadísticas de la pantalla final: segundos jugados (sin menús ni pausa; se paran al acabar),
+## hechizos lanzados (sueltos y combinados) y fragmentos recogidos.
+var time_played: float = 0.0
+var spells_cast: int = 0
+var shards_collected: int = 0
 
 
 func _init(p_total_essence: int) -> void:
@@ -206,6 +213,10 @@ func to_dict() -> Dictionary:
 		"tear_pity": tear_pity,
 		"loose_tears": _vec_list(loose_tears),
 		"critters_popped": critters_popped,
+		"game_complete": game_complete,
+		"time_played": time_played,
+		"spells_cast": spells_cast,
+		"shards_collected": shards_collected,
 	}
 
 
@@ -225,6 +236,10 @@ func load_dict(data: Dictionary) -> void:
 	hut_door_open = bool(data.get("hut_door_open", false))
 	tutorial_step = int(data.get("tutorial_step", 8 if pylon_progress > 0 else 0))
 	critters_popped = maxi(int(data.get("critters_popped", 0)), 0)
+	game_complete = bool(data.get("game_complete", false))
+	time_played = maxf(float(data.get("time_played", 0.0)), 0.0)
+	spells_cast = maxi(int(data.get("spells_cast", 0)), 0)
+	shards_collected = maxi(int(data.get("shards_collected", 0)), 0)
 	learned.clear()
 	var saved_learned: Dictionary = data.get("learned", {})
 	for key: Variant in saved_learned:

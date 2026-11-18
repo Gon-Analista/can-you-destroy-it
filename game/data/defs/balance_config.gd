@@ -62,3 +62,18 @@ var charge_stages_by_level: PackedInt32Array = PackedInt32Array([0, 1, 1, 2, 2, 
 @export var core_tear_pity_sec: float = 15.0
 ## Fracción del cristal destruida con la que el Núcleo queda expuesto (último 1 %, GDD 9).
 @export_range(0.0, 1.0) var core_exposed_ratio: float = 0.99
+
+@export_group("El final")
+## Segundos que hay que mantener los dos botones para cargar la Gran Convergencia (GDD 9: "la
+## carga dura varios segundos"). Va en cinco etapas, una por elemento.
+@export var convergence_charge_sec: float = 5.5
+## Con el cristal destruido a esta fracción se empieza a mirar cuánto queda de verdad a tiro
+## (el volumen y la cuenta de esencia no cuadran del todo, y bajo el suelo hay celdas que no se
+## pueden golpear): si lo que queda fuera del Núcleo y por encima del suelo es menos de
+## `core_reveal_leftover` (fracción de la esencia total), el Núcleo queda expuesto igual.
+@export_range(0.0, 1.0) var core_reveal_scan_from: float = 0.95
+@export_range(0.0, 1.0) var core_reveal_leftover: float = 0.006
+## Cada cuántos segundos se mira (en otro hilo).
+@export var core_reveal_scan_sec: float = 15.0
+## Segundos de fiesta en el valle tras romper el Núcleo antes de la pantalla final.
+@export var ending_screen_delay_sec: float = 13.0

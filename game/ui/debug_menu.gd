@@ -274,6 +274,9 @@ func _build() -> void:
 	row = _row(box, tr("CRISTAL"))
 	_button(row, tr("SIGUIENTE CAPA"), _next_layer)
 	_button(row, tr("REVELAR GEODA"), _reveal_geode)
+	row = _row(box, tr("FINAL"))
+	_button(row, tr("IR AL NÚCLEO (99 %)"), _go_to_core)
+	_button(row, tr("LANZAR GRAN CONVERGENCIA"), _cast_convergence)
 	row = _row(box, tr("HORA"))
 	_button(row, "+3 H", _add_hours.bind(3.0))
 	_button(row, tr("DÍA"), _set_time.bind(0.5))
@@ -559,6 +562,28 @@ func _next_layer() -> void:
 	_feedback(
 		tr("TÚNEL HASTA: %s") % tr(GameState.LAYERS[idx].display_name).to_upper(), CRYSTAL_SFX
 	)
+
+
+## El final (EndingDirector): el cristal al 99 % con su momento y el mago delante del Núcleo.
+func _go_to_core() -> void:
+	var ending: EndingDirector = get_tree().get_first_node_in_group(&"ending_director")
+	if ending == null or GameState.progression.game_complete:
+		_feedback(tr("LA PARTIDA YA ESTÁ TERMINADA"), DENY_SFX)
+		return
+	_feedback(tr("EL NÚCLEO QUEDA EXPUESTO"), CRYSTAL_SFX)
+	close()
+	ending.debug_core()
+
+
+## Inscribe la Gran Convergencia si hace falta y la carga y suelta sola contra el Núcleo.
+func _cast_convergence() -> void:
+	var ending: EndingDirector = get_tree().get_first_node_in_group(&"ending_director")
+	if ending == null or GameState.progression.game_complete:
+		_feedback(tr("LA PARTIDA YA ESTÁ TERMINADA"), DENY_SFX)
+		return
+	_feedback(tr("GRAN CONVERGENCIA"), BIG_SFX)
+	close()
+	ending.debug_convergence()
 
 
 func _reveal_geode() -> void:
