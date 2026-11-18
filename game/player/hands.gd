@@ -81,6 +81,13 @@ func _ready() -> void:
 			_grimoire_open = false
 			_play_level_up()
 	)
+	# El FOV de Opciones cambia en pausa: las llamas se recolocan a su nueva distancia (diferido,
+	# cuando la cámara ya tiene el FOV nuevo).
+	Settings.changed.connect(
+		func() -> void:
+			if _camera:
+				_place_orbs.call_deferred()
+	)
 	layer = 0
 	for side: int in 2:
 		var s := Sprite2D.new()

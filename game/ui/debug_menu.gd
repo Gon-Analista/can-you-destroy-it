@@ -48,6 +48,9 @@ const STAR: PackedStringArray = [
 	".##...##.",
 ]
 
+## ¿Hay menú en esta build? (Se mira una vez: `_input` lo consulta con cada evento.)
+static var _available: int = -1
+
 ## Modo dios: recarga instantánea y levitación infinita (si se tiene).
 var god_mode: bool = false
 
@@ -75,11 +78,17 @@ var _star: ImageTexture
 
 ## ¿Hay menú de depuración en esta build?
 static func available() -> bool:
-	return (
-		OS.is_debug_build()
-		or OS.has_feature("debug_menu")
-		or OS.get_cmdline_user_args().has("--debug-menu")
-	)
+	if _available < 0:
+		_available = (
+			1
+			if (
+				OS.is_debug_build()
+				or OS.has_feature("debug_menu")
+				or OS.get_cmdline_user_args().has("--debug-menu")
+			)
+			else 0
+		)
+	return _available == 1
 
 
 func _ready() -> void:
@@ -97,6 +106,8 @@ func _ready() -> void:
 	visible = false
 	set_process(false)
 	Events.locale_changed.connect(_build)
+	# El Grimorio (Tab en el Santuario) se abre encima: el panel se aparta y le deja el ratón.
+	Events.grimoire_opened.connect(close)
 
 
 ## Lo llama Main: los trucos necesitan el mago, el día y la noche y la casucha.

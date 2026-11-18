@@ -138,7 +138,7 @@ func play(
 		Color("#ffd27a") if resonant else (tier.impact_tint if tinted else Color("#bff3ff"))
 	)
 	light.visible = true
-	_light_peak[i] = tier.light_energy * power * Settings.flash_scale()
+	_light_peak[i] = tier.light_energy * power * HdFx.flash_scale
 	light.light_energy = _light_peak[i]
 	# Estallido de píxeles: con los colores de la estela del hechizo, un poco hacia la cámara.
 	var blast: MeshInstance3D = _blasts[i]

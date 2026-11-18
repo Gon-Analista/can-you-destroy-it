@@ -23,7 +23,11 @@ const REDUCED_FLASH: float = 0.35
 ## Archivo de opciones (los tests lo cambian para no tocar el del jugador).
 var path: String = PATH
 var screen_shake: float = 1.0
-var reduce_flashes: bool = false
+## Los efectos leen la escala de destellos de `HdFx.flash_scale` (no pueden nombrar el autoload).
+var reduce_flashes: bool = false:
+	set(value):
+		reduce_flashes = value
+		HdFx.flash_scale = REDUCED_FLASH if value else 1.0
 ## Números de daño que saltan del cristal.
 var damage_numbers: bool = true
 ## true: se mantiene el clic para cargar el combinado y sale al soltar; false: un clic lo

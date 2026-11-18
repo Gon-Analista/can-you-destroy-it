@@ -105,9 +105,11 @@ func _open() -> void:
 	if mode == Mode.PAUSE:
 		get_tree().paused = true
 		# Ya sabe dónde está el menú: el HUD deja de enseñar "ESC: MENÚ".
+		# En modo demo (no se guarda la partida) tampoco se tocan las opciones del jugador.
 		if not Settings.menu_hint_seen:
 			Settings.menu_hint_seen = true
-			Settings.save_settings()
+			if SaveSystem.enabled:
+				Settings.save_settings()
 
 
 func _close() -> void:

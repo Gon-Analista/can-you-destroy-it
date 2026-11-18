@@ -25,6 +25,8 @@ var _dip_vel: float = 0.0
 func _ready() -> void:
 	_noise.frequency = 1.6
 	Events.spell_impacted.connect(_on_impact)
+	# Opciones cambia el FOV con el juego en pausa (sin _process): se aplica ya.
+	Settings.changed.connect(_apply_fov)
 	Events.spell_cast.connect(_on_cast)
 
 
@@ -55,6 +57,10 @@ func _process(delta: float) -> void:
 	v_offset = max_offset * shake * _noise.get_noise_2d(0.0, _t) + bob.y + _dip
 	rotation.z = deg_to_rad(max_roll_deg) * shake * _noise.get_noise_2d(_t, _t)
 	_fov_kick = lerpf(_fov_kick, 0.0, 1.0 - exp(-delta * 10.0))
+	_apply_fov()
+
+
+func _apply_fov() -> void:
 	fov = Settings.fov + _fov_kick + sprint * 7.0
 
 

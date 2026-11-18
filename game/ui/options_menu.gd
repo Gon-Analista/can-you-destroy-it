@@ -17,6 +17,8 @@ const W: float = 344.0
 const LABEL_W: float = 150.0
 const VALUE_W: float = 40.0
 const ROW_H: float = 18.0
+## Ancho del interruptor pixel art (GameMenu._switch_icon).
+const SWITCH_W: float = 20.0
 ## Separación entre filas de una pestaña.
 const ROW_GAP: int = 3
 # i18n
@@ -111,7 +113,9 @@ func _build_video(page: VBoxContainer) -> void:
 		tr("CAMPO DE VISIÓN"),
 		[Settings.FOV_MIN, Settings.FOV_MAX, 1.0, Settings.fov],
 		func(v: float) -> String: return "%d°" % roundi(v),
-		func(v: float) -> void: Settings.fov = v
+		func(v: float) -> void:
+			Settings.fov = v
+			Settings.changed.emit()
 	)
 	_switch(
 		page,
@@ -286,9 +290,22 @@ func _switch(page: VBoxContainer, text: String, on: bool, on_toggle: Callable) -
 	c.custom_minimum_size = Vector2(W, ROW_H)
 	c.focus_mode = Control.FOCUS_ALL
 	_row_style(c)
+	# "SÍ" / "NO" junto al interruptor, en la columna de valores de las barras: el estado se lee
+	# de un vistazo aunque el interruptor sea pequeño.
+	var val: Label = _label("", UiFonts.BOLD, UiFonts.SMALL, GameMenu.C_TEXT)
+	val.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	val.offset_right = -SWITCH_W - 6.0
+	val.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	val.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	c.add_child(val)
+	var paint: Callable = func(v: bool) -> void:
+		val.text = tr("SÍ") if v else tr("NO")
+		val.add_theme_color_override(&"font_color", GameMenu.C_TEXT if v else GameMenu.C_CYAN)
+	paint.call(on)
 	c.toggled.connect(
 		func(v: bool) -> void:
 			on_toggle.call(v)
+			paint.call(v)
 			AudioDirector.play_sfx(TICK_SFX, -10.0, 1.25 if v else 0.9)
 	)
 	page.add_child(c)

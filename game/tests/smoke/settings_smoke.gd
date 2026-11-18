@@ -93,6 +93,15 @@ func _check_live_fov() -> void:
 			await process_frame
 		_check(absf(cam.fov - fov) < 1.5, "FOV %d en la cámara (%.1f)" % [fov, cam.fov])
 		_check(is_equal_approx(magic.fov, cam.fov), "la capa de magia copia el FOV %d" % fov)
+	# Desde la pausa (Opciones): el FOV se ve en vivo detrás del menú.
+	paused = true
+	settings.set(&"fov", 90.0)
+	settings.emit_signal(&"changed")
+	for i: int in 3:
+		await process_frame
+	_check(absf(cam.fov - 90.0) < 1.5, "FOV en vivo con el juego en pausa (%.1f)" % cam.fov)
+	_check(is_equal_approx(magic.fov, cam.fov), "la capa de magia lo copia en pausa")
+	paused = false
 	settings.set(&"fov", fov0)
 	var options: Node = current_scene.find_child("Options", true, false)
 	_check(options != null and options.get(&"_pages").size() == 4, "opciones en 4 pestañas")
