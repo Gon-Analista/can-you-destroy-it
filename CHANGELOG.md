@@ -2,6 +2,46 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-18 · Menú de depuración, opciones completas, un tutorial que guía y el balance final
+
+**Qué hay nuevo** (lo que pidió el equipo al probar)
+
+- **Menú de depuración** (`ui/debug_menu.gd`, **Alt+F1**; en builds de debug o con `--debug-menu`): el botón
+  ★ **COMPRAR TODO Y HECHIZOS AL MÁXIMO** (compra cada mejora al máximo con sus efectos, descubre todas las
+  combinaciones y pone los hechizos a nivel 10 durante la sesión), maná (+100 / +1K / +100K / +1M), llenar y
+  vaciar la bolsa, nivel de los hechizos 1-10 o AUTO, Pilón al 25/50/75/99 %, siguiente capa, revelar geoda,
+  hora (+3 h, día, noche), velocidad x1/x2/x5, FPS, modo dios, teletransportes (Santuario, Pilón, Cristal),
+  guardar y reiniciar (dos pulsaciones). Arriba, FPS, maná, Pilón, capa, fragmentos y bolsa en vivo. Se quita el
+  texto "DEBUG 1-5…" de abajo a la izquierda; las teclas viejas siguen en silencio.
+- **Opciones** (`ui/options_menu.gd`, en el título y en Esc): pestañas **Vídeo** (campo de visión 60-110 en vivo,
+  también en pausa; pantalla completa, VSync, límite de FPS, FPS), **Audio**, **Controles** (sensibilidad,
+  invertir Y, teclas) y **Accesibilidad** (sacudida, reducir destellos, mantener para cargar, números de daño),
+  con SÍ/NO junto a cada interruptor y **Restaurar valores**. Un aviso "ESC: MENÚ Y OPCIONES" sale hasta que se
+  abre el menú. Las llamas de las manos y la capa de magia siguen al FOV.
+- **Tutorial que guía** (`core/guidance.gd`, `ui/objective_guide.gd`, `data/ui/guidance.tres`):
+  - "[F] RECOGER" sale entero las 4 primeras veces, luego sólo una tecla pequeña y a las 20 desaparece (igual en la
+    trituradora, la palanca, el Grimorio y "bolsa llena"); lo aprendido se guarda (`Progression.learned`).
+  - Un rombo que gira sobre el objetivo, con la distancia, y una flecha en el borde si no se ve; en lo urgente,
+    estela de chispas por el suelo y columna de luz. Lleva al cristal (si no se ve), al pedacito más cercano, a la
+    trituradora con la bolsa llena o a la palanca olvidada (no si hay familiares recolectores), y al Santuario con
+    una mejora asequible que no has visto (las vistas se guardan, `Progression.seen_upgrades`). Sustituye a los
+    marcadores sueltos de la trituradora y de "¡MEJORA!".
+- **Balance final** (`tools/balance_sim.py`, propuesta "ritmo" con lo mejor de las otras tres, elegida por dos
+  jueces):
+  - Jugador normal **~142 min**, eficiente ~105. Ningún hueco de más de 3 min sin poder comprar (máximo 169 s), 0,6 %
+    del maná sin gastar y el Pilón lleno con el cristal al 95 %.
+  - Desbloqueos (normal): Escarcha 6 min, Envío directo 11, familiar 14, Rayo 25, Tierra 45, Pureza 61, Resonancia
+    del Pilón 62, Arcano 87.
+  - Épocas: Bola de Fuego 0-25 min, Lanza Cargada 26-56, Meteoro 57-88, Eco de Fuego 89-107 y Resonancia Arcana al
+    final; ninguna vuelve atrás.
+  - Cambios de reglas: la Bola de Fuego se enfría en 2,5 s; Tierra y Arcano sueltos son lentos y pesados (su fuerza
+    está en las combinaciones); Pureza con 12 niveles de +8 %, más niveles de Canalización, Resonancia,
+    Telequinesis y Resonancia del Pilón; el familiar lleva como mucho 6; las venas sueltan menos Resonantes.
+  - La primera mejora sigue a los ~67 s (la fija el tutorial: Chispa 0 y Potencia 1 a 5).
+
+**Pruebas**: nuevas `debug_menu_smoke` y `settings_smoke`; `tutorial_smoke` comprueba la regla de la F y cada
+objetivo de la guía. Todas en verde.
+
 ## 2026-11-18 · Texto que se lee, fuego con color y un día que empieza de día
 
 **Qué hay nuevo** (revisión de lo anterior y lo que pidió el equipo)
@@ -45,9 +85,6 @@ Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev
 
 **Pruebas**: nuevas `charge_stages_smoke` y `meteor_smoke`; laboratorio de fuego en `tests/vfx_gallery/fire_lab`.
 Todas en verde.
-
-**Sigue en marcha**: fuente más legible, menú debug (Alt+F1), opciones con FOV, tutorial que guía y el balance
-final.
 
 ## 2026-11-17 · Venas Resonantes, la rama del Pilón y un valle que celebra
 

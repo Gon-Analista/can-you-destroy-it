@@ -315,6 +315,9 @@ godot --headless --path game --script res://tests/smoke/progression_smoke.gd
   `tests/smoke/charge_stages_smoke.gd`, los escalones de carga por nivel, que cada uno suena una vez y que el
   daño no baja al subir de escalón;
   `tests/smoke/meteor_smoke.gd`, la trayectoria del meteorito (entra alto, de lado y sin atravesar el cristal);
+  `tests/smoke/debug_menu_smoke.gd`, que "comprar todo" del menú de depuración lo deja todo al máximo;
+  `tests/smoke/settings_smoke.gd`, que las opciones nuevas (FOV, VSync, FPS, invertir Y...) se guardan y se
+  aplican, también en pausa;
   `tests/smoke/crystal_volume_smoke.gd`, que el volumen del cristal reparte el 1.000.000, se excava, respeta el
   Núcleo, se malla y se guarda.
 - Ojo en los tests `--script`: los autoloads no existen al compilar el script, así que no se pueden nombrar

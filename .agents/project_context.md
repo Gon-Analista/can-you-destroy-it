@@ -143,7 +143,8 @@ en el Grimorio del Santuario mejoras que cambian los hechizos. Lo que hay:
 - **Efectos** (`fx/`): shader toon, contorno de post-proceso (profundidad + normales), `ImpactFx` (estrellas,
   esquirlas, anillo y luz en pool), `HitStop`.
 - **HUD** (`ui/`): Esencia con número rodante, mira con anillo de carga y marcador de impacto, racha, avisos,
-  números flotantes, Pilón, FPS y ayuda de debug. Fuente Fusion Pixel 10/12 px (`UiFonts`).
+  números flotantes, Pilón, FPS, guía de objetivos (`ObjectiveGuide`), menú de depuración (Alt+F1, `DebugMenu`) y
+  opciones por pestañas (`OptionsMenu`, con FOV). Fuente Fusion Pixel 10/12 px (`UiFonts`).
 - **Música** (`audio/music/`): tema del valle en La mayor, 84 BPM, en 5 capas sincronizadas (una por rango) con
   `AudioDirector.play_music` / `set_music_layers`. En debug, la tecla M suma capas.
 - **Audio** (`audio/sfx/`): 20 OGG sintetizados (tink ×4, fragmentos, chispa, campanitas, acorde resonante,
@@ -277,6 +278,9 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-18 | Fuente de la interfaz: Fusion Pixel (latín de Ark Pixel) 10 px y 12 px en rejilla exacta, por `UiFonts`; sustituye a Silkscreen 8 px y Pixelify 16 px. | El equipo no entendía el texto: Silkscreen tenía mayúsculas de 5 px y Pixelify a 16 px no cuadraba con su rejilla de 11 px. Fusion Pixel tiene minúsculas, tildes, ñ, ¡ y ¿. |
 | 2026-11-18 | El sol sale en t = 0,25 y se pone en 0,75 (`DayNight._sun_dir`), con mediodía en `NOON_SUN`. | Antes salía en 0,387: la partida empezaba con luz de luna bajo un cielo de día. |
 | 2026-11-18 | Halos y anillos de impacto con `cover` (tiñen el fondo en vez de sumar luz) y fuego con 5 capas saturadas sin pasar de 1. | El fuego se veía como una mancha blanca o crema y el anillo de choque fundía la pantalla a blanco. |
+| 2026-11-18 | Balance final (propuesta "ritmo" + injertos de los jueces, `tools/balance_sim.py`): normal ~142 min, eficiente ~105, ningún hueco > 180 s, Pilón lleno con el cristal al 95 %. Bola de Fuego 2,5 s de enfriamiento; Tierra y Arcano sueltos lentos (2,6-2,8 s) y su fuerza en las combinaciones; Pureza 12 niveles de +8 %. | Con el simulador fiel la partida duraba 42 min y sobraba más de un millón de maná. Sustituye a la curva x1,38 por nivel de la fila anterior (ahora ~1,05-1,09 por nivel desde el último escrito). |
+| 2026-11-18 | Menú de depuración (Alt+F1, `DebugMenu`) en builds de debug o con `--debug-menu`; "comprar todo" pasa por `GameState.buy_upgrade` y el nivel 10 de hechizos es sólo de la sesión. | Pedido del equipo para probar rápido; quita el texto de ayuda de debug del HUD. |
+| 2026-11-18 | Guía de objetivos (`Guidance`, `ObjectiveGuide`): un solo marcador que elige el siguiente paso; los avisos con tecla se aprenden (`Progression.learned`, umbrales en `data/ui/guidance.tres`). | El tutorial repetía "[F]" a cada rato; el equipo pidió que te guíe a dónde ir. |
 
 ## 10. Preguntas abiertas
 

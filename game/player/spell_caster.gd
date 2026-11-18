@@ -199,11 +199,6 @@ func set_debug_level(level: int, celebrate: bool = false) -> void:
 	_refresh_hands(celebrate)
 
 
-## Nivel forzado por depuración (1..10), o 0 si manda lo comprado.
-func debug_level() -> int:
-	return maxi(debug_recipe_level, 0)
-
-
 ## Nivel (1..10) del hechizo de una mano.
 func level_of(side: int) -> int:
 	return element_of(side).tiers.find(tier_for(side)) + 1

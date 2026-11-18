@@ -381,7 +381,7 @@ static func _star_icon() -> ImageTexture:
 
 ## Botones que llevan estado: nivel forzado, velocidad, FPS y modo dios.
 func _refresh_states() -> void:
-	var lv: int = _caster().debug_level() if _player else 0
+	var lv: int = maxi(_caster().debug_recipe_level, 0) if _player else 0
 	for i: int in _level_buttons.size():
 		var b_lv: int = i + 1 if i < 5 else (0 if i == 5 else i)
 		_mark(_level_buttons[i], b_lv == lv)
