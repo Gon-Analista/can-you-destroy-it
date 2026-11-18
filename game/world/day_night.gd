@@ -193,6 +193,7 @@ func setup(sun: DirectionalLight3D, env: Environment) -> void:
 	_sun = sun
 	_env = env
 	_sky = env.sky.sky_material as ShaderMaterial
+	_setup_sun_shadows(sun)
 	_moon = DirectionalLight3D.new()
 	_moon.name = "Moon"
 	_moon.light_color = Color("#9fb4ff")
@@ -209,6 +210,22 @@ func setup(sun: DirectionalLight3D, env: Environment) -> void:
 		add_child(p)
 		_oneshots.append(p)
 	_apply()
+
+
+## Sombras del sol estables a cualquier hora (el sol recorre todo el cielo, de rasante a casi
+## vertical):
+## - Caras traseras en el mapa de sombras (`shadow_reverse_cull_face`). Con el sol alto, la
+##   normal_bias de Godot se anula (escala con 1 - N·L) y el suelo se sombreaba a sí mismo
+##   ("acné"): rayas y moiré en la hierba, puntos en las losas, y como el reparto de cascadas
+##   sigue a la cámara, se movían con cada sacudida o golpe de FOV al lanzar hechizos. Así
+##   ninguna malla cerrada se sombrea a sí misma y las sombras de verdad (postes, casucha,
+##   cristal, fragmentos) siguen igual.
+## - Sin "pancaking" (`directional_shadow_pancake_size = 0`): con el sol bajo, aplastar en el
+##   plano cercano las mallas enormes (suelo de 480 m, montañas) tapaba todo el valle y al
+##   amanecer el suelo se quedaba negro de golpe.
+func _setup_sun_shadows(sun: DirectionalLight3D) -> void:
+	sun.shadow_reverse_cull_face = true
+	sun.directional_shadow_pancake_size = 0.0
 
 
 func _loop_player(stream: AudioStream) -> AudioStreamPlayer:
