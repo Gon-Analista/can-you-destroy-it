@@ -140,9 +140,9 @@ func begin_combine(visual: SpellVisualDef = null) -> void:
 	combine_charge = 0.0
 	if _combo_orb:
 		_combo_orb.appear()
-		# El Meteoro: llamas más altas que envuelven la roca (la roca ya marca el centro).
-		var meteor: bool = _combo_orb.def != null and _combo_orb.def.meteor
-		_combo_orb.set_flow(Vector2(0.0, -1.0), COMBO_FLOW * (2.0 if meteor else 1.0))
+		# Lenguas cortas (también en el Meteoro, cuyo fuego va centrado en la roca: más largas
+		# llegaban a la mira con la carga completa).
+		_combo_orb.set_flow(Vector2(0.0, -1.0), COMBO_FLOW)
 		_combo_orb.charge = 0.0
 		_combo_orb.visible = orb_enabled
 
