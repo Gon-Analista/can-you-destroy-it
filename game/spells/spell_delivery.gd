@@ -18,7 +18,7 @@ const STORM_FRONT: float = 4.0
 const STORM_RISE: float = 0.3
 const STORM_MIN_RISE: float = 7.0
 ## Inclinación de la lluvia de las triples (m de lado por m de altura).
-const RAIN_SLANT: float = 0.45
+const RAIN_SLANT: float = 0.3
 ## Lado que usan las señales y las manos para el hechizo combinado.
 const BOTH_HANDS: int = 2
 
