@@ -2,10 +2,13 @@ class_name MagicCircles
 extends Node3D
 ## Círculos mágicos con runas de los niveles 6 a 10 de los hechizos (capa de magia HD).
 ##
-## - Hechizos que se cargan (Bola de Fuego, Choque Térmico): mientras cargas aparecen, uno a
-##   uno según la carga, `nivel - 5` círculos cada vez más grandes y más lejos, alineados desde
-##   las manos hacia donde apuntas y girando en sentidos alternos. Al lanzar, el hechizo los
-##   atraviesa: cada uno destella y se abre.
+## - Hechizos que se cargan (Bola de Fuego, Choque Térmico): mientras cargas aparecen círculos
+##   cada vez más grandes y más lejos, alineados desde las manos hacia donde apuntas y girando
+##   en sentidos alternos. Con carga por etapas (`ChargeStages`) cada círculo encaja de golpe
+##   al completar su etapa: se dibuja en un instante, llega algo grande y se asienta con un
+##   destello, y los que ya estaban laten; con la última (potencia completa) destellan todos,
+##   giran más deprisa y sale una onda. Al lanzar, el hechizo los atraviesa: cada uno destella
+##   y se abre. Si se cancela, se apagan encogiéndose.
 ## - Hechizos de toque (Chispa, Escarcha): al lanzar sale de la mano un círculo pequeño que gira
 ##   rápido y se apaga (dos a nivel 8, tres a nivel 10).
 ## - Sellos sueltos (`stamp`): un círculo que se dibuja, destella y se apaga donde haga falta: de
@@ -17,16 +20,37 @@ const MAX_CHARGE_CIRCLES: int = 5
 ## Distancia (m) del primer círculo y separación de los siguientes, que crece.
 const FIRST_DIST: float = 1.4
 const STEP_DIST: float = 0.75
+## Tamaño aparente (escala / distancia) del primer círculo de carga y cuánto crece cada uno: el
+## primero algo más ancho que el orbe y cada siguiente un 17 % más grande también en pantalla,
+## para que se lean como anillos concéntricos que se abren (no uno encima de otro).
+const FIRST_SPAN: float = 0.27
+const SPAN_GROWTH: float = 1.17
+## Al encajar un círculo de etapa: tiempo en dibujarse, en asentarse y cuánto más grande llega.
+const SNAP_SWEEP: float = 0.07
+const SNAP_TIME: float = 0.2
+const SNAP_OVERSHOOT: float = 0.25
+## Destello del círculo que encaja, latido de los que ya estaban y destello de la potencia
+## completa (moderados y menores en los círculos grandes: con el resplandor HDR, un círculo
+## grande delante de la cámara se quema a blanco).
+const SNAP_FLASH: float = 0.85
+const STAGE_PULSE: float = 0.3
+const FULL_FLASH: float = 0.5
+## Opacidad del contorno de los círculos de carga por etapas (delante del orbe; ver el shader).
+const CHARGE_INK: float = 0.85
+## Cuánto tarda en apagarse un círculo cancelado (s).
+const CANCEL_TIME: float = 0.28
 
 var _quads: Array[MeshInstance3D] = []
 var _mats: Array[ShaderMaterial] = []
-## Estado por quad: 0 libre, 1 de carga, 2 soltándose (destello), 3 de toque, 4 sello (eco, pozo).
+## Estado por quad: 0 libre, 1 de carga, 2 soltándose (destello), 3 de toque, 4 sello (eco, pozo),
+## 5 cancelado (se apaga).
 var _state: PackedInt32Array = []
 var _age: PackedFloat32Array = []
 var _spin_speed: PackedFloat32Array = []
 var _spin: PackedFloat32Array = []
 var _base_scale: PackedFloat32Array = []
-## Duración de cada sello (estado 4) y cuánto destella al cerrarse.
+## Duración de cada sello (estado 4) y cuánto destella al cerrarse. En los de carga por etapas,
+## la edad a la que encajó (-1 = aún no).
 var _life: PackedFloat32Array = []
 var _flash_peak: PackedFloat32Array = []
 var _charge_ids: Array[int] = []
@@ -35,6 +59,9 @@ var _origin := Vector3.ZERO
 var _dir := Vector3.FORWARD
 ## Los círculos de carga actuales son del cielo (no de las manos).
 var _sky: bool = false
+## Última etapa completada de la carga actual y segundos desde entonces.
+var _last_stage: int = 0
+var _stage_age: float = 10.0
 
 
 func _ready() -> void:
@@ -65,8 +92,11 @@ func _ready() -> void:
 
 
 ## Mientras se carga un hechizo combinado: `count` círculos (1..5) que aparecen con la carga `k`,
-## de `origin` (las manos) hacia `aim`.
-func charging(k: float, count: int, origin: Vector3, aim: Vector3, col: Color, hot: Color) -> void:
+## de `origin` (las manos) hacia `aim`. Con `stages` > 0 aparecen por etapas (ver
+## `ChargeStages`): cada uno encaja de golpe al completar la suya.
+func charging(
+	k: float, count: int, origin: Vector3, aim: Vector3, col: Color, hot: Color, stages: int = 0
+) -> void:
 	count = clampi(count, 0, MAX_CHARGE_CIRCLES)
 	if _sky:
 		_release_charge(false)
@@ -76,6 +106,7 @@ func charging(k: float, count: int, origin: Vector3, aim: Vector3, col: Color, h
 	if _charge_ids.size() != count:
 		_release_charge(false)
 		_charge_count = count
+		_new_charge()
 		for c: int in count:
 			var i: int = _free()
 			if i < 0:
@@ -83,17 +114,30 @@ func charging(k: float, count: int, origin: Vector3, aim: Vector3, col: Color, h
 			_charge_ids.append(i)
 			_state[i] = 1
 			_age[i] = 0.0
+			_life[i] = -1.0
 			_spin[i] = randf() * TAU
 			_spin_speed[i] = (0.8 + c * 0.25) * (1.0 if c % 2 == 0 else -1.0)
 			# Cada uno más grande también en pantalla: se abren en cono hacia el blanco.
-			_base_scale[i] = 0.36 * pow(1.55, c)
+			_base_scale[i] = _dist(c) * FIRST_SPAN * pow(SPAN_GROWTH, c)
 			# Tonos alternos para distinguir cada anillo.
 			_mats[i].set_shader_parameter("color", col if c % 2 == 0 else col.lerp(hot, 0.45))
 			_mats[i].set_shader_parameter("color_hot", hot)
+			_mats[i].set_shader_parameter("ink_alpha", CHARGE_INK if stages > 0 else 0.55)
 			_mats[i].set_shader_parameter("rune_count", 10.0 + c * 3.0)
+	var reached: int = _track_stage(k, stages)
+	var full: float = 1.0 if stages > 0 and reached >= stages else 0.0
 	for c: int in _charge_ids.size():
 		var i: int = _charge_ids[c]
-		# Cada círculo aparece cuando la carga pasa su umbral y se dibuja barriendo.
+		var pulse: float = 1.0 + sin(Time.get_ticks_msec() * 0.006 + c) * 0.03 * k
+		if stages > 0:
+			# Por etapas: encaja de golpe al completar la suya.
+			var snap_scale: float = _staged(i, c, count, stages, reached)
+			var dir_sign: float = 1.0 if c % 2 == 0 else -1.0
+			_spin_speed[i] = (0.8 + c * 0.25) * dir_sign * (1.0 + full * 1.2)
+			_mats[i].set_shader_parameter("intensity", 0.8 + float(reached) / stages * 0.2)
+			_place(i, _origin + _dir * _dist(c), _base_scale[i] * snap_scale * pulse)
+			continue
+		# Carga continua: cada círculo aparece cuando la carga pasa su umbral, barriendo.
 		var start: float = float(c) / float(maxi(count, 1)) * 0.85
 		var a: float = clampf((k - start) / 0.18, 0.0, 1.0)
 		_mats[i].set_shader_parameter("appear", a)
@@ -101,21 +145,28 @@ func charging(k: float, count: int, origin: Vector3, aim: Vector3, col: Color, h
 		_mats[i].set_shader_parameter("fade", 1.0)
 		_mats[i].set_shader_parameter("flash", 0.0)
 		_quads[i].visible = a > 0.0
-		var pulse: float = 1.0 + sin(Time.get_ticks_msec() * 0.006 + c) * 0.03 * k
 		_place(i, _origin + _dir * _dist(c), _base_scale[i] * (0.7 + 0.3 * a) * pulse)
 
 
 ## Hechizos del cielo (Meteoro, Trueno, Lluvia): un círculo en el blanco, pegado a la
 ## superficie, y `count - 1` a lo largo del camino por el que caerá desde `sky` (cada vez más
 ## grandes y mirando por ese camino: el hechizo los atraviesa todos al caer). Aparecen con la
-## carga `k`, del blanco hacia el cielo.
+## carga `k`, del blanco hacia el cielo; con `stages` > 0, en grupos, uno por etapa.
 func charging_sky(
-	k: float, count: int, target: Vector3, normal: Vector3, sky: Vector3, col: Color, hot: Color
+	k: float,
+	count: int,
+	target: Vector3,
+	normal: Vector3,
+	sky: Vector3,
+	col: Color,
+	hot: Color,
+	stages: int = 0
 ) -> void:
 	count = clampi(count, 1, POOL - 2)
 	if _charge_ids.size() != count or not _sky:
 		_release_charge(false)
 		_sky = true
+		_new_charge()
 		for c: int in count:
 			var i: int = _free()
 			if i < 0:
@@ -123,23 +174,35 @@ func charging_sky(
 			_charge_ids.append(i)
 			_state[i] = 1
 			_age[i] = 0.0
+			_life[i] = -1.0
 			_spin[i] = randf() * TAU
 			_spin_speed[i] = (0.35 + c * 0.12) * (1.0 if c % 2 == 0 else -1.0)
 			_base_scale[i] = 2.4 if c == 0 else 2.8 + c * 1.5
 			_mats[i].set_shader_parameter("color", col if c % 2 == 0 else col.lerp(hot, 0.45))
 			_mats[i].set_shader_parameter("color_hot", hot)
+			_mats[i].set_shader_parameter("ink_alpha", CHARGE_INK if stages > 0 else 0.55)
 			_mats[i].set_shader_parameter("rune_count", 16.0 + c * 4.0)
 	var path: Vector3 = sky - target
+	var reached: int = _track_stage(k, stages)
+	var full: float = 1.0 if stages > 0 and reached >= stages else 0.0
 	for c: int in _charge_ids.size():
 		var i: int = _charge_ids[c]
-		var start: float = float(c) / float(maxi(count, 1)) * 0.8
-		var a: float = clampf((k - start) / 0.2, 0.0, 1.0)
-		_mats[i].set_shader_parameter("appear", a)
-		_mats[i].set_shader_parameter("intensity", 0.85 + k * 0.5)
-		_mats[i].set_shader_parameter("fade", 1.0)
-		_mats[i].set_shader_parameter("flash", 0.0)
-		_quads[i].visible = a > 0.0
-		var s: float = _base_scale[i] * (0.6 + 0.4 * a)
+		var s: float
+		if stages > 0:
+			var snap_scale: float = _staged(i, c, count, stages, reached)
+			var dir_sign: float = 1.0 if c % 2 == 0 else -1.0
+			_spin_speed[i] = (0.35 + c * 0.12) * dir_sign * (1.0 + full * 1.5)
+			_mats[i].set_shader_parameter("intensity", 0.9 + float(reached) / stages * 0.45)
+			s = _base_scale[i] * snap_scale
+		else:
+			var start: float = float(c) / float(maxi(count, 1)) * 0.8
+			var a: float = clampf((k - start) / 0.2, 0.0, 1.0)
+			_mats[i].set_shader_parameter("appear", a)
+			_mats[i].set_shader_parameter("intensity", 0.85 + k * 0.5)
+			_mats[i].set_shader_parameter("fade", 1.0)
+			_mats[i].set_shader_parameter("flash", 0.0)
+			_quads[i].visible = a > 0.0
+			s = _base_scale[i] * (0.6 + 0.4 * a)
 		if c == 0:
 			# En el blanco, pegado a la superficie del cristal.
 			_dir = -normal if normal.length() > 0.1 else Vector3.FORWARD
@@ -158,9 +221,16 @@ func release() -> void:
 	_release_charge(true)
 
 
-## Cancelado (se separan las manos sin lanzar): se apagan.
+## Cancelado (se abre un menú o el libro a media carga): se apagan encogiéndose.
 func cancel() -> void:
-	_release_charge(false)
+	for i: int in _charge_ids:
+		if _quads[i].visible:
+			_state[i] = 5
+			_age[i] = 0.0
+			_base_scale[i] = _quads[i].scale.x
+		else:
+			_free_quad(i)
+	_charge_ids.clear()
 
 
 ## Círculos de toque al lanzar con una mano.
@@ -177,6 +247,7 @@ func muzzle(origin: Vector3, aim: Vector3, count: int, col: Color, hot: Color) -
 		_base_scale[i] = 0.12 + c * 0.07
 		_mats[i].set_shader_parameter("color", col)
 		_mats[i].set_shader_parameter("color_hot", hot)
+		_mats[i].set_shader_parameter("ink_alpha", 0.55)
 		_mats[i].set_shader_parameter("rune_count", 12.0)
 		_mats[i].set_shader_parameter("appear", 1.0)
 		_mats[i].set_shader_parameter("flash", 0.6)
@@ -212,6 +283,7 @@ func stamp(
 	_base_scale[i] = size
 	_mats[i].set_shader_parameter("color", col)
 	_mats[i].set_shader_parameter("color_hot", hot)
+	_mats[i].set_shader_parameter("ink_alpha", 0.55)
 	_mats[i].set_shader_parameter("rune_count", clampf(12.0 + size * 2.0, 12.0, 28.0))
 	_mats[i].set_shader_parameter("appear", 0.0)
 	_mats[i].set_shader_parameter("flash", 0.0)
@@ -225,6 +297,7 @@ func stamp(
 
 
 func _process(delta: float) -> void:
+	_stage_age += delta
 	for i: int in POOL:
 		if _state[i] == 0:
 			continue
@@ -255,6 +328,13 @@ func _process(delta: float) -> void:
 					_free_quad(i)
 			4:
 				_animate_stamp(i)
+			5:
+				var t: float = _age[i] / CANCEL_TIME
+				_mats[i].set_shader_parameter("fade", clampf(1.0 - t, 0.0, 1.0))
+				_mats[i].set_shader_parameter("flash", 0.0)
+				_quads[i].scale = Vector3.ONE * _base_scale[i] * maxf(0.05, 1.0 - t * 0.45)
+				if t >= 1.0:
+					_free_quad(i)
 
 
 ## Sello: se dibuja barriendo en 0,14 s, destella al cerrarse, gira y se apaga al final.
@@ -270,6 +350,68 @@ func _animate_stamp(i: int) -> void:
 	_place(i, pos, _base_scale[i] * (0.7 + 0.3 * a + t * 0.2))
 	if t >= 1.0:
 		_free_quad(i)
+
+
+## Carga nueva: aún no hay etapas completadas.
+func _new_charge() -> void:
+	_last_stage = 0
+	_stage_age = 10.0
+
+
+## Etapa completada con la carga `k`; si acaba de cambiar, reinicia el latido. Con la última
+## (potencia completa), una onda sale del primer círculo, junto al orbe.
+func _track_stage(k: float, stages: int) -> int:
+	var reached: int = ChargeStages.stage_at(k, stages)
+	if reached != _last_stage:
+		_last_stage = reached
+		_stage_age = 0.0
+		if stages > 0 and reached >= stages and not _charge_ids.is_empty():
+			_full_wave.call_deferred(_charge_ids[0])
+	return reached
+
+
+## Potencia completa: un sello algo mayor que el primer círculo, que destella y se apaga (onda
+## de energía alrededor del orbe).
+func _full_wave(i: int) -> void:
+	if _state[i] != 1 or not _quads[i].visible:
+		return
+	var mat: ShaderMaterial = _mats[i]
+	var col: Color = mat.get_shader_parameter("color")
+	var hot: Color = mat.get_shader_parameter("color_hot")
+	var b: Basis = _quads[i].global_transform.basis
+	stamp(
+		_quads[i].global_position, -b.z.normalized(), b.x.length() * 1.6, col, hot, 0.34, 0.0, 0.4
+	)
+
+
+## Círculo de carga `c` (quad `i`) con etapas: encaja (se dibuja en un instante, llega grande y
+## se asienta con un destello) al completar su etapa. Pone sus parámetros y devuelve su escala
+## relativa.
+func _staged(i: int, c: int, count: int, stages: int, reached: int) -> float:
+	var need: int = ChargeStages.stage_of_circle(c, count, stages)
+	if reached < need:
+		_life[i] = -1.0
+		_quads[i].visible = false
+		return 0.7
+	if _life[i] < 0.0:
+		_life[i] = _age[i]
+	var t: float = _age[i] - _life[i]
+	var settle: float = maxf(0.0, 1.0 - t / SNAP_TIME)
+	var s: float = 1.0 + SNAP_OVERSHOOT * settle * settle
+	# El que encaja destella; los que ya estaban laten con cada etapa nueva.
+	var damp: float = 1.0 / (1.0 + 0.6 * c)
+	var flash: float = maxf(0.0, 1.0 - t * 4.5) * SNAP_FLASH * damp
+	flash = maxf(flash, maxf(0.0, 1.0 - _stage_age * 5.0) * STAGE_PULSE * damp)
+	if reached >= stages:
+		# Potencia completa: destellan todos a la vez y quedan un poco más grandes y vivos.
+		flash = maxf(flash, maxf(0.0, 1.0 - _stage_age * 3.0) * FULL_FLASH * damp)
+		flash = maxf(flash, (0.04 + 0.04 * sin(_age[i] * 9.0)) * damp)
+		s *= 1.04 + 0.1 * maxf(0.0, 1.0 - _stage_age * 4.0)
+	_mats[i].set_shader_parameter("appear", clampf(t / SNAP_SWEEP, 0.0, 1.0))
+	_mats[i].set_shader_parameter("fade", 1.0)
+	_mats[i].set_shader_parameter("flash", flash)
+	_quads[i].visible = true
+	return s
 
 
 func _dist(c: int) -> float:

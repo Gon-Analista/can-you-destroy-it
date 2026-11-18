@@ -4,7 +4,8 @@ extends Node
 ## cambian) y su propio enfriamiento: clic izquierdo lanza la izquierda, clic derecho la
 ## derecha. Pulsar los dos a la vez junta las manos y funde los dos elementos en un hechizo
 ## combinado si la pareja tiene receta (Chispa + Chispa = Bola de Fuego, Chispa + Escarcha =
-## Choque Térmico), que se carga mientras se mantiene y sale al soltar.
+## Choque Térmico), que se carga mientras se mantiene y sale al soltar. Desde el nivel 2 la
+## carga va por etapas, un círculo mágico por etapa con su golpe (ChargeStages, ChargeFeedback).
 ##
 ## Para no perder la combinación, un clic con las dos manos listas espera `combine_window_sec`
 ## por si llega el otro; si se suelta antes, sale en el acto. Enfriamiento con "buffer" (si
@@ -88,6 +89,10 @@ var _pending_time: float = 0.0
 var _combining: bool = false
 var _combine_time: float = 0.0
 var _combine_full_announced: bool = false
+## Etapas de la carga actual y su golpe; si la empezó el jugador con los botones (no la demo).
+var _stages := ChargeStages.new()
+var _stage_fx: ChargeFeedback
+var _combine_by_input: bool = false
 var _projectiles: Array[SparkProjectile] = []
 var _combo_projectiles: Array[SparkProjectile] = []
 var _cast_random: AudioStreamRandomizer
@@ -145,6 +150,20 @@ func _ready() -> void:
 	_charge_player.bus = &"SFX"
 	_charge_player.stream = RECIPE.charge_loop_sfx  # bucle activado en la importación
 	add_child(_charge_player)
+	_stage_fx = ChargeFeedback.new()
+	_stage_fx.name = "ChargeFeedback"
+	_stage_fx.camera = camera
+	_stage_fx.hands = hands
+	add_child(_stage_fx)
+	# Abrir el menú (pausa), el Grimorio o el libro a media carga la deshace: el botón se
+	# suelta fuera del juego y la carga se quedaría colgada.
+	Events.menu_opened.connect(_cancel_combine)
+	Events.grimoire_opened.connect(_cancel_combine)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and _combine_by_input:
+		_cancel_combine()
 
 
 func current_tier() -> SpellTier:
@@ -187,6 +206,19 @@ func recipe_level(recipe: SpellRecipe) -> int:
 	if recipe == null or recipe.power_upgrade == &"":
 		return 1
 	return 1 + GameState.progression.get_level(recipe.power_upgrade)
+
+
+## Nivel de un combinado para sus etapas y sus círculos: el de su Potencia si la tiene; si no,
+## la media de los niveles de las dos manos.
+func charge_level(recipe: SpellRecipe) -> int:
+	if debug_recipe_level > 0 or (recipe and recipe.power_upgrade != &""):
+		return recipe_level(recipe)
+	return int(float(level_of(0) + level_of(1)) * 0.5)
+
+
+## Etapas de la carga en curso (0 = continua) y cuántas se han completado.
+func charge_stages() -> ChargeStages:
+	return _stages
 
 
 ## Punto al que se apunta (rayo por el centro de la pantalla), y su colisionador.
@@ -257,7 +289,8 @@ func charge_ratio(side: int = -1) -> float:
 
 
 func combine_charge() -> float:
-	return clampf(_combine_time / maxf(_active_recipe.charge_sec, 0.001), 0.0, 1.0)
+	# Con muchas etapas la carga se alarga un poco (y se descuenta de la recarga; ChargeStages).
+	return _stages.charge_at(_combine_time)
 
 
 func is_combining() -> bool:
@@ -317,7 +350,7 @@ func try_cast(side: int) -> void:
 func try_begin_combine() -> bool:
 	if _combining or not (_hand_ready(0) and _hand_ready(1)) or recipe_for_hands() == null:
 		return false
-	_begin_combine()
+	_begin_combine(false)
 	return _combining
 
 
@@ -480,7 +513,8 @@ func _cast_single(side: int) -> void:
 	Events.spell_cast.emit(tier, side)
 
 
-func _begin_combine() -> void:
+## `by_input`: con los botones (no la demo); sólo esas se deshacen al perder el foco.
+func _begin_combine(by_input: bool = true) -> void:
 	_active_recipe = recipe_for_hands()
 	if _active_recipe == null:
 		return
@@ -492,8 +526,16 @@ func _begin_combine() -> void:
 		AudioDirector.play_sfx(FIZZLE_SFX, -6.0, 1.2)
 		return
 	_combining = true
+	_combine_by_input = by_input
 	_combine_time = 0.0
 	_combine_full_announced = false
+	var bal: BalanceConfig = GameState.BALANCE
+	_stages.reset(
+		ChargeStages.count_for_level(charge_level(_active_recipe), bal.charge_stages_by_level),
+		_active_recipe.charge_sec,
+		bal.charge_stage_min_sec
+	)
+	_stage_fx.begin(_stages.count)
 	if hands:
 		hands.begin_combine(_active_recipe.visual)
 	AudioDirector.play_sfx(_active_recipe.combine_sfx, -3.0)
@@ -507,15 +549,21 @@ func _begin_combine() -> void:
 func _update_combine(delta: float) -> void:
 	_combine_time += delta
 	var k: float = combine_charge()
-	# El rugido del fuego sube de tono y de volumen con la carga.
-	_charge_player.pitch_scale = lerpf(0.85, 1.25, k)
-	_charge_player.volume_db = lerpf(-18.0, -6.0, k)
+	var r: SpellRecipe = _active_recipe
+	var sky: bool = (
+		r.delivery == SpellRecipe.Delivery.SKY or r.delivery == SpellRecipe.Delivery.RAIN
+	)
+	# Cada etapa completada encaja su círculo con su golpe (una sola vez cada una).
+	var new_stage: int = _stages.advance(k)
+	if new_stage > 0:
+		_stage_fx.stage(new_stage, _stages.count, sky)
+	# El rugido del fuego sube de tono y de volumen con la carga (a escalones si va por etapas).
+	_stage_fx.update_loop(_charge_player, k, _stages, delta)
 	# El mundo vibra un poco mientras se concentra el poder (pasa por Settings.screen_shake).
 	if camera is CameraRig:
 		(camera as CameraRig).add_trauma(delta * 0.35 * k)
-	var lvl: int = recipe_level(_active_recipe)
-	var r: SpellRecipe = _active_recipe
-	if r.delivery == SpellRecipe.Delivery.SKY or r.delivery == SpellRecipe.Delivery.RAIN:
+	var lvl: int = charge_level(r)
+	if sky:
 		# Hechizos del cielo: los círculos se abren siempre, encima del blanco y mirando hacia
 		# abajo (uno más por nivel desde el 6). Con la carga, el cielo retumba.
 		var aim: Dictionary = _aim()
@@ -526,21 +574,23 @@ func _update_combine(delta: float) -> void:
 			aim["normal"],
 			_sky_origin(r, aim["position"]),
 			r.circle_color,
-			r.circle_hot
+			r.circle_hot,
+			_stages.count
 		)
 		if camera is CameraRig:
 			(camera as CameraRig).add_trauma(delta * 0.25 * k)
-	elif lvl >= ElementDef.ASCENDED_LEVEL or _is_arcane_recipe(r):
-		# Nivel 6+ (y siempre los arcanos): círculos mágicos que se abren hacia donde apuntas
-		# mientras cargas; los Ecos, uno por eco.
+	elif _stages.is_staged() or lvl >= ElementDef.ASCENDED_LEVEL or _is_arcane_recipe(r):
+		# Círculos mágicos que se abren hacia donde apuntas mientras cargas: uno por etapa (y
+		# siempre en los arcanos: los Ecos, uno por eco).
 		var arcane_n: int = maxi(r.echo_count, 2) if _is_arcane_recipe(r) else 0
 		_circles.charging(
 			k,
-			maxi(lvl - ElementDef.ASCENDED_LEVEL + 1, arcane_n),
+			maxi(maxi(_stages.count, lvl - ElementDef.ASCENDED_LEVEL + 1), arcane_n),
 			_hand_origin(BOTH_HANDS),
 			_aim()["position"],
 			r.circle_color,
-			r.circle_hot
+			r.circle_hot,
+			_stages.count
 		)
 	if k >= 1.0 and not _combine_full_announced:
 		_combine_full_announced = true
@@ -552,11 +602,16 @@ func _update_combine(delta: float) -> void:
 func _launch_combine() -> void:
 	var recipe: SpellRecipe = _active_recipe
 	var charge: float = combine_charge()
+	# El daño va por la última etapa completada (sobre la curva de siempre; ver ChargeStages).
+	var power: float = _stages.power_charge(charge)
 	_combining = false
 	_charge_player.stop()
+	_stage_fx.end()
 	var cd: float = maxf(
 		recipe.cooldown_sec * GameState.stat(&"cooldown_mult", 1.0), _cooldown_for(tier_for(0))
 	)
+	# El tiempo de más de una carga larga por etapas sale de la recarga (mismo ciclo de siempre).
+	cd = _stages.cooldown_after(cd, charge, GameState.BALANCE.charge_stage_cooldown_floor_sec)
 	_start_cooldown(0, cd)
 	_start_cooldown(1, cd)
 	if hands:
@@ -572,7 +627,7 @@ func _launch_combine() -> void:
 	hit.resonant = (
 		recipe.delivery == SpellRecipe.Delivery.RESONANCE or _rng.randf() < _resonant_chance()
 	)
-	var damage: int = recipe.damage_for(tier_for(0).damage, tier_for(1).damage, charge)
+	var damage: int = recipe.damage_for(tier_for(0).damage, tier_for(1).damage, power)
 	var power_stat: StringName = (
 		recipe.power_stat if recipe.power_stat != &"" else effect.power_stat
 	)
@@ -588,16 +643,31 @@ func _launch_combine() -> void:
 		hit.resonant = false
 		damage = 1
 	hit.damage = damage * (GameState.BALANCE.resonant_damage_mult if hit.resonant else 1)
-	_deliver(effect, hit, charge)
+	_deliver(effect, hit, power)
 	if base:
-		_echoes.echo_recipe(recipe, base, hit, damage, charge)
-		AudioDirector.play_sfx(_combo_sounds[base], lerpf(-7.0, -3.0, charge))
+		_echoes.echo_recipe(recipe, base, hit, damage, power)
+		AudioDirector.play_sfx(_combo_sounds[base], lerpf(-7.0, -3.0, power))
 	if recipe.delivery == SpellRecipe.Delivery.RESONANCE:
 		_start_resonance(recipe)
 	_circles.release()
-	AudioDirector.play_sfx(_combo_sounds[recipe], lerpf(-4.0, 0.0, charge))
+	AudioDirector.play_sfx(_combo_sounds[recipe], lerpf(-4.0, 0.0, power))
 	Events.spell_cast.emit(tier, BOTH_HANDS)
 	GameState.register_recipe_cast(recipe)
+
+
+## Deshace la combinación sin lanzar (menú, Grimorio o foco perdido a media carga): sin
+## enfriamiento; los círculos se apagan y las llamas vuelven a las manos.
+func _cancel_combine() -> void:
+	if not _combining:
+		return
+	_combining = false
+	_combine_time = 0.0
+	_charge_player.stop()
+	_circles.cancel()
+	_stage_fx.end()
+	if hands:
+		hands.cancel_combine()
+	AudioDirector.play_sfx(FIZZLE_SFX, -10.0, 0.75)
 
 
 ## Cada combinación llega al cristal a su manera (ver SpellRecipe.Delivery).

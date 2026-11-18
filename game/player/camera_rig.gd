@@ -32,6 +32,12 @@ func add_trauma(amount: float) -> void:
 	_trauma = minf(1.0, _trauma + amount)
 
 
+## Golpe de campo de visión (grados; negativo = se cierra, como un zoom de golpe). Escala con
+## Settings.screen_shake (accesibilidad).
+func punch_fov(degrees: float) -> void:
+	_fov_kick = minf(_fov_kick, degrees * Settings.screen_shake)
+
+
 func _on_impact(hit: SpellHit) -> void:
 	if not hit.by_player:
 		return
