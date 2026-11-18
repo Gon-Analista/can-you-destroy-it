@@ -21,6 +21,21 @@ const C_PINK := Color("#ff7ad9")
 ## Ancho del panel de opciones y de la columna de nombres de cada opción.
 const OPTIONS_W: float = 300.0
 const OPTION_LABEL_W: float = 150.0
+## Agarrador de las barras en píxeles (el de Godot es un círculo suave que desentona).
+## "#" contorno, "+" brillo, "=" cuerpo, "o" sombra.
+const GRABBER: PackedStringArray = [
+	".######.",
+	"#+++++=#",
+	"#+====o#",
+	"#+====o#",
+	"#+====o#",
+	"#+====o#",
+	"#+====o#",
+	"#+====o#",
+	"#+====o#",
+	"#=ooooo#",
+	".######.",
+]
 
 ## Al volver a cargar la escena tras "Nueva partida", no se enseña otra vez el título.
 static var skip_title_once: bool = false
@@ -388,4 +403,39 @@ func _make_theme() -> Theme:
 	t.set_stylebox(&"slider", &"HSlider", track)
 	t.set_stylebox(&"grabber_area", &"HSlider", fill)
 	t.set_stylebox(&"grabber_area_highlight", &"HSlider", fill)
+	t.set_icon(&"grabber", &"HSlider", _grabber_icon(C_GOLD_LIGHT, C_GOLD, Color("#9a6a24")))
+	t.set_icon(&"grabber_highlight", &"HSlider", _grabber_icon(C_TEXT, C_GOLD_LIGHT, C_GOLD))
+	t.set_icon(&"checked", &"CheckButton", _switch_icon(true))
+	t.set_icon(&"unchecked", &"CheckButton", _switch_icon(false))
 	return t
+
+
+## Agarrador pixel art de las barras (ver GRABBER) con los colores dados.
+static func _grabber_icon(light: Color, body: Color, shade: Color) -> ImageTexture:
+	var img := Image.create(GRABBER[0].length(), GRABBER.size(), false, Image.FORMAT_RGBA8)
+	for y: int in GRABBER.size():
+		for x: int in GRABBER[y].length():
+			match GRABBER[y][x]:
+				"#":
+					img.set_pixel(x, y, C_BG)
+				"+":
+					img.set_pixel(x, y, light)
+				"=":
+					img.set_pixel(x, y, body)
+				"o":
+					img.set_pixel(x, y, shade)
+	return ImageTexture.create_from_image(img)
+
+
+## Interruptor pixel art de "pantalla completa": carril con contorno y botón a un lado.
+static func _switch_icon(on: bool) -> ImageTexture:
+	var img := Image.create(20, 10, false, Image.FORMAT_RGBA8)
+	img.fill_rect(Rect2i(1, 0, 18, 10), C_BG)
+	img.fill_rect(Rect2i(0, 1, 20, 8), C_BG)
+	img.fill_rect(Rect2i(1, 1, 18, 8), Color("#b0479a") if on else C_PANEL)
+	var kx: int = 11 if on else 1
+	img.fill_rect(Rect2i(kx, 1, 8, 8), C_BG)
+	img.fill_rect(Rect2i(kx + 1, 2, 6, 6), C_GOLD if on else Color("#8a7fb8"))
+	img.fill_rect(Rect2i(kx + 1, 2, 5, 1), C_GOLD_LIGHT if on else C_CYAN)
+	img.fill_rect(Rect2i(kx + 1, 2, 1, 5), C_GOLD_LIGHT if on else C_CYAN)
+	return ImageTexture.create_from_image(img)
