@@ -6,13 +6,13 @@
 script = ExtResource("1")
 id = &"familiar_wings"
 display_name = "Alas ligeras"
-description = "Tus familiares vuelan más deprisa y cargan un fragmento más en cada viaje."
+description = "Tus familiares vuelan más deprisa y hacen más viajes a la tolva."
 branch = 4
 element = &""
 star_pos = Vector2i(92, 146)
-costs = PackedInt32Array(800, 3000, 9000)
+costs = PackedInt32Array(790, 1800, 3800, 19000, 36000)
 prerequisites = Array[StringName]([&"familiar"])
 stat = &"familiar_speed"
-values = PackedFloat32Array(1, 1.4, 1.9, 2.5)
+values = PackedFloat32Array(1, 1.3, 1.6, 2, 2.5, 3)
 value_format = "vuelo x%.1f"
 level_names = PackedStringArray()

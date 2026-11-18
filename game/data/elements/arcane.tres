@@ -15,8 +15,8 @@ colors = PackedColorArray(2.6, 2.3, 2.8, 1, 2, 0.9, 2, 1, 1.1, 0.45, 1.7, 1, 0.5
 
 [sub_resource type="Resource" id="tier_1"]
 script = ExtResource("tier")
-cooldown_sec = 1.5
-damage = 10
+cooldown_sec = 2.8
+damage = 5
 speed = 34.0
 wobble = 0.12
 shards_min = 1
@@ -38,8 +38,8 @@ trail_ramp = SubResource("ramp")
 
 [sub_resource type="Resource" id="tier_2"]
 script = ExtResource("tier")
-cooldown_sec = 1.0
-damage = 20
+cooldown_sec = 2.7
+damage = 7
 speed = 38.0
 wobble = 0.08
 shards_min = 1
@@ -61,8 +61,8 @@ trail_ramp = SubResource("ramp")
 
 [sub_resource type="Resource" id="tier_3"]
 script = ExtResource("tier")
-cooldown_sec = 0.85
-damage = 30
+cooldown_sec = 2.6
+damage = 8
 speed = 44.0
 wobble = 0.05
 shards_min = 2
@@ -101,3 +101,5 @@ echo_sfx = Array[AudioStream]([ExtResource("sfx_arcane_echo_01"), ExtResource("s
 echo_delay = 0.24
 echo_damage = 0.45
 resonant_bonus = 0.06
+damage_growth = 1.093
+cooldown_growth = 0.97

@@ -19,4 +19,4 @@ vein_elements = Array[StringName]([&"spark", &"frost", &"bolt", &"earth", &"arca
 vein_names = PackedStringArray("Chispa", "Escarcha", "Rayo", "Tierra", "Arcano")
 vein_damage_mult = 2.0
 vein_shards = 8
-vein_bonus = 0.5
+vein_bonus = 0.2

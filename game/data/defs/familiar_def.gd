@@ -24,7 +24,7 @@ enum Role { COLLECTOR, CASTER }
 @export var flap_rate: float = 7.0
 
 @export_group("Recolector")
-## Fragmentos que carga por viaje (más uno por nivel de la mejora de alas).
+## Fragmentos que carga por viaje (más uno por nivel de alas, hasta Familiar.MAX_CARRY).
 @export var carry: int = 3
 ## Sólo busca fragmentos a esta distancia de la tolva (m): el claro entero.
 @export var search_radius: float = 120.0

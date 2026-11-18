@@ -13,8 +13,8 @@ colors = PackedColorArray(2, 1.5, 0.8, 1, 1.2, 0.65, 0.25, 1, 0.6, 0.35, 0.14, 1
 
 [sub_resource type="Resource" id="tier_1"]
 script = ExtResource("tier")
-cooldown_sec = 2.25
-damage = 7
+cooldown_sec = 2.8
+damage = 8
 speed = 15.0
 wobble = 0.1
 shards_min = 1
@@ -36,8 +36,8 @@ trail_ramp = SubResource("ramp")
 
 [sub_resource type="Resource" id="tier_2"]
 script = ExtResource("tier")
-cooldown_sec = 1.5
-damage = 14
+cooldown_sec = 2.7
+damage = 12
 speed = 17.0
 wobble = 0.08
 shards_min = 2
@@ -59,8 +59,8 @@ trail_ramp = SubResource("ramp")
 
 [sub_resource type="Resource" id="tier_3"]
 script = ExtResource("tier")
-cooldown_sec = 1.28
-damage = 21
+cooldown_sec = 2.6
+damage = 15
 speed = 19.0
 wobble = 0.06
 shards_min = 2
@@ -95,3 +95,5 @@ impact_sfx = Array[AudioStream]([ExtResource("sfx_earth_impact_01")])
 chain_count = 0
 shard_bonus = 1
 circle_color = Color(1.2, 0.8, 0.35, 1)
+damage_growth = 1.094
+cooldown_growth = 0.97

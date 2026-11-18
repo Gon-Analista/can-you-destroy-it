@@ -126,7 +126,7 @@ func react(hit: SpellHit) -> void:
 		_wrong(hit, def, col)
 		return
 	var n: Vector3 = hit.normal if hit.normal.length_squared() > 0.01 else Vector3.BACK
-	# Resonantes por valor de la mitad del daño (CrystalLayerDef.vein_bonus): el resto que no llega
+	# Resonantes por valor de una parte del daño (CrystalLayerDef.vein_bonus): el resto que no llega
 	# a uno sale con esa probabilidad, así una chispa no da 250 de maná y un meteoro da varios.
 	var worth: float = float(hit.damage) * def.vein_bonus / float(ShardPool.RESONANT.value)
 	var count: int = floori(worth) + (1 if _rng.randf() < worth - floorf(worth) else 0)

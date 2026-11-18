@@ -2,7 +2,8 @@ extends SceneTree
 ## Venas Resonantes y rama del Pilón:
 ## - el sector de cada vena en GDScript es el mismo que dibuja el shader;
 ## - un golpe en la vena con su elemento débil (o con una combinación que lo lleva) hace el doble
-##   de daño y suelta Fragmentos Resonantes por la mitad de su daño; con otro elemento, no;
+##   de daño y suelta Fragmentos Resonantes por una parte de su daño (vein_bonus); con otro
+##   elemento, no;
 ## - la Pureza multiplica el maná de cada fragmento entregado;
 ## - cada hito del Pilón se celebra una sola vez y el valle cambia con él;
 ## - la Resonancia del Pilón dispara un rayo que quita esencia.
@@ -61,17 +62,17 @@ func _initialize() -> void:
 	var earth: Resource = load("res://data/elements/earth.tres")
 	var spark: Resource = load("res://data/elements/spark.tres")
 	var hit: SpellHit = _vein_hit(crystal, earth)
-	# Un golpe fuerte (250, x2 = 500): los Resonantes valen la mitad del daño, 2 de 125.
-	hit.damage = 250
+	# Un golpe fuerte (625, x2 = 1250): los Resonantes valen un 20 % del daño (vein_bonus), 2 de 125.
+	hit.damage = 625
 	_check(int(veins.call(&"layer_under", hit)) == 2, "el fondo del túnel es la capa de las venas")
 	var before_res: int = shards.call(&"count_of", resonant)
 	var before_essence: int = prog.get(&"essence")
 	crystal.call(&"receive_hit", hit)
 	_check(hit.vein == 3 and hit.vein_weak, "Tierra en la vena de Tierra: golpe en la vena")
-	_check(hit.damage == 500, "daño x2 en la vena (%d)" % hit.damage)
+	_check(hit.damage == 1250, "daño x2 en la vena (%d)" % hit.damage)
 	_check(
 		int(shards.call(&"count_of", resonant)) == before_res + 2,
-		"suelta Fragmentos Resonantes por la mitad de su daño"
+		"suelta Fragmentos Resonantes por el 20 % de su daño"
 	)
 	_check(int(prog.get(&"essence")) < before_essence, "quita esencia")
 	await process_frame
@@ -98,9 +99,9 @@ func _initialize() -> void:
 	_check(int(prog.get(&"mana")) == 25, "sin Pureza: 25")
 	levels[&"purity"] = 2
 	pylon.call(&"receive_mana", chunk)
-	_check(int(prog.get(&"mana")) == 25 + 39, "Pureza II: x1,5625 (39)")
+	_check(int(prog.get(&"mana")) == 25 + 29, "Pureza II: x1,166 (29)")
 	pylon.call(&"receive_mana", resonant)
-	_check(int(prog.get(&"mana")) == 25 + 39 + 195, "Pureza II con un resonante (195)")
+	_check(int(prog.get(&"mana")) == 25 + 29 + 146, "Pureza II con un resonante (146)")
 	_check(
 		int(prog.get(&"pylon_progress")) == 25 + 25 + 125,
 		"el Pilón suma el valor sin Pureza (lo que perdió el cristal)"
