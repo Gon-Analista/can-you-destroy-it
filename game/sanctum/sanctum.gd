@@ -53,6 +53,7 @@ var _poof: GPUParticles3D
 var _t: float = 0.0
 var _night: float = 0.0
 var _rng := RandomNumberGenerator.new()
+var _mirror: ArchmageMirror
 
 
 func _ready() -> void:
@@ -70,6 +71,7 @@ func _ready() -> void:
 	for i: int in PROPS.size():
 		_props[PROPS[i]].visible = i < _shown
 	Events.upgrade_bought.connect(_on_upgrade_bought)
+	_build_mirror.call_deferred()
 
 
 func set_night(k: float) -> void:
@@ -137,6 +139,18 @@ func _on_upgrade_bought(_id: StringName, _level: int) -> void:
 		_poof.global_position = p.global_position + Vector3.UP * 0.6
 		_poof.restart()
 		_shown += 1
+
+
+## El Espejo del Archimago, al lado del templete (en `WorldLayout`, a ras del suelo). Diferido:
+## Main coloca el Santuario después de su _ready.
+func _build_mirror() -> void:
+	_mirror = ArchmageMirror.new()
+	_mirror.name = "ArchmageMirror"
+	_mirror.top_level = true
+	add_child(_mirror)
+	var at: Vector3 = WorldLayout.ARCHMAGE_MIRROR
+	_mirror.global_position = Vector3(at.x, Valley.ground_height(at.x, at.z) - 0.05, at.z)
+	_mirror.rotation.y = deg_to_rad(WorldLayout.ARCHMAGE_MIRROR_YAW_DEG)
 
 
 func _mesh(node_name: String, st: SurfaceTool, at: Vector3 = Vector3.ZERO) -> MeshInstance3D:

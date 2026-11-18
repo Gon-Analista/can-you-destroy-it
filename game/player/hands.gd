@@ -105,6 +105,11 @@ func _ready() -> void:
 		s.flip_h = side == 1
 		add_child(s)
 		_sprites.append(s)
+	# Las manos cambian con el rango del mago (gema, ribete, runas, tela).
+	var style := HandRankStyle.new()
+	style.name = "RankStyle"
+	add_child(style)
+	style.bind(_sprites)
 
 
 ## Ancla los hechizos a la cámara: `hand_visual` es la llama de cada palma y `combo_visual`

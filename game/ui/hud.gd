@@ -29,6 +29,9 @@ var menu: GameMenu
 var debug_menu: DebugMenu
 ## Tutorial del principio (pasos con el ratón, recoger, triturar, primera mejora).
 var tutorial: Tutorial
+## Ceremonia de subida de rango y estadísticas del Espejo del Archimago.
+var rank_ceremony: RankCeremony
+var mirror_screen: MirrorScreen
 ## Muestra el HUD de juego aunque el ratón no esté capturado (modo demo).
 var force_captured_look: bool = false
 ## Ayuda "ESC: MENÚ" la primera vez (el modo demo la quita salvo con `--menu-hint`).
@@ -62,6 +65,8 @@ var _discovery_title: Label
 var _discovery_name: Label
 var _discovery_time: float = 0.0
 var _loop: HudLoop
+## El rango del mago, bajo el Pilón.
+var _rank_badge: RankBadge
 var _grimoire: Grimoire
 var _book: SpellBook
 var _floaters: Array[Label] = []
@@ -152,6 +157,16 @@ func _ready() -> void:
 	_book = SpellBook.new()
 	_book.name = "SpellBook"
 	add_child(_book)
+	mirror_screen = MirrorScreen.new()
+	mirror_screen.name = "MirrorScreen"
+	add_child(mirror_screen)
+	_rank_badge = RankBadge.new()
+	_rank_badge.name = "RankBadge"
+	_rank_badge.position = Vector2(8, 42)
+	_loop.add_child(_rank_badge)
+	rank_ceremony = RankCeremony.new()
+	rank_ceremony.name = "RankCeremony"
+	add_child(rank_ceremony)
 	tutorial = Tutorial.new()
 	tutorial.name = "Tutorial"
 	add_child(tutorial)
@@ -415,11 +430,14 @@ func _process(delta: float) -> void:
 		not captured and not _grimoire.is_open and not menu.is_open() and not debug_menu.is_open()
 	)
 	# Con un libro abierto, el HUD del bucle (Pilón, bolsa, manos) asomaba por los bordes.
-	_loop.visible = not _grimoire.is_open and not _book.is_open and not menu.is_open()
+	_loop.visible = (
+		not _grimoire.is_open and not _book.is_open and not mirror_screen.is_open and not menu.is_open()
+	)
 	_crosshair.visible = captured and not menu.is_open()
 	var title: bool = menu.mode == GameMenu.Mode.TITLE
 	_essence.visible = not title and not _loop.intro
 	_essence_title.visible = not title and not _loop.intro
+	_rank_badge.visible = not _loop.intro
 	_update_menu_hint(captured and not title and not menu.is_open(), delta)
 	if _caster:
 		_crosshair.charge = _caster.charge_ratio()

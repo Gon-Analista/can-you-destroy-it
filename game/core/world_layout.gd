@@ -19,3 +19,7 @@ const SANCTUM := Vector3(48.0, 0.0, 50.0)
 const FAMILIAR_NEST := Vector3(-40.0, 0.0, 60.5)
 ## Orientación del Santuario: el lado abierto del templete mira al cristal.
 const SANCTUM_YAW_DEG: float = 47.0
+## El Espejo del Archimago (GDD 4.3): junto al Santuario, en el lado del cristal y a más de 6 m
+## del atril (no se pisan los dos "F"), mirando hacia el claro.
+const ARCHMAGE_MIRROR := Vector3(52.8, 0.0, 44.6)
+const ARCHMAGE_MIRROR_YAW_DEG: float = -130.0
