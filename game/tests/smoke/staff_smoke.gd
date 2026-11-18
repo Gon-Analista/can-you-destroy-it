@@ -158,14 +158,14 @@ func _initialize() -> void:
 func _check_critters(main: Node, player: Node3D, storm_recipe: Resource) -> void:
 	var herd: Node = main.get_node(HERD_PATH)
 	herd.set(&"ambient", false)
-	for c: Node in herd.call(&"critters"):
-		c.call(&"hide_now")
 	var delivery: Node = _caster.get_node(^"Delivery")
 	var storm: Node = delivery.call(&"storm")
-	for k: int in 40:
-		if float(storm.call(&"lock_left")) <= 0.0:
-			break
-		await create_timer(0.5).timeout
+	# Que aterrice todo lo de antes (la onda de la Erupción revienta lo que pille por el camino):
+	# así lo que reviente aquí es de la triple que se prueba.
+	await create_timer(3.0).timeout
+	await _storm_over(storm)
+	for c: Node in herd.call(&"critters"):
+		c.call(&"hide_now")
 	(player.get_node(^"Head") as Node3D).rotation.x = deg_to_rad(-15.0)
 	await physics_frame
 	await process_frame
@@ -177,31 +177,43 @@ func _check_critters(main: Node, player: Node3D, storm_recipe: Resource) -> void
 		made.append(herd.call(&"_spawn_at", def, ground + off, false, cam.global_position))
 	for i: int in 30:
 		await physics_frame
+	_check(_alive(made) == 3, "tres bichos bajo la nube (%d vivos)" % _alive(made))
 	var popped0: int = int(_prog.get(&"critters_popped"))
 	_set_hands(0, 1, 2)
 	_cast(storm_recipe)
 	await create_timer(float(storm_recipe.get(&"charge_sec")) + 0.3).timeout
+	_check(int(_prog.get(&"critters_popped")) == popped0, "nada revienta antes de la Tormenta")
 	_caster.call(&"try_release_combine")
 	var waited: float = 0.0
 	while int(_prog.get(&"critters_popped")) < popped0 + 2 and waited < 12.0:
 		await create_timer(0.25).timeout
 		waited += 0.25
 	var popped: int = int(_prog.get(&"critters_popped")) - popped0
-	_check(popped >= 2, "la Tormenta sobre la hierba revienta bichos (%d)" % popped)
+	_check(
+		popped >= 2,
+		(
+			"la Tormenta sobre la hierba revienta bichos (%d; descargas %d)"
+			% [popped, int(storm.call(&"strikes_done"))]
+		)
+	)
 	_check(not bool(storm.get(&"_on_crystal")), "y descarga en la hierba")
-	# Supernova: el golpe da en un bicho y revienta a los de alrededor.
+	# Supernova: el golpe da en un bicho y revienta a los de alrededor (con la nube ya ida).
+	await _storm_over(storm)
 	for c: Node in herd.call(&"critters"):
 		c.call(&"hide_now")
 	await create_timer(1.0).timeout
+	made.clear()
 	for off: Vector3 in [Vector3.ZERO, Vector3(3.0, 0, 0.5), Vector3(-3.0, 0, -0.5)]:
-		herd.call(&"_spawn_at", def, ground + off, false, cam.global_position)
+		made.append(herd.call(&"_spawn_at", def, ground + off, false, cam.global_position))
 	for i: int in 30:
 		await physics_frame
+	_check(_alive(made) == 3, "tres bichos para la Supernova (%d vivos)" % _alive(made))
 	popped0 = int(_prog.get(&"critters_popped"))
 	_set_hands(0, 3, 4)
 	var nova: Resource = NOVA
 	_cast(nova)
 	await create_timer(float(nova.get(&"charge_sec")) + 0.3).timeout
+	_check(int(_prog.get(&"critters_popped")) == popped0, "nada revienta antes de la Supernova")
 	_caster.call(&"try_release_combine")
 	waited = 0.0
 	while int(_prog.get(&"critters_popped")) < popped0 + 3 and waited < 6.0:
@@ -210,6 +222,24 @@ func _check_critters(main: Node, player: Node3D, storm_recipe: Resource) -> void
 	popped = int(_prog.get(&"critters_popped")) - popped0
 	_check(popped >= 3, "la Supernova revienta a todos los de alrededor (%d)" % popped)
 	(player.get_node(^"Head") as Node3D).rotation.x = deg_to_rad(8.0)
+
+
+## Espera a que la Tormenta Elemental se haya ido del todo y se pueda lanzar otra.
+func _storm_over(storm: Node) -> void:
+	for k: int in 60:
+		if not bool(storm.call(&"is_raging")) and float(storm.call(&"lock_left")) <= 0.0:
+			break
+		await create_timer(0.5).timeout
+	await create_timer(1.5).timeout
+
+
+## Cuántos de estos bichos siguen vivos.
+func _alive(critters: Array[Node]) -> int:
+	var n: int = 0
+	for c: Node in critters:
+		if c != null and bool(c.call(&"is_alive")):
+			n += 1
+	return n
 
 
 ## Datos: cada triple tiene tres elementos, se resuelve en cualquier orden y no hay dos iguales.
