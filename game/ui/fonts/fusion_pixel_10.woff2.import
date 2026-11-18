@@ -2,13 +2,13 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://3n5lec00aafk"
-path="res://.godot/imported/pixelify_sans_regular.woff2-2ce954cd218e8af3c9b84be53e18274c.fontdata"
+uid="uid://cuk1u0b03rir6"
+path="res://.godot/imported/fusion_pixel_10.woff2-d729c7ea10edafdbce814a73a92f79ca.fontdata"
 
 [deps]
 
-source_file="res://ui/fonts/pixelify_sans_regular.woff2"
-dest_files=["res://.godot/imported/pixelify_sans_regular.woff2-2ce954cd218e8af3c9b84be53e18274c.fontdata"]
+source_file="res://ui/fonts/fusion_pixel_10.woff2"
+dest_files=["res://.godot/imported/fusion_pixel_10.woff2-d729c7ea10edafdbce814a73a92f79ca.fontdata"]
 
 [params]
 

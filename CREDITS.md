@@ -4,10 +4,12 @@
 
 | Recurso | Archivo | Autor | Licencia |
 |---|---|---|---|
-| Pixelify Sans | `game/ui/fonts/pixelify_sans_*.woff2` | The Pixelify Sans Project Authors (Stefie Justprince) | SIL Open Font License 1.1 (`game/ui/fonts/PIXELIFY_SANS_OFL.txt`) |
-| Silkscreen | `game/ui/fonts/silkscreen_regular.woff2` | The Silkscreen Project Authors (Jason Kottke) | SIL Open Font License 1.1 (`game/ui/fonts/SILKSCREEN_OFL.txt`) |
+| Fusion Pixel Font (letras latinas de Ark Pixel Font) | `game/ui/fonts/fusion_pixel_*.woff2` | TakWolf y colaboradores | SIL Open Font License 1.1 (`game/ui/fonts/FUSION_PIXEL_OFL.txt`) |
+| Pixelify Sans (sólo el logotipo) | `game/ui/fonts/pixelify_sans_bold.woff2` | The Pixelify Sans Project Authors (Stefie Justprince) | SIL Open Font License 1.1 (`game/ui/fonts/PIXELIFY_SANS_OFL.txt`) |
 
-Ambas se obtuvieron de los paquetes de Fontsource (`@fontsource/pixelify-sans`, `@fontsource/silkscreen`).
+Pixelify Sans viene del paquete de Fontsource (`@fontsource/pixelify-sans`). Fusion Pixel viene del
+paquete npm `@vp-tw/cjk-web-fonts-fusion-pixel-font` (subconjuntos de la versión 2026.08.11);
+`tools/make_ui_fonts.py` junta los bloques latinos y genera las negritas.
 
 ## Arte generado con Sprite AI
 

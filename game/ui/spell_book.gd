@@ -5,8 +5,6 @@ extends Control
 ## acertijo de pista; y las que piden un elemento que aún no has despertado, con candado.
 ## Mismo aspecto que el Grimorio (los dos libros son hermanos).
 
-const FONT_SMALL: FontFile = preload("res://ui/fonts/silkscreen_regular.woff2")
-const FONT_BOLD: FontFile = preload("res://ui/fonts/pixelify_sans_bold.woff2")
 const OPEN_SFX: AudioStream = preload("res://audio/sfx/sfx_book_open_01.ogg")
 const CLOSE_SFX: AudioStream = preload("res://audio/sfx/sfx_book_close_01.ogg")
 const TICK_SFX: AudioStream = preload("res://audio/sfx/sfx_ui_tick_01.ogg")
@@ -73,42 +71,43 @@ func _ready() -> void:
 	visible = false
 	_title = _label(
 		"LIBRO DE COMBINACIONES",
-		FONT_BOLD,
-		16,
+		UiFonts.TITLE,
+		UiFonts.HEAD,
 		C_GOLD_LIGHT,
-		Rect2(LEFT.position + Vector2(0, 8), Vector2(LEFT.size.x, 20)),
+		Rect2(LEFT.position + Vector2(0, 10), Vector2(LEFT.size.x, UiFonts.HEAD_LINE)),
 		1
 	)
 	_count = _label(
 		"",
-		FONT_SMALL,
-		8,
+		UiFonts.BOLD,
+		UiFonts.SMALL,
 		C_CYAN,
-		Rect2(LEFT.position + Vector2(0, 30), Vector2(LEFT.size.x, 10)),
+		Rect2(LEFT.position + Vector2(0, 28), Vector2(LEFT.size.x, UiFonts.LINE)),
 		1
 	)
 	for i: int in SpellCaster.RECIPES.size():
 		var r := Rect2(
 			LEFT.position.x + 40,
-			LIST_Y + i * ROW_H + floorf((ROW_H - 10.0) * 0.5),
+			LIST_Y + i * ROW_H + floorf((ROW_H - UiFonts.LINE) * 0.5),
 			LEFT.size.x - 48,
-			10
+			UiFonts.LINE
 		)
-		_rows.append(_label("", FONT_SMALL, 8, C_CYAN, r, 0))
+		_rows.append(_label("", UiFonts.BOLD, UiFonts.SMALL, C_CYAN, r, 0))
 	var rx: float = RIGHT.position.x + 14
 	var rw: float = RIGHT.size.x - 28
-	_name = _label("", FONT_BOLD, 16, C_INK, Rect2(rx, 56, rw, 22), 0, true)
-	_elements = _label("", FONT_SMALL, 8, C_INK_SOFT, Rect2(rx, 82, rw, 10), 0)
-	_how = _label("", FONT_SMALL, 8, Color("#7a3fae"), Rect2(rx, 104, rw, 40), 0)
-	_desc = _label("", FONT_SMALL, 8, C_INK, Rect2(rx, 156, rw, 120), 0)
-	_footer = _label("", FONT_SMALL, 8, C_CYAN, Rect2(70, 330, 500, 10), 1)
+	var big := UiFonts.HEAD_LINE
+	_name = _label("", UiFonts.TITLE, UiFonts.HEAD, C_INK, Rect2(rx, 60, rw - 56, big), 0, true)
+	_elements = _label("", UiFonts.BOLD, UiFonts.SMALL, C_INK_SOFT, Rect2(rx, 80, rw, 12), 0)
+	_how = _label("", UiFonts.BODY, UiFonts.SMALL, Color("#7a3fae"), Rect2(rx, 104, rw, 48), 0)
+	_desc = _label("", UiFonts.BODY, UiFonts.SMALL, C_INK, Rect2(rx, 158, rw, 144), 0)
+	_footer = _label("", UiFonts.BOLD, UiFonts.SMALL, C_CYAN, Rect2(10, 329, 620, 12), 1)
 	Events.recipe_discovered.connect(func(_r: SpellRecipe) -> void: _refresh())
 	Events.locale_changed.connect(_refresh)
 	set_process(false)
 
 
 func _label(
-	text: String, font: FontFile, size_px: int, col: Color, r: Rect2, align: int, wrap: bool = false
+	text: String, font: Font, size_px: int, col: Color, r: Rect2, align: int, wrap: bool = false
 ) -> Label:
 	var l := Label.new()
 	l.text = tr(text)
@@ -120,7 +119,7 @@ func _label(
 	l.size = r.size
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if wrap or r.size.y > 14.0:
-		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		UiFonts.paragraph(l)
 	add_child(l)
 	return l
 

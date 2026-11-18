@@ -6,8 +6,13 @@ extends Control
 ## protesta; al quinto golpe estalla, se vuelve "!" un momento y se vuelve a formar.
 ## Debajo, eslóganes graciosos que se escriben solos y van cambiando.
 
-const FONT_SMALL: FontFile = preload("res://ui/fonts/silkscreen_regular.woff2")
-const FONT_BOLD: FontFile = preload("res://ui/fonts/pixelify_sans_bold.woff2")
+## El logotipo va con Pixelify Sans; la frase de debajo, con la fuente del resto de la interfaz.
+const FONT_LOGO: FontFile = UiFonts.LOGO
+## Tamaños del logotipo: múltiplos de los 11 px de Pixelify Sans, para que cada píxel de la letra
+## ocupe 2, 3 o 7 píxeles enteros (a 16 y 32 salían píxeles desiguales y la C parecía una O).
+const SIZE_SMALL: int = 22
+const SIZE_BIG: int = 33
+const SIZE_Q: int = 77
 const HIT_SFX: Array[AudioStream] = [
 	preload("res://audio/sfx/sfx_crystal_hit_04.ogg"),
 	preload("res://audio/sfx/sfx_crystal_hit_05.ogg"),
@@ -66,38 +71,38 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_PASS
 	# Medidas para centrar el bloque: "DESTROY IT" + "?" grande a su derecha.
 	var big_text: String = "DESTROY IT"
-	var big_w: float = FONT_BOLD.get_string_size(big_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 32).x
-	var q_w: float = FONT_BOLD.get_string_size("?", HORIZONTAL_ALIGNMENT_LEFT, -1, 72).x
+	var big_w: float = (
+		FONT_LOGO.get_string_size(big_text, HORIZONTAL_ALIGNMENT_LEFT, -1, SIZE_BIG).x
+	)
+	var q_w: float = FONT_LOGO.get_string_size("?", HORIZONTAL_ALIGNMENT_LEFT, -1, SIZE_Q).x
 	var x0: float = roundf((640.0 - big_w - q_w - 6.0) * 0.5)
 	var x: float = x0
 	for ch: String in big_text:
-		var l: Label = _letter(ch, 32, C_GOLD)
+		var l: Label = _letter(ch, SIZE_BIG, C_GOLD)
 		l.position = Vector2(x, 54)
 		_big.append(l)
-		x += FONT_BOLD.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, 32).x
+		x += FONT_LOGO.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, SIZE_BIG).x
 	var small_text: String = "CAN YOU"
 	var sx: float = x0 + 2.0
 	for ch: String in small_text:
-		var l: Label = _letter(ch, 16, C_CYAN)
-		l.position = Vector2(sx, 36)
+		var l: Label = _letter(ch, SIZE_SMALL, C_CYAN)
+		l.position = Vector2(sx, 33)
 		_small.append(l)
-		sx += FONT_BOLD.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
-	_q_shadow = _letter("?", 72, C_ICE_DARK)
-	_q = _letter("?", 72, C_ICE)
+		sx += FONT_LOGO.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, SIZE_SMALL).x
+	_q_shadow = _letter("?", SIZE_Q, C_ICE_DARK)
+	_q = _letter("?", SIZE_Q, C_ICE)
 	_q.position = Vector2(x + 6.0, 16)
 	_q_shadow.position = _q.position + Vector2(3, 3)
 	_q_rect = Rect2(_q.position + Vector2(4, 10), Vector2(q_w - 8, 70))
 	_tag = Label.new()
-	_tag.add_theme_font_override(&"font", FONT_SMALL)
-	_tag.add_theme_font_size_override(&"font_size", 8)
+	_tag.add_theme_font_override(&"font", UiFonts.BOLD)
+	_tag.add_theme_font_size_override(&"font_size", UiFonts.SMALL)
 	_tag.add_theme_color_override(&"font_color", C_CYAN)
-	_tag.add_theme_color_override(&"font_shadow_color", C_BG)
-	_tag.add_theme_constant_override(&"shadow_offset_x", 1)
-	_tag.add_theme_constant_override(&"shadow_offset_y", 1)
+	UiFonts.outline(_tag, C_BG)
 	_tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tag.position = Vector2(0, 112)
-	_tag.size = Vector2(640, 10)
+	_tag.size = Vector2(640, UiFonts.LINE)
 	add_child(_tag)
 	_tag_index = _rng.randi() % TAGLINES.size()
 	_set_tag(tr(TAGLINES[_tag_index]))
@@ -107,7 +112,7 @@ func _letter(ch: String, size_px: int, col: Color) -> Label:
 	var l := Label.new()
 	l.text = ch
 	l.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	l.add_theme_font_override(&"font", FONT_BOLD)
+	l.add_theme_font_override(&"font", FONT_LOGO)
 	l.add_theme_font_size_override(&"font_size", size_px)
 	l.add_theme_color_override(&"font_color", col)
 	l.add_theme_color_override(&"font_shadow_color", C_BG if size_px < 64 else Color(0, 0, 0, 0))

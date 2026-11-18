@@ -4,9 +4,6 @@ extends Control
 ## color, la racha salta y cambia de color, los números flotan desde el impacto y los hitos
 ## de racha y los golpes resonantes se celebran con un aviso grande.
 
-## Silkscreen para texto pequeño (diseñada para 8 px); Pixelify Sans para números grandes.
-const FONT_SMALL: FontFile = preload("res://ui/fonts/silkscreen_regular.woff2")
-const FONT_BOLD: FontFile = preload("res://ui/fonts/pixelify_sans_bold.woff2")
 const C_TEXT := Color("#f2f6ff")
 const C_SHADOW := Color("#14183a")
 const C_CYAN := Color("#a5dae5")
@@ -16,6 +13,7 @@ const STREAK_COLORS: Array[Color] = [
 	Color("#c9f6ff"), Color("#c79bff"), Color("#ff7ad9"), Color("#ffd27a")
 ]
 const FLOATERS: int = 24
+const SMALL: int = UiFonts.SMALL
 const C_FIRE := Color("#ff9a3a")
 const DISCOVERY_SFX: AudioStream = preload("res://audio/sfx/sfx_combo_discovered_01.ogg")
 ## Duración del aviso de combinación descubierta (s).
@@ -52,6 +50,7 @@ var _discovery_name: Label
 var _discovery_time: float = 0.0
 var _loop: HudLoop
 var _grimoire: Grimoire
+var _book: SpellBook
 var _floaters: Array[Label] = []
 var _floater_pos: Array[Vector3] = []
 var _floater_age: PackedFloat32Array = []
@@ -65,37 +64,37 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	theme = _make_theme()
-	_essence_title = _label("ESENCIA DEL CRISTAL", 8, C_CYAN, HORIZONTAL_ALIGNMENT_CENTER)
-	_place(_essence_title, Control.PRESET_CENTER_TOP, Rect2(-150, 6, 300, 10))
-	_essence = _label("1.000.000", 24, C_TEXT, HORIZONTAL_ALIGNMENT_CENTER, true)
-	_place(_essence, Control.PRESET_CENTER_TOP, Rect2(-100, 15, 200, 26))
-	_essence.pivot_offset = Vector2(100, 13)
-	_pickup_prompt = _label("", 8, C_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
-	_place(_pickup_prompt, Control.PRESET_CENTER, Rect2(-120, 20, 240, 10))
+	_essence_title = _label("ESENCIA DEL CRISTAL", SMALL, C_CYAN, HORIZONTAL_ALIGNMENT_CENTER)
+	_place(_essence_title, Control.PRESET_CENTER_TOP, Rect2(-200, 5, 400, UiFonts.LINE))
+	_essence = _label("1.000.000", UiFonts.BIG, C_TEXT, HORIZONTAL_ALIGNMENT_CENTER, true)
+	_place(_essence, Control.PRESET_CENTER_TOP, Rect2(-100, 15, 200, 28))
+	_essence.pivot_offset = Vector2(100, 14)
+	_pickup_prompt = _label("", SMALL, C_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	_place(_pickup_prompt, Control.PRESET_CENTER, Rect2(-150, 20, 300, UiFonts.LINE))
 	_pickup_prompt.visible = false
-	_fps = _label("", 8, C_CYAN, HORIZONTAL_ALIGNMENT_RIGHT)
-	_place(_fps, Control.PRESET_TOP_RIGHT, Rect2(-70, 6, 62, 10))
+	_fps = _label("", SMALL, C_CYAN, HORIZONTAL_ALIGNMENT_RIGHT)
+	_place(_fps, Control.PRESET_TOP_RIGHT, Rect2(-70, 5, 62, UiFonts.LINE))
 	_fps.visible = OS.is_debug_build()
-	_debug = _label("", 8, Color(C_TEXT, 0.75), HORIZONTAL_ALIGNMENT_LEFT)
-	_place(_debug, Control.PRESET_BOTTOM_LEFT, Rect2(8, -16, 240, 10))
+	_debug = _label("", SMALL, Color(C_TEXT, 0.75), HORIZONTAL_ALIGNMENT_LEFT)
+	_place(_debug, Control.PRESET_BOTTOM_LEFT, Rect2(8, -18, 400, UiFonts.LINE))
 	_debug.visible = OS.is_debug_build()
 	_crosshair = Crosshair.new()
 	_crosshair.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_crosshair)
-	_streak = _label("", 16, STREAK_COLORS[0], HORIZONTAL_ALIGNMENT_LEFT, true)
-	_place(_streak, Control.PRESET_CENTER, Rect2(14, 6, 90, 20))
-	_streak.pivot_offset = Vector2(0, 10)
-	_banner = _label("", 16, C_GOLD, HORIZONTAL_ALIGNMENT_CENTER, true)
-	_place(_banner, Control.PRESET_CENTER, Rect2(-150, -62, 300, 20))
-	_banner.pivot_offset = Vector2(150, 10)
+	_streak = _label("", UiFonts.HEAD, STREAK_COLORS[0], HORIZONTAL_ALIGNMENT_LEFT, true)
+	_place(_streak, Control.PRESET_CENTER, Rect2(14, 6, 90, UiFonts.HEAD_LINE))
+	_streak.pivot_offset = Vector2(0, 7)
+	_banner = _label("", UiFonts.HEAD, C_GOLD, HORIZONTAL_ALIGNMENT_CENTER, true)
+	_place(_banner, Control.PRESET_CENTER, Rect2(-200, -62, 400, UiFonts.HEAD_LINE))
+	_banner.pivot_offset = Vector2(200, 7)
 	_banner.visible = false
-	_prompt = _label(_controls_text(), 8, C_TEXT, HORIZONTAL_ALIGNMENT_CENTER)
-	_place(_prompt, Control.PRESET_CENTER, Rect2(-310, 30, 620, 22))
-	_discovery_title = _label("¡COMBINACIÓN NUEVA!", 8, C_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
-	_place(_discovery_title, Control.PRESET_CENTER_TOP, Rect2(-150, 62, 300, 10))
-	_discovery_name = _label("", 32, C_FIRE, HORIZONTAL_ALIGNMENT_CENTER, true)
-	_place(_discovery_name, Control.PRESET_CENTER_TOP, Rect2(-200, 72, 400, 36))
-	_discovery_name.pivot_offset = Vector2(200, 18)
+	_prompt = _label(_controls_text(), SMALL, C_TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+	_place(_prompt, Control.PRESET_CENTER, Rect2(-316, 30, 632, UiFonts.PITCH * 2))
+	_discovery_title = _label("¡COMBINACIÓN NUEVA!", SMALL, C_GOLD, HORIZONTAL_ALIGNMENT_CENTER)
+	_place(_discovery_title, Control.PRESET_CENTER_TOP, Rect2(-200, 60, 400, UiFonts.LINE))
+	_discovery_name = _label("", UiFonts.BIG, C_FIRE, HORIZONTAL_ALIGNMENT_CENTER, true)
+	_place(_discovery_name, Control.PRESET_CENTER_TOP, Rect2(-300, 74, 600, 28))
+	_discovery_name.pivot_offset = Vector2(300, 14)
 	_discovery_title.visible = false
 	_discovery_name.visible = false
 	_loop = HudLoop.new()
@@ -103,8 +102,8 @@ func _ready() -> void:
 	_loop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_loop)
 	for i: int in FLOATERS:
-		var f: Label = _label("", 8, C_TEXT, HORIZONTAL_ALIGNMENT_CENTER, true)
-		f.size = Vector2(80, 12)
+		var f: Label = _label("", SMALL, C_TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+		f.size = Vector2(200, UiFonts.HEAD_LINE)
 		f.visible = false
 		_floaters.append(f)
 		_floater_pos.append(Vector3.ZERO)
@@ -131,9 +130,9 @@ func _ready() -> void:
 	_grimoire = Grimoire.new()
 	_grimoire.name = "Grimoire"
 	add_child(_grimoire)
-	var book := SpellBook.new()
-	book.name = "SpellBook"
-	add_child(book)
+	_book = SpellBook.new()
+	_book.name = "SpellBook"
+	add_child(_book)
 	tutorial = Tutorial.new()
 	tutorial.name = "Tutorial"
 	add_child(tutorial)
@@ -187,7 +186,7 @@ func _on_burned(damage: int, at: Vector3) -> void:
 	var f: Label = _floaters[i]
 	f.text = "-%d" % damage
 	f.add_theme_color_override(&"font_color", Color("#ff9a3a"))
-	f.add_theme_font_size_override(&"font_size", 8)
+	_floater_style(f, false)
 	_floater_pos[i] = at + Vector3(randf_range(-0.6, 0.6), 0.8, 0.0)
 	_floater_age[i] = 0.0
 	f.visible = true
@@ -203,7 +202,7 @@ func _on_shard_delivered(value: int) -> void:
 	var f: Label = _floaters[i]
 	f.text = tr("+%d MANÁ") % value
 	f.add_theme_color_override(&"font_color", Color("#ff7ad9"))
-	f.add_theme_font_size_override(&"font_size", 16 if value >= 5 else 8)
+	_floater_style(f, value >= 5)
 	_floater_pos[i] = pylon.mouth_position() + Vector3(randf_range(-0.4, 0.4), 0.4, 0.0)
 	_floater_age[i] = 0.0
 	f.visible = true
@@ -220,9 +219,16 @@ static func _place(c: Control, preset: Control.LayoutPreset, r: Rect2) -> void:
 
 func _make_theme() -> Theme:
 	var t := Theme.new()
-	t.default_font = FONT_SMALL
-	t.default_font_size = 8
+	t.default_font = UiFonts.BOLD
+	t.default_font_size = SMALL
+	t.set_constant(&"line_spacing", &"Label", UiFonts.LINE_GAP)
 	return t
+
+
+## Número flotante pequeño (negrita de 10 px) o grande (título de 12 px).
+static func _floater_style(f: Label, big: bool) -> void:
+	f.add_theme_font_override(&"font", UiFonts.TITLE if big else UiFonts.BOLD)
+	f.add_theme_font_size_override(&"font_size", UiFonts.HEAD if big else SMALL)
 
 
 func _label(
@@ -234,12 +240,9 @@ func _label(
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	l.add_theme_font_size_override(&"font_size", font_size)
 	if bold:
-		l.add_theme_font_override(&"font", FONT_BOLD)
+		l.add_theme_font_override(&"font", UiFonts.TITLE)
 	l.add_theme_color_override(&"font_color", color)
-	l.add_theme_color_override(&"font_shadow_color", C_SHADOW)
-	l.add_theme_constant_override(&"shadow_offset_x", 1)
-	l.add_theme_constant_override(&"shadow_offset_y", 1)
-	l.add_theme_constant_override(&"shadow_outline_size", 0)
+	UiFonts.outline(l, C_SHADOW)
 	add_child(l)
 	return l
 
@@ -286,7 +289,7 @@ func _on_shard_collected(type: ShardType, _count: int, at: Vector3) -> void:
 	var f: Label = _floaters[i]
 	f.text = "+1 " + tr(type.display_name).to_upper()
 	f.add_theme_color_override(&"font_color", C_CYAN)
-	f.add_theme_font_size_override(&"font_size", 8)
+	_floater_style(f, false)
 	_floater_pos[i] = at + Vector3.UP * 0.3
 	_floater_age[i] = 0.0
 	f.visible = true
@@ -303,7 +306,7 @@ func _on_impact(hit: SpellHit) -> void:
 	var f: Label = _floaters[i]
 	f.text = ("-%d  " + tr("¡RESONANTE!")) % hit.damage if hit.resonant else "-%d" % hit.damage
 	f.add_theme_color_override(&"font_color", C_GOLD if hit.resonant else C_TEXT)
-	f.add_theme_font_size_override(&"font_size", 16 if hit.resonant else 8)
+	_floater_style(f, hit.resonant)
 	_floater_pos[i] = hit.position + hit.normal * 0.6
 	_floater_age[i] = 0.0
 	f.visible = true
@@ -314,7 +317,7 @@ func _on_impact(hit: SpellHit) -> void:
 	elif hit.weakened:
 		f.text = "-%d  x%s" % [hit.damage, str(roundi(hit.weak_mult))]
 		f.add_theme_color_override(&"font_color", Color("#a5f0ff"))
-		f.add_theme_font_size_override(&"font_size", 16)
+		_floater_style(f, true)
 		_show_banner(
 			(
 				tr("¡QUEBRADIZO! x%d") % roundi(hit.weak_mult)
@@ -375,7 +378,8 @@ func _show_banner(text: String, color: Color) -> void:
 func _process(delta: float) -> void:
 	var captured: bool = force_captured_look or Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 	_prompt.visible = not captured and not _grimoire.is_open and not menu.is_open()
-	_loop.visible = not _grimoire.is_open and not menu.is_open()
+	# Con un libro abierto, el HUD del bucle (Pilón, bolsa, manos) asomaba por los bordes.
+	_loop.visible = not _grimoire.is_open and not _book.is_open and not menu.is_open()
 	_crosshair.visible = captured and not menu.is_open()
 	var title: bool = menu.mode == GameMenu.Mode.TITLE
 	_essence.visible = not title and not _loop.intro

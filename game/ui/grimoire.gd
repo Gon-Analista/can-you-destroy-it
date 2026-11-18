@@ -8,8 +8,6 @@ extends Control
 ## cualquier sitio.
 ## Todo se dibuja a píxel entero con las fuentes pixel del HUD.
 
-const FONT_SMALL: FontFile = preload("res://ui/fonts/silkscreen_regular.woff2")
-const FONT_BOLD: FontFile = preload("res://ui/fonts/pixelify_sans_bold.woff2")
 const OPEN_SFX: AudioStream = preload("res://audio/sfx/sfx_book_open_01.ogg")
 const CLOSE_SFX: AudioStream = preload("res://audio/sfx/sfx_book_close_01.ogg")
 const TICK_SFX: AudioStream = preload("res://audio/sfx/sfx_ui_tick_01.ogg")
@@ -41,6 +39,11 @@ const PAGE_TITLES: PackedStringArray = [
 	"CONSTELACIÓN DEL ARCANO",
 ]
 const TAB_W: int = 36
+const SMALL: int = UiFonts.SMALL
+const LINE: int = UiFonts.LINE
+## Primera línea de la descripción de la página derecha (debajo, AHORA y SIGUIENTE se colocan
+## según las líneas que ocupe).
+const DESC_Y: int = 106
 
 const C_INK := Color("#2a1d4a")
 const C_INK_SOFT := Color("#6a5a86")
@@ -366,22 +369,24 @@ func _ready() -> void:
 	_content.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_content.size = Vector2(640, 360)
 	add_child(_content)
-	_title = _label("", 8, C_GOLD_LIGHT, Rect2(80, 64, 236, 10), 1)
+	_title = _label("", SMALL, C_GOLD_LIGHT, Rect2(80, 62, 236, LINE), 1, true)
 	for i: int in GameState.UPGRADES.size():
 		var p: Vector2i = GameState.UPGRADES[i].star_pos + LEFT_PAGE.position
-		_star_labels.append(_label("", 8, C_DIM, Rect2(p.x - 50, p.y + 12, 100, 10), 1))
+		_star_labels.append(_label("", SMALL, C_DIM, Rect2(p.x - 60, p.y + 11, 120, LINE), 1))
 	var rx: int = RIGHT_PAGE.position.x
 	var ry: int = RIGHT_PAGE.position.y
-	_page_title = _label("", 16, C_INK, Rect2(rx + 46, ry + 10, 180, 20), 0, true)
-	_level = _label("", 8, C_INK_SOFT, Rect2(rx + 46, ry + 30, 180, 10), 0)
-	_desc = _label("", 8, C_INK, Rect2(rx + 12, ry + 64, 212, 50), 0)
-	_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_now = _label("", 8, C_INK_SOFT, Rect2(rx + 12, ry + 124, 212, 10), 0)
-	_next = _label("", 8, Color("#7a3fae"), Rect2(rx + 12, ry + 138, 212, 10), 0)
-	_cost = _label("", 16, C_INK, Rect2(rx + 36, ry + 176, 160, 20), 0, true)
-	_button = _label("", 8, C_INK, Rect2(rx + 18, ry + 214, 200, 10), 1)
-	_mana = _label("", 8, C_GOLD_LIGHT, Rect2(rx + 120, ry - 2 - 10 + 2, 112, 10), 2)
-	_footer = _label(_footer_text(), 8, C_CYAN, Rect2(70, 330, 500, 10), 1)
+	_page_title = _label("", UiFonts.HEAD, C_INK, Rect2(rx + 46, ry + 12, 184, 14), 0, true)
+	_level = _label("", SMALL, C_INK_SOFT, Rect2(rx + 46, ry + 28, 184, LINE), 0)
+	_desc = _label("", SMALL, C_INK, Rect2(rx + 12, DESC_Y, 212, LINE * 5), 0)
+	UiFonts.paragraph(_desc)
+	_now = _label("", SMALL, C_INK_SOFT, Rect2(rx + 12, ry + 124, 212, LINE), 0)
+	UiFonts.paragraph(_now)
+	_next = _label("", SMALL, Color("#7a3fae"), Rect2(rx + 12, ry + 138, 212, LINE), 0)
+	UiFonts.paragraph(_next)
+	_cost = _label("", UiFonts.HEAD, C_INK, Rect2(rx + 36, ry + 179, 160, 14), 0, true)
+	_button = _label("", SMALL, C_INK, Rect2(rx + 14, ry + 213, 208, LINE), 1, true)
+	_mana = _label("", SMALL, C_GOLD_LIGHT, Rect2(rx + 106, ry - 11, 120, LINE), 2, true)
+	_footer = _label(_footer_text(), SMALL, C_CYAN, Rect2(10, 329, 620, LINE), 1, true)
 	Events.grimoire_requested.connect(open)
 	Events.mana_changed.connect(func(_m: int) -> void: _refresh())
 	Events.locale_changed.connect(func() -> void: _footer.text = _footer_text())
@@ -615,6 +620,7 @@ func _refresh() -> void:
 		elif lvl > 0:
 			c = Color("#c79bff")
 		label.add_theme_color_override(&"font_color", c)
+		_place_star_label(label, n)
 	if _page_locked():
 		_page_title.text = tr(page[1] as String)
 		_level.text = tr("ELEMENTO DORMIDO")
@@ -638,11 +644,14 @@ func _refresh() -> void:
 	_now.text = tr("AHORA: %s") % tr(node.describe_level(level))
 	if level < max_level:
 		_next.text = tr("SIGUIENTE: %s") % tr(node.describe_level(level + 1))
+	else:
+		_next.text = ""
+	_layout_texts()
+	if level < max_level:
 		var cost: int = node.cost_for_level(level)
 		_cost.text = Hud.format_int(cost)
 		_cost.add_theme_color_override(&"font_color", C_INK if prog.can_afford(cost) else C_RED)
 	else:
-		_next.text = ""
 		_cost.text = ""
 	match block_sel:
 		&"max":
@@ -659,6 +668,27 @@ func _refresh() -> void:
 			)
 	var can_buy: bool = block_sel == &"" and _at_sanctum
 	_button.add_theme_color_override(&"font_color", C_INK if can_buy else C_INK_SOFT)
+
+
+## Nombre centrado bajo su estrella, pero entero dentro de la página del cielo.
+func _place_star_label(label: Label, node: UpgradeNode) -> void:
+	var w: float = UiFonts.BODY.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, SMALL).x
+	var cx: float = node.star_pos.x + LEFT_PAGE.position.x
+	var lo: float = LEFT_PAGE.position.x + 4.0
+	var hi: float = LEFT_PAGE.end.x - 4.0 - w
+	label.size.x = w
+	label.position.x = roundf(clampf(cx - w * 0.5, lo, hi))
+
+
+## La descripción ocupa las líneas que necesite; AHORA y SIGUIENTE van justo debajo.
+func _layout_texts() -> void:
+	var pitch: int = UiFonts.PITCH
+	var y: int = DESC_Y + _desc.get_line_count() * pitch + 5
+	_desc.size.y = _desc.get_line_count() * pitch
+	for l: Label in [_now, _next]:
+		l.position.y = y
+		l.size.y = LINE
+		y += l.get_line_count() * pitch + 1
 
 
 func _prereq_names(node: UpgradeNode) -> String:
@@ -936,7 +966,10 @@ func _label(
 	l.text = tr(text)
 	l.horizontal_alignment = align as HorizontalAlignment
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	l.add_theme_font_override(&"font", FONT_BOLD if bold else FONT_SMALL)
+	var head: bool = font_size >= UiFonts.HEAD
+	l.add_theme_font_override(
+		&"font", (UiFonts.TITLE if head else UiFonts.BOLD) if bold else UiFonts.BODY
+	)
 	l.add_theme_font_size_override(&"font_size", font_size)
 	l.add_theme_color_override(&"font_color", color)
 	l.position = r.position

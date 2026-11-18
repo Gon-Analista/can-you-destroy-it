@@ -7,8 +7,6 @@ extends Control
 
 enum Mode { HIDDEN, TITLE, PAUSE }
 
-const FONT_SMALL: FontFile = preload("res://ui/fonts/silkscreen_regular.woff2")
-const FONT_BOLD: FontFile = preload("res://ui/fonts/pixelify_sans_bold.woff2")
 const TITLE_MUSIC: AudioStream = preload("res://audio/music/music_title.ogg")
 const TICK_SFX: AudioStream = preload("res://audio/sfx/sfx_ui_tick_01.ogg")
 const OK_SFX: AudioStream = preload("res://audio/sfx/sfx_book_open_01.ogg")
@@ -20,6 +18,9 @@ const C_GOLD_LIGHT := Color("#ffd27a")
 const C_TEXT := Color("#f2f6ff")
 const C_CYAN := Color("#a5dae5")
 const C_PINK := Color("#ff7ad9")
+## Ancho del panel de opciones y de la columna de nombres de cada opción.
+const OPTIONS_W: float = 300.0
+const OPTION_LABEL_W: float = 150.0
 
 ## Al volver a cargar la escena tras "Nueva partida", no se enseña otra vez el título.
 static var skip_title_once: bool = false
@@ -47,9 +48,9 @@ func _ready() -> void:
 	_main_box.add_theme_constant_override(&"separation", 6)
 	add_child(_main_box)
 	_options_box = VBoxContainer.new()
-	_options_box.position = Vector2(190, 120)
-	_options_box.size = Vector2(260, 200)
-	_options_box.add_theme_constant_override(&"separation", 4)
+	_options_box.position = Vector2(roundf((640.0 - OPTIONS_W) * 0.5), 84)
+	_options_box.size = Vector2(OPTIONS_W, 190)
+	_options_box.add_theme_constant_override(&"separation", 5)
 	_options_box.visible = false
 	add_child(_options_box)
 	_build_options()
@@ -61,6 +62,17 @@ func show_title() -> void:
 	mode = Mode.TITLE
 	AudioDirector.play_theme(TITLE_MUSIC)
 	_open()
+
+
+## Modo demo (capturas): "title", "pause" u "options" (las opciones desde la pausa).
+func demo_open(which: String) -> void:
+	if which == "title":
+		show_title()
+		return
+	mode = Mode.PAUSE
+	_open()
+	if which == "options":
+		_show_options()
 
 
 func _open() -> void:
@@ -122,8 +134,8 @@ func _rebuild_main() -> void:
 			_button("CONTINUAR", _close, true)
 		_button("NUEVA PARTIDA", _new_game, not has_save)
 	else:
-		var pause: Label = _label("PAUSA", FONT_BOLD, 16, C_GOLD_LIGHT)
-		pause.custom_minimum_size = Vector2(160, 22)
+		var pause: Label = _label("PAUSA", UiFonts.TITLE, UiFonts.HEAD, C_GOLD_LIGHT)
+		pause.custom_minimum_size = Vector2(160, 20)
 		remove_child(pause)
 		_main_box.add_child(pause)
 		_button("REANUDAR", _close, true)
@@ -187,9 +199,9 @@ func _show_main() -> void:
 
 
 func _build_options() -> void:
-	var title: Label = _label("OPCIONES", FONT_BOLD, 16, C_GOLD_LIGHT)
+	var title: Label = _label("OPCIONES", UiFonts.TITLE, UiFonts.HEAD, C_GOLD_LIGHT)
 	remove_child(title)
-	title.custom_minimum_size = Vector2(260, 22)
+	title.custom_minimum_size = Vector2(OPTIONS_W, 20)
 	_options_box.add_child(title)
 	_language_button()
 	for bus: Array in [
@@ -227,7 +239,7 @@ func _build_options() -> void:
 	_options_box.add_child(fs)
 	var back := Button.new()
 	back.text = tr("VOLVER")
-	back.custom_minimum_size = Vector2(260, 20)
+	back.custom_minimum_size = Vector2(OPTIONS_W, 20)
 	back.pressed.connect(_show_main)
 	_options_box.add_child(back)
 
@@ -239,7 +251,7 @@ func _language_button() -> void:
 		return
 	var lang := Button.new()
 	lang.text = tr("IDIOMA: %s") % Settings.language_name(Settings.current_locale())
-	lang.custom_minimum_size = Vector2(260, 20)
+	lang.custom_minimum_size = Vector2(OPTIONS_W, 20)
 	lang.add_theme_color_override(&"font_color", C_GOLD_LIGHT)
 	lang.pressed.connect(
 		func() -> void:
@@ -266,23 +278,30 @@ func _relocalize() -> void:
 			break
 
 
+## Una fila por opción: el nombre a la izquierda y la barra a la derecha.
 func _slider(text: String, value: float, on_change: Callable) -> void:
-	var l: Label = _label(text, FONT_SMALL, 8, C_CYAN)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override(&"separation", 8)
+	_options_box.add_child(row)
+	var l: Label = _label(text, UiFonts.BOLD, UiFonts.SMALL, C_CYAN)
 	remove_child(l)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_options_box.add_child(l)
+	l.custom_minimum_size = Vector2(OPTION_LABEL_W, UiFonts.LINE)
+	row.add_child(l)
 	var s := HSlider.new()
 	s.min_value = 0.0
 	s.max_value = 1.0
 	s.step = 0.05
 	s.value = clampf(value, 0.0, 1.0)
-	s.custom_minimum_size = Vector2(260, 10)
+	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	s.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	s.custom_minimum_size = Vector2(0, 10)
 	s.value_changed.connect(
 		func(v: float) -> void:
 			on_change.call(v)
 			AudioDirector.play_sfx(TICK_SFX, -14.0, lerpf(0.8, 1.4, v))
 	)
-	_options_box.add_child(s)
+	row.add_child(s)
 
 
 func _process(_delta: float) -> void:
@@ -319,7 +338,7 @@ func _draw() -> void:
 		draw_rect(Rect2(corner, Vector2(6, 6)), C_GOLD_LIGHT)
 
 
-func _label(text: String, font: FontFile, font_size: int, color: Color) -> Label:
+func _label(text: String, font: Font, font_size: int, color: Color) -> Label:
 	var l := Label.new()
 	l.text = tr(text)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -337,8 +356,9 @@ func _label(text: String, font: FontFile, font_size: int, color: Color) -> Label
 ## Tema pixel: botones de panel violeta con borde dorado al pasar por encima.
 func _make_theme() -> Theme:
 	var t := Theme.new()
-	t.default_font = FONT_SMALL
-	t.default_font_size = 8
+	t.default_font = UiFonts.BOLD
+	t.default_font_size = UiFonts.SMALL
+	t.set_constant(&"line_spacing", &"Label", UiFonts.LINE_GAP)
 	var normal := StyleBoxFlat.new()
 	normal.bg_color = C_PANEL_LIGHT
 	normal.set_border_width_all(1)
