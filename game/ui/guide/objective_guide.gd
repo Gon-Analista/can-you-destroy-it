@@ -42,12 +42,14 @@ const ARROW_SIDE: PackedStringArray = [
 const ARROW_DIAG: PackedStringArray = [
 	"......#", ".....##", "....#+#", "...#++#", "..#+++#", ".#++++#", "#######"
 ]
-## El rombo flota un poco por encima del objetivo (px) para no taparlo.
-const GEM_LIFT: float = -10.0
+## El rombo flota por encima del objetivo (px) con los metros debajo: así no lo tapa.
+const GEM_LIFT: float = -22.0
+## Alto que ocupan sobre el objetivo el rombo y su nombre (px): por encima de `_top` no caben.
+const STACK_H: float = 34.0
 ## Altura del objetivo sobre su punto de referencia (m), para el rombo.
 const CRYSTAL_AT := Vector3(0.0, 12.0, 0.0)
 ## Con el panel del tutorial arriba, los marcadores bajan hasta aquí para no quedar debajo.
-const TOP_TUTORIAL: float = 92.0
+const TOP_TUTORIAL: float = 96.0
 
 ## Objetivo que se muestra ahora (`Guidance.Kind`) y su punto en el mundo.
 var kind: int = Guidance.Kind.NONE
@@ -79,8 +81,6 @@ var _arrived: bool = false
 var _shard: int = -1
 var _shard_scan: float = 0.0
 var _new_upgrade: bool = false
-## Mejoras ya vistas en el Grimorio: id -> nivel que se ofrecía entonces.
-var _seen: Dictionary[StringName, int] = {}
 var _tag: Label
 var _dist: Label
 var _player: Node3D
@@ -88,6 +88,7 @@ var _pool: ShardPool
 var _crusher: CrystalCrusher
 var _sanctum: Sanctum
 var _tutorial: Tutorial
+var _flock: FamiliarFlock
 
 
 func _ready() -> void:
@@ -129,15 +130,18 @@ func _label(font: Font) -> Label:
 	return l
 
 
+## Lo visto se guarda en la partida (`Progression.seen_upgrades`): al volver a cargar no se
+## insiste otra vez con mejoras que el jugador ya decidió no comprar.
 func _recheck_upgrades() -> void:
 	var prog: Progression = GameState.progression
+	var seen: Dictionary[StringName, int] = prog.seen_upgrades
 	var early: bool = GameState.total_upgrade_levels() < DEF.guide_any_upgrade_until
 	_new_upgrade = false
 	for n: UpgradeNode in GameState.UPGRADES:
 		if prog.purchase_block(n) != &"":
 			continue
 		var lv: int = prog.get_level(n.id)
-		if not _seen.has(n.id) or (early and _seen[n.id] < lv):
+		if not seen.has(n.id) or (early and seen[n.id] < lv):
 			_new_upgrade = true
 			return
 
@@ -147,7 +151,7 @@ func _mark_seen() -> void:
 	var prog: Progression = GameState.progression
 	for n: UpgradeNode in GameState.UPGRADES:
 		if prog.purchase_block(n) == &"":
-			_seen[n.id] = prog.get_level(n.id)
+			prog.seen_upgrades[n.id] = prog.get_level(n.id)
 	_recheck_upgrades()
 
 
@@ -163,6 +167,8 @@ func _find_nodes() -> bool:
 		_sanctum = tree.get_first_node_in_group(&"sanctum") as Sanctum
 	if _tutorial == null:
 		_tutorial = tree.get_first_node_in_group(&"tutorial") as Tutorial
+	if _flock == null:
+		_flock = tree.get_first_node_in_group(&"familiar_flock") as FamiliarFlock
 	return _player != null and _camera != null
 
 
@@ -179,13 +185,13 @@ func _process(delta: float) -> void:
 		_alpha = move_toward(_alpha, 0.0, delta * 7.0)
 		if _alpha <= 0.0:
 			_switch_to(wanted)
+	_urgent = Guidance.is_urgent(kind, _sit)
 	var goal: float = 0.0
 	if kind != Guidance.Kind.NONE:
 		target = _target_of(kind)
 		goal = _goal_alpha(at)
 		if wanted == kind:
 			_alpha = move_toward(_alpha, goal, delta * 4.0)
-	_urgent = Guidance.is_urgent(kind, _sit)
 	var lever: bool = _sit.bag == 0 and _sit.hopper > 0
 	if lever != _tag_lever:
 		_tag_lever = lever
@@ -208,6 +214,7 @@ func _fill_situation(at: Vector3, delta: float) -> void:
 	_sit.crushing = _crusher != null and _crusher.is_busy()
 	_sit.new_upgrade = _new_upgrade
 	_sit.pickup_learned = prog.times(&"pickup") >= DEF.pickup_learn
+	_sit.auto_lever = _flock != null and _flock.active_count(FamiliarDef.Role.COLLECTOR) > 0
 	# Fragmento suelto más cercano: se mantiene el elegido mientras siga ahí (sin saltos) y cada
 	# poco se mira si hay otro bastante más cerca.
 	_shard_scan -= delta
@@ -378,13 +385,13 @@ func _place_labels() -> void:
 		_plate.position = _plate.position.round()
 		_plate.size = _plate.size.round()
 		return
-	_dist.position = _clamp_label(_dist, _screen + Vector2(0, GEM_LIFT + 11))
+	_dist.position = _clamp_label(_dist, _screen + Vector2(0, GEM_LIFT + 12))
 	var tag_on: bool = _tag.text != "" and (_urgent or _tag_t > 0.0)
 	if tag_on:
 		_tag.visible = true
 		_tag.add_theme_color_override(&"font_color", col)
 		_tag.modulate.a = _alpha * (1.0 if _urgent else clampf(_tag_t / 0.6, 0.0, 1.0))
-		_tag.position = _clamp_label(_tag, _screen + Vector2(0, GEM_LIFT - 22 - roundf(_pop * 3.0)))
+		_tag.position = _clamp_label(_tag, _screen + Vector2(0, GEM_LIFT - 23 - roundf(_pop * 3.0)))
 
 
 ## Etiqueta centrada en `at`, pero siempre entera dentro de la pantalla.
@@ -406,7 +413,11 @@ func _project(world: Vector3) -> void:
 	var behind: bool = _camera.is_position_behind(world)
 	var p: Vector2 = _camera.unproject_position(world)
 	_edge = not (
-		not behind and p.x > SIDE and p.x < sz.x - SIDE and p.y > _top and p.y < sz.y - BOTTOM_GAP
+		not behind
+		and p.x > SIDE
+		and p.x < sz.x - SIDE
+		and p.y > _top + STACK_H
+		and p.y < sz.y - BOTTOM_GAP
 	)
 	if not _edge:
 		_screen = p.round()
@@ -446,12 +457,12 @@ func _draw_gem(p: Vector2, col: Color) -> void:
 	var c := Vector2(p.x, p.y + bob)
 	if _urgent:
 		var ph: float = fmod(_t, 1.4) / 1.4
-		_diamond_outline(c, roundi(lerpf(5.0, 13.0, ph)), Color(col, a * (1.0 - ph) * 0.8))
+		_diamond_outline(c, roundi(lerpf(6.0, 15.0, ph)), Color(col, a * (1.0 - ph) * 0.8))
 	# Nunca de canto del todo (una raya de 1 px no se lee como rombo).
-	var half: float = roundf(4.0 * (0.4 + 0.6 * absf(spin)))
+	var half: float = roundf(5.0 * (0.45 + 0.55 * absf(spin)))
 	var light_left: bool = spin > 0.0
-	var top: int = 4
-	var bottom: int = 7
+	var top: int = 5
+	var bottom: int = 9
 	# Sombra (1 px alrededor) y cuerpo, fila a fila.
 	for row: int in range(-top - 1, bottom + 2):
 		var hw: float = _gem_half(row, top + 1, bottom + 1, half + 1.0)

@@ -15,6 +15,13 @@ const LIFT: float = 0.32
 const MOTE_SIZE: float = 0.42
 const PILLAR_W: float = 1.5
 const PILLAR_H: float = 9.0
+## La capa de magia se dibuja encima de las manos: los destellos que caerían sobre ellas se
+## apagan. Columnas de las manos en pantalla (centro x, 0..1), medio ancho en el que se apagan
+## del todo / en el que empiezan a apagarse, y altura (0..1) a partir de la que hay manos.
+const HANDS_X: PackedFloat32Array = [0.30, 0.71]
+const HANDS_HALF_IN: float = 0.075
+const HANDS_HALF_OUT: float = 0.11
+const HANDS_TOP: float = 0.55
 const P_TINT: StringName = &"tint"
 const P_FADE: StringName = &"fade"
 const P_SEED: StringName = &"seed"
@@ -94,6 +101,8 @@ func _update_trail(from: Vector3, to: Vector3, col: Color) -> void:
 	var avoid: float = WorldLayout.CRYSTAL_FOOTPRINT + 3.0
 	var outside: bool = Vector2(from.x, from.z).length() > avoid
 	var flow: float = fmod(_t * FLOW, SPACING)
+	var cam: Camera3D = get_viewport().get_camera_3d()
+	var screen: Vector2 = get_viewport().get_visible_rect().size
 	for i: int in MOTES:
 		var m: MeshInstance3D = _motes[i]
 		var d: float = float(i) * SPACING + flow + 1.2
@@ -115,10 +124,21 @@ func _update_trail(from: Vector3, to: Vector3, col: Color) -> void:
 		m.global_position = p
 		# Aparece delante del mago, se apaga al final de la estela y respira con el flujo.
 		var k: float = smoothstep(2.2, 4.8, d) * (1.0 - smoothstep(length - 4.0, length, d))
+		if cam:
+			k *= 1.0 - _over_hands(cam.unproject_position(p) / screen)
 		m.scale = Vector3.ONE * MOTE_SIZE * (0.75 + 0.35 * absf(sin(float(i) * 2.17)))
 		m.set_instance_shader_parameter(P_FADE, k * _trail_k)
 		m.set_instance_shader_parameter(P_TINT, col)
 		m.visible = true
+
+
+## Cuánto cae un punto de la pantalla (0..1 en x e y) encima de las manos (0..1).
+static func _over_hands(uv: Vector2) -> float:
+	var below: float = smoothstep(HANDS_TOP, HANDS_TOP + 0.06, uv.y)
+	var k: float = 0.0
+	for cx: float in HANDS_X:
+		k = maxf(k, 1.0 - smoothstep(HANDS_HALF_IN, HANDS_HALF_OUT, absf(uv.x - cx)))
+	return k * below
 
 
 func _update_beacon(to: Vector3, col: Color) -> void:

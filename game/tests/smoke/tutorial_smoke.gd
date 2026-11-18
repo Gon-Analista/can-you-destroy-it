@@ -132,6 +132,11 @@ func _initialize() -> void:
 	await create_timer(0.3).timeout
 	_check(not bool(guide.call(&"has_new_upgrade")), "vista en el Grimorio: ya no es nueva")
 	_check(int(guide.get(&"wanted")) != Guidance.Kind.SANCTUM, "y la guía deja de insistir")
+	# Lo visto se guarda: tras guardar y cargar no vuelve a insistir.
+	var saved: Dictionary = prog.call(&"to_dict")
+	prog.call(&"load_dict", saved)
+	ev.emit_signal(&"mana_changed", int(prog.get(&"mana")))
+	_check(not bool(guide.call(&"has_new_upgrade")), "lo visto en el Grimorio se guarda")
 	print("tutorial_smoke: ", "OK" if _ok else "FALLO")
 	quit(0 if _ok else 1)
 
@@ -172,6 +177,20 @@ func _check_rules() -> void:
 	s.bag = 0
 	s.hopper = 3
 	_check(Guidance.pick(s) == Guidance.Kind.CRUSHER, "regla: tolva sin palanca -> trituradora")
+	_check(Guidance.is_urgent(Guidance.Kind.CRUSHER, s), "regla: la palanca olvidada es urgente")
+	s.auto_lever = true
+	_check(Guidance.pick(s) == Guidance.Kind.NONE, "regla: con recolectores, la palanca es suya")
+	s.auto_lever = false
+	s.direct_send = true
+	s.shard_near = true
+	s.pickup_learned = true
+	_check(Guidance.pick(s) == Guidance.Kind.NONE, "regla: envío directo y recogiendo, nada")
+	s.shard_near = false
+	_check(
+		Guidance.pick(s) == Guidance.Kind.CRUSHER, "regla: envío directo sin nada cerca: palanca"
+	)
+	s.direct_send = false
+	s.pickup_learned = false
 	s.crushing = true
 	_check(Guidance.pick(s) == Guidance.Kind.NONE, "regla: triturando, nada")
 	s.crushing = false

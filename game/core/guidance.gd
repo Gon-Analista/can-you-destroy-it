@@ -32,9 +32,18 @@ class Situation:
 	var new_upgrade: bool = false
 	## Ya sabe recoger (no hace falta llevarlo a cada fragmento).
 	var pickup_learned: bool = false
+	## Hay familiares recolectores: ellos tiran de la palanca cuando la tolva tiene bastante.
+	var auto_lever: bool = false
 
 	func bag_full() -> bool:
 		return not direct_send and bag >= capacity
+
+	## Echó cristales a la tolva y se fue sin tirar de la palanca. Con envío directo la tolva se
+	## llena sola al recoger: sólo se le recuerda cuando ya no queda nada que recoger cerca.
+	func lever_forgotten() -> bool:
+		if hopper <= 0 or bag > 0 or crushing or auto_lever:
+			return false
+		return not (direct_send and shard_near)
 
 
 ## Adónde guiar ahora.
@@ -55,7 +64,7 @@ static func pick(s: Situation) -> int:
 		Phase.EARN:
 			if s.bag_full() or (s.bag > 0 and not s.shard_near):
 				return Kind.CRUSHER
-			if s.hopper > 0 and s.bag == 0 and not s.crushing:
+			if s.lever_forgotten():
 				return Kind.CRUSHER
 			if s.shard_near:
 				return Kind.SHARD
@@ -65,8 +74,7 @@ static func pick(s: Situation) -> int:
 		return Kind.CRUSHER
 	if s.new_upgrade:
 		return Kind.SANCTUM
-	if s.hopper > 0 and s.bag == 0 and not s.crushing:
-		# Echó los cristales y se fue sin tirar de la palanca.
+	if s.lever_forgotten():
 		return Kind.CRUSHER
 	if s.bag > 0 and not s.shard_near:
 		return Kind.CRUSHER
@@ -83,7 +91,7 @@ static func is_urgent(kind: int, s: Situation) -> bool:
 		return true
 	match kind:
 		Kind.CRUSHER:
-			return s.bag_full() or (s.hopper > 0 and s.bag == 0 and not s.crushing)
+			return s.bag_full() or s.lever_forgotten()
 		Kind.SANCTUM:
 			return true
 	return false

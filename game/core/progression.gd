@@ -26,6 +26,9 @@ var tutorial_step: int = 0
 ## Veces que el jugador ya ha hecho cada acción con su tecla (recoger, echar a la tolva, palanca,
 ## abrir el Grimorio...). Con eso el HUD deja de repetir instrucciones que ya se saben.
 var learned: Dictionary[StringName, int] = {}
+## Mejoras pagables que el jugador ya ha visto en el Grimorio: id -> nivel que se ofrecía. La
+## guía sólo lleva al Santuario por las que no ha visto (también tras volver a cargar).
+var seen_upgrades: Dictionary[StringName, int] = {}
 
 
 func _init(p_total_essence: int) -> void:
@@ -171,6 +174,7 @@ func to_dict() -> Dictionary:
 		"hut_door_open": hut_door_open,
 		"tutorial_step": tutorial_step,
 		"learned": learned.duplicate(),
+		"seen_upgrades": seen_upgrades.duplicate(),
 	}
 
 
@@ -193,6 +197,10 @@ func load_dict(data: Dictionary) -> void:
 	var saved_learned: Dictionary = data.get("learned", {})
 	for key: Variant in saved_learned:
 		learned[StringName(str(key))] = maxi(int(saved_learned[key]), 0)
+	seen_upgrades.clear()
+	var saved_seen: Dictionary = data.get("seen_upgrades", {})
+	for key: Variant in saved_seen:
+		seen_upgrades[StringName(str(key))] = maxi(int(saved_seen[key]), 0)
 	geodes.clear()
 	var saved_geodes: Dictionary = data.get("geodes", {})
 	for key: Variant in saved_geodes:
