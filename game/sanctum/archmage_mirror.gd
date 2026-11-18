@@ -150,7 +150,7 @@ func _build_frame() -> void:
 			st,
 			Vector3(side * half, (GLASS_BASE + ARCH_Y) * 0.5, 0.0),
 			Vector3(0.16, ARCH_Y - GLASS_BASE, 0.2),
-			C_GOLD
+			C_GOLD_LIGHT
 		)
 		MeshKit.add_box(
 			st,
@@ -168,7 +168,9 @@ func _build_frame() -> void:
 		var a1: float = PI * float(i + 1) / float(segs)
 		var p0 := Vector3(cos(a0) * half, ARCH_Y + sin(a0) * half, 0.0)
 		var p1 := Vector3(cos(a1) * half, ARCH_Y + sin(a1) * half, 0.0)
-		MeshKit.add_prism(st, p0, p1 - p0, 0.1, p0.distance_to(p1), 0.0, 4, C_GOLD, C_GOLD, _rng)
+		MeshKit.add_prism(
+			st, p0, p1 - p0, 0.1, p0.distance_to(p1), 0.0, 4, C_GOLD_LIGHT, C_GOLD_LIGHT, _rng
+		)
 	# Trasera (oscura) para que el espejo no se vea hueco por detrás.
 	MeshKit.add_box(
 		st, Vector3(0, (GLASS_BASE + ARCH_Y) * 0.5, -0.07), Vector3(half * 2.0, 2.0, 0.06), C_BACK

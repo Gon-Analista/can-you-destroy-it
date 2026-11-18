@@ -109,7 +109,7 @@ func _build() -> void:
 	_circle = HdFx.quad(CIRCLE_SHADER, 5.2, 4)
 	_circle.name = "Circle"
 	_circle_mat = _circle.material_override
-	_circle_mat.set_shader_parameter("intensity", 1.6)
+	_circle_mat.set_shader_parameter("intensity", 1.1)
 	_circle_mat.set_shader_parameter("rune_count", 14.0)
 	_circle.rotation.x = -PI * 0.5
 	_circle.position.y = 0.08
