@@ -76,6 +76,8 @@ var _beam: ConvergenceBeam
 var _loop: AudioStreamPlayer
 var _motes: Array[MeshInstance3D] = []
 var _mote_mats: Array[ShaderMaterial] = []
+## Brillo de cada mota (destella al asignarse o al encajar su etapa y vuelve a su sitio).
+var _mote_glow: PackedFloat32Array = []
 var _assigned: int = 0
 var _assign_t: float = 0.0
 var _time: float = 0.0
@@ -119,6 +121,7 @@ func _ready() -> void:
 			camera.add_child(q)
 			_motes.append(q)
 			_mote_mats.append(m)
+			_mote_glow.append(1.6)
 	Events.menu_opened.connect(_cancel)
 	Events.grimoire_opened.connect(_cancel)
 
@@ -307,8 +310,8 @@ func _update_assign(delta: float) -> void:
 	AudioDirector.play_sfx(ASSIGN_SFX[_assigned], -8.0)
 	if hands:
 		hands.play_switch(_assigned % 2)
-	_mote_mats[_assigned].set_shader_parameter("intensity", 4.0)
-	_mote_mats[_assigned + STAGES].set_shader_parameter("intensity", 4.0)
+	_mote_glow[_assigned] = 4.0
+	_mote_glow[_assigned + STAGES] = 4.0
 	_assigned += 1
 	_assign_t = ASSIGN_GAP
 
@@ -324,8 +327,8 @@ func _update_charge(delta: float) -> void:
 	var stage: int = _stages.advance(k)
 	if stage > 0:
 		_feedback.stage(stage, STAGES, false)
-		_mote_mats[stage - 1].set_shader_parameter("intensity", 6.0)
-		_mote_mats[stage - 1 + STAGES].set_shader_parameter("intensity", 6.0)
+		_mote_glow[stage - 1] = 6.0
+		_mote_glow[stage - 1 + STAGES] = 6.0
 	_loop.pitch_scale = lerpf(0.8, 1.35, float(_stages.reached) / STAGES + k * 0.1)
 	_loop.volume_db = lerpf(-20.0, -4.0, k)
 	if hands:
@@ -378,9 +381,8 @@ func _update_motes(delta: float) -> void:
 		var world: Vector3 = camera.project_position(center + off, depth * (1.0 + 0.08 * front))
 		q.position = camera.to_local(world)
 		q.scale = Vector3.ONE * lerpf(0.65, 1.15, front) * (1.0 + 0.6 * k)
-		var m: ShaderMaterial = _mote_mats[i]
-		var it: float = float(m.get_shader_parameter("intensity"))
-		m.set_shader_parameter("intensity", move_toward(it, 1.6 + 1.6 * k, delta * 6.0))
+		_mote_glow[i] = move_toward(_mote_glow[i], 1.6 + 1.6 * k, delta * 6.0)
+		_mote_mats[i].set_shader_parameter("intensity", _mote_glow[i])
 
 
 func _hide_motes() -> void:

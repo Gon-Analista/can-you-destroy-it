@@ -20,7 +20,7 @@ const COUNT_SEC: float = 1.6
 # i18n
 const CREDITS: PackedStringArray = [
 	"CAN YOU DESTROY IT?",
-	"Diseño, código, arte 3D, música y sonido: generados en este repositorio",
+	"Diseño, programación, arte 3D, música y sonido: el equipo del juego",
 	"Manos y orbe mágico: Sprite AI",
 	"Fuentes: Fusion Pixel (TakWolf, OFL) y Pixelify Sans (OFL)",
 	"Hecho con Godot Engine (MIT)",
@@ -207,8 +207,12 @@ func _ask_new_game() -> void:
 
 
 func _refresh_buttons() -> void:
-	if _new_game:
-		_new_game.text = tr("¿SEGURO? OTRA VEZ") if _confirm else tr("NUEVA PARTIDA")
+	# i18n
+	var keys: PackedStringArray = ["CRÉDITOS", "SEGUIR EN EL VALLE", "NUEVA PARTIDA"]
+	for i: int in mini(keys.size(), _buttons.get_child_count()):
+		(_buttons.get_child(i) as Button).text = tr(keys[i])
+	if _new_game and _confirm:
+		_new_game.text = tr("¿SEGURO? OTRA VEZ")
 
 
 func _button(text: String, action: Callable) -> Button:
