@@ -318,9 +318,14 @@ func _process(delta: float) -> void:
 	_walk_phase += delta * move_speed * 1.7
 	_ready_pop = maxf(0.0, _ready_pop - delta * 3.0)
 	_stage_glow = maxf(0.0, _stage_glow - delta * 3.5)
-	for side: int in 2:
-		_spring_kick(side, delta)
-	_grab = _spring_grab(_grab, delta)
+	# Muelles en pasos de 1/60 s como mucho: con fotogramas largos (un tirón, < 12 fps) el paso
+	# entero se volvía inestable y las manos salían a NaN.
+	var steps: int = clampi(ceili(delta * 60.0), 1, 8)
+	var dt: float = delta / float(steps)
+	for i: int in steps:
+		for side: int in 2:
+			_spring_kick(side, dt)
+		_grab = _spring_grab(_grab, dt)
 	var join_target: float = 1.0 if _combining else 0.0
 	_join = move_toward(_join, join_target, delta * JOIN_SPEED * (1.0 if _combining else 0.6))
 	var join_eased: float = smoothstep(0.0, 1.0, _join)
