@@ -129,6 +129,7 @@ func debug_convergence() -> void:
 func demo_complete() -> void:
 	if not GameState.progression.game_complete:
 		_complete_state()
+		GameState.progression.ending_seen = true
 		_reveal.vanish()
 		_restore_complete()
 
@@ -307,8 +308,10 @@ func _restore_complete() -> void:
 	AudioDirector.set_music_layers(5, 0.1)
 	_suppress_guide.call_deferred()
 	if not prog.ending_seen:
-		# Se salió durante la fiesta: la pantalla final, en cuanto se cierre el título.
+		# Se salió durante la fiesta: la pantalla final, en cuanto se cierre el título (o enseguida
+		# si no hay título).
 		_screen_pending = true
+		get_tree().create_timer(1.0, false).timeout.connect(_show_pending)
 
 
 func _suppress_guide() -> void:
@@ -320,13 +323,18 @@ func _suppress_guide() -> void:
 ## propia música).
 func _on_menu_closed() -> void:
 	var prog: Progression = GameState.progression
-	if _screen_pending and prog.game_complete and not _screen.is_open():
-		_screen_pending = false
-		get_tree().create_timer(1.5, false).timeout.connect(show_final_screen)
+	if _screen_pending:
+		get_tree().create_timer(1.5, false).timeout.connect(_show_pending)
 		return
 	if GameState.core_exposed and not prog.game_complete and not _screen.is_open():
 		if _reveal.state == CoreReveal.State.EXPOSED:
 			AudioDirector.play_theme(TENSION_MUSIC, -7.0)
+
+
+func _show_pending() -> void:
+	if _screen_pending and not _hud.menu.is_open() and not _screen.is_open():
+		_screen_pending = false
+		show_final_screen()
 
 
 func _on_continue() -> void:

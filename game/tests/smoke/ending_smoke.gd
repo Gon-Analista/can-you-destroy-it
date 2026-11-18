@@ -189,6 +189,7 @@ func _world(gs: Node, main: Node) -> void:
 		await create_timer(0.5).timeout
 		waited += 0.5
 	_check(bool(screen.call(&"is_open")), "la pantalla final")
+	_check(prog.ending_seen, "la pantalla final queda vista (se guarda)")
 	await create_timer(2.5).timeout
 	var title: Label = screen.get(&"_title")
 	_check(title.text == "Yes, you could.", "Yes, you could. (%s)" % title.text)
@@ -200,6 +201,8 @@ func _world(gs: Node, main: Node) -> void:
 func _reload(gs: Node) -> void:
 	var prog: Progression = gs.get(&"progression")
 	_check(prog.game_complete, "la partida sigue terminada")
+	# Como si se hubiera salido durante la fiesta, sin ver la pantalla final.
+	prog.ending_seen = false
 	reload_current_scene()
 	await _settle()
 	var world: Node = current_scene.get_node(^"WorldView/WorldViewport")
@@ -213,6 +216,12 @@ func _reload(gs: Node) -> void:
 		int((current_scene.get_node(^"EndingDirector").call(&"convergence")).get(&"state")) == 0,
 		"la Gran Convergencia ya no se arma"
 	)
+	var screen: Node = current_scene.get_node(^"EndingDirector").call(&"screen")
+	var waited: float = 0.0
+	while not bool(screen.call(&"is_open")) and waited < 5.0:
+		await create_timer(0.25).timeout
+		waited += 0.25
+	_check(bool(screen.call(&"is_open")), "salió durante la fiesta: la pantalla final al cargar")
 	gs.call(&"reset")
 
 
