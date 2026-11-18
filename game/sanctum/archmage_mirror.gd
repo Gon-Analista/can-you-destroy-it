@@ -16,6 +16,7 @@ const C_GOLD := Color("#d8a23a")
 const C_GOLD_LIGHT := Color("#ffd27a")
 const C_GOLD_DARK := Color("#7a4f17")
 const C_BACK := Color("#2a1d4a")
+const C_NIGHT := Color("#0c1238")
 ## Cristal (m): ancho, alto desde su base, altura de su base y del centro del arco.
 const GLASS_W: float = 1.32
 const GLASS_H: float = 2.74
@@ -118,7 +119,8 @@ func _process(delta: float) -> void:
 ## Colores del cristal, luz y escudo del rango `rank`.
 func show_rank(rank: int) -> void:
 	var def: RankDef = WizardRanks.def_of(rank)
-	_glass_mat.set_shader_parameter("color_deep", def.color_dark.darkened(0.55))
+	# Fondo de noche estrellada con un poco del rango; la niebla, del color del rango.
+	_glass_mat.set_shader_parameter("color_deep", C_NIGHT.lerp(def.color_dark, 0.3))
 	_glass_mat.set_shader_parameter("color_mid", def.color_dark.lerp(def.color, 0.45))
 	_glass_mat.set_shader_parameter("color_light", def.color_light)
 	_crest.texture = RankCrest.texture(rank)

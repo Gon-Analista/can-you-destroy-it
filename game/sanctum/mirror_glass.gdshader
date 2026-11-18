@@ -61,10 +61,11 @@ void fragment() {
 	float h = hash(cell);
 	float tw = step(0.985, h) * step(0.5, fract(h * 37.0 + t * 0.7));
 	col = mix(col, vec3(1.0), tw * 0.8);
-	// Brillo diagonal que cruza el cristal cada 5 s.
-	float sweep = fract(t / 5.0) * 2.4 - 0.7;
-	float glint = 1.0 - smoothstep(0.0, 0.05, abs(uv.x + uv.y * 0.35 - sweep));
-	col += vec3(0.25) * glint;
+	// Brillo diagonal que cruza deprisa el cristal cada 6 s (dos franjas, ancha y fina).
+	float sweep = fract(t / 6.0) * 6.0 - 1.0;
+	float d = uv.x + uv.y * 0.35 - sweep;
+	float glint = step(abs(d), 0.07) * 0.18 + step(abs(d - 0.12), 0.02) * 0.14;
+	col += color_light.rgb * glint;
 	// Más oscuro en los bordes (el marco hace sombra).
 	float arch_d = m.y > arch_y ? arch_r - length(m - vec2(0.0, arch_y)) : 1.0;
 	float edge_m = min(min(m.x + size_m.x * 0.5, size_m.x * 0.5 - m.x), min(m.y, arch_d));
