@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="CritterDef" format=3]
+
+[ext_resource type="Script" path="res://data/defs/critter_def.gd" id="1_cdef"]
+
+[resource]
+script = ExtResource("1_cdef")
+id = &"dienton"
+display_name = "Dientón"
+shape = 1
+gait = 1
+size = 1.25
+body_color = Color(1, 0.5412, 0.1647, 1)
+belly_color = Color(1, 0.7529, 0.4706, 1)
+accent_color = Color(0.2471, 0.6824, 0.2353, 1)
+goo_color = Color(1, 0.2314, 0.1843, 1)
+cheek_color = Color(1, 0.4784, 0.851, 1)
+eye_radius = 0.14
+pupil_ratio = 0.5
+eye_wobble = 1.0
+walk_speed = 0.55
+flee_speed = 2.6
+hop_height = 0.2
+hop_sec = 0.4
+idle_min_sec = 1.8
+idle_max_sec = 4.5
+voice_pitch = 0.85
+emotes = PackedInt32Array(0, 1, 2, 3)
+weight = 1.1
+min_pylon = 0.0
+splinters = 2
+chunks = 11
+drops_tooth = true
+drops_bone = false

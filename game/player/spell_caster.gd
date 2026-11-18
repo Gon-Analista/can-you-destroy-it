@@ -225,12 +225,12 @@ func charge_stages() -> ChargeStages:
 	return _stages
 
 
-## Punto al que se apunta (rayo por el centro de la pantalla), y su colisionador.
+## Punto al que se apunta (rayo por el centro de la pantalla), y su colisionador (o un bicho).
 func _aim() -> Dictionary:
 	var from_cam: Vector3 = camera.global_position
 	var forward: Vector3 = -camera.global_basis.z
 	var query := PhysicsRayQueryParameters3D.create(
-		from_cam, from_cam + forward * RAY_LENGTH, 1 | (1 << 1)
+		from_cam, from_cam + forward * RAY_LENGTH, 1 | (1 << 1) | Critter.LAYER
 	)
 	var result: Dictionary = camera.get_world_3d().direct_space_state.intersect_ray(query)
 	if result.is_empty():
@@ -843,7 +843,7 @@ func _update_beam(delta: float) -> void:
 		crystal.draw_beam(origin, aim["position"], _beam_hit.recipe.circle_color)
 	if _beam_tick <= 0.0:
 		_beam_tick = BEAM_TICK
-		var collider: Object = aim["collider"]
+		var collider: Object = null if CritterHerd.beam(_beam_hit, aim) else aim["collider"]
 		if collider is Node and (collider as Node).has_meta(&"mother_crystal"):
 			var sub := SpellHit.new()
 			sub.tier = _beam_hit.tier
@@ -956,7 +956,7 @@ func warm_up(target: Vector3) -> void:
 
 
 func _on_projectile_arrived(projectile: SparkProjectile) -> void:
-	if projectile.hit.warmup:
+	if projectile.hit.warmup or CritterHerd.intercept(projectile.hit, projectile.target_collider):
 		return
 	var collider: Object = projectile.target_collider
 	if collider is Node and (collider as Node).has_meta(&"mother_crystal"):
