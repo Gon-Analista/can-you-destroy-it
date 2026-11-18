@@ -212,20 +212,25 @@ func setup(sun: DirectionalLight3D, env: Environment) -> void:
 	_apply()
 
 
-## Sombras del sol estables a cualquier hora (el sol recorre todo el cielo, de rasante a casi
-## vertical):
+## Sombras del sol estables a cualquier hora (el sol va de rasante a alto):
 ## - Caras traseras en el mapa de sombras (`shadow_reverse_cull_face`). Con el sol alto, la
-##   normal_bias de Godot se anula (escala con 1 - N·L) y el suelo se sombreaba a sí mismo
-##   ("acné"): rayas y moiré en la hierba, puntos en las losas, y como el reparto de cascadas
-##   sigue a la cámara, se movían con cada sacudida o golpe de FOV al lanzar hechizos. Así
-##   ninguna malla cerrada se sombrea a sí misma y las sombras de verdad (postes, casucha,
-##   cristal, fragmentos) siguen igual.
+##   normal_bias de Godot se queda en casi nada (escala con 1 - N·L) y el suelo se sombreaba
+##   a sí mismo ("acné"): rayas y moiré en la hierba, puntos en las losas, y como el reparto
+##   de cascadas sigue a la cámara, se movían con cada sacudida o golpe de FOV al lanzar
+##   hechizos. Así ninguna malla cerrada se sombrea a sí misma y las sombras de verdad
+##   (postes, casucha, cristal, fragmentos) siguen igual.
 ## - Sin "pancaking" (`directional_shadow_pancake_size = 0`): con el sol bajo, aplastar en el
 ##   plano cercano las mallas enormes (suelo de 480 m, montañas) tapaba todo el valle y al
 ##   amanecer el suelo se quedaba negro de golpe.
+## - Cascadas más juntas cerca (10, 29 y 96 m de 240, antes 24, 48 y 120): con el sol bajo de
+##   la mañana y la tarde las sombras se estiran por el suelo, y a 24 m la primera cascada
+##   dejaba el borde en dientes de sierra a los pies del mago. Mismo coste.
 func _setup_sun_shadows(sun: DirectionalLight3D) -> void:
 	sun.shadow_reverse_cull_face = true
 	sun.directional_shadow_pancake_size = 0.0
+	sun.directional_shadow_split_1 = 0.04
+	sun.directional_shadow_split_2 = 0.12
+	sun.directional_shadow_split_3 = 0.4
 
 
 func _loop_player(stream: AudioStream) -> AudioStreamPlayer:
@@ -295,11 +300,15 @@ func _apply() -> void:
 		get_tree().call_group(&"night_listeners", &"set_night", night)
 
 
-## Dirección hacia el sol: gira alrededor de un eje horizontal y pasa a mediodía por NOON_SUN.
+## Dirección hacia el sol: recorre un círculo máximo inclinado que sale por el horizonte a las
+## 0,25 (amanecer), pasa a mediodía por NOON_SUN y se pone a las 0,75, a la vez que los colores
+## del cielo de KEYS. (Girarlo en el plano vertical de NOON_SUN lo sacaba a las 0,39: la partida
+## empezaba a la luz de la luna con el cielo de día, y el sol pasaba casi por el cénit.)
 func _sun_dir(t: float) -> Vector3:
 	var noon: Vector3 = NOON_SUN.normalized()
-	var flat := Vector3(noon.x, 0.0, noon.z).normalized()
-	var axis: Vector3 = flat.cross(Vector3.UP).normalized()
+	# Punto del horizonte por donde sale: horizontal y a 90° del sol de mediodía.
+	var rise := Vector3(noon.z, 0.0, -noon.x).normalized()
+	var axis: Vector3 = rise.cross(noon).normalized()
 	return noon.rotated(axis, (t - 0.5) * TAU)
 
 
