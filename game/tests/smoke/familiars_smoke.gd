@@ -32,12 +32,15 @@ func _initialize() -> void:
 	await process_frame
 	_check(int(flock.call(&"active_count", 0)) == 2, "dos recolectores")
 	_check(nest.visible, "la jaula aparece")
-	# Fragmentos sueltos por el suelo, lejos del jugador.
+	# Fragmentos sueltos por el suelo, lejos del jugador: dos viajes llenos (uno por recolector) y
+	# tres más, que quedan por debajo de `lever_at` y hay que triturar igual.
+	var per_trip: int = mini(6, int(load("res://data/familiars/collector.tres").get(&"carry")))
+	var loose: int = 2 * per_trip + 3
 	var pool: Node3D = current_scene.get_tree().get_first_node_in_group(&"shard_pool")
 	var shard_type: Resource = load("res://data/shards/shard.tres")
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
-	for i: int in 10:
+	for i: int in loose:
 		var p := Vector3(rng.randf_range(-26.0, -14.0), 1.5, rng.randf_range(46.0, 54.0))
 		pool.call(&"spawn", p, Vector3.UP, shard_type, 1, 0.2)
 	var mana0: int = int(prog.get(&"mana"))
@@ -64,12 +67,14 @@ func _initialize() -> void:
 		await process_frame
 		t += current_scene.get_process_delta_time()
 		if (
-			int(flock.get(&"dropped")) >= 10
+			int(flock.get(&"dropped")) >= loose
 			and int(crusher.call(&"queued_count")) == 0
 			and not bool(crusher.call(&"is_busy"))
 		):
 			break
-	_check(int(flock.get(&"dropped")) >= 10, "recogen los diez (%d)" % flock.get(&"dropped"))
+	_check(
+		int(flock.get(&"dropped")) >= loose, "recogen los %d (%d)" % [loose, flock.get(&"dropped")]
+	)
 	_check(
 		int(crusher.call(&"queued_count")) == 0 and int(flock.get(&"pulls")) >= 2,
 		"y trituran los últimos aunque sean pocos (%d tirones)" % flock.get(&"pulls")

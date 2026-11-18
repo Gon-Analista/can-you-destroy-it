@@ -41,6 +41,8 @@ const PAGE_TITLES: PackedStringArray = [
 	"CONSTELACIÓN DEL ARCANO",
 ]
 const TAB_W: int = 36
+## La estrella crece un píxel por nivel hasta este tope (Pureza, con 12, taparía su nombre).
+const STAR_GROW_MAX: int = 6
 
 const C_INK := Color("#2a1d4a")
 const C_INK_SOFT := Color("#6a5a86")
@@ -806,7 +808,7 @@ func _draw_star(i: int, c: Vector2) -> void:
 		col = C_LOCKED
 	elif level > 0:
 		col = Color("#c79bff")
-	var r: int = 2 + level
+	var r: int = 2 + mini(level, STAR_GROW_MAX)
 	var flash: float = _flash_t[i]
 	if flash > 0.0:
 		col = col.lerp(Color.WHITE, flash)

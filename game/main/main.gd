@@ -108,6 +108,12 @@ func _setup_autoplay() -> void:
 			for i: int in int(a.get_slice("=", 1)):
 				GameState.progression.collect_shard(&"splinter")
 			GameState.emit_all()
+		elif a.begins_with("--levels="):
+			# --levels=N: todas las mejoras a ese nivel (o a su máximo), para ver el Grimorio lleno.
+			var lv: int = int(a.get_slice("=", 1))
+			for node: UpgradeNode in GameState.UPGRADES:
+				GameState.progression.upgrade_levels[node.id] = mini(lv, node.get_max_level())
+			GameState.emit_all()
 		elif a.begins_with("--hands="):
 			# --hands=0,4: elemento de cada mano (índices de SpellCaster.ELEMENTS: 0 Chispa,
 			# 1 Escarcha, 2 Rayo, 3 Tierra, 4 Arcano); despierta la Escarcha y los de las manos.

@@ -53,6 +53,7 @@ P = dict(PROFILES["eficiente"])
 # a unos 40 m del centro, la misma de SANCTUM_EXTRA) hay unos 41 m andando y unos 45 m de vuelo.
 CRUSHER_DIST = 41.0  # del cristal a la trituradora
 FAMILIAR_DIST = 45.0  # de la tolva a donde caen los fragmentos
+FAMILIAR_MAX_CARRY = 6  # familiar.gd MAX_CARRY
 SANCTUM_EXTRA = 94.0  # trituradora -> Santuario -> cristal, lo que se añade al viaje
 FEED_START, FEED_MIN, FEED_RAMP = 0.4, 0.09, 2.4
 LEVER_SEC = 1.0
@@ -861,7 +862,8 @@ class Game:
         carry_rate = 0.0
         if collectors:
             f = self.familiars.get("collector", {})
-            carry = int(f.get("carry", 3)) + wing_lv
+            # familiar.gd capacity(): carry + nivel de Alas, como mucho MAX_CARRY (6).
+            carry = min(FAMILIAR_MAX_CARRY, int(f.get("carry", 3)) + wing_lv)
             speed = float(f.get("fly_speed", 7.0)) * wings
             # Ida y vuelta tolva <-> cristal (en arco, un 20 % más largo) y recoger/soltar cada uno.
             trip = 2 * FAMILIAR_DIST * 1.2 / speed
