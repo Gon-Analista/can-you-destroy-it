@@ -126,12 +126,14 @@ void fragment() {
 	// --- Capas de color nítidas: contorno rojo oscuro, rojo, naranja, amarillo anaranjado,
 	// amarillo y, en el centro, el núcleo blanco pequeño (el único que florece).
 	float a0 = band(m, 0.0);
-	vec3 c0 = texture(ramp, vec2(1.0, 0.5)).rgb * 0.8;
+	// Los tonos se avivan en lineal (a la pantalla llegan en sRGB, mucho más claros): sin esto el
+	// rojo salía naranja, el naranja ámbar y el amarillo crema, y la bola parecía de melocotón.
+	vec3 c0 = pow(texture(ramp, vec2(1.0, 0.5)).rgb, vec3(1.6)) * 0.95;
 	// Rojo, naranja, ámbar y amarillo de verdad (sin el amarillo, todo era una mancha naranja).
-	vec3 c1 = ramp_hue(0.6, 1.0);
-	vec3 c2 = ramp_hue(0.3, 1.2);
-	vec3 c3 = ramp_hue(0.12, 1.5);
-	vec3 c4 = ramp_hue(0.0, 1.5);
+	vec3 c1 = ramp_hue(0.6, 2.0);
+	vec3 c2 = ramp_hue(0.3, 2.2);
+	vec3 c3 = ramp_hue(0.12, 2.6);
+	vec3 c4 = ramp_hue(0.0, 3.5);
 	vec3 col = mix(c0, c1, band(h, 0.06));
 	col = mix(col, c2, band(h, 0.18));
 	col = mix(col, c3, band(h, 0.33));

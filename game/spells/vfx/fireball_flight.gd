@@ -28,6 +28,9 @@ const GLOW_FROM: float = 22.0
 const LEVEL_GROWTH: float = 0.35
 ## Cuerpo respecto al orbe de la mano (las lenguas y la corona lo agrandan).
 const BODY_SCALE: float = 0.8
+## Tamaño extra al salir de las manos para empalmar con la bola que había entre ellas (que lleva
+## lenguas y destellos alrededor); se pierde al alejarse.
+const HAND_MATCH: float = 1.8
 
 var _ball: Node3D
 var _body_mat: ShaderMaterial
@@ -117,7 +120,10 @@ func launch(size: float, level: float) -> void:
 func set_view_scale(s: float, final_scale: float) -> void:
 	# Con el nivel, hasta un tercio más grande.
 	var lv: float = 1.0 + _level * LEVEL_GROWTH
-	_ball.scale = Vector3.ONE * _base * s * lv
+	# Sale del tamaño de la bola de las manos (sin el salto al soltar) y se ajusta a su tamaño de
+	# vuelo mientras se aleja.
+	var far: float = smoothstep(1.0, maxf(final_scale * 0.5, 1.5), s)
+	_ball.scale = Vector3.ONE * _base * s * lerpf(HAND_MATCH, lv, far)
 	# Las bocanadas nacen casi del tamaño de la bola ya lejos y menguan: la cola se afila.
 	var puff: float = _base * final_scale * lv * BODY_RADIUS * 2.0
 	# Sólo si cambia (al salir de la mano): tocar el material cada fotograma lo rehace.
