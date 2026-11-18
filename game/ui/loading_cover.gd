@@ -3,8 +3,6 @@ extends Control
 ## Pantalla de carga: tapa el juego mientras se precalientan los efectos (ver Main._warm_up) y
 ## se desvanece al terminar. Título, estrella que gira y puntos que avanzan.
 
-const FONT_SMALL: FontFile = preload("res://ui/fonts/silkscreen_regular.woff2")
-const FONT_BOLD: FontFile = preload("res://ui/fonts/pixelify_sans_bold.woff2")
 const C_BG := Color("#14183a")
 const C_GOLD := Color("#ffd27a")
 const C_PINK := Color("#ff7ad9")
@@ -19,8 +17,10 @@ var _sub: Label
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	_title = _label("CAN YOU DESTROY IT?", FONT_BOLD, 32, C_GOLD, Rect2(0, 140, 640, 40))
-	_sub = _label("PREPARANDO LA MAGIA", FONT_SMALL, 8, C_CYAN, Rect2(0, 190, 640, 10))
+	_title = _label("CAN YOU DESTROY IT?", UiFonts.LOGO, 33, C_GOLD, Rect2(0, 140, 640, 40))
+	_sub = _label(
+		"PREPARANDO LA MAGIA", UiFonts.BOLD, UiFonts.SMALL, C_CYAN, Rect2(0, 190, 640, UiFonts.LINE)
+	)
 
 
 ## Empieza a desvanecerse; se borra sola al terminar.
@@ -53,7 +53,7 @@ func _draw() -> void:
 		draw_rect(Rect2(c.x - w, c.y + k, w * 2 + 1, 1), col)
 
 
-func _label(text: String, font: FontFile, font_size: int, color: Color, r: Rect2) -> Label:
+func _label(text: String, font: Font, font_size: int, color: Color, r: Rect2) -> Label:
 	var l := Label.new()
 	l.text = tr(text)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

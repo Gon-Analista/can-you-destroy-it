@@ -6,8 +6,6 @@ extends Control
 ## los números ruedan, la barra destella con cada entrega, la bolsa llena late en oro.
 ## Dibujado a píxel entero con las fuentes pixel del HUD.
 
-const FONT_SMALL: FontFile = preload("res://ui/fonts/silkscreen_regular.woff2")
-const FONT_BOLD: FontFile = preload("res://ui/fonts/pixelify_sans_bold.woff2")
 const BAG_FULL_SFX: AudioStream = preload("res://audio/sfx/sfx_bag_full_01.ogg")
 const AVAILABLE_SFX: AudioStream = preload("res://audio/sfx/sfx_spark_ready_01.ogg")
 const C_TEXT := Color("#f2f6ff")
@@ -19,7 +17,15 @@ const C_PINK := Color("#ff7ad9")
 const C_VIOLET := Color("#c79bff")
 const C_DEEP := Color("#654fae")
 const C_FRAME := Color("#2a43a7")
-const BAR := Rect2i(8, 16, 152, 8)
+const BAR := Rect2i(8, 17, 152, 8)
+const SMALL: int = UiFonts.SMALL
+const LINE: int = UiFonts.LINE
+## Ancho de las etiquetas de los marcadores (Trituradora, Mejora).
+const TAG_W: float = 160.0
+## Los marcadores no suben de aquí (arriba están la esencia y el Pilón).
+const MARKER_TOP: float = 56.0
+## Altura de la línea del maná (y de su gota).
+const MANA_Y: int = 336
 const MANA_ICON: PackedStringArray = [
 	"...#....", "..###...", "..###...", ".##+##..", ".#+####.", ".#+####.", "..####..", "........"
 ]
@@ -71,19 +77,19 @@ var _sanctum_edge: bool = false
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_pylon_title = _label("PILÓN DE MANÁ", 8, C_CYAN, Rect2(8, 4, 152, 10), 0)
-	_pylon_pct = _label("", 8, C_TEXT, Rect2(8, 26, 152, 10), 0)
-	_mana = _label("", 16, C_TEXT, Rect2(452, 334, 176, 20), 2, true)
-	_mana_gain = _label("", 8, C_PINK, Rect2(452, 304, 176, 10), 2)
-	_bag = _label("", 8, C_TEXT, Rect2(428, 316, 200, 10), 2)
-	_hint = _label("", 16, C_GOLD, Rect2(70, 236, 500, 20), 1, true)
-	_hint.pivot_offset = Vector2(250, 10)
+	_pylon_title = _label("PILÓN DE MANÁ", SMALL, C_CYAN, Rect2(8, 3, 152, LINE), 0)
+	_pylon_pct = _label("", SMALL, C_TEXT, Rect2(8, 29, 152, LINE), 0)
+	_mana = _label("", UiFonts.HEAD, C_TEXT, Rect2(452, MANA_Y, 176, UiFonts.HEAD_LINE), 2, true)
+	_mana_gain = _label("", SMALL, C_PINK, Rect2(452, 302, 176, LINE), 2)
+	_bag = _label("", SMALL, C_TEXT, Rect2(428, 314, 200, LINE), 2)
+	_hint = _label("", UiFonts.HEAD, C_GOLD, Rect2(20, 236, 600, UiFonts.HEAD_LINE), 1, true)
+	_hint.pivot_offset = Vector2(300, 7)
 	_hint.visible = false
-	_prompt = _label("", 8, C_GOLD, Rect2(120, 214, 400, 10), 1)
-	_pylon_tag = _label("", 8, C_PINK, Rect2(0, 0, 120, 10), 1)
-	_hand_tags.append(_label("", 8, C_TEXT, Rect2(8, 300, 160, 10), 0))
-	_hand_tags.append(_label("", 8, C_TEXT, Rect2(472, 300, 160, 10), 2))
-	_sanctum_tag = _label("", 8, C_GOLD, Rect2(0, 0, 120, 10), 1)
+	_prompt = _label("", SMALL, C_GOLD, Rect2(70, 214, 500, LINE), 1)
+	_pylon_tag = _label("", SMALL, C_PINK, Rect2(0, 0, TAG_W, LINE), 1)
+	_hand_tags.append(_label("", SMALL, C_TEXT, Rect2(8, 298, 160, LINE), 0))
+	_hand_tags.append(_label("", SMALL, C_TEXT, Rect2(472, 298, 160, LINE), 2))
+	_sanctum_tag = _label("", SMALL, C_GOLD, Rect2(0, 0, TAG_W, LINE), 1)
 	Events.shard_delivered.connect(_on_delivered)
 	Events.bag_changed.connect(func(_c: int, _cap: int) -> void: _bag_punch = 1.0)
 	Events.bag_full.connect(_on_bag_full)
@@ -162,11 +168,11 @@ func _process(delta: float) -> void:
 	_mana.text = Hud.format_int(roundi(_shown_mana))
 	_mana_punch = maxf(0.0, _mana_punch - delta * 5.0)
 	_mana.add_theme_color_override(&"font_color", C_TEXT.lerp(C_PINK, _mana_punch))
-	_mana.position.y = 334 - roundi(_mana_punch * 2.0)
+	_mana.position.y = MANA_Y - roundi(_mana_punch * 2.0)
 	_gain_t = maxf(0.0, _gain_t - delta)
 	_mana_gain.visible = _gain_t > 0.0
 	_mana_gain.text = "+%s" % Hud.format_int(_gain)
-	_mana_gain.position.y = 304 - roundi((1.2 - _gain_t) * 6.0)
+	_mana_gain.position.y = 302 - roundi((1.2 - _gain_t) * 6.0)
 	# Bolsa.
 	var count: int = prog.bag_count()
 	var cap: int = GameState.bag_capacity()
@@ -259,12 +265,20 @@ func _update_markers(count: int, full: bool) -> void:
 		var r: Array = _to_screen(_pylon_marker)
 		_pylon_screen = r[0]
 		_pylon_edge = r[1]
-		_pylon_tag.position = (_pylon_screen + Vector2(-60, 8)).round()
+		_pylon_tag.position = _tag_position(_pylon_tag, _pylon_screen)
 	if _sanctum_tag.visible:
 		var r: Array = _to_screen(_sanctum_marker)
 		_sanctum_screen = r[0]
 		_sanctum_edge = r[1]
-		_sanctum_tag.position = (_sanctum_screen + Vector2(-60, 8)).round()
+		_sanctum_tag.position = _tag_position(_sanctum_tag, _sanctum_screen)
+
+
+## Etiqueta centrada bajo el marcador, pero siempre entera dentro de la pantalla (en el borde,
+## el texto se cortaba).
+func _tag_position(tag: Label, at: Vector2) -> Vector2:
+	var slack: float = (TAG_W - _text_w(tag)) * 0.5
+	var x: float = clampf(at.x - TAG_W * 0.5, 4.0 - slack, size.x - 4.0 - TAG_W + slack)
+	return Vector2(x, at.y + 8.0).round()
 
 
 ## Proyecta un punto del mundo a la pantalla. Si queda fuera (o detrás), lo pega al borde.
@@ -275,7 +289,7 @@ func _to_screen(world: Vector3) -> Array:
 	var behind: bool = _camera.is_position_behind(world)
 	var p: Vector2 = _camera.unproject_position(world)
 	var inside: bool = (
-		not behind and p.x > margin and p.x < sz.x - margin and p.y > margin and p.y < sz.y - 40
+		not behind and p.x > margin and p.x < sz.x - margin and p.y > MARKER_TOP and p.y < sz.y - 40
 	)
 	if inside:
 		return [p.round(), false]
@@ -286,8 +300,10 @@ func _to_screen(world: Vector3) -> Array:
 		if dir.length_squared() < 1.0:
 			dir = Vector2.DOWN
 	dir.y = clampf(dir.y, -1e9, 1e9)
-	var half: Vector2 = Vector2(sz.x * 0.5 - margin, sz.y * 0.5 - margin - 20.0)
-	var k: float = minf(half.x / maxf(absf(dir.x), 0.001), half.y / maxf(absf(dir.y), 0.001))
+	var half_x: float = sz.x * 0.5 - margin
+	# Arriba, por debajo de la esencia (no se pisan); abajo, por encima de la bolsa y el maná.
+	var half_y: float = center.y - MARKER_TOP if dir.y < 0.0 else sz.y * 0.5 - margin - 20.0
+	var k: float = minf(half_x / maxf(absf(dir.x), 0.001), half_y / maxf(absf(dir.y), 0.001))
 	return [(center + dir * k).round(), true]
 
 
@@ -295,7 +311,7 @@ func _draw() -> void:
 	if not intro:
 		_draw_pylon_bar()
 	_draw_levitation()
-	_draw_icon(MANA_ICON, Vector2(452 + 176 - _mana_text_width() - 22, 338), 2, C_PINK)
+	_draw_icon(MANA_ICON, Vector2(452 + 176 - _mana_text_width() - 22, MANA_Y), 2, C_PINK)
 	_draw_bag()
 	if _pylon_tag.visible:
 		_draw_marker(_pylon_screen, _pylon_edge, C_GOLD if GameState.is_bag_full() else C_PINK)
@@ -440,13 +456,10 @@ func _label(
 	l.text = tr(text)
 	l.horizontal_alignment = align as HorizontalAlignment
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	l.add_theme_font_override(&"font", FONT_BOLD if bold else FONT_SMALL)
+	l.add_theme_font_override(&"font", UiFonts.TITLE if bold else UiFonts.BOLD)
 	l.add_theme_font_size_override(&"font_size", font_size)
 	l.add_theme_color_override(&"font_color", color)
-	l.add_theme_color_override(&"font_shadow_color", C_SHADOW)
-	l.add_theme_constant_override(&"shadow_offset_x", 1)
-	l.add_theme_constant_override(&"shadow_offset_y", 1)
-	l.add_theme_constant_override(&"shadow_outline_size", 0)
+	UiFonts.outline(l, C_SHADOW)
 	l.position = r.position
 	l.size = r.size
 	add_child(l)

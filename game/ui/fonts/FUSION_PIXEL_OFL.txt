@@ -1,8 +1,20 @@
-Copyright 2001 The Silkscreen Project Authors (https://github.com/googlefonts/silkscreen) Silkscreen-Bold.ttf: Copyright 2001 The Silkscreen Project Authors (https://github.com/googlefonts/silkscreen)
+Fusion Pixel Font (game/ui/fonts/fusion_pixel_*.woff2)
+
+fusion_pixel_10.woff2 is a subset (Basic Latin, Latin-1 Supplement, General Punctuation) of
+Fusion Pixel Font 10px Proportional. fusion_pixel_10_bold.woff2 and fusion_pixel_12_bold.woff2 are
+bold versions derived from the 10px and 12px proportional fonts (tools/make_ui_fonts.py).
+Their Latin glyphs come from Ark Pixel Font. Neither font declares Reserved Font Names.
+
+========================================================================
+
+Fusion Pixel Font
+https://github.com/TakWolf/fusion-pixel-font
+
+Copyright (c) 2022, TakWolf (https://takwolf.com).
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
-http://scripts.sil.org/OFL
+https://openfontlicense.org
 
 
 -----------------------------------------------------------
@@ -91,3 +103,13 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
+
+========================================================================
+
+Ark Pixel Font
+https://github.com/TakWolf/ark-pixel-font
+
+Copyright (c) 2021, TakWolf (https://takwolf.com).
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1
+(same license text as above).

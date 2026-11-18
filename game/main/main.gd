@@ -86,6 +86,8 @@ func _setup_autoplay() -> void:
 	# La demo empieza ya fuera, delante de la casucha y con la puerta abierta (salvo --hut).
 	if not args.has("--hut"):
 		_hut.set_open()
+		# Abierta sin animación (no emite door_opened): el HUD enseña ya la esencia y el Pilón.
+		_hud.set_intro.call_deferred(false)
 		_player.global_position = WorldLayout.HUT + Vector3(0.0, 0.2, -5.0)
 	var tier: int = -1
 	for a: String in args:
@@ -179,6 +181,12 @@ func _setup_autoplay() -> void:
 		elif a == "--book":
 			get_tree().create_timer(0.8).timeout.connect(
 				func() -> void: (_hud.get_node(^"SpellBook") as SpellBook).open()
+			)
+		elif a.begins_with("--menu="):
+			# --menu=title|pause|options: abre ese menú (para capturas de la interfaz). Espera a
+			# que acabe la pantalla de carga: la pausa pararía el precalentado.
+			get_tree().create_timer(3.2).timeout.connect(
+				_hud.menu.demo_open.bind(a.get_slice("=", 1))
 			)
 		elif a.begins_with("--scatter="):
 			# --scatter=N: N fragmentos sueltos por el suelo delante del cristal (familiares).

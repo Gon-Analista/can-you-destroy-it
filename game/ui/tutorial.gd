@@ -12,8 +12,6 @@ extends Control
 
 enum Step { DOOR, CAST_LEFT, CAST_RIGHT, COMBINE, PICKUP, CRUSH, EARN, BUY, DONE }
 
-const FONT_SMALL: FontFile = preload("res://ui/fonts/silkscreen_regular.woff2")
-const FONT_BOLD: FontFile = preload("res://ui/fonts/pixelify_sans_bold.woff2")
 const OK_SFX: AudioStream = preload("res://audio/sfx/sfx_spark_ready_01.ogg")
 const C_TEXT := Color("#f2f6ff")
 const C_SUB := Color("#a5dae5")
@@ -42,8 +40,8 @@ var _box := Rect2(170, BOX_Y, 300, BOX_H)
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_title = _label(FONT_BOLD, 16, C_GOLD)
-	_sub = _label(FONT_SMALL, 8, C_SUB)
+	_title = _label(UiFonts.TITLE, UiFonts.HEAD, C_GOLD)
+	_sub = _label(UiFonts.BODY, UiFonts.SMALL, C_SUB)
 	step = _initial_step()
 	Events.spell_cast.connect(_on_cast)
 	Events.spell_fizzled.connect(_on_fizzled)
@@ -97,7 +95,7 @@ func _initial_step() -> int:
 	return maxi(prog.tutorial_step, Step.DOOR)
 
 
-func _label(font: FontFile, size_px: int, col: Color) -> Label:
+func _label(font: Font, size_px: int, col: Color) -> Label:
 	var l := Label.new()
 	l.add_theme_font_override(&"font", font)
 	l.add_theme_font_size_override(&"font_size", size_px)
@@ -208,15 +206,19 @@ func _refresh() -> void:
 
 ## El panel crece con el texto (cada idioma mide distinto) y se queda centrado.
 func _layout() -> void:
-	var w_title: float = FONT_BOLD.get_string_size(_title.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
-	var w_sub: float = FONT_SMALL.get_string_size(_sub.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 8).x
+	var w_title: float = (
+		UiFonts.TITLE.get_string_size(_title.text, HORIZONTAL_ALIGNMENT_LEFT, -1, UiFonts.HEAD).x
+	)
+	var w_sub: float = (
+		UiFonts.BODY.get_string_size(_sub.text, HORIZONTAL_ALIGNMENT_LEFT, -1, UiFonts.SMALL).x
+	)
 	var w: float = clampf(maxf(w_title, w_sub) + TEXT_X + 12.0, 200.0, 620.0)
 	var view_w: float = size.x if size.x > 0.0 else 640.0
 	_box = Rect2(roundf((view_w - w) * 0.5), BOX_Y, w, BOX_H)
-	_title.position = _box.position + Vector2(TEXT_X, 2)
-	_title.size = Vector2(w - TEXT_X - 6.0, 20)
-	_sub.position = _box.position + Vector2(TEXT_X, 23)
-	_sub.size = Vector2(w - TEXT_X - 6.0, 10)
+	_title.position = _box.position + Vector2(TEXT_X, 4)
+	_title.size = Vector2(w - TEXT_X - 6.0, UiFonts.HEAD_LINE)
+	_sub.position = _box.position + Vector2(TEXT_X, 21)
+	_sub.size = Vector2(w - TEXT_X - 6.0, UiFonts.LINE)
 
 
 func _process(delta: float) -> void:
@@ -262,4 +264,15 @@ func _mouse(at: Vector2, left: bool, right: bool) -> void:
 func _key(at: Vector2, text: String, lit: bool) -> void:
 	draw_rect(Rect2(at, Vector2(18, 18)), C_BG)
 	draw_rect(Rect2(at + Vector2(1, 1), Vector2(16, 16)), C_GOLD if lit else C_TEXT)
-	draw_string(FONT_BOLD, at + Vector2(5, 14), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, C_BG)
+	var w: float = (
+		UiFonts.TITLE.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, UiFonts.HEAD).x
+	)
+	draw_string(
+		UiFonts.TITLE,
+		at + Vector2(roundf((19.0 - w) * 0.5), 13),
+		text,
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1,
+		UiFonts.HEAD,
+		C_BG
+	)

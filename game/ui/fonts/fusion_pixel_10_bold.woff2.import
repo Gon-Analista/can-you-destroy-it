@@ -2,13 +2,13 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://mlh0l5s1l18j"
-path="res://.godot/imported/silkscreen_regular.woff2-b35d776e8fe8e0883ba0d74649d68465.fontdata"
+uid="uid://ce8j80cxsd562"
+path="res://.godot/imported/fusion_pixel_10_bold.woff2-751c00f3c7a8e0530e719e96c7e33ca8.fontdata"
 
 [deps]
 
-source_file="res://ui/fonts/silkscreen_regular.woff2"
-dest_files=["res://.godot/imported/silkscreen_regular.woff2-b35d776e8fe8e0883ba0d74649d68465.fontdata"]
+source_file="res://ui/fonts/fusion_pixel_10_bold.woff2"
+dest_files=["res://.godot/imported/fusion_pixel_10_bold.woff2-751c00f3c7a8e0530e719e96c7e33ca8.fontdata"]
 
 [params]
 
