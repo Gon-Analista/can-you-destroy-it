@@ -14,5 +14,5 @@ costs = PackedInt32Array(30, 51, 86, 140, 240, 440, 790, 1400, 2600)
 prerequisites = Array[StringName]([&"recipe:fireball"])
 stat = &"fireball_mult"
 values = PackedFloat32Array(1, 1.06, 1.11, 1.17, 1.22, 1.28, 1.33, 1.39, 1.44, 1.5)
-value_format = "daño x%.1f"
+value_format = "daño x%.2f"
 level_names = PackedStringArray()

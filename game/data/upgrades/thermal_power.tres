@@ -14,4 +14,4 @@ costs = PackedInt32Array(220, 410, 740, 1300, 2400, 4700, 9200, 18000, 35000)
 prerequisites = Array[StringName]([&"recipe:thermal_shock"])
 stat = &"thermal_mult"
 values = PackedFloat32Array(1, 1.06, 1.11, 1.17, 1.22, 1.28, 1.33, 1.39, 1.44, 1.5)
-value_format = "daño x%.1f"
+value_format = "daño x%.2f"

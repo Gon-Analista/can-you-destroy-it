@@ -41,8 +41,8 @@ const PAGE_TITLES: PackedStringArray = [
 	"CONSTELACIÓN DEL ARCANO",
 ]
 const TAB_W: int = 36
-## La estrella crece un píxel por nivel hasta este tope (Pureza, con 12, taparía su nombre).
-const STAR_GROW_MAX: int = 6
+## La estrella crece un píxel por nivel hasta este tope: más grande, sus puntas pisarían su nombre.
+const STAR_GROW_MAX: int = 4
 
 const C_INK := Color("#2a1d4a")
 const C_INK_SOFT := Color("#6a5a86")
@@ -826,9 +826,10 @@ func _draw_star(i: int, c: Vector2) -> void:
 		var rot: float = floor(_t * 8.0) * TAU / 32.0
 		for k: int in 8:
 			var a: float = rot + TAU * float(k) / 8.0
-			draw_rect(
-				Rect2((c + Vector2(cos(a), sin(a)) * rr).round(), Vector2(2, 2)), C_GOLD_LIGHT
-			)
+			var dot := Rect2((c + Vector2(cos(a), sin(a)) * rr).round(), Vector2(2, 2))
+			# El anillo pasa por detrás de los nombres: un punto encima de una letra la cambia.
+			if not _over_label(dot):
+				draw_rect(dot, C_GOLD_LIGHT)
 	# Destello expansivo al inscribir.
 	if flash > 0.0:
 		var rr2: float = (1.0 - flash) * 28.0 + 6.0
@@ -838,6 +839,25 @@ func _draw_star(i: int, c: Vector2) -> void:
 				Rect2((c + Vector2(cos(a), sin(a)) * rr2).round(), Vector2(1, 1)),
 				Color(C_GOLD_LIGHT, flash)
 			)
+
+
+## ¿Pisa este rectángulo (coordenadas de dibujo) el nombre de alguna estrella de la página?
+func _over_label(r: Rect2) -> bool:
+	var o: Vector2 = _ofs()
+	for l: Label in _star_labels:
+		var box := Rect2(l.position + o, l.size)
+		if not l.visible or l.text == "" or not box.intersects(r):
+			continue
+		# Sólo el ancho del texto (centrado en su caja), no la caja entera.
+		var font: Font = l.get_theme_font(&"font")
+		var fs: int = l.get_theme_font_size(&"font_size")
+		var pad: float = (
+			(font.get_string_size(l.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x - box.size.x) * 0.5
+		)
+		box = box.grow_individual(pad, 0, pad, 0)
+		if box.intersects(r):
+			return true
+	return false
 
 
 func _draw_right_page(o: Vector2) -> void:
