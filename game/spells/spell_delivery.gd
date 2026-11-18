@@ -150,7 +150,15 @@ func deliver(recipe: SpellRecipe, hit: SpellHit, charge: float) -> void:
 			var cloud: Vector3 = (
 				target + back * STORM_FRONT + Vector3.UP * maxf(STORM_MIN_RISE, dist * STORM_RISE)
 			)
-			_storm.start(recipe, hit, cloud, target, aim["normal"], _hand_origin.call(BOTH_HANDS))
+			_storm.start(
+				recipe,
+				hit,
+				cloud,
+				target,
+				aim["normal"],
+				_hand_origin.call(BOTH_HANDS),
+				aim["collider"]
+			)
 			_trauma(0.45)
 		_:
 			var projectile: SparkProjectile = free_projectile(combo_projectiles)
@@ -313,6 +321,8 @@ func _on_projectile_arrived(projectile: SparkProjectile) -> void:
 		c.receive_hit(projectile.hit)
 		if r and r.delivery == SpellRecipe.Delivery.RESONANCE:
 			c.resonance_pulse(projectile.hit)
+	elif projectile.hit.recipe and projectile.hit.recipe.delivery == SpellRecipe.Delivery.STORM:
+		_storm.ground_impact(projectile.hit)
 	else:
 		AudioDirector.play_sfx(FIZZLE_SFX, -6.0)
 		Events.spell_fizzled.emit(projectile.hit.position)

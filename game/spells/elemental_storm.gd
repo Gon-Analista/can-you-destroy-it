@@ -25,6 +25,10 @@ const FADE_SEC: float = 1.4
 ## Bolas de granizo de cada ráfaga.
 const HAIL_PER_VOLLEY: int = 2
 const MASK_CRYSTAL: int = 1 << 1
+## Suelo y cristal: la tormenta que se lanza sobre la hierba descarga en el suelo.
+const MASK_GROUND: int = 1 | (1 << 1)
+## Probabilidad de que una descarga vaya a por un bicho que haya bajo la nube.
+const CRITTER_CHANCE: float = 0.6
 
 var _delivery: SpellDelivery
 var _circles: MagicCircles
@@ -35,6 +39,8 @@ var _light: OmniLight3D
 var _rain: GPUParticles3D
 var _sound: AudioStreamPlayer3D
 var _accent: AudioStreamPlayer3D
+## Chispazos de las descargas que caen en la hierba (no hay cristal que los haga).
+var _ground_fx: ImpactFx
 var _rng := RandomNumberGenerator.new()
 var _recipe: SpellRecipe
 var _hit: SpellHit
@@ -53,6 +59,8 @@ var _clock: float = 0.0
 var _radius: float = 7.0
 var _ember: float = 0.0
 var _warming: float = 0.0
+## Si se lanzó sobre el cristal (si no, sobre la hierba: descarga en el suelo y en los bichos).
+var _on_crystal: bool = true
 
 
 func setup(delivery: SpellDelivery, circles: MagicCircles) -> void:
@@ -100,6 +108,10 @@ func setup(delivery: SpellDelivery, circles: MagicCircles) -> void:
 	_accent.bus = &"SFX"
 	_accent.unit_size = 30.0
 	add_child(_accent)
+	_ground_fx = ImpactFx.new()
+	_ground_fx.name = "GroundFx"
+	_ground_fx.pool_size = 4
+	add_child(_ground_fx)
 	visible = false
 	set_process(false)
 
@@ -127,11 +139,12 @@ func start(
 	cloud: Vector3,
 	target: Vector3,
 	normal: Vector3,
-	from: Vector3
+	from: Vector3,
+	target_collider: Object = null
 ) -> void:
 	_recipe = recipe
 	_hit = hit
-	print("DBG storm start ", cloud, " target ", target, " dmg ", hit.damage)
+	_on_crystal = target_collider is Node and (target_collider as Node).has_meta(&"mother_crystal")
 	_target = target
 	_normal = normal if normal.length_squared() > 0.01 else Vector3.BACK
 	_tangent = _normal.cross(Vector3.UP if absf(_normal.y) < 0.95 else Vector3.RIGHT).normalized()
@@ -255,9 +268,6 @@ func _animate_puffs(delta: float, k: float) -> void:
 ## Una descarga: el elemento que toca por turno (en el orden de la receta, desde el rayo).
 func _strike(k: int) -> void:
 	var crystal: MotherCrystal = _delivery.crystal()
-	print("DBG strike ", k, " ", crystal)
-	if crystal == null:
-		return
 	var els: Array[StringName] = _recipe.elements
 	# Empieza por el rayo (si lo lleva): la primera descarga es instantánea y se ve.
 	var el: StringName = els[(k + maxi(els.find(&"bolt"), 0)) % els.size()]
@@ -266,8 +276,9 @@ func _strike(k: int) -> void:
 		&"bolt":
 			var aim: Dictionary = _surface_point(from)
 			var sub: SpellHit = _sub_hit(BOLT, _each, aim, from, false)
-			crystal.sky_bolt(from, sub.position, _recipe.circle_hot)
-			crystal.receive_hit(sub)
+			if crystal:
+				crystal.sky_bolt(from, sub.position, _recipe.circle_hot)
+			_bolt_lands(sub, aim["collider"], crystal)
 			_flash_cloud(from, 1.0)
 			_delivery_trauma(0.12)
 		&"frost":
@@ -305,6 +316,21 @@ func _sub_hit(el: ElementDef, damage: int, aim: Dictionary, from: Vector3, minor
 	return sub
 
 
+## El rayo de la nube llega: al cristal, o a un bicho o al suelo (con su chasquido).
+func _bolt_lands(sub: SpellHit, collider: Object, crystal: MotherCrystal) -> void:
+	var node: Node = collider as Node
+	if node and node.has_meta(&"mother_crystal") and crystal:
+		crystal.receive_hit(sub)
+	elif not CritterHerd.intercept(sub, collider):
+		ground_impact(sub)
+
+
+## Una descarga que cae en la hierba sin bicho: chispazo en el suelo (no apaga el hechizo).
+func ground_impact(sub: SpellHit) -> void:
+	_ground_fx.play(sub.position, Vector3.UP, sub.tier, false, maxf(sub.size, 0.8))
+	_delivery_trauma(0.04)
+
+
 ## Lo que cae de la nube (granizo, bolas de fuego) como proyectil hasta el cristal.
 func _fall(sub: SpellHit, from: Vector3, aim: Dictionary) -> void:
 	var p: SparkProjectile = SpellDelivery.free_projectile(_delivery.projectiles)
@@ -320,20 +346,49 @@ func _cloud_point() -> Vector3:
 
 
 ## Un punto del cristal cerca del blanco (dentro del radio de la tormenta), visto desde `from`.
+## Si hay bichos bajo la nube, muchas descargas van a por ellos; sobre la hierba, al suelo.
 func _surface_point(from: Vector3) -> Dictionary:
+	var prey: Dictionary = _critter_point()
+	if not prey.is_empty():
+		return prey
 	var a: float = _rng.randf() * TAU
 	var r: float = sqrt(_rng.randf()) * _radius
 	var want: Vector3 = _target + (_tangent * cos(a) + _bitangent * sin(a)) * r
 	var dir: Vector3 = (want - from).normalized()
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
-	var q := PhysicsRayQueryParameters3D.create(from, want + dir * 25.0, MASK_CRYSTAL)
+	var mask: int = MASK_CRYSTAL if _on_crystal else MASK_GROUND
+	var q := PhysicsRayQueryParameters3D.create(from, want + dir * 25.0, mask)
 	var res: Dictionary = space.intersect_ray(q)
 	if res.is_empty():
-		q = PhysicsRayQueryParameters3D.create(from, _target + dir * 10.0, MASK_CRYSTAL)
+		q = PhysicsRayQueryParameters3D.create(from, _target + dir * 10.0, mask)
 		res = space.intersect_ray(q)
 	if res.is_empty():
 		return {"position": _target, "normal": _normal, "collider": null}
 	return res
+
+
+## Un bicho vivo bajo la nube (a veces): la descarga va a por él. Vacío si no toca.
+func _critter_point() -> Dictionary:
+	var herd: CritterHerd = CritterHerd.instance()
+	if herd == null or _rng.randf() > CRITTER_CHANCE:
+		return {}
+	var reach: float = _radius * 1.3
+	var flat := Vector2(_target.x, _target.z)
+	var pick: Critter = null
+	var seen: int = 0
+	for c: Critter in herd.critters():
+		if not c.is_alive():
+			continue
+		var p: Vector3 = c.center()
+		if flat.distance_to(Vector2(p.x, p.z)) > reach:
+			continue
+		# Uno al azar entre los que están debajo (muestreo de uno en uno, sin listas).
+		seen += 1
+		if _rng.randi_range(1, seen) == 1:
+			pick = c
+	if pick == null:
+		return {}
+	return {"position": pick.center(), "normal": Vector3.UP, "collider": null}
 
 
 ## El relámpago ilumina las bocanadas cercanas y el valle (luz del mundo).
