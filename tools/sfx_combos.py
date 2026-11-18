@@ -11,7 +11,6 @@ Uso:
 - sfx_earth_impact_01: roca contra cristal: crujido grave y piedrecitas.
 - sfx_thunder_01: el Juicio del Trueno: latigazo blanco, rasgado y un trueno que rueda largo.
 - sfx_meteor_fall_01: el Meteoro cayendo: rugido que crece y baja de tono.
-- sfx_meteor_impact_01: la explosión del Meteoro: estallido enorme, grave y largo.
 - sfx_quake_01: terremoto: retumbe grave con golpes de roca.
 - sfx_magnet_01: magnetismo: barrido metálico que sube.
 - sfx_ice_lance_01: lanza de hielo: silbido cortante con brillo cristalino.
@@ -103,21 +102,6 @@ def meteor_fall(seed):
     return normalize(fade(x, 0.05, 0.01), -2)
 
 
-def meteor_impact(seed):
-    rng = np.random.default_rng(seed)
-    dur = 4.0
-    t = t_axis(dur)
-    boom = lowpass(rng.standard_normal(len(t)), 90) * np.exp(-t / 0.6) * 4.0
-    blast = bandpass(rng.standard_normal(len(t)), 200, 3000, 2) * np.exp(-t / 0.25) * 1.5
-    debris = np.zeros_like(t)
-    for _ in range(60):
-        s0 = rng.integers(int(0.1 * SR), int(2.5 * SR))
-        n = int(rng.uniform(0.005, 0.03) * SR)
-        debris[s0:s0 + n] += bandpass(rng.standard_normal(n), 900, 5000, 2) * np.hanning(n) * rng.uniform(0.1, 0.4)
-    x = boom + blast + debris * np.exp(-t / 1.2)
-    return normalize(fade(reverb(x, rng, 2.2, 0.35), 0.001, 1.0), -1)
-
-
 def quake(seed):
     rng = np.random.default_rng(seed)
     dur = 2.8
@@ -201,7 +185,6 @@ def main() -> None:
     write(out, "sfx_earth_impact_01", earth_impact(1213))
     write(out, "sfx_thunder_01", thunder(1221))
     write(out, "sfx_meteor_fall_01", meteor_fall(1231))
-    write(out, "sfx_meteor_impact_01", meteor_impact(1232))
     write(out, "sfx_quake_01", quake(1241))
     write(out, "sfx_magnet_01", magnet(1251))
     write(out, "sfx_ice_lance_01", ice_lance(1261))

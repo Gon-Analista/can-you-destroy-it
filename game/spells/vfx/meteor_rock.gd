@@ -6,7 +6,8 @@ extends Node3D
 ## - En vuelo: roca de basalto que gira, con la cara de delante al rojo y grietas de lava, dentro
 ##   del fuego del orbe (que hace de cola de cometa), y un rastro de humo espeso y gotas de lava.
 ## - Al llegar: destello, dos ondas de choque, polvo que sale en anillo, cascotes al rojo que
-##   saltan y caen, chispas, cráter encendido que se apaga despacio, luz, sacudida y estruendo.
+##   saltan y caen, chispas, cráter encendido que se apaga despacio, luz, sacudida y estruendo
+##   (el único sonido del impacto: la receta no lleva otro).
 ## Todo se crea una vez (con el proyectil) y se reutiliza.
 
 const ROCK_SHADER: Shader = preload("res://spells/vfx/meteor_rock.gdshader")

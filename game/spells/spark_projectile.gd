@@ -6,7 +6,8 @@ extends Node3D
 ## del golpe: a más nivel, más grande, más rápido, menos torpe y de otro color.
 ## Vuela hacia un punto fijo con un arco y un bamboleo (más torpe cuanto más débil) y estalla al
 ## llegar. Se reutiliza desde un pool: nada se instancia en caliente salvo el orbe al cambiar de
-## aspecto (al subir de nivel).
+## aspecto (al subir de nivel). La Bola de Fuego y el Meteoro llevan piezas propias
+## (`FireballFlight`, `MeteorRock`) que `prepare_combo()` crea en la pantalla de carga.
 
 signal arrived(projectile: SparkProjectile)
 
@@ -14,6 +15,8 @@ signal arrived(projectile: SparkProjectile)
 const HANDS_DEPTH: float = 0.85
 ## Distancia recorrida a partir de la cual suelta brasas (m).
 const EMBERS_FROM: float = 5.0
+## Distancia recorrida a partir de la cual la Bola de Fuego suelta su cola de bocanadas (m).
+const TAIL_FROM: float = 6.0
 ## Hacia arriba en pantalla (en el shader del fuego la `y` crece hacia abajo).
 const UP_2D := Vector2(0.0, -1.0)
 
@@ -51,6 +54,9 @@ var _light_range: float = 3.0
 ## Meteoro (`SpellVisualDef.meteor`): roca, humo e impacto propios; cae acelerando.
 var _meteor: MeteorRock
 var _falls: bool = false
+## Bola de Fuego (`SpellVisualDef.fireball_flight`): esfera de fuego en vez del orbe.
+var _fireball: FireballFlight
+var _ball_on: bool = false
 
 
 func _ready() -> void:
@@ -88,14 +94,13 @@ func launch(from: Vector3, to: Vector3, p_hit: SpellHit, collider: Object) -> vo
 		_duration = maxf(_duration, r.fall_sec if r else 1.0)
 		_arc = 0.0
 		_wobble = 0.0
-		if _meteor == null:
-			_meteor = MeteorRock.new()
-			_meteor.name = "Meteor"
-			add_child(_meteor)
+		prepare_combo()
 		_meteor.launch(from, to, p_hit.size, p_hit.warmup)
 	elif _meteor:
 		_meteor.stop()
-	if _orb:
+	if _ball_on:
+		_fireball.launch(_ball_size(), clampf(float(p_hit.level - 1) / 9.0, 0.0, 1.0))
+	elif _orb:
 		_orb.appear()
 		_orb.charge = orb_charge
 		_orb.set_flow(UP_2D, 1.0)
@@ -117,14 +122,22 @@ func launch(from: Vector3, to: Vector3, p_hit: SpellHit, collider: Object) -> vo
 	_light_range = 3.0 + tier.orb_scale * 0.4
 	_light.omni_range = _light_range
 	_light.visible = true
-	var ember_cols := PackedColorArray([tier.color_core * 2.0, tier.color_glow * 1.4])
+	# Las de la Bola de Fuego, doradas y sin pasarse de brillo: florecían hasta lavar la bola.
+	var hot: float = 1.1 if _ball_on else 2.0
+	var ember_cols := PackedColorArray([tier.color_core * hot, tier.color_glow * 1.1])
 	_ember_mat.color_ramp = HdFx.color_ramp(ember_cols)
 	(_sparks.process_material as ParticleProcessMaterial).color_ramp = HdFx.color_ramp(ember_cols)
-	_embers.amount_ratio = clampf(tier.orb_scale / 10.0, 0.3, 1.0)
-	_sparks.amount_ratio = clampf(tier.orb_scale / 10.0, 0.3, 1.0)
+	# Con el nivel, más brasas y chispas (la Bola de Fuego de nivel 10 va soltando una lluvia).
+	var lv: float = lerpf(0.55, 1.0, float(p_hit.level - 1) / 9.0) if _ball_on else 1.0
+	_embers.amount_ratio = clampf(tier.orb_scale / 10.0, 0.3, 1.0) * lv
+	_sparks.amount_ratio = clampf(tier.orb_scale / 10.0, 0.3, 1.0) * lv
+	_size_embers(_ball_size() * _orb_scale * FireballFlight.BODY_SCALE if _ball_on else 0.0)
 	_smoke.amount_ratio = clampf(tier.trail_smoke, 0.01, 1.0)
 	_prev_screen = Vector2.ZERO
-	_flow = UP_2D
+	# La Bola de Fuego sale de las manos hacia la mira (hacia arriba): sus lenguas, hacia abajo.
+	_flow = Vector2.DOWN if _ball_on else UP_2D
+	if _ball_on:
+		_fireball.set_flow(_flow, 1.1)
 	if tier.flight_sfx:
 		_roar.stream = tier.flight_sfx
 		_roar.pitch_scale = 0.8
@@ -135,8 +148,20 @@ func launch(from: Vector3, to: Vector3, p_hit: SpellHit, collider: Object) -> vo
 	set_process(true)
 
 
+## Crea la roca del Meteoro y la Bola de Fuego si faltan (pantalla de carga: nunca al lanzar).
+func prepare_combo() -> void:
+	if _meteor == null:
+		_meteor = MeteorRock.new()
+		_meteor.name = "Meteor"
+		add_child(_meteor)
+	if _fireball == null:
+		_fireball = FireballFlight.new()
+		_fireball.name = "Fireball"
+		add_child(_fireball)
+
+
 func _process(delta: float) -> void:
-	if _orb:
+	if _orb or _ball_on:
 		_face_camera()
 	if _linger >= 0.0:
 		# Ya llegó: dejamos morir la estela, las brasas y el estallido antes de volver al pool.
@@ -170,6 +195,11 @@ func _process(delta: float) -> void:
 	_light.light_energy = _light_peak * smoothstep(2.0, 7.0, _from.distance_to(pos))
 	_sparks.emitting = _embers.emitting
 	_smoke.emitting = _embers.emitting and hit.tier.trail_smoke > 0.0
+	if _ball_on:
+		# La cola de bocanadas desde algo más cerca que las brasas; luz en el cristal al llegar.
+		_fireball.set_tail(k < 1.0 and _from.distance_to(pos) > TAIL_FROM, _from)
+		if not hit.warmup:
+			_fireball.glow_crystal(_to)
 	_update_flow(delta)
 	if k >= 1.0:
 		_light.visible = false
@@ -179,7 +209,10 @@ func _process(delta: float) -> void:
 		_smoke.emitting = false
 		_roar.stop()
 		_linger = maxf(_smoke.lifetime, _trail.length_sec)
-		if _orb:
+		if _ball_on:
+			_fireball.release()
+			_linger = maxf(_linger, FireballFlight.TAIL_SEC)
+		elif _orb:
 			_orb.release()
 			_linger = maxf(_linger, _orb_def.release_time + _orb_def.sparkle_lifetime)
 		if _falls:
@@ -190,6 +223,15 @@ func _process(delta: float) -> void:
 
 ## Cambia el aspecto del orbe sólo si es otro (al subir de nivel); si no, se reutiliza.
 func _set_orb(def: SpellVisualDef) -> void:
+	_ball_on = def != null and def.fireball_flight
+	if _ball_on:
+		prepare_combo()
+		_fireball.setup(def)
+		if _orb:
+			_orb.visible = false
+		return
+	if _fireball:
+		_fireball.stop()
 	if def == _orb_def:
 		return
 	if _orb:
@@ -211,7 +253,7 @@ func _set_orb(def: SpellVisualDef) -> void:
 ## bola con lenguas hacia arriba, no una gota que gotea hacia el mago.
 func _update_flow(delta: float) -> void:
 	var cam: Camera3D = get_viewport().get_camera_3d()
-	if cam == null or _orb == null or cam.is_position_behind(global_position):
+	if cam == null or (_orb == null and not _ball_on) or cam.is_position_behind(global_position):
 		return
 	var sp: Vector2 = cam.unproject_position(global_position)
 	if _prev_screen != Vector2.ZERO and delta > 0.0:
@@ -219,13 +261,27 @@ func _update_flow(delta: float) -> void:
 		# Velocidad en pantallas (de alto) por segundo.
 		var speed: float = v.length() / delta / maxf(get_viewport().get_visible_rect().size.y, 1.0)
 		var w: float = smoothstep(0.12, 0.9, speed)
-		var back: Vector2 = (
-			(-v.normalized() + Vector2(0.0, -0.35)).normalized() if w > 0.0 else UP_2D
-		)
-		var target: Vector2 = (back * w + UP_2D * (1.0 - w)).normalized()
-		_flow = _flow.lerp(target, minf(delta * 10.0, 1.0)).normalized()
-		_orb.set_flow(_flow, lerpf(0.7, 2.6, w))
+		if _ball_on:
+			_update_ball_flow(cam.unproject_position(_from) - sp, w, delta)
+		else:
+			var back: Vector2 = (
+				(-v.normalized() + Vector2(0.0, -0.35)).normalized() if w > 0.0 else UP_2D
+			)
+			var target: Vector2 = (back * w + UP_2D * (1.0 - w)).normalized()
+			_flow = _flow.lerp(target, minf(delta * 10.0, 1.0)).normalized()
+			_orb.set_flow(_flow, lerpf(0.7, 2.6, w))
 	_prev_screen = sp
+
+
+## Las lenguas de la Bola de Fuego apuntan en pantalla hacia de donde salió (`to_origin`, hacia
+## la mano), como la cola de cometa: aunque se aleje casi de frente o el arco la haga bajar al
+## final, nunca suben como una vela. Algo de subida del calor; más largas cuanto más deprisa
+## cruza la pantalla.
+func _update_ball_flow(to_origin: Vector2, w: float, delta: float) -> void:
+	if to_origin.length_squared() > 4.0:
+		var back: Vector2 = (to_origin.normalized() + Vector2(0.0, -0.15)).normalized()
+		_flow = _flow.lerp(back, minf(delta * 8.0, 1.0)).normalized()
+	_fireball.set_flow(_flow, lerpf(1.3, 2.8, w))
 
 
 ## El orbe se diseñó para verse de frente (sus órbitas giran en el plano de la cámara).
@@ -234,9 +290,34 @@ func _update_flow(delta: float) -> void:
 func _face_camera() -> void:
 	var cam: Camera3D = get_viewport().get_camera_3d()
 	if cam:
-		var dist: float = cam.global_position.distance_to(_orb.global_position)
+		var dist: float = cam.global_position.distance_to(global_position)
 		var s: float = clampf(dist / HANDS_DEPTH, 1.0, _orb_scale) * _grow
-		_orb.global_basis = cam.global_basis.scaled(Vector3.ONE * s)
+		if _ball_on:
+			_fireball.set_view_scale(s, _orb_scale * _grow)
+		else:
+			_orb.global_basis = cam.global_basis.scaled(Vector3.ONE * s)
+
+
+## Diámetro del cuerpo de la Bola de Fuego en la mano (m): el del orbe que había entre las
+## manos con esa carga, para salir de ellas sin saltos.
+func _ball_size() -> float:
+	var d: SpellVisualDef = hit.tier.visual
+	return d.core_radius * 2.0 * d.body_scale * lerpf(d.charge_min_scale, 1.0, orb_charge)
+
+
+## Brasas y chispas a la escala del hechizo (`ball`: ancho de la Bola de Fuego en vuelo, m; 0 el
+## resto): las de la bola, que vuela lejos y es enorme, tienen que verse y salir disparadas.
+func _size_embers(ball: float) -> void:
+	var big: bool = ball > 0.0
+	(_embers.draw_pass_1 as QuadMesh).size = Vector2.ONE * (ball * 0.07 if big else 0.09)
+	var ribbon: RibbonTrailMesh = _sparks.draw_pass_1
+	ribbon.size = ball * 0.02 if big else 0.02
+	ribbon.section_length = ball * 0.04 if big else 0.1
+	_ember_mat.emission_sphere_radius = ball * 0.25 if big else 0.15
+	_ember_mat.initial_velocity_max = 6.0 if big else 2.0
+	var spm: ParticleProcessMaterial = _sparks.process_material
+	spm.emission_sphere_radius = ball * 0.25 if big else 0.1
+	spm.initial_velocity_max = 9.0 if big else 2.5
 
 
 ## Brasas suaves y chispas con estela que va soltando en vuelo (capa de magia HD).
@@ -285,5 +366,7 @@ func _deactivate() -> void:
 	_trail.stop()
 	if _meteor:
 		_meteor.stop()
+	if _fireball:
+		_fireball.stop()
 	_linger = -1.0
 	set_process(false)

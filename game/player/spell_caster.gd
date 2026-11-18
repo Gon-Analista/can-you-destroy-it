@@ -159,8 +159,7 @@ func _ready() -> void:
 	_stage_fx.camera = camera
 	_stage_fx.hands = hands
 	add_child(_stage_fx)
-	# Abrir el menú (pausa), el Grimorio o el libro a media carga la deshace: el botón se
-	# suelta fuera del juego y la carga se quedaría colgada.
+	# Menú, Grimorio o libro a media carga la deshacen (el botón se suelta fuera del juego).
 	Events.menu_opened.connect(_cancel_combine)
 	Events.grimoire_opened.connect(_cancel_combine)
 
@@ -374,8 +373,7 @@ func _on_press(side: int) -> void:
 		return
 	var other: int = 1 - side
 	if _pending_side == other:
-		# Llegó el segundo clic a tiempo: combinación (si la pareja tiene receta; si no, las dos
-		# manos lanzan a la vez).
+		# Segundo clic a tiempo: combinación (sin receta, las dos manos lanzan a la vez).
 		_pending_side = -1
 		if recipe_for_hands():
 			_begin_combine()
@@ -633,6 +631,7 @@ func _launch_combine() -> void:
 	var hit := SpellHit.new()
 	hit.tier = tier
 	hit.recipe = effect
+	hit.level = recipe_level(recipe)
 	hit.element = effect.elements[0] if not effect.elements.is_empty() else ELEMENT.id
 	hit.resonant = (
 		recipe.delivery == SpellRecipe.Delivery.RESONANCE or _rng.randf() < _resonant_chance()
@@ -716,8 +715,7 @@ func _deliver(recipe: SpellRecipe, hit: SpellHit, charge: float) -> void:
 		_:
 			var projectile: SparkProjectile = _free_projectile(_combo_projectiles)
 			if projectile:
-				# Misma carga que el orbe entre las manos (ver WizardHands): sale sin cambiar
-				# de tamaño.
+				# Misma carga que el orbe entre las manos (WizardHands): sale del mismo tamaño.
 				projectile.orb_charge = lerpf(0.15, 1.0, charge)
 				_launch(projectile, hit, BOTH_HANDS)
 
@@ -923,6 +921,8 @@ func warm_up(target: Vector3) -> void:
 	var from: Vector3 = camera.global_position + camera.global_basis * Vector3(0.0, -0.3, -1.5)
 	var seen: Array[SpellVisualDef] = []
 	var k: int = 0
+	for p: SparkProjectile in _combo_projectiles:
+		p.prepare_combo()
 	for el: ElementDef in ELEMENTS:
 		for tier: SpellTier in el.tiers:
 			if seen.has(tier.visual) or k >= _projectiles.size():

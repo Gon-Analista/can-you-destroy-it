@@ -40,3 +40,5 @@ var vein_weak: bool = false
 ## False si no lo lanzó el jugador (rayo del Pilón, familiares): no cuenta para la racha ni mueve
 ## la mirilla, la cámara o la levitación, y no da avisos.
 var by_player: bool = true
+## Nivel del hechizo (1..10): en las combinaciones, el de su Potencia. Sólo cambia el aspecto.
+var level: int = 1
