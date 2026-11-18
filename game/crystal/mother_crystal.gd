@@ -540,6 +540,8 @@ func _dig(at: Vector3, normal: Vector3, damage: float, combo: bool, size: float 
 	var n: Vector3 = (global_basis.inverse() * normal).normalized()
 	var p: Vector3 = to_local(at)
 	var layer: int = volume.layer_at(p - n * 0.35)
+	if _reveal.covers(at):
+		layer = CoreReveal.CORE_LAYER  # la esfera del Núcleo expuesto va un poco por fuera
 	var allowed: int = _allowed_mask(combo)
 	_hit_layer = layer
 	if (allowed >> layer) & 1 == 0:

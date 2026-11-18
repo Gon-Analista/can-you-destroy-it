@@ -124,6 +124,13 @@ func is_exposed() -> bool:
 	return state == State.EXPOSED
 
 
+## Si un golpe en `at` (global) da en la esfera del Núcleo que se ve.
+func covers(at: Vector3) -> bool:
+	if state != State.CRACKING and state != State.EXPOSED:
+		return false
+	return at.distance_to(core_position()) < core_radius() + 0.6
+
+
 ## El cristal llega al 99 %: empieza el momento (una sola vez).
 func begin() -> void:
 	if state != State.HIDDEN:
