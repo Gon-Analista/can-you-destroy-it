@@ -28,3 +28,7 @@ const ARCHMAGE_MIRROR_YAW_DEG: float = -130.0
 ## de 6 m del atril y del espejo), con su frente hacia el claro.
 const RUNE_TABLE := Vector3(48.8, 0.0, 62.9)
 const RUNE_TABLE_YAW_DEG: float = -104.0
+## La Vitrina del Báculo (GDD 4.3): al sur del final del camino del Santuario, a la vista al
+## llegar y a más de 6 m del atril, del espejo y de la mesa, con su frente hacia el camino.
+const STAFF_VITRINE := Vector3(47.5, 0.0, 51.0)
+const STAFF_VITRINE_YAW_DEG: float = -60.0

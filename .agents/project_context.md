@@ -195,11 +195,10 @@ en el Grimorio del Santuario mejoras que cambian los hechizos. Lo que hay:
   escalones, menú de depuración y opciones, guía de objetivos, **bichos del valle** (`critters/`), **Lágrimas del
   Núcleo** y la página Núcleo del Grimorio, **Báculo** con triples (`StaffCombos`, `SpellDelivery`), **rangos de
   mago** y **Espejo del Archimago**, **Mesa de Runas** (`sanctum/rune_table.gd`, `spells/runes/`,
-  `RuneBook`), los nodos hito **Lanzamiento continuo**, **Vórtice** y **Rompefacetas**, y **el final** (`ending/`: Núcleo expuesto, Gran Convergencia, fiesta y
+  `RuneBook`), **Vitrina del Báculo** (`sanctum/staff_vitrine.gd`), los nodos hito **Lanzamiento continuo**, **Vórtice** y **Rompefacetas**, y **el final** (`ending/`: Núcleo expuesto, Gran Convergencia, fiesta y
   pantalla "Yes, you could.").
 
-**Aún no hay**: la Vitrina del Báculo como estación física (las mejoras del báculo viven en el Grimorio), trozos de
-cristal que caen al quedarse sueltos, logros de Steam, créditos definitivos ni modo tras el final más allá de
+**Aún no hay**: trozos de cristal que caen al quedarse sueltos, logros de Steam, créditos definitivos ni modo tras el final más allá de
 "Seguir en el valle".
 
 ## 8. Hitos
@@ -301,6 +300,8 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-19 | Cristal Madre un 25 % más grande en todo (`tools/crystal_volume.py`, `S` 1,7 → 2,125; capas, Núcleo y geodas escalan igual): ~135 m de alto y ~95 m de base. `CRYSTAL_FOOTPRINT` 50 y Pilón, Santuario, Espejo, Mesa de Runas y Jaula alejados en proporción; la casucha se queda. El daño sigue mandando: la esencia por golpe no cambia (los cráteres crecen porque baja la densidad). | Pedido del equipo: el cristal tenía que imponer más y rozar las nubes. Las partidas guardadas con el cristal excavado vuelven a tenerlo entero (otra rejilla). |
 | 2026-11-19 | Normal de la malla del cristal por el gradiente del campo (no por la geometría) y sin variación por normal cuantizada en `crystal.gdshader`. | Las dos cosas pintaban hileras de "dientes" oscuros en las caras planas. |
 | 2026-11-19 | Nubes 3D (`CrystalClouds`, `world/cloud.gdshader`): tres alrededor de la punta y un techo lejano, sin luz del motor y teñidas por `world_tint`; giran despacio. Nombres de las estaciones al acercarse (`StationLabels`), con su línea de ayuda hasta usarlas una vez. Tutorial: primer paso "acércate al cristal" (`Tutorial.Step.APPROACH`). | Pedido del equipo: el mundo no se entendía (qué es cada cosa) y el cielo era plano. |
+| 2026-11-19 | Vitrina del Báculo (`StaffVitrine`, `WorldLayout.STAFF_VITRINE`): urna junto al final del camino del Santuario con el báculo dentro (silueta con candado hasta comprarlo; luego encendido, con la gema del color de su elemento). F abre el Grimorio por la constelación del Báculo (`Events.grimoire_page_requested`, `Grimoire.open_at`), con compra como en el atril. Las mejoras siguen en el Grimorio. | GDD 4.3 la lista como estación; un sitio físico sin duplicar la tienda. |
+| 2026-11-19 | Hierba y flores con `shrink_far` en `toon.gdshader` (se encogen de 16 a 40 m de la cámara); postes de los faroles sin sombra. | De lejos, cada mata era un palito negro por el contorno; con el sol bajo, los postes pintaban rayas larguísimas. |
 | 2026-11-19 | Círculos de carga: sólo el primero lleva el dibujo entero; los demás son aros huecos (`hollow` en `hd_magic_circle.gdshader`) y crecen un 28 % en pantalla cada uno (antes 17 %). Menú de depuración: los botones de cada fila van en un `HFlowContainer`. | Pedido del equipo: los círculos se amontonaban en una maraña; el menú se salía de la pantalla en inglés. |
 
 ## 10. Preguntas abiertas

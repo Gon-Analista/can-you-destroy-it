@@ -346,6 +346,14 @@ func _setup_autoplay() -> void:
 			var at: Vector3 = WorldLayout.RUNE_TABLE + front * 3.2
 			at.y = Valley.ground_height(at.x, at.z) + 0.2
 			debug_teleport.call_deferred(at, WorldLayout.RUNE_TABLE + Vector3.UP * 1.2)
+		elif a == "--at-staff-vitrine":
+			# --at-staff-vitrine: el mago delante de la Vitrina del Báculo, mirándola.
+			var front: Vector3 = Vector3.BACK.rotated(
+				Vector3.UP, deg_to_rad(WorldLayout.STAFF_VITRINE_YAW_DEG)
+			)
+			var at: Vector3 = WorldLayout.STAFF_VITRINE + front * 3.4
+			at.y = Valley.ground_height(at.x, at.z) + 0.2
+			debug_teleport.call_deferred(at, WorldLayout.STAFF_VITRINE + Vector3.UP * 1.6)
 		elif a.begins_with("--rune-unseal"):
 			# --rune-unseal[=s]: a los s segundos (3,4) el Pilón llega al 10 % y la mesa despierta.
 			var at_s: float = float(a.get_slice("=", 1)) if a.contains("=") else 3.4

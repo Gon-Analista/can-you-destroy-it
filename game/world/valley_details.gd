@@ -7,6 +7,8 @@ extends Node3D
 
 const TOON_SHADER: Shader = preload("res://fx/toon.gdshader")
 const SHARD_SHADER: Shader = preload("res://crystal/shard.gdshader")
+## A partir de ~40% de esta distancia (m) la hierba y las flores se encogen; a ella ya no están.
+const PLANT_FADE_M: float = 40.0
 const C_DIRT := Color("#b98d5a")
 const C_DIRT_DARK := Color("#9c7247")
 const C_STONE := Color("#bdb3bf")
@@ -30,6 +32,8 @@ const FLOWER_COLORS: Array[Color] = [
 @export var flower_count: int = 900
 
 var _toon: ShaderMaterial
+## Toon de las plantas: igual, pero se encogen de lejos (ver `PLANT_FADE_M`).
+var _plant: ShaderMaterial
 var _rng := RandomNumberGenerator.new()
 ## Tramos de camino (pares de puntos) para no plantar hierba encima.
 var _paths: Array[PackedVector2Array] = []
@@ -43,6 +47,8 @@ func _ready() -> void:
 	_toon = ShaderMaterial.new()
 	_toon.shader = TOON_SHADER
 	_toon.set_shader_parameter("rim", 0.2)
+	_plant = _toon.duplicate() as ShaderMaterial
+	_plant.set_shader_parameter("shrink_far", PLANT_FADE_M)
 	_build_paths()
 	_build_rocks_and_props()
 	_build_crystal_outcrops()
@@ -99,10 +105,12 @@ func _free(x: float, z: float, margin: float) -> bool:
 	var nest := Vector2(WorldLayout.FAMILIAR_NEST.x, WorldLayout.FAMILIAR_NEST.z)
 	var mirror := Vector2(WorldLayout.ARCHMAGE_MIRROR.x, WorldLayout.ARCHMAGE_MIRROR.z)
 	var runes := Vector2(WorldLayout.RUNE_TABLE.x, WorldLayout.RUNE_TABLE.z)
+	var vitrine := Vector2(WorldLayout.STAFF_VITRINE.x, WorldLayout.STAFF_VITRINE.z)
 	return (
 		p.distance_to(nest) >= 2.2 + margin
 		and p.distance_to(mirror) >= 1.6 + margin
 		and p.distance_to(runes) >= 2.0 + margin
+		and p.distance_to(vitrine) >= 1.8 + margin
 		and not _near_path(x, z, 1.6 + margin)
 	)
 
@@ -281,6 +289,8 @@ func _build_rocks_and_props() -> void:
 	lamp_mat.vertex_color_use_as_albedo = true
 	lamp_mat.albedo_color = Color(1.5, 1.3, 0.9)
 	var glow: SurfaceTool = MeshKit.begin()
+	# Los postes van aparte y sin sombra: con el sol bajo dejaban rayas larguísimas por el valle.
+	var posts: SurfaceTool = MeshKit.begin()
 	for seg: PackedVector2Array in _paths:
 		var a := Vector3(seg[0].x, 0, seg[0].y)
 		var b := Vector3(seg[1].x, 0, seg[1].y)
@@ -296,9 +306,9 @@ func _build_rocks_and_props() -> void:
 				d += 6.5
 				k += 1
 				continue
-			MeshKit.add_prism(st, p, Vector3.UP, 0.12, 1.5, 0.0, 4, C_STONE_DARK, C_STONE, _rng)
+			MeshKit.add_prism(posts, p, Vector3.UP, 0.12, 1.5, 0.0, 4, C_STONE_DARK, C_STONE, _rng)
 			MeshKit.add_prism(
-				st,
+				posts,
 				p + Vector3.UP * 1.95,
 				Vector3.UP,
 				0.22,
@@ -327,10 +337,17 @@ func _build_rocks_and_props() -> void:
 	props.mesh = MeshKit.commit(st)
 	props.material_override = _toon
 	add_child(props)
+	var lamp_posts := MeshInstance3D.new()
+	lamp_posts.name = "LampPosts"
+	lamp_posts.mesh = MeshKit.commit(posts)
+	lamp_posts.material_override = _toon
+	lamp_posts.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(lamp_posts)
 	var lamps := MeshInstance3D.new()
 	lamps.name = "LanternGlow"
 	lamps.mesh = MeshKit.commit(glow)
 	lamps.material_override = lamp_mat
+	lamps.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(lamps)
 
 
@@ -392,7 +409,7 @@ func _build_grass() -> void:
 		var mmi := MultiMeshInstance3D.new()
 		mmi.name = "Grass%d" % c
 		mmi.multimesh = mm
-		mmi.material_override = _toon
+		mmi.material_override = _plant
 		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(mmi)
 
@@ -441,7 +458,7 @@ func _build_flowers() -> void:
 		var mmi := MultiMeshInstance3D.new()
 		mmi.name = "Flowers%d" % c
 		mmi.multimesh = mm
-		mmi.material_override = _toon
+		mmi.material_override = _plant
 		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(mmi)
 

@@ -2,7 +2,7 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
-## 2026-11-19 · Pulido del mundo: cristal más grande, nubes, nombres de las estaciones
+## 2026-11-19 · Pulido del mundo: cristal más grande, nubes, nombres de las estaciones, Vitrina del Báculo
 
 **Qué hay nuevo**
 
@@ -16,8 +16,16 @@ Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev
   forman un techo lejano. Sin luz del motor, con la paleta de las nubes del cielo y teñidas por la hora del día;
   giran muy despacio alrededor del cristal.
 - **Nombres de las estaciones** (`ui/guide/station_labels.gd`): al acercarse (30 a 6 m) se lee qué es cada
-  cosa (Pilón, Trituradora, Santuario, Mesa de Runas, Espejo, Jaula). Debajo, para qué sirve, sólo en la más
-  cercana a la mira y hasta que se usa una vez. Si se pisan, las lejanas suben.
+  cosa (Pilón, Trituradora, Santuario, Mesa de Runas, Espejo, Vitrina, Jaula). Debajo, para qué sirve, sólo en
+  la más cercana a la mira y hasta que se usa una vez. Si se pisan, las lejanas suben.
+- **Vitrina del Báculo** (`sanctum/staff_vitrine.gd`, GDD 4.3): una urna de cristal con marco de oro junto al
+  final del camino del Santuario. Dentro flota el báculo: gris y con candado hasta comprarlo; luego se enciende
+  con un destello y su gema toma el color del elemento que lleva. Con F se abre el Grimorio directamente por la
+  constelación del Báculo (y se puede comprar ahí). Tiene nombre y línea de ayuda como las demás estaciones.
+  Para capturas: `--at-staff-vitrine`.
+- **Hierba y flores de lejos**: se encogen entre 16 y 40 m de la cámara (`shrink_far` en `fx/toon.gdshader`).
+  Ya no se ven palitos negros por todo el valle.
+- **Faroles**: los postes ya no proyectan sombra (con el sol bajo dejaban rayas larguísimas).
 - **Tutorial**: el primer paso al salir de la casucha es "Acércate al cristal" (`Tutorial.Step.APPROACH`).
   Lanzar antes de llegar también vale.
 - **Círculos de la carga**: sólo el primero lleva el dibujo entero; los demás son aros huecos y más separados.
@@ -28,21 +36,27 @@ Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev
 
 - Pruebas en headless: todas en verde salvo `grimoire_click_smoke`, que ya fallaba antes ("clic en INSCRIBIR
   compra"). `staff_smoke` apunta ahora por encima de la puntita del pie del cristal, que con el tamaño nuevo
-  llega casi al cruce de caminos. Varias pruebas abortan al salir ("corrupted size vs. prev_size"); también pasa
-  sin estos cambios.
+  llega casi al cruce de caminos, y comprueba la Vitrina (se enciende al comprar el báculo y abre su página).
+  Varias pruebas abortan al salir ("corrupted size vs. prev_size"); también pasa sin estos cambios.
 - Capturas a 1280x720 de día, al atardecer y de noche:
   [nubes en la punta](docs/capturas/nubes_punta_cristal.png), [cristal grande](docs/capturas/cristal_grande.png),
   [nombres de las estaciones](docs/capturas/estaciones_nombres.png),
   [tutorial](docs/capturas/tutorial_acercate.png), [círculos de carga](docs/capturas/circulos_carga_aros.png),
-  [menú de depuración](docs/capturas/menu_depuracion_cabe.png).
+  [menú de depuración](docs/capturas/menu_depuracion_cabe.png),
+  [Vitrina del Báculo desde el camino](docs/capturas/vitrina_baculo_camino.png),
+  [vitrina sin báculo](docs/capturas/vitrina_baculo_apagada.png),
+  [vitrina con báculo](docs/capturas/vitrina_baculo_encendida.png),
+  [hierba sin palitos](docs/capturas/hierba_lejos.png), [faroles sin rayas](docs/capturas/faroles_sin_sombra.png).
 
 **Pendientes y problemas conocidos**
 
 - Justo al empezar (unos 5 s) se ven restos de los efectos que precalienta la pantalla de carga delante del
-  cristal (bolas de luz); el título los tapa en una partida normal.
+  cristal (bolas de luz, algún trozo de cristal en el aire, un brillo fuerte del sol); el título los tapa en una
+  partida normal y a los 15 o 20 s ya no queda nada.
 - La rejilla del cristal pasa de 3,8 a 8,4 millones de puntos (~67 MB): vigilar la carga y los tirones al excavar
   en Steam Deck.
-- Siguen pendientes la Vitrina del Báculo física y los trozos de cristal sueltos que caen.
+- Sigue pendiente que los trozos de cristal que quedan sueltos al excavar caigan.
+- `runes_smoke` falló una vez ("rebota y vuelve a golpear") con cuatro pruebas a la vez; sola pasa.
 
 ## 2026-11-19 · Mesa de Runas y los tres nodos hito del Grimorio
 

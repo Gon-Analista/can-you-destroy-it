@@ -1,9 +1,9 @@
 class_name StationLabels
 extends Control
 ## Nombres de las estaciones del valle (Pilón, Trituradora, Santuario, Mesa de Runas, Espejo,
-## Jaula): al acercarse se lee qué es cada cosa sin tener que tocarla. Debajo del nombre, una
-## línea con para qué sirve mientras el jugador no la ha usado nunca (`Progression.times`), sólo
-## en la que queda más cerca de la mira; luego sólo el nombre. Si se pisan, las lejanas suben.
+## Vitrina, Jaula): al acercarse se lee qué es cada cosa sin tener que tocarla. Debajo del nombre,
+## una línea con para qué sirve mientras el jugador no la ha usado nunca (`Progression.times`),
+## sólo en la que queda más cerca de la mira; luego sólo el nombre. Si se pisan, las lejanas suben.
 ## Aparecen entre `FAR_M` y `NEAR_M` metros y se apagan al llegar, cuando manda el aviso de la
 ## tecla junto a la mira. Main le pasa el mundo con `bind_world`.
 
@@ -27,10 +27,13 @@ const HELP: PackedStringArray = [
 	"EL GRIMORIO: MEJORAS A CAMBIO DE MANÁ",
 	"INSCRIBE RUNAS EN TUS HECHIZOS",
 	"TU RANGO Y TUS HAZAÑAS",
+	"LAS MEJORAS DEL BÁCULO, EN EL GRIMORIO",
 ]
-## La jaula es la única estación cuyo nombre no salía ya en otro sitio.
+## La jaula y la vitrina son las estaciones cuyo nombre no salía ya en otro sitio.
 # i18n
 const NEST_NAME: String = "JAULA DE FAMILIARES"
+# i18n
+const VITRINE_NAME: String = "VITRINA DEL BÁCULO"
 
 ## Oculto todo (dentro de la casucha, como la guía).
 var suppressed: bool = false
@@ -77,6 +80,9 @@ func bind_world(world: Node) -> void:
 	var mirror := world.get_node_or_null(^"Sanctum/ArchmageMirror") as ArchmageMirror
 	if mirror:
 		add(mirror, mirror.marker_position, "ESPEJO DEL ARCHIMAGO", HELP[4], &"mirror")
+	var vitrine := world.get_node_or_null(^"Sanctum/StaffVitrine") as StaffVitrine
+	if vitrine:
+		add(vitrine, vitrine.marker_position, VITRINE_NAME, HELP[5], &"staff_vitrine")
 	var nest := world.get_node_or_null(^"FamiliarFlock/FamiliarNest") as Node3D
 	if nest:
 		var over := func() -> Vector3: return nest.global_position + Vector3.UP * 3.2

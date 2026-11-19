@@ -292,7 +292,7 @@ func _update_hand_tags() -> void:
 
 
 ## Aviso de la tecla junto a la mira: trituradora, puerta de la casucha, atril del Santuario,
-## Espejo del Archimago o Mesa de Runas.
+## Espejo del Archimago, Mesa de Runas o Vitrina del Báculo.
 ## Entero mientras no se sabe; luego sólo la tecla pequeña y, al final, nada.
 func _update_prompt() -> void:
 	_prompt.visible = false
@@ -321,6 +321,9 @@ func _update_prompt() -> void:
 	var runes: RuneTable = get_tree().get_first_node_in_group(&"rune_table") as RuneTable
 	if runes and runes.player_in_range():
 		_show_prompt(runes.prompt(), runes.prompt_icon())
+	var vitrine: StaffVitrine = get_tree().get_first_node_in_group(&"staff_vitrine") as StaffVitrine
+	if vitrine and vitrine.player_in_range():
+		_show_prompt(vitrine.prompt(), vitrine.prompt_icon())
 
 
 func _show_prompt(text: String, icon: bool) -> void:

@@ -5,11 +5,13 @@ extends SceneTree
 ## la gema entre los elementos despiertos; manos + gema = triple (si no, la pareja de siempre);
 ## la Tormenta Elemental se queda sobre el cristal y le quita esencia durante varios segundos;
 ## el Glaciar Tronante y la Supernova golpean y se descubren; el Libro enseña las triples en su
-## propia página. No toca la partida guardada.
+## propia página; la Vitrina del Báculo se enciende al comprarlo y abre su página. No toca la
+## partida guardada.
 ## godot --headless --path game --script res://tests/smoke/staff_smoke.gd
 
 const PLAYER_PATH: NodePath = ^"WorldView/WorldViewport/Player"
 const BOOK_PATH: NodePath = ^"HUDLayer/Hud/SpellBook"
+const GRIMOIRE_PATH: NodePath = ^"HUDLayer/Hud/Grimoire"
 const HERD_PATH: NodePath = ^"WorldView/WorldViewport/CritterHerd"
 const NOVA: Resource = preload("res://data/spells/recipe_supernova.tres")
 
@@ -48,8 +50,22 @@ func _initialize() -> void:
 	var hands: Node = player.get_node(^"Hands")
 	var view: Node = hands.get(&"staff")
 	_check(view != null and not bool(view.call(&"is_shown")), "el báculo no se ve antes")
+	var vitrine: Node = main.get_tree().get_first_node_in_group(&"staff_vitrine")
+	_check(vitrine != null, "la Vitrina del Báculo está junto al Santuario")
+	_check(vitrine != null and not bool(vitrine.call(&"is_owned")), "la vitrina empieza apagada")
 	_check(bool(gs.call(&"buy_upgrade", staff_node)), "se compra el Báculo")
 	await process_frame
+	_check(
+		vitrine != null and bool(vitrine.call(&"is_owned")), "al comprarlo, la vitrina se enciende"
+	)
+	# La vitrina abre el Grimorio por la constelación del Báculo.
+	var grimoire: Node = main.get_node(GRIMOIRE_PATH)
+	root.get_node(^"Events").emit_signal(&"grimoire_page_requested", &"staff")
+	var page: Array = grimoire.get(&"PAGES")[int(grimoire.get(&"_page"))]
+	_check(bool(grimoire.get(&"is_open")) and page[0] == &"staff", "la vitrina abre el Báculo")
+	grimoire.call(&"close")
+	for i: int in 30:
+		await process_frame
 	var staff: RefCounted = _caster.get(&"staff")
 	_check(bool(view.call(&"is_shown")), "el báculo aparece en primera persona")
 	_check(int(staff.get(&"element_index")) == 2, "la gema empieza en el Rayo")
