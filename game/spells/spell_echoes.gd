@@ -61,18 +61,7 @@ func setup(
 func echo_single(side: int, hit: SpellHit, base_damage: int, collider: Object, count: int) -> void:
 	var el: ElementDef = hit.element_def
 	for k: int in count:
-		var echo := SpellHit.new()
-		echo.tier = _ghost.tier(hit.tier)
-		echo.element = el.id
-		echo.element_def = el
-		echo.size = hit.size
-		echo.level = hit.level
-		echo.echo = true
-		echo.minor = true
-		echo.resonant = _rng.randf() < float(_resonant_chance.call(el.resonant_bonus))
-		echo.damage = _echo_damage(base_damage, el.echo_damage, echo.resonant)
-		echo.position = hit.position
-		echo.normal = hit.normal
+		var echo: SpellHit = ghost(hit, base_damage, el.echo_damage)
 		var spot := Vector2(0.1 if side == 0 else -0.1, 0.1 + 0.09 * k)
 		get_tree().create_timer(el.echo_delay * float(k + 1)).timeout.connect(
 			func() -> void:
@@ -93,20 +82,40 @@ func echo_recipe(
 	recipe: SpellRecipe, base: SpellRecipe, hit: SpellHit, damage: int, charge: float
 ) -> void:
 	for k: int in recipe.echo_count:
-		var echo := SpellHit.new()
+		# El golpe es el de X (hit.recipe = base) con el aspecto fantasma del Eco de X.
+		var echo: SpellHit = ghost(hit, damage, recipe.echo_damage)
 		echo.tier = _ghost.tier(recipe.tier)
 		echo.recipe = base
-		echo.element = hit.element
-		echo.size = hit.size
-		echo.level = hit.level
-		echo.echo = true
-		# Sin pausa ni destello global: el golpe fuerte es el primero; los ecos llevan el ritmo.
-		echo.minor = true
-		echo.resonant = _rng.randf() < float(_resonant_chance.call())
-		echo.damage = _echo_damage(damage, recipe.echo_damage, echo.resonant)
 		get_tree().create_timer(recipe.echo_delay * float(k + 1)).timeout.connect(
 			_deliver.bind(recipe, base, echo, charge, k)
 		)
+
+
+## La copia fantasma de `hit` (mismo blanco, elemento y receta, aspecto fantasma) con
+## `damage` (sin resonancia) x `fraction` de daño y su propia tirada de resonante. Sin pausa ni
+## destello global: el golpe fuerte es el primero; los ecos llevan el ritmo. También la usa la
+## runa de Eco (RuneCaster).
+func ghost(hit: SpellHit, damage: int, fraction: float) -> SpellHit:
+	var echo := SpellHit.new()
+	echo.tier = _ghost.tier(hit.tier)
+	echo.recipe = hit.recipe
+	echo.element = hit.element
+	echo.element_def = hit.element_def
+	echo.size = hit.size
+	echo.level = hit.level
+	echo.echo = true
+	echo.minor = true
+	var bonus: float = hit.element_def.resonant_bonus if hit.element_def else 0.0
+	echo.resonant = _rng.randf() < float(_resonant_chance.call(bonus))
+	echo.damage = _echo_damage(damage, fraction, echo.resonant)
+	echo.position = hit.position
+	echo.normal = hit.normal
+	return echo
+
+
+## Lanza la copia `echo` (de `ghost`) desde `origin` hacia su punto y `collider`.
+func launch_ghost(echo: SpellHit, origin: Vector3, collider: Object, orb_charge: float) -> void:
+	_launch(echo, origin, collider, orb_charge)
 
 
 func _deliver(

@@ -33,6 +33,8 @@ static func is_free(x: float, z: float, margin: float) -> bool:
 	var mirror := Vector2(WorldLayout.ARCHMAGE_MIRROR.x, WorldLayout.ARCHMAGE_MIRROR.z)
 	if p.distance_to(mirror) < 1.8 + margin:
 		return false
+	if p.distance_to(Vector2(WorldLayout.RUNE_TABLE.x, WorldLayout.RUNE_TABLE.z)) < 2.2 + margin:
+		return false
 	if (
 		p.distance_to(Vector2(WorldLayout.FAMILIAR_NEST.x, WorldLayout.FAMILIAR_NEST.z))
 		< 2.6 + margin

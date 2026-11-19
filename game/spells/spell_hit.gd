@@ -42,3 +42,12 @@ var vein_weak: bool = false
 var by_player: bool = true
 ## Nivel del hechizo (1..10): en las combinaciones, el de su Potencia. Sólo cambia el aspecto.
 var level: int = 1
+## Runas (RuneCaster, al lanzar): rebotes que le quedan al golpe y el daño de cada rebote
+## (fracción del golpe del que sale); fracción de su daño que sigue por dentro del cristal
+## (Perforación; 0 = no perfora) y fondo de ese túnel (m).
+var rune_bounces: int = 0
+var rune_bounce_frac: float = 0.0
+var rune_pierce: float = 0.0
+var rune_depth: float = 0.0
+## Chispa de más o rebote de una runa: no vuelve a disparar las runas al lanzarse.
+var rune_spawn: bool = false

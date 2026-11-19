@@ -149,6 +149,7 @@ func _ready() -> void:
 		echo_pool,
 		[_aim, _hand_origin, _delivery.deliver, _delivery.deliver_sky, _resonant_chance]
 	)
+	_delivery.runes.bind(self, _echoes)
 	_cast_random = _randomizer(CAST_SFX, 1.15)
 	_combo_cast_random = _randomizer(RECIPE.cast_sfx, 1.08)
 	for el: ElementDef in ELEMENTS:
@@ -552,7 +553,7 @@ func _cast_single(side: int) -> void:
 	hit.tier = tier
 	hit.resonant = _rng.randf() < _resonant_chance(el.resonant_bonus)
 	hit.size = GameState.stat(el.size_stat, 1.0) if el.size_stat != &"" else 1.0
-	var base_damage: int = _sized_damage(tier.damage, hit.size)
+	var base_damage: int = _delivery.runes.harvested(_sized_damage(tier.damage, hit.size))
 	hit.damage = base_damage * (GameState.BALANCE.resonant_damage_mult if hit.resonant else 1)
 	hit.element = el.id
 	hit.element_def = el
@@ -738,7 +739,7 @@ func _launch_combine() -> void:
 		damage = roundi(float(damage) * GameState.stat(power_stat, 1.0))
 	var size_stat: StringName = recipe.size_stat if recipe.size_stat != &"" else effect.size_stat
 	hit.size = GameState.stat(size_stat, 1.0) if size_stat != &"" else 1.0
-	damage = _sized_damage(damage, hit.size)
+	damage = _delivery.runes.harvested(_sized_damage(damage, hit.size))
 	if tier_for(0).damage <= 0 and tier_for(1).damage <= 0:
 		# Dos chispitas de aprendiz: la combinación sigue siendo lamentable (se encoge en el aire,
 		# 1 de daño y un pedacito), pero ya araña el cristal.

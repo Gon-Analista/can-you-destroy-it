@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="RuneDef" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://data/defs/rune_def.gd" id="1"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_rune_multishot_01.ogg" id="s0"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_rune_multishot_02.ogg" id="s1"]
+
+[resource]
+script = ExtResource("1")
+id = &"rune_multishot"
+display_name = "Multidisparo"
+description = "Cada hechizo de una mano sale con chispas de más en abanico."
+element = &"runes"
+costs = PackedInt32Array(2500, 10000, 24000)
+prerequisites = Array[StringName]([&"pylon:0.1"])
+stat = &"rune_multishot"
+values = PackedFloat32Array(0, 1, 2, 3)
+value_format = "+%d proyectiles"
+kind = 0
+glyph = PackedStringArray("#..#..#.", "#..#..#.", ".#.#.#..", ".#+#+#..", "..+++...", "...+....", "...#....", "..###...")
+color = Color(1.0000, 0.7686, 0.4196, 1)
+color_hot = Color(2.4, 1.9, 1.0, 1)
+damage_values = PackedFloat32Array(0, 0.5, 0.5, 0.5)
+combo_scale = 0.35
+combo_note = "En los combinados que salen de las manos, las chispas de más pegan menos."
+sfx = Array[AudioStream]([ExtResource("s0"), ExtResource("s1")])

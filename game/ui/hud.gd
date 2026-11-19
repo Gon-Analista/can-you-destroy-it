@@ -32,6 +32,8 @@ var tutorial: Tutorial
 ## Ceremonia de subida de rango y estadísticas del Espejo del Archimago.
 var rank_ceremony: RankCeremony
 var mirror_screen: MirrorScreen
+## La pantalla de la Mesa de Runas (F junto a la mesa).
+var rune_screen: RuneScreen
 ## Muestra el HUD de juego aunque el ratón no esté capturado (modo demo).
 var force_captured_look: bool = false
 ## Ayuda "ESC: MENÚ" la primera vez (el modo demo la quita salvo con `--menu-hint`).
@@ -39,6 +41,7 @@ var show_menu_hint: bool = true
 
 ## Capa del último golpe (la que nombra el título de la esencia).
 var _shown_layer: int = 0
+var _rune_halo: RuneHalo
 var _camera: Camera3D
 var _caster: SpellCaster
 var _essence_title: Label
@@ -102,6 +105,10 @@ func _ready() -> void:
 	)
 	_place(_menu_hint, Control.PRESET_BOTTOM_LEFT, Rect2(8, -18, 300, UiFonts.LINE))
 	_menu_hint.visible = false
+	# Las runas inscritas giran alrededor de las llamas de las manos, por encima de la magia HD.
+	_rune_halo = RuneHalo.new()
+	_rune_halo.name = "RuneHalo"
+	add_child(_rune_halo)
 	_crosshair = Crosshair.new()
 	_crosshair.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(_crosshair)
@@ -166,6 +173,9 @@ func _ready() -> void:
 	mirror_screen = MirrorScreen.new()
 	mirror_screen.name = "MirrorScreen"
 	add_child(mirror_screen)
+	rune_screen = RuneScreen.new()
+	rune_screen.name = "RuneScreen"
+	add_child(rune_screen)
 	_rank_badge = RankBadge.new()
 	_rank_badge.name = "RankBadge"
 	_rank_badge.position = Vector2(8, 42)
@@ -197,6 +207,7 @@ func bind(camera: Camera3D, caster: SpellCaster) -> void:
 	_camera = camera
 	_caster = caster
 	_loop.bind(camera)
+	_rune_halo.hands = caster.hands if caster else null
 
 
 ## (Opciones enseña las mismas frases, sueltas, en su pestaña de controles.)
@@ -450,18 +461,23 @@ func _show_banner(text: String, color: Color) -> void:
 func _process(delta: float) -> void:
 	var captured: bool = force_captured_look or Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
 	_prompt.visible = (
-		not captured and not _grimoire.is_open and not menu.is_open() and not debug_menu.is_open()
+		not captured
+		and not _grimoire.is_open
+		and not menu.is_open()
+		and not debug_menu.is_open()
+		and not rune_screen.is_open
 	)
 	# Con un libro abierto, el HUD del bucle (Pilón, bolsa, manos) asomaba por los bordes.
 	_loop.visible = (
 		not _grimoire.is_open
 		and not _book.is_open
 		and not mirror_screen.is_open
+		and not rune_screen.is_open
 		and not menu.is_open()
 	)
 	_crosshair.visible = captured and not menu.is_open()
 	var title: bool = menu.mode == GameMenu.Mode.TITLE
-	var hide_top: bool = title or _loop.intro or mirror_screen.is_open
+	var hide_top: bool = title or _loop.intro or mirror_screen.is_open or rune_screen.is_open
 	_essence.visible = not hide_top
 	_essence_title.visible = not hide_top
 	_rank_badge.visible = not _loop.intro

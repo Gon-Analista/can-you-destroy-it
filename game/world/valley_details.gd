@@ -98,9 +98,11 @@ func _free(x: float, z: float, margin: float) -> bool:
 	var p := Vector2(x, z)
 	var nest := Vector2(WorldLayout.FAMILIAR_NEST.x, WorldLayout.FAMILIAR_NEST.z)
 	var mirror := Vector2(WorldLayout.ARCHMAGE_MIRROR.x, WorldLayout.ARCHMAGE_MIRROR.z)
+	var runes := Vector2(WorldLayout.RUNE_TABLE.x, WorldLayout.RUNE_TABLE.z)
 	return (
 		p.distance_to(nest) >= 2.2 + margin
 		and p.distance_to(mirror) >= 1.6 + margin
+		and p.distance_to(runes) >= 2.0 + margin
 		and not _near_path(x, z, 1.6 + margin)
 	)
 

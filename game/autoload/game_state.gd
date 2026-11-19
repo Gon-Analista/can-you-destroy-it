@@ -224,8 +224,10 @@ func take_for_delivery() -> ShardType:
 ## Maná que da un fragmento al entregarlo: su valor por la Pureza (GDD 7). Es el único sitio
 ## donde se aplica el multiplicador. El Pilón suma su valor sin Pureza (lo que perdió el cristal),
 ## para que el Pilón y el cristal sigan yendo juntos.
+## La Cosecha inscrita (RuneBook) también multiplica sólo el maná.
 func shard_value(type: ShardType) -> int:
-	return maxi(1, roundi(float(type.value) * stat(&"purity_mult", 1.0)))
+	var mult: float = stat(&"purity_mult", 1.0) * RuneBook.harvest_value(progression)
+	return maxi(1, roundi(float(type.value) * mult))
 
 
 func deliver(value: int, pylon_value: int = -1) -> void:

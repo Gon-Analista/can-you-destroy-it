@@ -69,6 +69,10 @@ signal shard_sent_to_pylon(type: ShardType)
 signal grimoire_requested(at_sanctum: bool)
 ## Abrir las estadísticas del Espejo del Archimago (F junto al espejo).
 signal mirror_requested
+## Abrir la Mesa de Runas (F junto a la mesa, ya abierta al 10 % del Pilón).
+signal rune_table_requested
+## Se inscribió o se borró una runa, o se compró un nivel o una ranura (manos, mesa, HUD).
+signal runes_changed
 signal menu_opened
 signal menu_closed
 ## El jugador cambió de idioma en Opciones: los textos fijos se rehacen.

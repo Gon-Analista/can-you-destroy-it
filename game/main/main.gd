@@ -325,6 +325,27 @@ func _setup_autoplay() -> void:
 		elif a == "--mirror":
 			# --mirror: abre las estadísticas del Espejo del Archimago al acabar la carga.
 			get_tree().create_timer(3.3).timeout.connect(_hud.mirror_screen.open)
+		elif a.begins_with("--runes"):
+			# --runes=multishot:2,bounce:1: runas aprendidas e inscritas en ese orden (la mesa abierta
+			# y las ranuras que hagan falta); --runes sin más, todas al máximo y tres inscritas.
+			debug_runes(_rune_spec(a.get_slice("=", 1) if a.contains("=") else ""))
+		elif a == "--rune-table":
+			# --rune-table: abre la pantalla de la Mesa de Runas al acabar la carga.
+			get_tree().create_timer(3.3).timeout.connect(_hud.rune_screen.open)
+		elif a == "--at-rune-table":
+			# --at-rune-table: el mago delante de la Mesa de Runas, mirándola.
+			var front: Vector3 = Vector3.BACK.rotated(
+				Vector3.UP, deg_to_rad(WorldLayout.RUNE_TABLE_YAW_DEG)
+			)
+			var at: Vector3 = WorldLayout.RUNE_TABLE + front * 3.2
+			at.y = Valley.ground_height(at.x, at.z) + 0.2
+			debug_teleport.call_deferred(at, WorldLayout.RUNE_TABLE + Vector3.UP * 1.2)
+		elif a.begins_with("--rune-unseal"):
+			# --rune-unseal[=s]: a los s segundos (3,4) el Pilón llega al 10 % y la mesa despierta.
+			var at_s: float = float(a.get_slice("=", 1)) if a.contains("=") else 3.4
+			get_tree().create_timer(at_s).timeout.connect(
+				debug_set_pylon.bind(RuneBook.BALANCE.rune_table_pylon)
+			)
 		elif a == "--stats":
 			# --stats: cifras de una partida avanzada para el Espejo (capturas).
 			var st: PlayStats = GameState.progression.stats
@@ -729,6 +750,41 @@ func debug_set_pylon(ratio: float) -> void:
 	GameState.emit_all()
 	for node: Node in get_tree().get_nodes_in_group(&"valley_milestones"):
 		(node as ValleyMilestones).refresh()
+
+
+## Depuración y demo: las runas de `levels` (id de RuneDef -> nivel) aprendidas e inscritas por
+## ese orden, con la mesa abierta (el Pilón al menos a su marca) y las ranuras que hagan falta.
+## Vacío: todas al máximo, todas las ranuras y las tres primeras inscritas.
+func debug_runes(levels: Dictionary) -> void:
+	var prog: Progression = GameState.progression
+	if levels.is_empty():
+		for def: RuneDef in RuneBook.RUNES:
+			levels[def.id] = def.get_max_level()
+	if not RuneBook.table_unlocked(prog):
+		debug_set_pylon(RuneBook.BALANCE.rune_table_pylon)
+		# El rango que da ese Pilón, sin ceremonia (la demo no la quiere tapando la pantalla).
+		debug_set_rank(WizardRanks.earned(prog, prog.rank), false)
+	var want: int = mini(levels.size(), RuneBook.MAX_SLOTS)
+	prog.upgrade_levels[RuneBook.SLOTS.id] = clampi(
+		want - 1, prog.get_level(RuneBook.SLOTS.id), RuneBook.SLOTS.get_max_level()
+	)
+	prog.inscribed_runes.clear()
+	for id: Variant in levels:
+		var def: RuneDef = RuneBook.def_of(StringName(str(id)))
+		if def == null:
+			continue
+		prog.upgrade_levels[def.id] = clampi(int(levels[id]), 1, def.get_max_level())
+		RuneBook.inscribe(prog, def.id)
+	Events.runes_changed.emit()
+
+
+## "--runes=multishot:2,bounce:1" -> {&"rune_multishot": 2, &"rune_bounce": 1}.
+static func _rune_spec(text: String) -> Dictionary:
+	var out: Dictionary = {}
+	for part: String in text.split(",", false):
+		var id: String = part.get_slice(":", 0)
+		out[StringName("rune_" + id)] = int(part.get_slice(":", 1)) if part.contains(":") else 1
+	return out
 
 
 func _demo_next_mark() -> void:

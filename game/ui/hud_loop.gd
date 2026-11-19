@@ -281,8 +281,8 @@ func _update_hand_tags() -> void:
 		_staff_tag.modulate.a = (0.75 + 0.25 * sin(_t * 9.0)) if ready else 0.8
 
 
-## Aviso de la tecla junto a la mira: trituradora, puerta de la casucha, atril del Santuario o
-## Espejo del Archimago.
+## Aviso de la tecla junto a la mira: trituradora, puerta de la casucha, atril del Santuario,
+## Espejo del Archimago o Mesa de Runas.
 ## Entero mientras no se sabe; luego sólo la tecla pequeña y, al final, nada.
 func _update_prompt() -> void:
 	_prompt.visible = false
@@ -308,6 +308,9 @@ func _update_prompt() -> void:
 	)
 	if mirror and mirror.player_in_range():
 		_show_prompt(mirror.prompt(), mirror.prompt_icon())
+	var runes: RuneTable = get_tree().get_first_node_in_group(&"rune_table") as RuneTable
+	if runes and runes.player_in_range():
+		_show_prompt(runes.prompt(), runes.prompt_icon())
 
 
 func _show_prompt(text: String, icon: bool) -> void:

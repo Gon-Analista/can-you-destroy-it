@@ -77,3 +77,7 @@ var charge_stages_by_level: PackedInt32Array = PackedInt32Array([0, 1, 1, 2, 2, 
 @export var core_reveal_scan_sec: float = 15.0
 ## Segundos de fiesta en el valle tras romper el Núcleo antes de la pantalla final.
 @export var ending_screen_delay_sec: float = 13.0
+
+@export_group("Mesa de Runas")
+## Pilón (progreso real) al que se abre la Mesa de Runas con su primera ranura (GDD 4.3).
+@export_range(0.0, 1.0) var rune_table_pylon: float = 0.1

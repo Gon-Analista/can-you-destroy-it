@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="RuneDef" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://data/defs/rune_def.gd" id="1"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_rune_echo_01.ogg" id="s0"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_rune_echo_02.ogg" id="s1"]
+
+[resource]
+script = ExtResource("1")
+id = &"rune_echo"
+display_name = "Eco"
+description = "A veces se relanza gratis: una copia fantasma sigue al hechizo."
+element = &"runes"
+costs = PackedInt32Array(3000, 12000, 28000)
+prerequisites = Array[StringName]([&"pylon:0.1"])
+stat = &"rune_echo"
+values = PackedFloat32Array(0, 25, 35, 45)
+value_format = "%d %% de eco"
+kind = 3
+glyph = PackedStringArray("..####..", ".#....#.", "#..++..#", "#.+..+.#", "#.+..+.#", "#..++..#", ".#....#.", "..####..")
+color = Color(0.7804, 0.6078, 1.0000, 1)
+color_hot = Color(2.0, 1.5, 2.6, 1)
+damage_values = PackedFloat32Array(0, 0.8, 0.85, 0.9)
+combo_scale = 0.5
+combo_note = "En los combinados que salen de las manos, el eco sale la mitad de las veces."
+sfx = Array[AudioStream]([ExtResource("s0"), ExtResource("s1")])
