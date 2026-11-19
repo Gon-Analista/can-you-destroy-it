@@ -56,6 +56,7 @@ Tecnologías ya previstas (validar la versión al integrarlas):
 | SFX del meteorito | `tools/sfx_meteor.py` (destello en el cielo, silbido de caída, estruendo) | Semillas fijas. |
 | SFX de los bichos | `tools/sfx_critters.py` (boing, chillidos, splorch, bocina, coscorrón) | Semillas fijas. |
 | SFX de Lágrimas, final, báculo y rangos | `tools/sfx_tears.py`, `sfx_finale.py`, `sfx_staff.py`, `sfx_ranks.py` | Semillas fijas. |
+| SFX de runas y nodos hito | `tools/sfx_runes.py`, `tools/sfx_milestones.py` | Semillas fijas; los bucles se importan con `loop=true`. |
 | Sprite del báculo | `tools/make_staff_sprite.py` | Pixel art procedural. |
 | SFX de familiares | `tools/sfx_familiars.py` (ululatos, píos, aleteo, recoger, invocar) | Semillas fijas. |
 | SFX de movimiento | `tools/sfx_move.py` (doble salto, levitación en bucle, carga agotada) | Semillas fijas. |
@@ -329,7 +330,9 @@ godot --headless --path game --script res://tests/smoke/progression_smoke.gd
   `tests/smoke/settings_smoke.gd`, que las opciones nuevas (FOV, VSync, FPS, invertir Y...) se guardan y se
   aplican, también en pausa;
   `tests/smoke/crystal_volume_smoke.gd`, que el volumen del cristal reparte el 1.000.000, se excava, respeta el
-  Núcleo, se malla y se guarda.
+  Núcleo, se malla y se guarda;
+  `tests/smoke/runes_smoke.gd`, la Mesa de Runas (sellada, ranuras, inscribir y borrar) y el efecto real de cada runa;
+  `tests/smoke/milestones_smoke.gd`, el Lanzamiento continuo, el Vórtice y el Rompefacetas (con el tope del Núcleo).
 - Ojo en los tests `--script`: los autoloads no existen al compilar el script, así que no se pueden nombrar
   (`Events`, `GameState`) ni usar como tipo una clase cuyo script los use (`SpellCaster`, `Player`): se buscan con
   `root.get_node(^"Events")` y se llama a los métodos por nombre.

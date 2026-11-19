@@ -4,7 +4,7 @@ extends Node
 ## pools de proyectiles, el proyectil desde las manos, lo que cae del cielo (Meteoro, Trueno,
 ## Glaciar), la lluvia, el haz de Plasma, la onda del Terremoto, el pozo de Gravedad y las triples
 ## del báculo (la Tormenta Elemental y la Supernova). El lanzador decide qué y cuánto; esto, por
-## dónde y cómo.
+## dónde y cómo. Lo que sale de las manos lleva además las runas inscritas (RuneCaster).
 
 const FIZZLE_SFX: AudioStream = preload("res://audio/sfx/sfx_spark_fizzle_01.ogg")
 const PLASMA_SFX: AudioStream = preload("res://audio/sfx/amb_plasma_loop.ogg")
@@ -28,6 +28,8 @@ var projectiles: Array[SparkProjectile] = []
 var combo_projectiles: Array[SparkProjectile] = []
 ## Lado por el que entra el próximo hechizo del cielo (se alterna en cada lanzamiento).
 var sky_side: float = 1.0
+## Las runas de la Mesa de Runas (multidisparo, rebote, perforación, eco, cosecha).
+var runes: RuneCaster
 var _circles: MagicCircles
 var _aim: Callable
 var _hand_origin: Callable
@@ -65,6 +67,10 @@ func setup(cam: Camera3D, circles: MagicCircles, aim: Callable, hand_origin: Cal
 	_nova.name = "Supernova"
 	add_child(_nova)
 	_nova.circles = _circles
+	runes = RuneCaster.new()
+	runes.name = "Runes"
+	add_child(runes)
+	runes.setup(self, _hand_origin)
 	_beam_player = AudioStreamPlayer.new()
 	_beam_player.name = "BeamLoop"
 	_beam_player.bus = &"SFX"
@@ -107,6 +113,7 @@ func launch(projectile: SparkProjectile, hit: SpellHit, side: int) -> void:
 	var origin: Vector3 = _hand_origin.call(side)
 	hit.direction = (target - origin).normalized()
 	projectile.launch(origin, target, hit, result["collider"])
+	runes.on_launch(hit, side, origin, result)
 
 
 ## Cada combinación llega al cristal a su manera (ver SpellRecipe.Delivery).
@@ -363,6 +370,7 @@ func warm_up(target: Vector3, elements: Array[ElementDef], recipes: Array[SpellR
 	_circles.release()
 	_storm.warm_up(target)
 	_nova.warm_up(target, camera)
+	runes.warm_up(target)
 
 
 func _warm(

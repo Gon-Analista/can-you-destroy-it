@@ -3,15 +3,24 @@ extends RefCounted
 ## Versión "fantasma" de un hechizo para los ecos del Arcano: el mismo aspecto (llama, Bola de
 ## Fuego, lanza...) teñido de violeta arcano, algo más pálido y más pequeño. Se calcula una vez
 ## por aspecto y se guarda en esta caché (la tiene SpellEchoes): los ecos no crean recursos al
-## lanzarse (y se libera con ella).
+## lanzarse (y se libera con ella). Las runas (RuneCaster) usan la misma caché con su propio color
+## (`color`, `mix`): las chispas de más del Multidisparo, doradas; los rebotes, magenta.
 
 ## Violeta arcano hacia el que tiran los colores (se conserva el brillo HDR de cada uno).
 const GHOST := Color(0.78, 0.52, 1.0)
 ## Cuánto tiran hacia el violeta (0 = igual, 1 = todo violeta).
 const MIX: float = 0.6
 
+## Color hacia el que tiran los colores y cuánto (el violeta arcano, salvo en las runas).
+var color: Color = GHOST
+var mix: float = MIX
 var _tiers: Dictionary[SpellTier, SpellTier] = {}
 var _visuals: Dictionary[SpellVisualDef, SpellVisualDef] = {}
+
+
+func _init(p_color: Color = GHOST, p_mix: float = MIX) -> void:
+	color = p_color
+	mix = p_mix
 
 
 ## El nivel `tier` en versión fantasma (aspecto, estela, colores del impacto).
@@ -24,7 +33,7 @@ func tier(source: SpellTier) -> SpellTier:
 	t.visual = visual(source.visual)
 	t.color_core = tint(source.color_core)
 	t.color_glow = tint(source.color_glow)
-	t.impact_tint = tint(source.impact_tint) if source.impact_tint.a > 0.0 else GHOST
+	t.impact_tint = tint(source.impact_tint) if source.impact_tint.a > 0.0 else color
 	t.orb_scale = source.orb_scale * 0.85
 	# Golpe de eco: estallido y grieta algo menores que los del hechizo de verdad.
 	t.crack_radius = source.crack_radius * 0.7
@@ -67,14 +76,14 @@ func visual(source: SpellVisualDef) -> SpellVisualDef:
 	return v
 
 
-## Un color tirando hacia el violeta arcano sin perder su brillo (HDR incluido).
-static func tint(col: Color) -> Color:
+## Un color tirando hacia `color` (el violeta arcano) sin perder su brillo (HDR incluido).
+func tint(col: Color) -> Color:
 	var peak: float = maxf(col.r, maxf(col.g, col.b))
-	var ghost := Color(GHOST.r * peak, GHOST.g * peak, GHOST.b * peak, col.a)
-	return col.lerp(ghost, MIX)
+	var ghost := Color(color.r * peak, color.g * peak, color.b * peak, col.a)
+	return col.lerp(ghost, mix)
 
 
-static func _tint_gradient(src: Gradient) -> Gradient:
+func _tint_gradient(src: Gradient) -> Gradient:
 	var g: Gradient = src.duplicate()
 	var cols := PackedColorArray()
 	for col: Color in src.colors:

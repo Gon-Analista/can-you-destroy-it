@@ -290,6 +290,8 @@ func _build() -> void:
 	_button(row, tr("SUBIR DE RANGO"), _rank_up)
 	for b: Button in [_fps_button, _god_button]:
 		b.toggle_mode = true
+	row = _row(box, tr("RUNAS"))
+	_button(row, tr("DESBLOQUEAR TODAS"), _unlock_runes)
 	row = _row(box, tr("BICHOS"))
 	_button(row, tr("APARECER 5"), _spawn_critters)
 	row = _row(box, tr("IR A"))
@@ -496,6 +498,9 @@ func buy_everything() -> void:
 				bought += 1
 				progress = true
 	prog.reveal_all = false
+	# Y las runas de la Mesa de Runas (con sus ranuras).
+	if _main:
+		_main.debug_runes({})
 	SaveSystem.enabled = saving
 	SaveSystem.save_game()
 	if _player:
@@ -638,6 +643,15 @@ func _toggle_god() -> void:
 		tr("MODO DIOS: SIN RECARGA Y VUELO INFINITO") if god_mode else tr("MODO DIOS: NO"),
 		BUY_SFX if god_mode else TICK_SFX
 	)
+
+
+## Mesa de Runas abierta, todas las runas al máximo, las tres ranuras y tres runas inscritas.
+func _unlock_runes() -> void:
+	if _main == null:
+		return
+	_main.debug_runes({})
+	var n: int = RuneBook.used_slots(GameState.progression)
+	_feedback(tr("¡RUNAS AL MÁXIMO! %d INSCRITAS") % n, BIG_SFX)
 
 
 ## Cinco bichos delante del mago (critters/), con su ¡boing!.

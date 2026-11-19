@@ -96,3 +96,7 @@ var charge_stages_by_level: PackedInt32Array = PackedInt32Array([0, 1, 1, 2, 2, 
 @export var facet_max_radius: float = 13.0
 @export_range(0.05, 1.0) var facet_depth_ratio: float = 0.3
 @export var facet_hit_stop_sec: float = 0.16
+
+@export_group("Mesa de Runas")
+## Pilón (progreso real) al que se abre la Mesa de Runas con su primera ranura (GDD 4.3).
+@export_range(0.0, 1.0) var rune_table_pylon: float = 0.1

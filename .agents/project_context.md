@@ -194,7 +194,8 @@ en el Grimorio del Santuario mejoras que cambian los hechizos. Lo que hay:
   hechiceros, venas, Pureza, hitos del Pilón, simulador de balance (`tools/balance_sim.py`), carga por
   escalones, menú de depuración y opciones, guía de objetivos, **bichos del valle** (`critters/`), **Lágrimas del
   Núcleo** y la página Núcleo del Grimorio, **Báculo** con triples (`StaffCombos`, `SpellDelivery`), **rangos de
-  mago** y **Espejo del Archimago**, y **el final** (`ending/`: Núcleo expuesto, Gran Convergencia, fiesta y
+  mago** y **Espejo del Archimago**, **Mesa de Runas** (`sanctum/rune_table.gd`, `spells/runes/`,
+  `RuneBook`), los nodos hito **Lanzamiento continuo**, **Vórtice** y **Rompefacetas**, y **el final** (`ending/`: Núcleo expuesto, Gran Convergencia, fiesta y
   pantalla "Yes, you could.").
 
 **Aún no hay**: la Vitrina del Báculo como estación física (las mejoras del báculo viven en el Grimorio), trozos de
@@ -209,7 +210,7 @@ cristal que caen al quedarse sueltos, logros de Steam, créditos definitivos ni 
 | **M1b Prototipo** ✅ (falta validar jugando) | Recoger y entregar fragmentos, Pilón, 5 mejoras. | Los primeros 5 minutos ya son divertidos. 60 fps estables. |
 | **M2 Vertical slice** ✅ | Santuario básico, 2 elementos, 1 combinación, telequinesis, capa Corteza completa. | 30 minutos sin baches. |
 | **M3 Contenido** ✅ | 5 elementos, todas las combinaciones, 7 ramas, familiares, todas las capas. | Se puede terminar de principio a fin. |
-| **M4 Final y pulido** (en curso: final y balance hechos) | Gran Convergencia, balance, audio, logros de Steam. | 2 a 3 h; el final emociona. |
+| **M4 Final y pulido** (en curso: final, balance, runas y nodos hito hechos) | Gran Convergencia, balance, audio, logros de Steam. | 2 a 3 h; el final emociona. |
 
 ## 9. Registro de decisiones
 
@@ -295,6 +296,8 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-18 | Final (`EndingDirector`): ningún golpe baja la esencia del 99 % (`GameState.core_floor`); desde el 95 % una comprobación cada 15 s expone el Núcleo si queda < 0,6 % golpeable. "Yes, you could." se queda en inglés en todos los idiomas. Partida terminada guardada (`game_complete`, `ending_seen`). | Con la rejilla real ~2-3 % de la esencia no se puede golpear: sin la red, el 99 % podía no llegar. |
 | 2026-11-18 | Báculo: la entrega de los hechizos pasa a `SpellDelivery` y las triples a `StaffCombos` (sólo una Tormenta a la vez); el elemento de la gema con R / rueda. | `spell_caster.gd` estaba en el límite de líneas y métodos; GDD 5.2. |
 | 2026-11-18 | Rangos por progreso (`WizardRanks`, `data/ranks/*.tres`), una capa de música por rango; Leyenda al romper el Núcleo. Cifras del Espejo y de la pantalla final en un solo sitio (`Progression.stats`; `time_played`, `spells_cast` y `shards_collected` son propiedades sobre él; los ecos del Arcano no cuentan como hechizos). | GDD 8 y 11.4; dos ramas contaban lo mismo por separado. |
+| 2026-11-19 | Runas como `RuneDef` (hereda `UpgradeNode`): se compran por `GameState.buy_upgrade` y se inscriben en `Progression.inscribed_runes`; reglas en `RuneBook`, efectos en `RuneCaster` (un gancho en `SpellDelivery.launch` y otro en `spell_impacted`). Enteras en hechizos de una mano, a `combo_scale` en combinados FRONT/LANCE; los golpes de runa van `minor` y no rompen facetas. | GDD 4.3 y 5.3; GameState, Progression y SpellCaster ya estaban en 20 métodos públicos. La Cosecha suave cierra un hueco de 227 s del simulador. |
+| 2026-11-19 | Nodos hito: Lanzamiento continuo (`AutoCast`, mantener 0,28 s, nunca más rápido que la recarga), Vórtice (`ManaVortex` + `ShardPool.vortex_pull`, sin Lágrimas ni fragmentos de familiares) y Rompefacetas (`FacetBreaker`: el cráter se queda la base y la losa la resonancia + 1,5 veces la base, con tope en `core_floor`). | GDD 7: un hito por rama que cambie la forma de jugar. |
 
 ## 10. Preguntas abiertas
 

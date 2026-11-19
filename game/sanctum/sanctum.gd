@@ -54,6 +54,7 @@ var _t: float = 0.0
 var _night: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var _mirror: ArchmageMirror
+var _rune_table: RuneTable
 
 
 func _ready() -> void:
@@ -143,8 +144,8 @@ func _on_upgrade_bought(_id: StringName, _level: int) -> void:
 		_shown += 1
 
 
-## El Espejo del Archimago, al lado del templete (en `WorldLayout`, a ras del suelo). Diferido:
-## Main coloca el Santuario después de su _ready.
+## El Espejo del Archimago y la Mesa de Runas, a los lados del templete (en `WorldLayout`, a ras
+## del suelo). Diferido: Main coloca el Santuario después de su _ready.
 func _build_mirror() -> void:
 	_mirror = ArchmageMirror.new()
 	_mirror.name = "ArchmageMirror"
@@ -153,6 +154,14 @@ func _build_mirror() -> void:
 	var at: Vector3 = WorldLayout.ARCHMAGE_MIRROR
 	_mirror.global_position = Vector3(at.x, Valley.ground_height(at.x, at.z) - 0.05, at.z)
 	_mirror.rotation.y = deg_to_rad(WorldLayout.ARCHMAGE_MIRROR_YAW_DEG)
+	# La Mesa de Runas, al otro lado (sellada hasta el 10 % del Pilón).
+	_rune_table = RuneTable.new()
+	_rune_table.name = "RuneTable"
+	_rune_table.top_level = true
+	add_child(_rune_table)
+	var rt: Vector3 = WorldLayout.RUNE_TABLE
+	_rune_table.global_position = Vector3(rt.x, Valley.ground_height(rt.x, rt.z) - 0.05, rt.z)
+	_rune_table.rotation.y = deg_to_rad(WorldLayout.RUNE_TABLE_YAW_DEG)
 
 
 func _mesh(node_name: String, st: SurfaceTool, at: Vector3 = Vector3.ZERO) -> MeshInstance3D:

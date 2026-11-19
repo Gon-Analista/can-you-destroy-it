@@ -39,6 +39,14 @@ Lee los datos reales del juego (game/data/**.tres) y reproduce las reglas del c�
   una con sus saltos) durante `storm_sec` y, como sólo puede haber una, se juega en rotación: la
   tormenta y, mientras descarga, el mejor otro ataque (como la Resonancia Arcana).
 
+- Runas (`RuneBook`, `RuneCaster`, data/runes/): se compran con maná desde el 10 % del Pilón y sólo
+  cuentan inscritas (una ranura al abrir la mesa y dos más que se compran desde el 25 %); el jugador
+  inscribe en cada momento las que más maná por segundo le dan. Multidisparo (chispas de más, sin
+  resonancia), Rebote (golpes en cadena con daño x fracción), Perforación (túnel: esencia y
+  fragmentos de una fracción del golpe), Eco (copia fantasma con su resonancia, con probabilidad) en
+  los sueltos y, a `combo_scale`, en los combinados que salen de las manos (FRONT y LANCE, sin las
+  triples); Cosecha: menos daño en todo lo que lanza el mago y más maná por fragmento (como la Pureza).
+
 El jugador simulado elige siempre el ataque que más maná por segundo le da y compra la mejora con mejor
 relación ganancia / coste (las de movimiento, cuando son baratas). No es un jugador real: es una cota
 optimista. Las reglas de ritmo del GDD (sección 8) se comprueban al final:
@@ -49,6 +57,7 @@ optimista. Las reglas de ritmo del GDD (sección 8) se comprueban al final:
 """
 import argparse
 import csv
+import itertools
 import json
 import math
 import re
@@ -104,6 +113,10 @@ HAIL_PER_VOLLEY = 2  # elemental_storm.gd: bolas de granizo de cada ráfaga
 STORM_PARTNERS = 8  # combinaciones que se prueban junto a la Tormenta
 STAFF_UPGRADE = "staff"  # StaffCombos.UNLOCK_UPGRADE
 ZERO = (0.0, 0.0, 0.0, 0.0)
+# RuneDef.Kind
+MULTISHOT, BOUNCE, PIERCE, ECHO, HARVEST = range(5)
+RUNE_MIN_SIZE = 0.65  # rune_caster.gd MIN_SIZE
+RUNE_CURIOSITY = 0.05  # ganas de probar una runa nueva o de tener otra ranura (ver score)
 
 
 def yadd(a, b, k: float = 1.0):
@@ -255,6 +268,10 @@ class Upgrade:
     prereq: list[str]
     currency: int = 0  # UpgradeNode.Currency: 0 maná, 1 Lágrimas del Núcleo
     reveal: float = 0.0  # UpgradeNode.reveal_destroyed_ratio
+    # Runas (RuneDef): tipo (-1 = no es runa), daño por nivel y peso en los combinados.
+    rune: int = -1
+    rune_damage: list = field(default_factory=list)
+    combo_scale: float = 0.0
 
 
 @dataclass
@@ -353,6 +370,20 @@ def load():
             int(main.get("currency", 0)),
             float(main.get("reveal_destroyed_ratio", 0.0)),
         )
+    for p in sorted((DATA / "runes").glob("*.tres")) if (DATA / "runes").exists() else []:
+        main, _ = parse_tres(p)
+        u = Upgrade(
+            main["id"],
+            [int(c) for c in main.get("costs", [])],
+            main.get("values", []),
+            main.get("stat", ""),
+            main.get("prerequisites", []),
+        )
+        if "kind" in main or "damage_values" in main:
+            u.rune = int(main.get("kind", 0))
+            u.rune_damage = main.get("damage_values", [])
+            u.combo_scale = float(main.get("combo_scale", 0.5))
+        upgrades[main["id"]] = u
     shards = []
     resonant = None
     for p in (DATA / "shards").glob("*.tres"):
@@ -470,6 +501,9 @@ class State:
     rank: int = 0
     # (minuto, nombre) de cada subida de rango (ver check_rank).
     ranks: list = field(default_factory=list)
+    # Runas inscritas (ids), las que elige el jugador (Game.pick_runes).
+    runes: tuple = ()
+    mana_earned: float = 0.0
 
 
 class Game:
@@ -498,6 +532,103 @@ class Game:
                 lv = s.levels.get(u.id, 0)
                 return u.values[min(lv, len(u.values) - 1)] if u.values else fallback
         return fallback
+
+    # -- runas (core/rune_book.gd, spells/runes/rune_caster.gd) --
+    def rune(self, s: State, kind: int):
+        """(nivel, Upgrade) de la runa de ese tipo si está inscrita; (0, None) si no."""
+        for uid in s.runes:
+            u = self.upgrades[uid]
+            if u.rune == kind:
+                return s.levels.get(uid, 0), u
+        return 0, None
+
+    @staticmethod
+    def rune_value(u: Upgrade, lv: int) -> float:
+        return u.values[min(lv, len(u.values) - 1)] if u.values else 0.0
+
+    @staticmethod
+    def rune_dmg(u: Upgrade, lv: int) -> float:
+        return u.rune_damage[min(lv, len(u.rune_damage) - 1)] if u.rune_damage else 0.0
+
+    def rune_slots(self, s: State) -> int:
+        """RuneBook.slot_count: 0 con la mesa sellada; si no, lo que den las ranuras compradas."""
+        if s.pylon / self.total + 1e-6 < float(self.balance.get("rune_table_pylon", 0.1)):
+            return 0
+        return int(round(self.stat(s, "rune_slots", 1.0)))
+
+    def pick_runes(self, s: State) -> None:
+        """Inscribe las runas aprendidas que más maná por segundo dan (todas las combinaciones)."""
+        owned = [u.id for u in self.upgrades.values() if u.rune >= 0 and s.levels.get(u.id, 0) > 0]
+        n = min(self.rune_slots(s), len(owned))
+        if n <= 0:
+            s.runes = ()
+            return
+        best, best_rate = s.runes, -1.0
+        for combo in itertools.combinations(sorted(owned), n):
+            s.runes = combo
+            rate = self.effective(s)[0]
+            if rate > best_rate + 1e-9:
+                best, best_rate = combo, rate
+        s.runes = best
+
+    def harvest(self, s: State) -> tuple[float, float]:
+        """Cosecha inscrita: (x daño de los hechizos del mago, x maná de cada fragmento)."""
+        lv, u = self.rune(s, HARVEST)
+        if not lv:
+            return 1.0, 1.0
+        return self.rune_dmg(u, lv), self.rune_value(u, lv)
+
+    def harvested(self, s: State, dmg: int) -> int:
+        """RuneCaster.harvested."""
+        mult = self.harvest(s)[0]
+        return dmg if dmg <= 0 or mult >= 1.0 else max(1, gd_round(dmg * mult))
+
+    def rune_extras(self, s: State, dmg: int, size: float, res_p: float, mult: float, combo,
+                    sub_tier, sub_el: Element, main_hits):
+        """Lo que suman las runas inscritas a un lanzamiento (RuneCaster.on_launch y _on_impacted):
+        `dmg` es el daño sin resonancia, `main_hits` la lista (probabilidad, daño con resonancia) del
+        golpe que llega, `combo` la receta (o None en un suelto) y `sub_tier` / `sub_el` lo que sale
+        de más (la llama de la mano). Devuelve (rendimiento medio, (receta, daño, probabilidad) del eco
+        de un combinado o (None, 0, 0))."""
+        def scale_of(u):
+            return 1.0 if combo is None else u.combo_scale
+        out = ZERO
+        chain = sub_el.chain_count
+        lv, u = self.rune(s, MULTISHOT)
+        if lv:
+            de = max(1, gd_round(dmg * self.rune_dmg(u, lv) * scale_of(u)))
+            n = int(round(self.rune_value(u, lv)))
+            y = self._receive(de, sub_tier, max(RUNE_MIN_SIZE, size * 0.72), sub_el.shard_bonus, chain=chain)
+            out = yadd(out, y, n)
+        lv, u = self.rune(s, BOUNCE)
+        if lv and not (combo is not None and self._heart):
+            frac = self.rune_dmg(u, lv) * scale_of(u)
+            n = int(round(self.rune_value(u, lv)))
+            for p, hd in main_hits:
+                d, sz = float(hd), size
+                for _ in range(n):
+                    d = max(1, gd_round(d * frac))
+                    sz = max(RUNE_MIN_SIZE, sz * 0.82)
+                    out = yadd(out, self._receive(d, sub_tier, sz, sub_el.shard_bonus, chain=chain), p)
+        lv, u = self.rune(s, PIERCE)
+        if lv:
+            frac = self.rune_dmg(u, lv) * scale_of(u)
+            for p, hd in main_hits:
+                # Túnel: esencia y fragmentos por su valor, sin bonus ni venas (spawn_worth).
+                out = yadd(out, self._dig(hd * frac, sub_tier, size, 0), p)
+        echo = (None, 0, 0.0)
+        lv, u = self.rune(s, ECHO)
+        if lv:
+            chance = min(1.0, self.rune_value(u, lv) / 100.0 * scale_of(u))
+            de = max(1, gd_round(dmg * self.rune_dmg(u, lv)))
+            if combo is None:
+                for res, p in ((False, 1.0 - res_p), (True, res_p)):
+                    hd = de * (self.res_mult if res else 1)
+                    y = self._receive(hd, sub_tier, size, sub_el.shard_bonus, mult, chain=chain)
+                    out = yadd(out, y, p * chance)
+            else:
+                echo = (combo, de, chance)
+        return out, echo
 
     def awake(self, s: State, el: Element) -> bool:
         return not el.unlock or s.levels.get(el.unlock, 0) > 0
@@ -528,7 +659,7 @@ class Game:
     def _begin(self, s: State) -> None:
         """Contexto del estado: Pureza y capa (venas, Corazón)."""
         done = 1.0 - s.essence / self.total
-        self._purity = self.stat(s, "purity_mult", 1.0)
+        self._purity = self.stat(s, "purity_mult", 1.0) * self.harvest(s)[1]
         self._veins = 0.45 <= done < 0.8
         self._heart = s.essence / self.total < 0.2
 
@@ -672,7 +803,7 @@ class Game:
         """Rendimiento medio de un disparo suelto (SpellCaster._cast_single), con sus ecos."""
         t = self.tier(s, el)
         size = self.stat(s, el.size_stat, 1.0) if el.size_stat else 1.0
-        dmg = self.sized(t.damage, size)
+        dmg = self.harvested(s, self.sized(t.damage, size))
         if dmg <= 0:
             return ZERO  # la chispita del tutorial no hace nada
         out = ZERO
@@ -686,6 +817,10 @@ class Game:
                 ),
                 p,
             )
+        if s.runes:
+            hits = [(1.0 - res_p, dmg), (res_p, dmg * self.res_mult)]
+            extra, _ = self.rune_extras(s, dmg, size, res_p, mult, None, t, el, hits)
+            out = yadd(out, extra)
         if t.echoes and el.echo_damage > 0:
             de = max(1, gd_round(dmg * el.echo_damage))
             for res, p in ((False, 1.0 - res_p), (True, res_p)):
@@ -717,7 +852,7 @@ class Game:
             if r.power_stat:
                 dmg = round(dmg * self.stat(s, r.power_stat, 1.0))
             size = self.stat(s, r.size_stat, 1.0) if r.size_stat else 1.0
-            dmg = self.sized(dmg, size)
+            dmg = self.harvested(s, self.sized(dmg, size))
             if self._heart:
                 # Fractura del Corazón (CoreTears.apply): x daño de los combinados en el Corazón.
                 dmg = max(1, gd_round(dmg * self.stat(s, "heart_combo_mult", 1.0)))
@@ -805,6 +940,19 @@ class Game:
                         delivered(de * (self.res_mult if res else 1), emult, False, 1.0, False),
                         p * r.echo_count,
                     )
+        if s.runes and size >= 0.6 and r.delivery in (FRONT, LANCE) and len(r.elements) < 3:
+            # Runas en los combinados que salen de las manos (lo de más sale de la llama izquierda).
+            el0 = self.elements[r.elements[0]]
+            hits = [(1.0 - res_p, dmg), (res_p, dmg * self.res_mult)]
+            extra, (er, de, chance) = self.rune_extras(
+                s, dmg, size, res_p, all_mult, r, self.tier(s, el0), el0, hits
+            )
+            out = yadd(out, extra)
+            if er is not None:
+                emult = 1.0 if steam else all_mult
+                for res, p in ((False, 1.0 - res_p), (True, res_p)):
+                    hd = de * (self.res_mult if res else 1)
+                    out = yadd(out, delivered(hd, emult, False, 1.0, False), p * chance)
         return out, charge + cd
 
     def charge_sec(self, s: State, r: Recipe) -> float:
@@ -814,7 +962,7 @@ class Game:
     def attacks(self, s: State):
         """Lista de (nombre, esencia/s, maná/s, fragmentos/s, valor/s, sólo_combinación, grupo)."""
         self._begin(s)
-        key = (tuple(sorted(s.levels.items())), self._veins, self._heart)
+        key = (tuple(sorted(s.levels.items())), self._veins, self._heart, s.runes)
         if key not in self._cache:
             self._cache[key] = self._attacks(s)
         return self._cache[key]
@@ -1164,7 +1312,10 @@ class Game:
 
     def score(self, s: State, u: Upgrade, base: float) -> float:
         s2 = State(dict(s.levels), s.mana, s.essence, s.pylon, s.t)
+        s2.runes = s.runes
         s2.levels[u.id] = s2.levels.get(u.id, 0) + 1
+        if u.rune >= 0 or u.stat == "rune_slots":
+            self.pick_runes(s2)  # con la runa nueva (o la ranura), las mejores inscritas
         gain = self.value(s2) / max(base, 1e-9) - 1.0
         if u.id in MOVEMENT_UPGRADES:
             gain = max(gain, 0.04)  # gusto por moverse: se compran cuando salen baratas
@@ -1174,17 +1325,34 @@ class Game:
         # Nodos hito (cambian la forma de jugar): también se compran por curiosidad.
         if u.stat in MILESTONE_STATS:
             gain = max(gain, 0.15)
+        # Runas nuevas y ranuras: curiosidad por probar la runa (aunque la ranura esté ocupada) y
+        # una ranura más en cuanto haya una runa aprendida que no cabe.
+        if u.rune >= 0 and s.levels.get(u.id, 0) == 0:
+            gain = max(gain, RUNE_CURIOSITY)
+        if u.stat == "rune_slots" and self.owned_runes(s) > self.rune_slots(s):
+            gain = max(gain, RUNE_CURIOSITY)
         return gain / self.cost(s, u)
+
+    def owned_runes(self, s: State) -> int:
+        return sum(1 for u in self.upgrades.values() if u.rune >= 0 and s.levels.get(u.id, 0) > 0)
 
 
 def simulate(game: Game, verbose: bool = False, max_hours: float = 6.0):
     s = State()
     game._cache.clear()  # attacks() depende del perfil (P)
     log: list[tuple[float, str, int, int]] = []
+    runes_log: list[tuple[float, tuple]] = []
     timeline: list[tuple[float, float, float, float, str]] = []
     step = 2.0
     next_sample = 0.0
+    layer_ctx = None
     while s.essence > game.total * 0.01 and s.t < max_hours * 3600:
+        # Al cambiar de capa (venas, Corazón) el jugador vuelve a elegir sus runas.
+        done = 1.0 - s.essence / game.total
+        ctx = (0.45 <= done < 0.8, done > 0.8)
+        if ctx != layer_ctx:
+            layer_ctx = ctx
+            game.pick_runes(s)
         rate, ess_rate, pylon_rate, attack = game.effective(s)
         if rate <= 0:
             break
@@ -1193,6 +1361,7 @@ def simulate(game: Game, verbose: bool = False, max_hours: float = 6.0):
         # El Pilón suma el valor de los fragmentos sin la Pureza (mana_pylon.gd receive_mana).
         gain = rate * step
         s.mana += gain
+        s.mana_earned += gain
         dt_tears = game.tear_rate(s, ess_rate) * step
         s.tears += dt_tears
         s.tears_total += dt_tears
@@ -1248,9 +1417,13 @@ def simulate(game: Game, verbose: bool = False, max_hours: float = 6.0):
             s.t += P["buy"]
             bought += 1
             log.append((s.t, best.id, s.levels[best.id], c, base))
+            if best.rune >= 0 or best.stat == "rune_slots":
+                game.pick_runes(s)
+                runes_log.append((s.t / 60, s.runes))
         check_rank(game, s)
     # Leyenda: el final (la simulación para con el cristal abierto hasta el Núcleo).
     check_rank(game, s)
+    game.runes_log = runes_log
     return s, log, timeline
 
 
@@ -1289,16 +1462,41 @@ def summary(game: Game, s: State, log, timeline, name: str) -> dict:
         "hueco_max_s": round(max((g for g, _ in gaps), default=0)),
         "huecos_largos": sum(1 for g, at in gaps if g > (60 if at < 3600 else 180)),
         "mana_sin_gastar": round(s.mana),
+        "mana_sin_gastar_pct": round(s.mana / max(s.mana_earned, 1.0) * 100, 1),
         "pilon_final_pct": round(s.pylon / game.total * 100, 1),
+        # Cristal destruido (%) cuando el Pilón se llena (None: no llega a llenarse).
+        "cristal_con_pilon_lleno": next(
+            (round(100 - e / game.total * 100, 1) for _t, _m, e, p, _a in timeline if p >= game.total - 0.5),
+            None,
+        ),
         "nota": round(objective(s, log)),
         "rangos_min": {rid: round(m, 1) for m, rid in s.ranks},
         "maná_por_s": income,
         "lagrimas": tear_summary(game, s, log),
+        "runas": rune_summary(game, s, log),
         "sin_comprar": sorted(
             f"{u.id} {s.levels.get(u.id, 0)}/{len(u.costs)}"
             for u in game.upgrades.values()
             if s.levels.get(u.id, 0) < len(u.costs)
         ),
+    }
+
+
+def rune_summary(game: Game, s: State, log) -> dict:
+    """Runas: cuándo se compró cada nivel (min), las inscritas al final y el maná/s del mejor ataque
+    al final con y sin ellas."""
+    ids = {u.id for u in game.upgrades.values() if u.rune >= 0 or u.stat == "rune_slots"}
+    bought = {f"{uid} {lv}": round(t / 60, 1) for t, uid, lv, *_ in log if uid in ids}
+    with_runes = game.effective(s)[0]
+    kept = s.runes
+    s.runes = ()
+    without = game.effective(s)[0]
+    s.runes = kept
+    return {
+        "compras_min": bought,
+        "inscritas": list(kept),
+        "maná_por_s_con_sin": [round(with_runes), round(without)],
+        "cambios": [(round(m, 1), list(r)) for m, r in getattr(game, "runes_log", [])][-6:],
     }
 
 
@@ -1340,6 +1538,11 @@ def report(game: Game, s: State, log, timeline, show_log: bool) -> None:
     print(
         f"Lágrimas del Núcleo: {ts['total']:.1f} recogidas, {ts['sobrantes']:.1f} sin gastar; nodos sin "
         f"comprar: {', '.join(ts['sin_comprar']) or 'ninguno'}"
+    )
+    rs = rune_summary(game, s, log)
+    print(
+        f"Runas: inscritas al final {', '.join(rs['inscritas']) or 'ninguna'}; maná/s con y sin ellas "
+        f"{rs['maná_por_s_con_sin'][0]} / {rs['maná_por_s_con_sin'][1]}"
     )
     if hour_gaps:
         print(f"1.ª hora: hueco medio {sum(hour_gaps) / len(hour_gaps):.0f} s, máximo {max(hour_gaps):.0f} s")

@@ -23,3 +23,7 @@ const SANCTUM_YAW_DEG: float = 47.0
 ## del atril (no se pisan los dos "F"), mirando hacia el claro.
 const ARCHMAGE_MIRROR := Vector3(52.8, 0.0, 44.6)
 const ARCHMAGE_MIRROR_YAW_DEG: float = -130.0
+## La Mesa de Runas (GDD 4.3): al otro lado del Santuario, junto al final de su camino (a más
+## de 6 m del atril y del espejo), con su frente hacia el claro.
+const RUNE_TABLE := Vector3(41.8, 0.0, 55.4)
+const RUNE_TABLE_YAW_DEG: float = -104.0

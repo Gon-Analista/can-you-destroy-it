@@ -5,10 +5,10 @@ Uso:
     python3 tools/extract_strings.py
 
 Las claves son los textos en español tal cual aparecen en el código y en los datos. Recoge:
-- en los scripts: tr("..."), _label("..."), _button("..."), _slider("...") y las constantes
+- en los scripts: tr("..."), _tr("..."), _label("..."), _button("..."), _slider("...") y las constantes
   (texto o lista de textos) marcadas con `# i18n` en la línea anterior;
 - en los recursos .tres: display_name, display_name_plural, description, value_format,
-  too_hard_hint, riddle, motto, requirement, level_names y vein_names.
+  too_hard_hint, riddle, motto, requirement, combo_note, level_names y vein_names.
 
 Conserva las traducciones que ya haya en el CSV (no borra columnas ni filas que sigan en uso) y
 añade las claves nuevas con su texto español y las demás columnas vacías (el juego muestra la
@@ -25,13 +25,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent / "game"
 CSV_PATH = ROOT / "localization" / "strings.csv"
 
-CALL_RE = re.compile(r'\b(?:tr|_label|_button|_slider)\(\s*"((?:[^"\\]|\\.)*)"')
+CALL_RE = re.compile(r'\b(?:tr|_tr|_label|_button|_slider)\(\s*"((?:[^"\\]|\\.)*)"')
 I18N_BLOCK_RE = re.compile(r"#\s*i18n\s*\n\s*const\s+\w+[^=]*=\s*\[(.*?)\]\n", re.S)
 I18N_CONST_RE = re.compile(r'#\s*i18n\s*\n\s*const\s+\w+[^=]*=\s*"((?:[^"\\]|\\.)*)"')
 # Cadenas normales (no StringName &"..." ni colores "#rrggbb").
 STR_RE = re.compile(r'(&?)"((?:[^"\\]|\\.)*)"')
 TRES_FIELDS = re.compile(
-    r'^(display_name|display_name_plural|description|value_format|too_hard_hint|riddle|motto|requirement) = "((?:[^"\\]|\\.)*)"',
+    r'^(display_name|display_name_plural|description|value_format|too_hard_hint|riddle|motto|requirement|combo_note) = "((?:[^"\\]|\\.)*)"',
     re.M,
 )
 TRES_LIST = re.compile(r"^(?:level_names|vein_names) = PackedStringArray\((.*)\)", re.M)

@@ -2,6 +2,44 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-19 · Mesa de Runas y los tres nodos hito del Grimorio
+
+**Qué hay nuevo**
+
+- **Mesa de Runas** (GDD 4.3 y 5.3; `sanctum/rune_table.gd`, `ui/runes/rune_screen.gd`, `core/rune_book.gd`,
+  `spells/runes/`, datos en `data/runes/`): estación a unos 8 m del atril, sellada con cadenas hasta el Pilón al
+  10 % (se desencadena con sonido y aviso). Las runas se aprenden y mejoran con maná (3 niveles) y se inscriben en
+  ranuras limitadas: 1 al abrir y 2 más a la venta desde el Pilón al 25 %. Aprender una runa la inscribe sola si
+  hay hueco. Las cinco piedras flotan en arco sobre la mesa y las inscritas bajan a su ranura.
+  - **Multidisparo**: chispas doradas de más en abanico, cada una con su propia mira (revientan bichos).
+  - **Rebote**: tras golpear el cristal salta a otra faceta (o a un bicho a 6,5 m), cada vez más pequeño.
+  - **Perforación**: abre un túnel por detrás del impacto, con fragmentos que salen del agujero y una grieta.
+  - **Eco**: a veces el hechizo se relanza gratis con una copia fantasma (reutiliza `SpellEchoes`).
+  - **Cosecha**: algo menos de daño y más maná por fragmento (como la Pureza: sólo el maná, no el Pilón).
+  - Valen enteras en los hechizos de una mano y a medias en los combinados que salen de las manos (Bola de
+    Fuego, Choque Térmico y las lanzas); no en triples, cielo, haz, suelo ni familiares. Los glifos de las runas
+    inscritas giran alrededor de cada llama. Sonidos en `tools/sfx_runes.py`.
+- **Lanzamiento continuo** (Canalización, página Chispa; `player/auto_cast.gd`): mantén un botón 0,28 s y esa
+  mano lanza sola cada vez que recarga. Tiembla, crepita y suena mientras la mantienes; pulsar la otra mano junta
+  las dos como siempre. Al abrir un menú o perder el foco se suelta todo.
+- **Vórtice** (Telequinesis, página Mago; `player/mana_vortex.gd`, `fx/hd/hd_vortex.gdshader`): un remolino
+  alrededor del mago que aspira en espiral los fragmentos sueltos a 45 m y los manda a la tolva. No toca las
+  Lágrimas del Núcleo ni lo que ya lleva un familiar.
+- **Rompefacetas** (Resonancia, página Mago; `crystal/facet_breaker.gd`, `CrystalVolume.carve_facet`): los golpes
+  resonantes parten una losa entera del cristal, que resbala, cae y revienta en fragmentos, con arcos dorados,
+  destello, sacudida y hit-stop. Nunca baja del 99 %, no toca el Núcleo y en el Corazón sólo la arrancan los
+  combinados, más pequeña.
+- **Trofeos de los hitos** junto al templo (`sanctum/milestone_trophies.gd`): un pedestal animado por nodo
+  comprado. Sonidos en `tools/sfx_milestones.py`.
+- **Depuración**: fila RUNAS → DESBLOQUEAR TODAS; "comprar todo" también llena runas y ranuras. Demo `--runes[=]`,
+  `--rune-table`, `--at-rune-table`, `--rune-unseal[=s]`, `--autofire[=s]`, `--autofire-join=s`,
+  `--autofire-release=s`, `--vortex[=N]`, `--facet-crit`, `--facet-hit=D`.
+- `tools/extract_strings.py` recoge también `_tr("...")` y `combo_note` de los recursos.
+- Pruebas nuevas: `runes_smoke`, `milestones_smoke`.
+- Simulador: normal 150,7 min (hueco máx. 173 s, maná sin gastar 3,3 %, Pilón al 100 %, todas las Lágrimas),
+  eficiente 111,7 min. Hitos hacia los min 81 (Lanzamiento continuo), 121 (Rompefacetas) y 123 (Vórtice); runas
+  desde el min ~51. La Cosecha alarga unos 10 min: sin ella había un hueco de 227 s.
+
 ## 2026-11-18 · Segunda tanda del GDD: Lágrimas del Núcleo, el final, el Báculo con triples, rangos y la Bola de Fuego nueva
 
 **Qué hay nuevo**

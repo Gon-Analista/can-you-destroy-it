@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="RuneDef" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://data/defs/rune_def.gd" id="1"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_rune_bounce_01.ogg" id="s0"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_rune_bounce_02.ogg" id="s1"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_rune_bounce_03.ogg" id="s2"]
+
+[resource]
+script = ExtResource("1")
+id = &"rune_bounce"
+display_name = "Rebote"
+description = "Rebota de faceta en faceta y vuelve a golpear, cada vez más pequeño."
+element = &"runes"
+costs = PackedInt32Array(2500, 11000, 26000)
+prerequisites = Array[StringName]([&"pylon:0.1"])
+stat = &"rune_bounce"
+values = PackedFloat32Array(0, 1, 2, 3)
+value_format = "%d rebotes"
+kind = 1
+glyph = PackedStringArray("+.......", ".#....+.", "..#..#..", "...##...", "...##...", "........", "########", ".#.#.#.#")
+color = Color(1, 0.3529, 0.8157, 1)
+color_hot = Color(2.6, 1.1, 2.2, 1)
+damage_values = PackedFloat32Array(0, 0.6, 0.65, 0.7)
+combo_scale = 0.4
+combo_note = "Los combinados que salen de las manos sueltan chispas que rebotan, más flojas."
+sfx = Array[AudioStream]([ExtResource("s0"), ExtResource("s1"), ExtResource("s2")])

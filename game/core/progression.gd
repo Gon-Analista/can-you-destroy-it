@@ -51,6 +51,8 @@ var critters_popped: int = 0
 var game_complete: bool = false
 ## Ya se vio la pantalla final (si se sale durante la fiesta, sale al volver a cargar).
 var ending_seen: bool = false
+## Runas inscritas en la Mesa de Runas (ids de RuneDef), en orden de ranura (ver RuneBook).
+var inscribed_runes: Array[StringName] = []
 ## Estadísticas de la pantalla final: segundos jugados (sin menús ni pausa; se paran al acabar),
 ## hechizos lanzados (sueltos y combinados) y fragmentos recogidos.
 ## Cifras de la pantalla final: viven en `stats` (las mismas del Espejo del Archimago).
@@ -240,6 +242,7 @@ func to_dict() -> Dictionary:
 		"critters_popped": critters_popped,
 		"game_complete": game_complete,
 		"ending_seen": ending_seen,
+		"inscribed_runes": inscribed_runes.map(func(r: StringName) -> String: return str(r)),
 	}
 
 
@@ -283,6 +286,11 @@ func load_dict(data: Dictionary) -> void:
 	var saved_geodes: Dictionary = data.get("geodes", {})
 	for key: Variant in saved_geodes:
 		geodes[int(str(key))] = int(saved_geodes[key])
+	inscribed_runes.clear()
+	var saved_runes: Array = data.get("inscribed_runes", [])
+	for r: Variant in saved_runes:
+		if not inscribed_runes.has(StringName(str(r))):
+			inscribed_runes.append(StringName(str(r)))
 	discovered_recipes.clear()
 	var saved_recipes: Array = data.get("discovered_recipes", [])
 	for r: Variant in saved_recipes:

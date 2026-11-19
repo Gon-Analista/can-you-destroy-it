@@ -15,6 +15,7 @@ NO HAY FRAGMENTOS CERCA,NO HAY FRAGMENTOS CERCA,NO SHARDS NEARBY
 ¡VENA DE %s! DAÑO x%d,¡VENA DE %s! DAÑO x%d,%s VEIN! DAMAGE x%d
 FRAGMENTOS RESONANTES: VALEN x5,FRAGMENTOS RESONANTES: VALEN x5,RESONANT SHARDS: WORTH x5
 ESTA VENA ES DÉBIL A: %s,ESTA VENA ES DÉBIL A: %s,THIS VEIN IS WEAK TO: %s
+¡FACETA ROTA!  -%s,¡FACETA ROTA!  -%s,FACET BROKEN!  -%s
 ¡DEMASIADO DURO!,¡DEMASIADO DURO!,TOO HARD!
 NUEVA CAPA: %s,NUEVA CAPA: %s,NEW LAYER: %s
 ¡EL CRISTAL SE RESQUEBRAJA!,¡EL CRISTAL SE RESQUEBRAJA!,THE CRYSTAL IS CRACKING!
@@ -30,6 +31,7 @@ MANTÉN LOS DOS BOTONES MIRANDO AL NÚCLEO,MANTÉN LOS DOS BOTONES MIRANDO AL N�
 ¡TU PRIMER FAMILIAR! VIVE JUNTO AL PILÓN,¡TU PRIMER FAMILIAR! VIVE JUNTO AL PILÓN,YOUR FIRST FAMILIAR! IT LIVES BY THE PYLON
 RECOGE FRAGMENTOS Y LOS ECHA A LA TOLVA,RECOGE FRAGMENTOS Y LOS ECHA A LA TOLVA,IT GATHERS SHARDS AND DROPS THEM IN THE HOPPER
 ¡OTRO FAMILIAR! YA SON %d,¡OTRO FAMILIAR! YA SON %d,ANOTHER FAMILIAR! THAT MAKES %d
+¡VÓRTICE! LOS FRAGMENTOS SUELTOS VUELAN SOLOS A LA TOLVA,¡VÓRTICE! LOS FRAGMENTOS SUELTOS VUELAN SOLOS A LA TOLVA,VORTEX! LOOSE SHARDS FLY TO THE HOPPER ON THEIR OWN
 MANO IZQUIERDA,MANO IZQUIERDA,LEFT HAND
 MANO DERECHA,MANO DERECHA,RIGHT HAND
 AÚN NO CONOCES OTRO ELEMENTO: DESPIÉRTALO EN EL GRIMORIO,AÚN NO CONOCES OTRO ELEMENTO: DESPIÉRTALO EN EL GRIMORIO,YOU DON'T KNOW ANOTHER ELEMENT YET: AWAKEN IT IN THE GRIMOIRE
@@ -49,6 +51,9 @@ TRAE CRISTALES PARA TRITURAR,TRAE CRISTALES PARA TRITURAR,BRING CRYSTALS TO CRUS
 ¡EL PILÓN LLEGA AL %d %%!,¡EL PILÓN LLEGA AL %d %%!,THE PYLON REACHES %d %%!
 ¡EL PILÓN ESTÁ LLENO!,¡EL PILÓN ESTÁ LLENO!,THE PYLON IS FULL!
 [F] ESPEJO DEL ARCHIMAGO,[F] ESPEJO DEL ARCHIMAGO,[F] ARCHMAGE'S MIRROR
+MESA DE RUNAS: SELLADA HASTA EL PILÓN AL %d %%,MESA DE RUNAS: SELLADA HASTA EL PILÓN AL %d %%,RUNE TABLE: SEALED UNTIL THE PYLON IS AT %d %%
+[F] MESA DE RUNAS,[F] MESA DE RUNAS,[F] RUNE TABLE
+¡LA MESA DE RUNAS DESPIERTA! (JUNTO AL SANTUARIO),¡LA MESA DE RUNAS DESPIERTA! (JUNTO AL SANTUARIO),THE RUNE TABLE AWAKENS! (BY THE SANCTUM)
 NO HAY FRAGMENTOS SUELTOS EN EL VALLE,NO HAY FRAGMENTOS SUELTOS EN EL VALLE,NO LOOSE SHARDS IN THE VALLEY
 GRAVEDAD: %d FRAGMENTOS,GRAVEDAD: %d FRAGMENTOS,GRAVITY: %d SHARDS
 +%d FRAGMENTOS DEL POZO,+%d FRAGMENTOS DEL POZO,+%d SHARDS FROM THE WELL
@@ -78,6 +83,8 @@ TRUCOS,TRUCOS,CHEATS
 MOSTRAR FPS,MOSTRAR FPS,SHOW FPS
 MODO DIOS,MODO DIOS,GOD MODE
 SUBIR DE RANGO,SUBIR DE RANGO,RANK UP
+RUNAS,RUNAS,RUNES
+DESBLOQUEAR TODAS,DESBLOQUEAR TODAS,UNLOCK ALL
 BICHOS,BICHOS,CRITTERS
 APARECER 5,APARECER 5,SPAWN 5
 IR A,IR A,GO TO
@@ -103,6 +110,7 @@ FPS: SÍ,FPS: SÍ,FPS: ON
 FPS: NO,FPS: NO,FPS: OFF
 MODO DIOS: SIN RECARGA Y VUELO INFINITO,MODO DIOS: SIN RECARGA Y VUELO INFINITO,GOD MODE: NO COOLDOWN AND ENDLESS FLIGHT
 MODO DIOS: NO,MODO DIOS: NO,GOD MODE: OFF
+¡RUNAS AL MÁXIMO! %d INSCRITAS,¡RUNAS AL MÁXIMO! %d INSCRITAS,RUNES MAXED! %d INSCRIBED
 ¡%d BICHOS!,¡%d BICHOS!,%d CRITTERS!
 TELETRANSPORTE: %s,TELETRANSPORTE: %s,TELEPORT: %s
 NO HAY RANGO MÁS ALTO,NO HAY RANGO MÁS ALTO,THERE IS NO HIGHER RANK
@@ -243,6 +251,39 @@ F / ESC CERRAR,F / ESC CERRAR,F / ESC CLOSE
 o Pilón %s,o Pilón %s,or Pylon %s
 ¡ERES %s!,¡ERES %s!,YOU ARE NOW %s!
 RANGO %d DE %d,RANGO %d DE %d,RANK %d OF %d
+"¡%s, NIVEL %d!","¡%s, NIVEL %d!","%s, LEVEL %d!"
+%s BORRADA DE SU RANURA,%s BORRADA DE SU RANURA,%s ERASED FROM ITS SLOT
+¡RANURA NUEVA! YA PUEDES INSCRIBIR %d RUNAS,¡RANURA NUEVA! YA PUEDES INSCRIBIR %d RUNAS,NEW SLOT! YOU CAN NOW INSCRIBE %d RUNES
+¡%s INSCRITA!,¡%s INSCRITA!,%s INSCRIBED!
+YA ESTÁ AL MÁXIMO,YA ESTÁ AL MÁXIMO,ALREADY AT MAX
+AÚN NO: LA MESA PIDE MÁS PILÓN,AÚN NO: LA MESA PIDE MÁS PILÓN,NOT YET: THE TABLE NEEDS MORE PYLON
+TE FALTA MANÁ (%s),TE FALTA MANÁ (%s),NOT ENOUGH MANA (%s)
+AHORA NO SE PUEDE,AHORA NO SE PUEDE,NOT RIGHT NOW
+PRIMERO APRENDE LA RUNA,PRIMERO APRENDE LA RUNA,LEARN THE RUNE FIRST
+NO HAY RANURA LIBRE: BORRA UNA RUNA ANTES,NO HAY RANURA LIBRE: BORRA UNA RUNA ANTES,NO FREE SLOT: ERASE A RUNE FIRST
+LA MESA SIGUE SELLADA,LA MESA SIGUE SELLADA,THE TABLE IS STILL SEALED
++1 chispa,+1 chispa,+1 spark
++%d chispas,+%d chispas,+%d sparks
+1 rebote,1 rebote,1 bounce
+%d rebotes,%d rebotes,%d bounces
+túnel de %s m,túnel de %s m,%s m tunnel
+%d %% de eco,%d %% de eco,%d %% echo
+maná x%s,maná x%s,mana x%s
+daño x%s,daño x%s,damage x%s
+al %d %% de daño,al %d %% de daño,at %d %% damage
+MESA DE RUNAS,MESA DE RUNAS,RUNE TABLE
+RANURA %d,RANURA %d,SLOT %d
+CERRADA,CERRADA,LOCKED
+PILÓN %d %%,PILÓN %d %%,PYLON %d %%
+INSCRITA,INSCRITA,INSCRIBED
+NIVEL %d: %s,NIVEL %d: %s,LEVEL %d: %s
+LUEGO: %s,LUEGO: %s,NEXT: %s
+MÁXIMO,MÁXIMO,MAX
+APRENDER,APRENDER,LEARN
+MEJORAR,MEJORAR,UPGRADE
+BORRAR,BORRAR,ERASE
+INSCRIBIR,INSCRIBIR,INSCRIBE
+CLIC: ELEGIR  ·  ARRIBA / ABAJO  ·  ENTER: INSCRIBIR O BORRAR  ·  F / ESC: CERRAR,CLIC: ELEGIR  ·  ARRIBA / ABAJO  ·  ENTER: INSCRIBIR O BORRAR  ·  F / ESC: CERRAR,CLICK: SELECT  ·  UP / DOWN  ·  ENTER: INSCRIBE OR ERASE  ·  F / ESC: CLOSE
 LIBRO DE COMBINACIONES,LIBRO DE COMBINACIONES,BOOK OF COMBINATIONS
 %d / %d DESCUBIERTAS,%d / %d DESCUBIERTAS,%d / %d DISCOVERED
 Reacción: no se lanza. Pasa en el cristal cuando un elemento toca la huella de otro.,Reacción: no se lanza. Pasa en el cristal cuando un elemento toca la huella de otro.,Reaction: it isn't cast. It happens on the crystal when one element touches another's mark.
@@ -344,6 +385,27 @@ Despierta el Arcano,Despierta el Arcano,Awaken Arcane
 Leyenda,Leyenda,Legend
 El valle cantará tu nombre.,El valle cantará tu nombre.,The valley will sing your name.
 Llena el Pilón y abre el cristal hasta el Núcleo,Llena el Pilón y abre el cristal hasta el Núcleo,Fill the Pylon and open the crystal down to the Core
+Rebote,Rebote,Bounce
+"Rebota de faceta en faceta y vuelve a golpear, cada vez más pequeño.","Rebota de faceta en faceta y vuelve a golpear, cada vez más pequeño.","Bounces from facet to facet and strikes again, smaller each time."
+"Los combinados que salen de las manos sueltan chispas que rebotan, más flojas.","Los combinados que salen de las manos sueltan chispas que rebotan, más flojas.",Combos fired from the hands shed weaker bouncing sparks.
+Eco,Eco,Echo
+A veces se relanza gratis: una copia fantasma sigue al hechizo.,A veces se relanza gratis: una copia fantasma sigue al hechizo.,Sometimes it recasts for free: a ghost copy follows the spell.
+"En los combinados que salen de las manos, el eco sale la mitad de las veces.","En los combinados que salen de las manos, el eco sale la mitad de las veces.","On combos fired from the hands, the echo triggers half as often."
+Cosecha,Cosecha,Harvest
+"Los fragmentos dan más maná al triturarlos, a cambio de menos daño.","Los fragmentos dan más maná al triturarlos, a cambio de menos daño.","Shards give more mana when crushed, in exchange for less damage."
+maná x%.2f,maná x%.2f,mana x%.2f
+"Cambia todos tus hechizos, también los combinados.","Cambia todos tus hechizos, también los combinados.","Affects all your spells, combos included."
+Multidisparo,Multidisparo,Multishot
+Cada hechizo de una mano sale con chispas de más en abanico.,Cada hechizo de una mano sale con chispas de más en abanico.,Every one-hand spell fires with extra sparks in a fan.
++%d proyectiles,+%d proyectiles,+%d projectiles
+"En los combinados que salen de las manos, las chispas de más pegan menos.","En los combinados que salen de las manos, las chispas de más pegan menos.","On combos fired from the hands, the extra sparks hit softer."
+Perforación,Perforación,Pierce
+Atraviesa capas: sigue por dentro del cristal y abre un túnel.,Atraviesa capas: sigue por dentro del cristal y abre un túnel.,Goes through layers: it keeps going inside the crystal and opens a tunnel.
+túnel de %.1f m,túnel de %.1f m,%.1f m tunnel
+Los combinados que salen de las manos perforan a medias.,Los combinados que salen de las manos perforan a medias.,Combos fired from the hands pierce halfway.
+Ranura de runa,Ranura de runa,Rune Slot
+Una ranura más en la Mesa de Runas: otra runa inscrita a la vez.,Una ranura más en la Mesa de Runas: otra runa inscrita a la vez.,One more slot on the Rune Table: another rune inscribed at once.
+%d ranuras,%d ranuras,%d slots
 Bloque de cristal,Bloque de cristal,Crystal block
 bloques de cristal,bloques de cristal,crystal blocks
 Pedrusco de maná,Pedrusco de maná,Mana boulder
@@ -427,7 +489,6 @@ Glaciar Tronante,Glaciar Tronante,Thundering Glacier
 Potencia,Potencia,Power
 "Golpes arcanos más fuertes y más ecos (dos a nivel 3, tres a nivel 6, cuatro a nivel 9). Desde el nivel 6 salen de la mano con círculos de runas.","Golpes arcanos más fuertes y más ecos (dos a nivel 3, tres a nivel 6, cuatro a nivel 9). Desde el nivel 6 salen de la mano con círculos de runas.","Stronger arcane hits and more echoes (two at level 3, three at level 6, four at level 9). From level 6 they leave your hand through rune circles."
 Destello,Destello,Glimmer
-Eco,Eco,Echo
 Doble eco,Doble eco,Double echo
 Prisma,Prisma,Prism
 Resonancia,Resonancia,Resonance
@@ -436,6 +497,10 @@ Paradoja,Paradoja,Paradox
 Eco infinito,Eco infinito,Endless echo
 Singularidad,Singularidad,Singularity
 Arcano primordial,Arcano primordial,Primordial arcane
+Lanzamiento continuo,Lanzamiento continuo,Continuous Casting
+"Mantén pulsado un botón y esa mano lanza sola a su ritmo: tiembla, crepita y no para hasta que sueltas. Con una mano en ráfaga, pulsa la otra y se juntan.","Mantén pulsado un botón y esa mano lanza sola a su ritmo: tiembla, crepita y no para hasta que sueltas. Con una mano en ráfaga, pulsa la otra y se juntan.","Hold a button and that hand casts on its own at its own pace: it trembles, crackles and keeps going until you let go. With one hand in a burst, press the other and they join."
+Clic a clic,Clic a clic,Click by click
+En ráfaga al mantener,En ráfaga al mantener,Bursts while held
 Despertar el Arcano,Despertar el Arcano,Awaken the Arcane
 Aprendes el Arcano: puro y extraño. Cada disparo deja un eco que vuelve a golpear. Júntalo con otro elemento y lo repetirá... o algo más raro.,Aprendes el Arcano: puro y extraño. Cada disparo deja un eco que vuelve a golpear. Júntalo con otro elemento y lo repetirá... o algo más raro.,You learn the Arcane: pure and strange. Every shot leaves an echo that strikes again. Join it with another element and it will repeat it... or something stranger.
 Dormido,Dormido,Dormant
@@ -491,6 +556,10 @@ Roca arcana,Roca arcana,Arcane rock
 Corazón de piedra,Corazón de piedra,Heart of stone
 Titán,Titán,Titan
 Planeta,Planeta,Planet
+Rompefacetas,Rompefacetas,Facet Breaker
+"Los golpes resonantes parten una faceta entera: una losa del cristal se desprende de golpe y revienta en una lluvia de fragmentos. En el Corazón sólo la arrancan los combinados, y más pequeña.","Los golpes resonantes parten una faceta entera: una losa del cristal se desprende de golpe y revienta en una lluvia de fragmentos. En el Corazón sólo la arrancan los combinados, y más pequeña.","Resonant hits split a whole facet: a slab of crystal breaks off at once and bursts into a shower of shards. In the Heart only combos tear it off, and smaller."
+losa: la resonancia y %.1f golpes más,losa: la resonancia y %.1f golpes más,slab: the resonance plus %.1f more hits
+Sin facetas,Sin facetas,No facets
 Familiar,Familiar,Familiar
 "Un buhito de luz anida junto al Pilón: recoge los fragmentos del suelo, los echa a la tolva y tira de la palanca. Cada nivel, uno más.","Un buhito de luz anida junto al Pilón: recoge los fragmentos del suelo, los echa a la tolva y tira de la palanca. Cada nivel, uno más.","A little owl of light nests by the Pylon: it picks shards off the ground, drops them in the hopper and pulls the lever. One more per level."
 Sin familiares,Sin familiares,No familiars
@@ -540,7 +609,6 @@ Levitación,Levitación,Levitation
 Sin levitar,Sin levitar,No levitation
 Pureza,Pureza,Purity
 Afinas el Pilón de Maná: cada fragmento que entregas te da más maná para gastar.,Afinas el Pilón de Maná: cada fragmento que entregas te da más maná para gastar.,You tune the Mana Pylon: every shard you deliver gives you more mana to spend.
-maná x%.2f,maná x%.2f,mana x%.2f
 Resonancia del Pilón,Resonancia del Pilón,Pylon Resonance
 "Hito del Pilón: el maná acumulado despierta y dispara rayos al Cristal Madre. Cuanto más lleno esté el Pilón, más fuerte golpea.","Hito del Pilón: el maná acumulado despierta y dispara rayos al Cristal Madre. Cuanto más lleno esté el Pilón, más fuerte golpea.","Pylon milestone: the stored mana awakens and fires bolts at the Mother Crystal. The fuller the Pylon, the harder it strikes."
 un rayo cada %d s,un rayo cada %d s,one bolt every %d s
@@ -574,3 +642,7 @@ Choque profundo,Choque profundo,Deep shock
 "El Choque Térmico golpea más fuerte. Desde el nivel 6, al cargarlo se abren círculos mágicos hacia donde apuntas.","El Choque Térmico golpea más fuerte. Desde el nivel 6, al cargarlo se abren círculos mágicos hacia donde apuntas.","Thermal Shock hits harder. From level 6, magic circles open toward your aim while you charge it."
 Choque descomunal,Choque descomunal,Massive shock
 El Choque Térmico crece al salir: deja quebradiza una zona enorme del cristal.,El Choque Térmico crece al salir: deja quebradiza una zona enorme del cristal.,Thermal Shock grows as it flies: it leaves a huge patch of the crystal brittle.
+Vórtice,Vórtice,Vortex
+Un remolino de maná gira a tu alrededor: aspira en espiral los fragmentos sueltos del claro y los manda solos a la tolva. Las Lágrimas no: ésas las recoges tú.,Un remolino de maná gira a tu alrededor: aspira en espiral los fragmentos sueltos del claro y los manda solos a la tolva. Las Lágrimas no: ésas las recoges tú.,A whirl of mana spins around you: it spirals in the clearing's loose shards and sends them to the hopper on their own. Not the Tears: those you collect yourself.
+aspira a %d m,aspira a %d m,pulls from %d m
+Sin vórtice,Sin vórtice,No vortex
