@@ -1,9 +1,9 @@
 extends SceneTree
-## Tutorial del principio: la chispita de cada mano no hace nada ("clink"), juntar las manos
-## hace 1 de daño y suelta un pedacito, se recoge, se tritura, con 5 de maná se compra la
-## primera mejora y entonces la magia hace daño de verdad (2 con las manos juntas).
-## Además: ningún paso repite cómo se pulsa F (lo enseña el aviso de la mira, que se retira
-## cuando ya se sabe) y la guía de objetivos apunta adonde toca en cada paso.
+## Tutorial del principio: se sale de la casucha y se llega al cristal; la chispita de cada mano no
+## hace nada ("clink"), juntar las manos hace 1 de daño y suelta un pedacito, se recoge, se tritura,
+## con 5 de maná se compra la primera mejora y entonces la magia hace daño de verdad (2 con las
+## manos juntas). Además: ningún paso repite cómo se pulsa F (lo enseña el aviso de la mira, que se
+## retira cuando ya se sabe) y la guía de objetivos apunta adonde toca en cada paso.
 ## godot --headless --path game --script res://tests/smoke/tutorial_smoke.gd
 
 var _ok: bool = true
@@ -35,19 +35,19 @@ func _initialize() -> void:
 	var hut: Node = root.find_child("ApprenticeHut", true, false)
 	hut.call(&"open_door")
 	await create_timer(2.2).timeout
-	_check(
-		int(tut.get(&"step")) == 1, "al abrir la puerta: primer clic (%d)" % int(tut.get(&"step"))
-	)
+	_check(int(tut.get(&"step")) == 1, "al abrir la puerta: acércate (%d)" % int(tut.get(&"step")))
 	_check(int(guide.get(&"wanted")) == Guidance.Kind.CRYSTAL, "la guía señala el cristal")
 	player.global_position = Vector3(0.0, 0.3, 62.0)
 	player.rotation.y = 0.0
 	(player.get_node(^"Head") as Node3D).rotation.x = deg_to_rad(6.0)
 	await physics_frame
+	await create_timer(0.3).timeout
+	_check(int(tut.get(&"step")) == 2, "junto al cristal: primer clic (%d)" % int(tut.get(&"step")))
 	var e0: int = int(prog.get(&"essence"))
 	# Vale empezar por cualquier mano: el segundo paso pide la otra.
 	caster.call(&"_cast_single", 1)
 	await create_timer(2.5).timeout
-	_check(int(tut.get(&"step")) == 2, "primer clic hecho (con la derecha)")
+	_check(int(tut.get(&"step")) == 3, "primer clic hecho (con la derecha)")
 	_check(int(prog.get(&"essence")) == e0, "la chispita no hace daño")
 	_check(
 		_text(tut, &"_title") == tut.tr("CLIC IZQUIERDO: TU OTRA MANO"),
@@ -56,18 +56,18 @@ func _initialize() -> void:
 	caster.set(&"_cooldown", PackedFloat32Array([0.0, 0.0]))
 	caster.call(&"_cast_single", 1)
 	await create_timer(0.6).timeout
-	_check(int(tut.get(&"step")) == 2, "la misma mano otra vez no cuenta")
+	_check(int(tut.get(&"step")) == 3, "la misma mano otra vez no cuenta")
 	caster.set(&"_cooldown", PackedFloat32Array([0.0, 0.0]))
 	caster.call(&"_cast_single", 0)
 	await create_timer(2.5).timeout
-	_check(int(tut.get(&"step")) == 3, "la otra mano hecha")
+	_check(int(tut.get(&"step")) == 4, "la otra mano hecha")
 	_check(int(prog.get(&"essence")) == e0, "la otra tampoco")
 	caster.set(&"_cooldown", PackedFloat32Array([0.0, 0.0]))
 	caster.call(&"try_begin_combine")
 	await create_timer(0.8).timeout
 	caster.call(&"try_release_combine")
 	await create_timer(3.0).timeout
-	_check(int(tut.get(&"step")) == 4, "juntar las manos (%d)" % int(tut.get(&"step")))
+	_check(int(tut.get(&"step")) == 5, "juntar las manos (%d)" % int(tut.get(&"step")))
 	_check(
 		int(prog.get(&"essence")) == e0 - 1,
 		"juntas hacen 1 de daño (%d)" % (e0 - int(prog.get(&"essence")))
@@ -97,7 +97,7 @@ func _initialize() -> void:
 	if idx >= 0:
 		player.call(&"_collect", idx)
 	await process_frame
-	_check(int(tut.get(&"step")) == 5, "recogido: a la trituradora")
+	_check(int(tut.get(&"step")) == 6, "recogido: a la trituradora")
 	_check_no_f(tut, "trituradora")
 	await create_timer(0.5).timeout
 	_check(int(guide.get(&"wanted")) == Guidance.Kind.CRUSHER, "la guía lleva a la trituradora")
@@ -106,10 +106,10 @@ func _initialize() -> void:
 		gs.call(&"take_for_delivery")
 	gs.call(&"deliver", 1)
 	await process_frame
-	_check(int(tut.get(&"step")) == 6, "triturado: juntar maná")
+	_check(int(tut.get(&"step")) == 7, "triturado: juntar maná")
 	gs.call(&"deliver", 4)
 	await process_frame
-	_check(int(tut.get(&"step")) == 7, "con 5 de maná: al Santuario")
+	_check(int(tut.get(&"step")) == 8, "con 5 de maná: al Santuario")
 	_check_no_f(tut, "santuario")
 	await create_timer(0.5).timeout
 	_check(int(guide.get(&"wanted")) == Guidance.Kind.SANCTUM, "la guía lleva al Santuario")
@@ -117,7 +117,7 @@ func _initialize() -> void:
 	_check(int(power.call(&"cost_for_level", 0)) == 5, "la primera mejora cuesta 5")
 	_check(bool(gs.call(&"buy_upgrade", power)), "se compra")
 	await process_frame
-	_check(int(tut.get(&"step")) == 8, "tutorial terminado")
+	_check(int(tut.get(&"step")) == 9, "tutorial terminado")
 	var tier: Resource = caster.call(&"tier_for", 0)
 	_check(int(tier.get(&"damage")) == 2, "ahora la chispa hace 2")
 	var recipe: Resource = caster.call(&"recipe_for_hands")

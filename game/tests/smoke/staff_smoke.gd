@@ -84,10 +84,12 @@ func _initialize() -> void:
 	_set_hands(0, 1, 2)
 	var triple: Resource = _caster.call(&"recipe_for_hands")
 	_check(triple != null and triple.get(&"id") == &"elemental_storm", "Chispa+Escarcha+Rayo")
-	# Tormenta Elemental contra el cristal: daña durante varios segundos.
-	player.global_position = Vector3(0.0, 0.3, 60.0)
+	# Tormenta Elemental contra el cristal: daña durante varios segundos. Se apunta por encima de
+	# la puntita del pie del cristal (con el cristal más grande llega casi al cruce de caminos y
+	# la nube, encima de ella, mandaba casi todo a la hierba).
+	player.global_position = Vector3(0.0, 0.3, 70.0)
 	player.rotation.y = 0.0
-	(player.get_node(^"Head") as Node3D).rotation.x = deg_to_rad(8.0)
+	(player.get_node(^"Head") as Node3D).rotation.x = deg_to_rad(18.0)
 	await process_frame
 	var before: int = int(_prog.get(&"essence"))
 	_cast(storm_recipe)

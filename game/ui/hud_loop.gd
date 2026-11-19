@@ -41,7 +41,11 @@ var intro: bool = false:
 			_pylon_pct.visible = not v
 		if _guide:
 			_guide.suppressed = v
+		if stations:
+			stations.suppressed = v
 		queue_redraw()
+## Nombres de las estaciones del valle (ver StationLabels).
+var stations: StationLabels
 var _camera: Camera3D
 var _pylon_title: Label
 var _pylon_pct: Label
@@ -97,6 +101,11 @@ func _ready() -> void:
 	_guide.suppressed = intro
 	add_child(_guide)
 	move_child(_guide, 0)
+	stations = StationLabels.new()
+	stations.name = "Stations"
+	stations.suppressed = intro
+	add_child(stations)
+	move_child(stations, 0)
 	_tears = TearCounter.new()
 	_tears.name = "Tears"
 	add_child(_tears)
@@ -134,6 +143,7 @@ func _on_first_collect(_type: ShardType, _count: int, _at: Vector3) -> void:
 func bind(camera: Camera3D) -> void:
 	_camera = camera
 	_guide.bind(camera)
+	stations.camera = camera
 	_tears.bind(camera)
 
 

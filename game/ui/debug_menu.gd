@@ -247,8 +247,10 @@ func _build() -> void:
 	all.name = "BuyAll"
 	all.icon = _star
 	all.custom_minimum_size = Vector2(0, 20)
+	# En otros idiomas el texto es más largo que el panel: que baje de línea.
+	all.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	all.add_theme_color_override(&"font_color", GameMenu.C_GOLD_LIGHT)
-	var row: HBoxContainer = _row(box, tr("MANÁ"))
+	var row: Container = _row(box, tr("MANÁ"))
 	for i: int in MANA_STEPS.size():
 		_button(row, MANA_NAMES[i], _add_mana.bind(MANA_STEPS[i]))
 	row = _row(box, tr("BOLSA"))
@@ -315,8 +317,10 @@ func _build() -> void:
 	_scroll.size = _holder.size - Vector2(16, 18)
 
 
-## Fila: el nombre a la izquierda y sus botones repartidos a lo ancho.
-func _row(box: VBoxContainer, text: String) -> HBoxContainer:
+## Fila: el nombre a la izquierda y sus botones repartidos a lo ancho. Los botones van en un
+## contenedor que salta de línea: si no caben (textos largos, otros idiomas) bajan a la
+## siguiente en vez de ensanchar el panel y salirse de la pantalla.
+func _row(box: VBoxContainer, text: String) -> Container:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override(&"separation", 2)
 	box.add_child(row)
@@ -326,7 +330,12 @@ func _row(box: VBoxContainer, text: String) -> HBoxContainer:
 	l.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(l)
-	return row
+	var flow := HFlowContainer.new()
+	flow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	flow.add_theme_constant_override(&"h_separation", 2)
+	flow.add_theme_constant_override(&"v_separation", 3)
+	row.add_child(flow)
+	return flow
 
 
 ## Botón de una fila (`text` ya traducido).

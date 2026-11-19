@@ -2,6 +2,48 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-19 · Pulido del mundo: cristal más grande, nubes, nombres de las estaciones
+
+**Qué hay nuevo**
+
+- **Cristal Madre un 25 % más grande en todo** (`tools/crystal_volume.py`, `S` 2,125): ~135 m de alto y ~95 m
+  de base. Capas, Núcleo y geodas crecen igual. La esencia por golpe no cambia (manda el daño; los cráteres se
+  ven algo mayores). `WorldLayout`: huella 50 m y Pilón, Santuario, Espejo, Mesa de Runas y Jaula alejados en
+  proporción; la casucha se queda donde estaba. Las partidas guardadas con el cristal excavado lo recuperan entero.
+- **Sin "dientes" en el cristal**: la normal de cada triángulo sale del gradiente del campo (no de su geometría)
+  y el shader ya no varía el tono por la normal cuantizada. Las caras planas se ven limpias.
+- **Nubes 3D** (`world/crystal_clouds.gd`, `world/cloud.gdshader`): siete abrazan la punta del cristal y once
+  forman un techo lejano. Sin luz del motor, con la paleta de las nubes del cielo y teñidas por la hora del día;
+  giran muy despacio alrededor del cristal.
+- **Nombres de las estaciones** (`ui/guide/station_labels.gd`): al acercarse (30 a 6 m) se lee qué es cada
+  cosa (Pilón, Trituradora, Santuario, Mesa de Runas, Espejo, Jaula). Debajo, para qué sirve, sólo en la más
+  cercana a la mira y hasta que se usa una vez. Si se pisan, las lejanas suben.
+- **Tutorial**: el primer paso al salir de la casucha es "Acércate al cristal" (`Tutorial.Step.APPROACH`).
+  Lanzar antes de llegar también vale.
+- **Círculos de la carga**: sólo el primero lleva el dibujo entero; los demás son aros huecos y más separados.
+  Ya no se amontonan.
+- **Menú de depuración**: los botones bajan de línea si no caben; el panel ya no se sale de la pantalla.
+
+**Cómo se probó**
+
+- Pruebas en headless: todas en verde salvo `grimoire_click_smoke`, que ya fallaba antes ("clic en INSCRIBIR
+  compra"). `staff_smoke` apunta ahora por encima de la puntita del pie del cristal, que con el tamaño nuevo
+  llega casi al cruce de caminos. Varias pruebas abortan al salir ("corrupted size vs. prev_size"); también pasa
+  sin estos cambios.
+- Capturas a 1280x720 de día, al atardecer y de noche:
+  [nubes en la punta](docs/capturas/nubes_punta_cristal.png), [cristal grande](docs/capturas/cristal_grande.png),
+  [nombres de las estaciones](docs/capturas/estaciones_nombres.png),
+  [tutorial](docs/capturas/tutorial_acercate.png), [círculos de carga](docs/capturas/circulos_carga_aros.png),
+  [menú de depuración](docs/capturas/menu_depuracion_cabe.png).
+
+**Pendientes y problemas conocidos**
+
+- Justo al empezar (unos 5 s) se ven restos de los efectos que precalienta la pantalla de carga delante del
+  cristal (bolas de luz); el título los tapa en una partida normal.
+- La rejilla del cristal pasa de 3,8 a 8,4 millones de puntos (~67 MB): vigilar la carga y los tirones al excavar
+  en Steam Deck.
+- Siguen pendientes la Vitrina del Báculo física y los trozos de cristal sueltos que caen.
+
 ## 2026-11-19 · Mesa de Runas y los tres nodos hito del Grimorio
 
 **Qué hay nuevo**

@@ -73,7 +73,13 @@ func _ready() -> void:
 	var milestones := ValleyMilestones.new()
 	milestones.name = "ValleyMilestones"
 	_world.add_child(milestones)
+	# Nubes 3D que rodean la punta del cristal y dan escala al cielo.
+	var clouds := CrystalClouds.new()
+	clouds.name = "CrystalClouds"
+	_world.add_child(clouds)
 	_hud.bind(_player.get_camera(), _player.get_caster())
+	# Diferido: el Santuario crea el Espejo y la Mesa de Runas después de colocarse.
+	_hud.bind_world.call_deferred(_world)
 	_ending = EndingDirector.new()
 	_ending.name = "EndingDirector"
 	_ending.setup(self, _world, _player, _hud, _day_night)
@@ -266,7 +272,7 @@ func _setup_autoplay() -> void:
 			# --milestone=s: a los s segundos se entrega justo lo que falta para la siguiente marca.
 			get_tree().create_timer(float(a.get_slice("=", 1))).timeout.connect(_demo_next_mark)
 		elif a.begins_with("--tutorial-step="):
-			# --tutorial-step=N (con --tutorial): empieza en ese paso (4 recoger, 5 triturar...).
+			# --tutorial-step=N (con --tutorial): empieza en ese paso (5 recoger, 6 triturar...).
 			get_tree().create_timer(0.4).timeout.connect(
 				_hud.tutorial.jump_to.bind(int(a.get_slice("=", 1)))
 			)

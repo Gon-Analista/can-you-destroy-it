@@ -364,6 +364,10 @@ func chunk_coords(chunk_index: int) -> Vector3i:
 ## Malla de un trozo: arrays listos para `ArrayMesh.add_surface_from_arrays` (o [] si no hay
 ## superficie). Caras planas (normal por triángulo) y la profundidad original en UV.x para que
 ## el shader pinte la capa. Estática y sin estado compartido: se puede llamar desde otro hilo.
+## La normal de cada triángulo sale del gradiente de la distancia en sus tres vértices, no de su
+## geometría: en una cara plana del cristal los vértices de "surface nets" bailan un poco y la
+## normal geométrica cambiaba de triángulo a triángulo, lo que pintaba hileras de dientes
+## oscuros en las bandas del shader. El gradiente es el mismo en toda la cara.
 static func mesh_chunk(
 	field: PackedFloat32Array,
 	depth_field: PackedFloat32Array,
@@ -386,6 +390,8 @@ static func mesh_chunk(
 	verts.resize(span.x * span.y * span.z)
 	var vdepth := PackedFloat32Array()
 	vdepth.resize(verts.size())
+	var vgrad := PackedVector3Array()
+	vgrad.resize(verts.size())
 	var has := PackedByteArray()
 	has.resize(verts.size())
 	var sx: int = 1
@@ -434,6 +440,12 @@ static func mesh_chunk(
 				for k: int in 8:
 					dsum += depth_field[b + off[k]]
 				vdepth[li] = dsum * 0.125
+				# Gradiente de la celda (diferencias de sus 8 esquinas): exacto en un campo lineal.
+				vgrad[li] = Vector3(
+					vals[1] - vals[0] + vals[3] - vals[2] + vals[5] - vals[4] + vals[7] - vals[6],
+					vals[2] - vals[0] + vals[3] - vals[1] + vals[6] - vals[4] + vals[7] - vals[5],
+					vals[4] - vals[0] + vals[5] - vals[1] + vals[6] - vals[2] + vals[7] - vals[3]
+				)
 				has[li] = 1
 				any_vertex = true
 	if not any_vertex:
@@ -488,7 +500,7 @@ static func mesh_chunk(
 					# Hacia fuera = hacia donde la distancia crece (de dentro a fuera por la arista).
 					var outward := Vector3.ZERO
 					outward[axis] = 1.0 if va < 0.0 else -1.0
-					_quad(out_v, out_n, out_uv, verts, vdepth, q4, outward)
+					_quad(out_v, out_n, out_uv, verts, vdepth, vgrad, q4, outward)
 	if out_v.is_empty():
 		return []
 	var arrays: Array = []
@@ -506,6 +518,7 @@ static func _quad(
 	out_uv: PackedVector2Array,
 	verts: PackedVector3Array,
 	vdepth: PackedFloat32Array,
+	vgrad: PackedVector3Array,
 	q: Array[int],
 	outward: Vector3
 ) -> void:
@@ -539,6 +552,12 @@ static func _quad(
 			i2 = ti
 			n = -n
 		var nn: Vector3 = -n.normalized()
+		# Normal suave del campo (ver `mesh_chunk`); la geométrica si no sirve o se da la vuelta.
+		var g: Vector3 = vgrad[i0] + vgrad[i1] + vgrad[i2]
+		if g.length_squared() > 1e-12:
+			g = g.normalized()
+			if g.dot(nn) > 0.3:
+				nn = g
 		out_v.append(p0)
 		out_v.append(p1)
 		out_v.append(p2)

@@ -210,6 +210,11 @@ func bind(camera: Camera3D, caster: SpellCaster) -> void:
 	_rune_halo.hands = caster.hands if caster else null
 
 
+## Las estaciones del valle cuyo nombre se enseña al acercarse (ver StationLabels).
+func bind_world(world: Node) -> void:
+	_loop.stations.bind_world(world)
+
+
 ## (Opciones enseña las mismas frases, sueltas, en su pestaña de controles.)
 func _controls_text() -> String:
 	return (
