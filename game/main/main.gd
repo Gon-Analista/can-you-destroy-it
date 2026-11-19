@@ -337,6 +337,8 @@ func _setup_autoplay() -> void:
 		elif a.begins_with("--warp="):
 			var xz: PackedStringArray = a.get_slice("=", 1).split(",")
 			_player.global_position = Vector3(float(xz[0]), 0.2, float(xz[1]))
+	# Nodos hito: --autofire, --vortex, --facet-crit, --facet-hit=D (ver MilestoneDemo).
+	MilestoneDemo.setup(self, args, _player)
 	if args.has("--grimoire"):
 		get_tree().create_timer(0.6).timeout.connect(
 			func() -> void: Events.grimoire_requested.emit(true)

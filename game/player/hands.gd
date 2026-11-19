@@ -49,6 +49,8 @@ const LEVEL_UP_SFX: AudioStream = preload("res://audio/sfx/sfx_spell_combine_01.
 var charges: PackedFloat32Array = PackedFloat32Array([1.0, 1.0])
 ## Carga del hechizo combinado mientras las manos están juntas (0..1).
 var combine_charge: float = 0.0
+## Lanzamiento continuo (AutoCast): 0..1 por mano mientras lanza en ráfaga; tiembla y crepita.
+var tremble: PackedFloat32Array = PackedFloat32Array([0.0, 0.0])
 var move_speed: float = 0.0
 ## Si es false no se muestran los hechizos propios (la galería de VFX pone el suyo).
 var orb_enabled: bool = true:
@@ -355,6 +357,10 @@ func _process(delta: float) -> void:
 		if _combining:
 			var amp: float = combine_charge * 2.0
 			pos += Vector2(randf_range(-amp, amp), randf_range(-amp, amp) * 0.5)
+		if tremble[side] > 0.0:
+			# En ráfaga la mano tiembla sin parar, a sacudidas (a píxel entero, como al cargar).
+			var amp_t: float = tremble[side] * 1.6
+			pos += Vector2(randf_range(-amp_t, amp_t), randf_range(-amp_t, amp_t))
 		sprite.position = pos.round()
 		# La luz del hechizo baña las manos: cálidas al cargar la Bola de Fuego y un poco al
 		# sostener su llama (las manos son 2D y no reciben la luz 3D del orbe).
@@ -364,6 +370,10 @@ func _process(delta: float) -> void:
 		sprite.modulate = base.lerp(HAND_GLOW, clampf(warm + _night * 0.25, 0.0, 1.0))
 		if _stage_glow > 0.0:
 			sprite.modulate = sprite.modulate.lerp(STAGE_GLOW, minf(_stage_glow, 1.0))
+		if tremble[side] > 0.0:
+			# El crepitar ilumina la mano a destellos.
+			var flick: float = 0.35 + 0.35 * float(randi() % 3 == 0)
+			sprite.modulate = sprite.modulate.lerp(STAGE_GLOW, tremble[side] * flick)
 	_update_orbs()
 
 
@@ -435,6 +445,8 @@ func _update_orbs() -> void:
 		if _flame_spent[side] and charges[side] > 0.2 and not _combining:
 			_flame_spent[side] = false
 			flame.appear()
+			if tremble[side] > 0.5:
+				flame.flare(0.45)  # en ráfaga, el orbe late con cada lanzamiento
 		if flame.is_releasing() or _flame_spent[side]:
 			continue
 		flame.visible = orb_enabled and not merged

@@ -77,3 +77,22 @@ var charge_stages_by_level: PackedInt32Array = PackedInt32Array([0, 1, 1, 2, 2, 
 @export var core_reveal_scan_sec: float = 15.0
 ## Segundos de fiesta en el valle tras romper el Núcleo antes de la pantalla final.
 @export var ending_screen_delay_sec: float = 13.0
+
+@export_group("Nodos hito")
+## Lanzamiento continuo (`autocast`): lo que hay que mantener un botón para que esa mano entre en
+## ráfaga (antes, el clic de siempre). Corto para que se note, largo para no robar combinaciones.
+@export var autocast_hold_sec: float = 0.28
+## Vórtice (`vortex`): cada cuánto atrapa un fragmento, cuántos giran a la vez como mucho, lo que
+## tienen que llevar en el mundo (ya caídos) y lo que tarda la espiral (de cerca y de lejos).
+@export var vortex_interval_sec: float = 0.25
+@export var vortex_max_in_flight: int = 10
+@export var vortex_settle_sec: float = 0.5
+@export var vortex_spiral_min_sec: float = 1.2
+@export var vortex_spiral_max_sec: float = 2.8
+## Rompefacetas (`facet_break`): la losa arranca `facet_mult` veces el daño del golpe resonante
+## (en el Corazón, por `facet_heart_scale`, y sólo con combinados). Tope de su radio (m), su
+## grosor respecto al radio y el hit-stop del golpe (más que el de un resonante normal, 0,09 s).
+@export var facet_heart_scale: float = 0.4
+@export var facet_max_radius: float = 13.0
+@export_range(0.05, 1.0) var facet_depth_ratio: float = 0.3
+@export var facet_hit_stop_sec: float = 0.16

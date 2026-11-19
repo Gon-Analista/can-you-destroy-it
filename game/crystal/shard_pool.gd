@@ -9,9 +9,13 @@ extends Node3D
 ## Recoger: el fragmento se vuelve intangible y vuela hacia la mano encogiéndose.
 ## Gravedad (Arcano + Tierra): los fragmentos sueltos giran en espiral hasta un pozo y, al
 ## llegar, avisan con `swallowed` (quien abrió el pozo decide si van a la bolsa o a la tolva).
+## Vórtice (nodo hito): igual, pero hacia `vortex_target` (el mago, que se mueve) y avisan con
+## `vortexed`. Lo que gira (pozo o vórtice) no está suelto: no lo cogen los familiares.
 
 ## Un fragmento ha llegado al centro del pozo de gravedad (sigue visible, quieto en el centro).
 signal swallowed(index: int)
+## Un fragmento ha terminado la espiral del Vórtice junto al mago.
+signal vortexed(index: int)
 
 const SHARD_MATERIAL_SHADER: Shader = preload("res://crystal/shard.gdshader")
 const SPLINTER: ShardType = preload("res://data/shards/splinter.tres")
@@ -42,12 +46,20 @@ const PICKUP_SFX: Array[AudioStream] = [
 const SHARD_LAYER: int = 1 << 3
 const MESH_VARIANTS: int = 4
 const COLLECT_SEC: float = 0.22
+## Vórtice: altura del centro sobre los pies del mago, radio en que acaba la espiral (a su
+## alrededor, a la vista) y halo de los fragmentos que gira.
+const VORTEX_LIFT: float = 0.35
+const VORTEX_END_RADIUS: float = 3.2
+const VORTEX_GLOW := Color(0.55, 0.9, 1.0, 1.0)
 
 @export var pool_size: int = 128
 @export var freeze_after_sec: float = 5.0
 @export var clink_players: int = 8
 ## Separación mínima entre dos tintineos (evita un muro de sonido).
 @export var clink_min_gap_sec: float = 0.035
+
+## Hacia dónde gira el Vórtice (el mago; ver ManaVortex).
+var vortex_target: Node3D
 
 var _shards: Array[RigidBody3D] = []
 var _meshes: Array[MeshInstance3D] = []
@@ -79,6 +91,8 @@ var _orbit_dur: PackedFloat32Array = []
 var _orbit_from: Array[Vector3] = []
 var _orbit_turns: PackedFloat32Array = []
 var _well := Vector3.ZERO
+## 0: gira hacia el pozo de gravedad; 1: hacia el Vórtice.
+var _orbit_kind := PackedByteArray()
 ## Halo HD de cada fragmento (sólo se ve en los resonantes) y sus materiales por color.
 var _halos: Array[MeshInstance3D] = []
 var _halo_mats: Dictionary[Color, ShaderMaterial] = {}
@@ -153,6 +167,7 @@ func _ready() -> void:
 		_orbit_dur.append(1.0)
 		_orbit_from.append(Vector3.ZERO)
 		_orbit_turns.append(1.0)
+		_orbit_kind.append(0)
 	_setup_audio()
 
 
@@ -249,6 +264,7 @@ func spawn(
 		var body: RigidBody3D = _shards[i]
 		_deactivate(body)
 		_orbit_t[i] = -1.0
+		_orbit_kind[i] = 0
 		var variant: int = randi() % MESH_VARIANTS
 		_types[i] = type
 		_meshes[i].mesh = _type_meshes[t_index][variant]
@@ -285,6 +301,16 @@ func count_of(type: ShardType) -> int:
 		if _shards[i].visible and _types[i] == type and _collect_t[i] <= 0.0:
 			n += 1
 	return n
+
+
+## Halo de los fragmentos del Vórtice: más grande y con destellos (la espiral se ve de lejos).
+func _vortex_halo() -> ShaderMaterial:
+	if not _halo_mats.has(VORTEX_GLOW):
+		var m: ShaderMaterial = _halo_material(VORTEX_GLOW)
+		m.set_shader_parameter("intensity", 0.9)
+		m.set_shader_parameter("falloff", 2.2)
+		m.set_shader_parameter("rays", 0.7)
+	return _halo_mats[VORTEX_GLOW]
 
 
 func _halo_material(c: Color) -> ShaderMaterial:
@@ -364,7 +390,12 @@ func loose_near(
 
 ## True si el fragmento `index` está en el mundo y nadie lo está recogiendo.
 func is_loose(index: int) -> bool:
-	return _shards[index].visible and _spawn_time[index] >= 0.0 and _collect_t[index] <= 0.0
+	return (
+		_shards[index].visible
+		and _spawn_time[index] >= 0.0
+		and _collect_t[index] <= 0.0
+		and _orbit_t[index] < 0.0
+	)
 
 
 ## Un familiar se lleva el fragmento: desaparece sin sonido (el familiar pone el suyo).
@@ -451,6 +482,7 @@ func gravity_pull(center: Vector3, sec: float) -> int:
 		_orbit_dur[i] = clampf(0.9 + r0 * 0.025, 0.9, sec) * randf_range(0.82, 1.0)
 		_orbit_turns[i] = randf_range(1.1, 1.8)
 		_orbit_t[i] = 0.0
+		_orbit_kind[i] = 0
 		_meshes[i].set_instance_shader_parameter("highlight", 1.0)
 		n += 1
 	if n > 0:
@@ -458,11 +490,39 @@ func gravity_pull(center: Vector3, sec: float) -> int:
 	return n
 
 
-## Fragmentos que siguen girando hacia el pozo.
-func orbiting_count() -> int:
+## Vórtice: el fragmento suelto `index` sube y gira en espiral hasta el mago en unos `sec` s,
+## brillando. Devuelve false si ya no estaba suelto.
+func vortex_pull(index: int, sec: float) -> bool:
+	if not is_loose(index) or vortex_target == null:
+		return false
+	if index == _highlighted:
+		set_highlight(-1)
+	var body: RigidBody3D = _shards[index]
+	body.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
+	body.freeze = true
+	body.collision_layer = 0
+	var rel: Vector3 = (
+		body.global_position - (vortex_target.global_position + Vector3.UP * VORTEX_LIFT)
+	)
+	var r0: float = Vector2(rel.x, rel.z).length()
+	_orbit_from[index] = Vector3(r0, atan2(rel.z, rel.x), rel.y)
+	_orbit_dur[index] = sec
+	_orbit_turns[index] = randf_range(1.2, 2.0)
+	_orbit_t[index] = 0.0
+	_orbit_kind[index] = 1
+	_meshes[index].set_instance_shader_parameter("highlight", 1.0)
+	if _types[index] != RESONANT:
+		_halos[index].material_override = _vortex_halo()
+	_halos[index].visible = true
+	set_physics_process(true)
+	return true
+
+
+## Fragmentos que siguen girando hacia el pozo (`kind` 0), hacia el Vórtice (1) o los dos (-1).
+func orbiting_count(kind: int = -1) -> int:
 	var n: int = 0
 	for i: int in pool_size:
-		if _orbit_t[i] >= 0.0:
+		if _orbit_t[i] >= 0.0 and (kind < 0 or _orbit_kind[i] == kind):
 			n += 1
 	return n
 
@@ -520,20 +580,35 @@ func _update_orbit(i: int, delta: float) -> void:
 	var k: float = clampf(_orbit_t[i] / _orbit_dur[i], 0.0, 1.0)
 	var e: float = k * k * (3.0 - 2.0 * k)
 	var from: Vector3 = _orbit_from[i]
+	var vortex: bool = _orbit_kind[i] == 1
+	var center: Vector3 = _well
 	var r: float = from.x * pow(1.0 - e, 1.3)
 	var a: float = from.y + _orbit_turns[i] * TAU * k * k
 	var h: float = from.z * (1.0 - e) + sin(k * PI) * minf(3.0, 0.6 + from.x * 0.08)
+	if vortex:
+		# Hacia el mago (que se mueve): acaba girando a su alrededor, a la vista, y sube en arco
+		# más alto cuanto más lejos estaba (la "lluvia de cristal" en espiral del GDD).
+		if is_instance_valid(vortex_target):
+			center = vortex_target.global_position + Vector3.UP * VORTEX_LIFT
+		r = VORTEX_END_RADIUS + (from.x - VORTEX_END_RADIUS) * pow(1.0 - e, 1.4)
+		a = from.y + _orbit_turns[i] * TAU * pow(k, 1.6)
+		h = from.z * (1.0 - e) + sin(k * PI) * minf(4.0, 0.6 + from.x * 0.1)
 	var body: RigidBody3D = _shards[i]
 	var spin := Basis(Vector3(0.3, 1.0, 0.2).normalized(), delta * (4.0 + 12.0 * k))
 	body.global_transform = Transform3D(
-		spin * body.global_basis, _well + Vector3(cos(a) * r, h, sin(a) * r)
+		spin * body.global_basis, center + Vector3(cos(a) * r, h, sin(a) * r)
 	)
-	_meshes[i].scale = Vector3.ONE * lerpf(1.0, 0.55, k * k)
+	# Encogen al llegar (los del Vórtice más: acaban girando a los pies, sin tapar la vista).
+	_meshes[i].scale = Vector3.ONE * lerpf(1.0, 0.3 if vortex else 0.55, k * k)
 	if k < 1.0:
 		return
 	_orbit_t[i] = -1.0
 	_meshes[i].set_instance_shader_parameter("highlight", 0.0)
-	swallowed.emit(i)
+	if vortex:
+		_halos[i].visible = _types[i] == RESONANT
+		vortexed.emit(i)
+	else:
+		swallowed.emit(i)
 	if _collect_t[i] <= 0.0 and _spawn_time[i] >= 0.0 and _shards[i].visible:
 		# Nadie lo ha recogido: cae del pozo como un fragmento más.
 		_meshes[i].scale = Vector3.ONE

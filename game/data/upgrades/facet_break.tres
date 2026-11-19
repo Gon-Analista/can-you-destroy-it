@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"facet_break"
+display_name = "Rompefacetas"
+description = "Los golpes resonantes parten una faceta entera: una losa del cristal se desprende de golpe y revienta en una lluvia de fragmentos. En el Corazón sólo la arrancan los combinados, y más pequeña."
+branch = 6
+element = &""
+star_pos = Vector2i(118, 84)
+costs = PackedInt32Array(100000)
+prerequisites = Array[StringName]([&"pylon:0.5"])
+stat = &"facet_mult"
+values = PackedFloat32Array(0, 1.5)
+value_format = "losa: la resonancia y %.1f golpes más"
+level_names = PackedStringArray("Sin facetas")

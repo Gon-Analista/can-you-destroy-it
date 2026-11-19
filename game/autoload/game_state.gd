@@ -9,13 +9,19 @@ const UPGRADES: Array[UpgradeNode] = [
 	preload("res://data/upgrades/pylon_resonance.tres"),
 	preload("res://data/upgrades/spark_power.tres"),
 	preload("res://data/upgrades/channeling.tres"),
+	# Nodo hito de la Canalización: mantener pulsado lanza en ráfaga (AutoCast).
+	preload("res://data/upgrades/autocast.tres"),
 	preload("res://data/upgrades/resonance.tres"),
+	# Nodo hito de la Resonancia: los resonantes parten facetas enteras (FacetBreaker).
+	preload("res://data/upgrades/facet_break.tres"),
 	preload("res://data/upgrades/telekinesis.tres"),
 	preload("res://data/upgrades/fireball_power.tres"),
 	preload("res://data/upgrades/awaken_frost.tres"),
 	preload("res://data/upgrades/frost_power.tres"),
 	preload("res://data/upgrades/gears.tres"),
 	preload("res://data/upgrades/direct_send.tres"),
+	# Nodo hito de la Telequinesis: el remolino que aspira los fragmentos (ManaVortex).
+	preload("res://data/upgrades/vortex.tres"),
 	preload("res://data/upgrades/double_jump.tres"),
 	preload("res://data/upgrades/levitation.tres"),
 	preload("res://data/upgrades/crystal_impulse.tres"),

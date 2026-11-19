@@ -241,6 +241,88 @@ func carve_sphere(center: Vector3, radius: float, allowed: int) -> Dictionary:
 	return {"essence": total, "by_layer": by_layer, "chunks": touched.keys()}
 
 
+## Rompefacetas: arranca de golpe una losa con forma de faceta. `p0` es el punto de la superficie
+## y `frame` su base local (x, z: el plano de la faceta; y: la normal hacia fuera), todo local.
+## La losa es el prisma de `poly` (polígono convexo en x-z, en metros, antihorario) desde fuera
+## hasta `depth_m` por debajo del plano, con el fondo algo inclinado (`tilt`, por metro en x-z):
+## un corte plano, como una cara del cristal que se desprende. Misma salida que `carve` (y
+## `apply` / `stride` para probar antes cuánto quitaría).
+func carve_facet(
+	p0: Vector3,
+	frame: Basis,
+	poly: PackedVector2Array,
+	depth_m: float,
+	tilt: Vector2,
+	allowed: int,
+	apply: bool = true,
+	stride: int = 1
+) -> Dictionary:
+	var by_layer := PackedFloat32Array()
+	by_layer.resize(layer_density.size())
+	var touched: Dictionary[int, bool] = {}
+	# Bordes del polígono: normal hacia fuera y distancia al origen de cada uno.
+	var edge_n := PackedVector2Array()
+	var edge_d := PackedFloat32Array()
+	var reach: float = 0.0
+	for k: int in poly.size():
+		var a: Vector2 = poly[k]
+		var b: Vector2 = poly[(k + 1) % poly.size()]
+		var en := Vector2(b.y - a.y, a.x - b.x).normalized()
+		edge_n.append(en)
+		edge_d.append(a.dot(en))
+		reach = maxf(reach, a.length())
+	var u: Vector3 = frame.x
+	var nrm: Vector3 = frame.y
+	var v: Vector3 = frame.z
+	var bound: float = reach + depth_m * 1.5 + cell
+	var g: Vector3 = to_grid(p0)
+	var r_cells: float = bound / cell
+	if apply:
+		stride = 1
+	var vol: float = cell * cell * cell * float(stride * stride * stride)
+	var total: float = 0.0
+	for z: int in range(
+		maxi(0, floori(g.z - r_cells)), mini(size.z, ceili(g.z + r_cells) + 1), stride
+	):
+		for y: int in range(
+			maxi(0, floori(g.y - r_cells)), mini(size.y, ceili(g.y + r_cells) + 1), stride
+		):
+			for x: int in range(
+				maxi(0, floori(g.x - r_cells)), mini(size.x, ceili(g.x + r_cells) + 1), stride
+			):
+				var i: int = index(x, y, z)
+				var old: float = sdf[i]
+				if old > cell:
+					continue  # ya es aire
+				var wp: Vector3 = origin + Vector3(x, y, z) * cell
+				var rel: Vector3 = wp - p0
+				var inward: float = -rel.dot(nrm)
+				# Lo que sobresale muy por fuera del plano (otra punta delante) no es de la losa.
+				if inward < -depth_m * 1.5:
+					continue
+				var uv := Vector2(rel.dot(u), rel.dot(v))
+				var side: float = -INF
+				for k: int in edge_n.size():
+					side = maxf(side, uv.dot(edge_n[k]) - edge_d[k])
+				var floor_at: float = depth_m * maxf(0.35, 1.0 + tilt.dot(uv))
+				# Distancia firmada a la losa (negativa dentro): el aire nuevo es su contrario.
+				var nv: float = -maxf(side, inward - floor_at)
+				if nv <= old:
+					continue
+				var layer: int = _layer_of(depth[i], wp)
+				if (allowed >> layer) & 1 == 0:
+					continue
+				if apply:
+					sdf[i] = nv
+					_touch(touched, x, y, z)
+				var lost: float = _fill(old) - _fill(nv)
+				if lost > 0.0:
+					var e: float = lost * vol * layer_density[layer]
+					by_layer[layer] += e
+					total += e
+	return {"essence": total, "by_layer": by_layer, "chunks": touched.keys()}
+
+
 ## Normal de la superficie en `p` (gradiente de la distancia).
 func normal_at(p: Vector3) -> Vector3:
 	var e: float = cell

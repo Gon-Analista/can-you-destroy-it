@@ -26,6 +26,13 @@ Lee los datos reales del juego (game/data/**.tres) y reproduce las reglas del c�
   tear_pity_sec de juego como mucho; pagan los nodos del Núcleo (Fractura del Corazón: x daño de los
   combinados en el Corazón; Corazón Vidente: + golpes resonantes en el Corazón) y la Gran
   Convergencia, que se ve al 99 %: el informe dice si al llegar al Núcleo hay Lágrimas para ella.
+- Nodos hito (GDD 7): Lanzamiento continuo (`AutoCast`: la ráfaga al mantener quita el tope de clics
+  por segundo que un jugador aguanta a mano, `max_rate`; no lanza más deprisa que la recarga),
+  Vórtice (`ManaVortex`: recoge solo hasta su ritmo, como la Telequinesis pero de todo el claro) y
+  Rompefacetas (`FacetBreaker`: en un golpe resonante principal del mago, el cráter se queda con el
+  daño de base y la losa se lleva lo que pone la resonancia más `facet_mult` veces la base, con
+  fragmentos por su valor; en el Corazón, sólo combinados y por `facet_heart_scale`; los ecos, los ticks
+  del haz y los golpes secundarios no rompen). Para la economía sólo cuenta ese extra.
 - Báculo y triples (`StaffCombos`): el Báculo pide la Tierra y el Pilón al 10 %; una triple suma el
   daño de sus tres elementos, la Potencia del báculo (staff_mult) y su carga se acorta con el Foco
   (staff_focus). La Tormenta Elemental reparte su daño en descargas (rayo, granizo de 3 y fuego, cada
@@ -53,9 +60,11 @@ DATA = ROOT / "data"
 
 # --- Logística (metros, segundos): ver core/world_layout.gd, player.gd y crystal_crusher.gd ---
 # Dos jugadores: "eficiente" (cota optimista) y "normal" (mira, falla, pasea, lee el Grimorio).
+# `max_rate`: clics por segundo y mano que aguanta a mano durante la partida (el normal, unos 2,5:
+# cinco clics por segundo entre las dos manos durante horas); el Lanzamiento continuo lo quita.
 PROFILES = {
     "eficiente": dict(speed=8.0, buy=3.0, pick=0.8, accuracy=0.9, max_rate=6.0, charge=1.0, focus=1.0),
-    "normal": dict(speed=7.0, buy=6.0, pick=1.0, accuracy=0.8, max_rate=4.0, charge=0.9, focus=0.85),
+    "normal": dict(speed=7.0, buy=6.0, pick=1.0, accuracy=0.8, max_rate=2.5, charge=0.9, focus=0.85),
 }
 P = dict(PROFILES["eficiente"])
 # core/world_layout.gd: Pilón en (-46, 0, 52) y la trituradora 2,8 m a su derecha (mana_pylon.gd), con
@@ -76,6 +85,7 @@ VEIN_FOCUS = 0.6  # parte de los golpes que el jugador da en la vena de su eleme
 VEIN_BONUS = None  # CrystalLayerDef.vein_bonus; None = el de data/crystal/layer_resonant_veins.tres
 DIRECT_SEND_LEVER_EVERY = 90.0  # con Envío directo, se va a tirar de la palanca cada tanto
 MOVEMENT_UPGRADES = {"double_jump", "levitation", "crystal_impulse"}
+MILESTONE_STATS = {"autocast", "vortex_radius", "facet_mult"}  # Lanzamiento continuo, Vórtice, Rompefacetas
 # Constantes del código del juego (no son datos de diseño), copiadas tal cual:
 CHAIN_FRACTION = 0.2  # crystal_combos.gd chain: cada salto arranca maxf(1, daño x 0,2), sin bonus
 PIERCE_EXTRA, PIERCE_PIECES = 0.9, 2  # crystal_combos.gd pierce: túnel de 0,9 x daño y 2 Fragmentos
@@ -616,6 +626,7 @@ class Game:
         pierce: float = 0.0,
         area: int = 0,
         pulse: bool = False,
+        facet: float = 0.0,
     ):
         """Un golpe que llega a MotherCrystal.receive_hit con daño `hd` (ya con la resonancia), en
         su orden: zona debilitada (`mult`, _apply_weakness) con Explosión de Vapor si es fuego
@@ -632,6 +643,10 @@ class Game:
             extra = yadd(extra, self.pieces(self.chunk, TEMPER_PIECES))
         main = self._landed(hd, tier, size, bonus, "main")
         out = yadd(main, extra)
+        if facet > 0 and size >= 0.6:
+            # Rompefacetas (facet_breaker.gd): la losa añade `facet` veces el daño del golpe
+            # resonante (la base por facet_mult), con fragmentos por su valor (sin bonus).
+            out = yadd(out, self._dig(hd * facet, tier, size, 0))
         if area and size >= 0.6:
             out = yadd(out, self.pieces(self.shards[0], area))  # _area_blast: astillas
         if pierce > 0:
@@ -661,10 +676,15 @@ class Game:
         if dmg <= 0:
             return ZERO  # la chispita del tutorial no hace nada
         out = ZERO
+        fm = self.facet_mult(s, False)
         for res, p in ((False, 1.0 - res_p), (True, res_p)):
             hd = dmg * (self.res_mult if res else 1)
             out = yadd(
-                out, self._receive(hd, t, size, el.shard_bonus, mult, steam, temper, el.chain_count), p
+                out,
+                self._receive(
+                    hd, t, size, el.shard_bonus, mult, steam, temper, el.chain_count, facet=fm if res else 0.0
+                ),
+                p,
             )
         if t.echoes and el.echo_damage > 0:
             de = max(1, gd_round(dmg * el.echo_damage))
@@ -674,6 +694,15 @@ class Game:
                     out, self._receive(hd, t, size, el.shard_bonus, mult, chain=el.chain_count), p * t.echoes
                 )
         return out
+
+    def facet_mult(self, s: State, combo: bool) -> float:
+        """Rompefacetas: esencia de más de la losa, en veces el daño del golpe resonante (0 sin el
+        nodo): facet_mult veces la base, que es el golpe / resonant_damage_mult. En el Corazón sólo
+        con combinados y por facet_heart_scale (facet_breaker.gd prepare)."""
+        m = self.stat(s, "facet_mult", 0.0) / self.res_mult
+        if m <= 0 or not self._heart:
+            return m
+        return m * float(self.balance.get("facet_heart_scale", 0.4)) if combo else 0.0
 
     def _combo_damage(self, s: State, r: Recipe):
         """(daño sin resonancia, tamaño, enfriamiento del ciclo) de una combinación cargada. Las
@@ -714,8 +743,9 @@ class Game:
         # Zona quebradiza (Choque Térmico): x3 al primer golpe, y se gasta.
         first_mult = zone[1] if zone is not None and zone[0] == "shatter" else 1.0
         kw = dict(chain=r.chain, pierce=r.pierce, area=r.area_hits, pulse=r.delivery == RESONANCE)
+        fm = self.facet_mult(s, True)
 
-        def delivered(h: float, mult_all: float, stm: bool, first: float, tmp: bool):
+        def delivered(h: float, mult_all: float, stm: bool, first: float, tmp: bool, fct: float = 0.0):
             if r.storm_sec > 0:
                 # Tormenta (elemental_storm.gd): n descargas de h / n por turno de elementos; el
                 # granizo, en HAIL_PER_VOLLEY bolas. Cada una con los saltos de la receta.
@@ -725,12 +755,15 @@ class Game:
                 for k in range(n):
                     first = r.elements.index("bolt") if "bolt" in r.elements else 0
                     el = r.elements[(k + first) % len(r.elements)]  # empieza por el rayo
+                    # Sólo la primera descarga es resonante (elemental_storm.gd): sólo ella parte faceta.
+                    f0 = fct if k == 0 else 0.0
                     if el == "frost":
                         hail = max(1, gd_round(each / HAIL_PER_VOLLEY))
                         for _ in range(HAIL_PER_VOLLEY):
-                            y = yadd(y, self._receive(hail, r.tier, size, r.shard_bonus, mult_all, **kw))
+                            y = yadd(y, self._receive(hail, r.tier, size, r.shard_bonus, mult_all, **kw, facet=f0))
+                            f0 = 0.0
                     else:
-                        y = yadd(y, self._receive(each, r.tier, size, r.shard_bonus, mult_all, **kw))
+                        y = yadd(y, self._receive(each, r.tier, size, r.shard_bonus, mult_all, **kw, facet=f0))
                 return y
             if r.beam_sec > 0:
                 # Haz: un golpe cada 0,1 s durante beam_sec, de daño x BEAM_TICK / beam_sec.
@@ -742,7 +775,10 @@ class Game:
                 each = max(1, gd_round(h / parts))
             else:
                 parts, each = 1, h
-            y = self._receive(each, r.tier, size, r.shard_bonus, mult_all * first, stm, tmp, **kw)
+            # Los ticks del haz son golpes menores sin resonancia: no parten faceta. En la lluvia,
+            # sólo la primera piedra es resonante (spell_delivery.gd).
+            f1 = 0.0 if r.beam_sec > 0 else fct
+            y = self._receive(each, r.tier, size, r.shard_bonus, mult_all * first, stm, tmp, **kw, facet=f1)
             if parts > 1:
                 y = yadd(y, self._receive(each, r.tier, size, r.shard_bonus, mult_all, stm, **kw), parts - 1)
             return y
@@ -752,7 +788,9 @@ class Game:
             if p > 0:
                 out = yadd(
                     out,
-                    delivered(dmg * (self.res_mult if res else 1), all_mult, steam, first_mult, temper),
+                    delivered(
+                        dmg * (self.res_mult if res else 1), all_mult, steam, first_mult, temper, fm if res else 0.0
+                    ),
                     p,
                 )
         if r.echo_count:
@@ -847,8 +885,11 @@ class Game:
         def add(name, y, rate, combo, group):
             out.append((name, y[0] * rate, y[1] * rate, y[2] * rate, y[3] * rate, combo, group))
 
+        # Lanzamiento continuo: manteniendo, cada mano sale al recargar (sin el tope de clics a mano).
+        cap = math.inf if self.stat(s, "autocast", 0.0) > 0.5 else P["max_rate"]
+
         def shots(el: Element) -> float:
-            return min(1.0 / (self.tier(s, el).cooldown * cdm), P["max_rate"]) * acc
+            return min(1.0 / (self.tier(s, el).cooldown * cdm), cap) * acc
 
         awake = [e for e in self.elements.values() if self.awake(s, e)]
         for el in awake:
@@ -1032,6 +1073,12 @@ class Game:
         # Telequinesis (player.gd _update_telekinesis): atrae sola un fragmento cada 0,14 s dentro de
         # su radio mientras el mago sigue lanzando; el resto se recoge a mano.
         tk_rate = (1.0 / TK_INTERVAL) * min(1.0, tk / TK_FULL_REACH) if tk > 0 else 0.0
+        if self.stat(s, "vortex_radius", 0.0) > 0:
+            # Vórtice (mana_vortex.gd): atrapa uno cada vortex_interval_sec, con un tope de los que giran
+            # a la vez (la espiral dura de media lo que marca vortex_spiral_*), en todo el claro.
+            b = self.balance
+            spiral = (float(b.get("vortex_spiral_min_sec", 1.2)) + float(b.get("vortex_spiral_max_sec", 2.8))) / 2
+            tk_rate += min(1.0 / float(b.get("vortex_interval_sec", 0.05)), int(b.get("vortex_max_in_flight", 30)) / spiral)
         pick = P["pick"]
         grav = next(
             (r for r in self.recipes.values() if r.delivery == GRAVITY and self._recipe_awake(s, r)), None
@@ -1123,6 +1170,9 @@ class Game:
             gain = max(gain, 0.04)  # gusto por moverse: se compran cuando salen baratas
         # Desbloqueos (despertar un elemento): curiosidad, aunque al principio rinda poco.
         if u.stat.endswith("_awake") or u.stat == "staff_owned":
+            gain = max(gain, 0.15)
+        # Nodos hito (cambian la forma de jugar): también se compran por curiosidad.
+        if u.stat in MILESTONE_STATS:
             gain = max(gain, 0.15)
         return gain / self.cost(s, u)
 

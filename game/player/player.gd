@@ -108,6 +108,10 @@ func _ready() -> void:
 	_grab_point.position = Vector3(-0.18, -0.32, -0.55)
 	_camera.add_child(_grab_point)
 	_shards = get_tree().get_first_node_in_group(&"shard_pool") as ShardPool
+	# El Vórtice (nodo hito): gira a su alrededor y aspira los fragmentos sueltos.
+	var vortex := ManaVortex.new()
+	vortex.name = "ManaVortex"
+	add_child(vortex)
 	_apply_upgrades()
 
 

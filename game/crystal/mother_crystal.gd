@@ -86,6 +86,7 @@ var _geodes: CrystalGeodes
 var _tears: CoreTears
 ## El final: el Núcleo expuesto al 99 % (ver CoreReveal).
 var _reveal: CoreReveal
+var _facets := FacetBreaker.new()  # Rompefacetas (nodo hito): losas enteras en los resonantes
 var _shards: ShardPool
 var _fx: ImpactFx
 var _hd_fx: HdImpact
@@ -185,6 +186,7 @@ func _ready() -> void:
 	_reveal.name = "CoreReveal"
 	_reveal.setup(self)
 	add_child(_reveal)
+	add_child(_facets)
 	_arcs.setup_ambient(
 		global_position + Vector3(0.0, volume.top * 0.4, 0.0),
 		Vector3(
@@ -199,6 +201,7 @@ func _ready() -> void:
 	_geodes.name = "Geodes"
 	add_child(_geodes)
 	_geodes.setup(self, _arcs, _shards, _hd_fx)
+	_facets.setup(self, _arcs, _shards, _hd_fx)
 	_burn_fire = CrystalBurn.new()
 	_burn_fire.name = "Burn"
 	_burn_fire.burned.connect(_on_burn_tick)
@@ -356,6 +359,7 @@ func receive_hit(hit: SpellHit) -> void:
 	_geodes.check_hit(hit)
 	_veins.apply(hit)
 	_tears.apply(hit)
+	_facets.prepare(hit)
 	var removed: float = _dig(
 		hit.position, hit.normal, float(hit.damage), hit.recipe != null, hit.size
 	)
@@ -420,6 +424,7 @@ func receive_hit(hit: SpellHit) -> void:
 		)
 	_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.size)
 	_crystal_reacts(hit)
+	_facets.try_break(hit)
 	_veins.react(hit)
 	_tears.react(hit)
 	if hit.resonant or hit.recipe != null or _now - _last_hd >= 0.12:

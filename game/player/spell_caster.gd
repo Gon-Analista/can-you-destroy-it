@@ -78,6 +78,8 @@ const WHEEL_STEP_MS: int = 140
 			_delivery.camera = value
 		if _stage_fx:
 			_stage_fx.camera = value
+		if _auto:
+			_auto.camera = value
 @export var hands: WizardHands
 
 ## Nivel de la Chispa (lo da la Potencia; en debug, las teclas 1-5 lo fuerzan en todos).
@@ -123,6 +125,8 @@ var _delivery: SpellDelivery
 var _resonance_left: float = 0.0
 var _resonance_lock: float = 0.0
 var _wheel_at: int = -WHEEL_STEP_MS
+## Lanzamiento continuo (nodo hito): mantener un botón lanza esa mano en ráfaga.
+var _auto: AutoCast
 
 
 func _ready() -> void:
@@ -168,6 +172,12 @@ func _ready() -> void:
 	_stage_fx.camera = camera
 	_stage_fx.hands = hands
 	add_child(_stage_fx)
+	_auto = AutoCast.new()
+	_auto.name = "AutoCast"
+	_auto.caster = self
+	_auto.camera = camera
+	_auto.hands = hands
+	add_child(_auto)
 	# Menú, Grimorio o libro a media carga la deshacen (el botón se suelta fuera del juego).
 	Events.menu_opened.connect(_cancel_combine)
 	Events.grimoire_opened.connect(_cancel_combine)
@@ -435,6 +445,7 @@ func try_release_combine() -> void:
 
 
 func _on_press(side: int) -> void:
+	_auto.press(side)
 	if _combining:
 		# "Clic para cargar" (Opciones): el siguiente clic suelta el combinado.
 		if not Settings.hold_to_charge:
@@ -453,11 +464,13 @@ func _on_press(side: int) -> void:
 		# Las dos manos listas: puede que el otro clic esté a punto de llegar.
 		_pending_side = side
 		_pending_time = GameState.BALANCE.combine_window_sec
-	else:
+	elif not _auto.joins(side):
+		# (Con la otra mano en ráfaga, las dos se juntan en cuanto estén listas: ver AutoCast.)
 		_request_single(side)
 
 
 func _on_release(side: int) -> void:
+	_auto.release(side)
 	if _combining:
 		if Settings.hold_to_charge:
 			_launch_combine()
@@ -482,6 +495,10 @@ func _request_single(side: int) -> void:
 
 
 func _process(delta: float) -> void:
+	var auto: int = _auto.tick(delta, _combining)
+	if (auto & AutoCast.JOIN) != 0:
+		# Las dos manos se van a juntar: nada guardado de la ráfaga sale suelto antes.
+		_buffered.fill(false)
 	for side: int in 2:
 		if _cooldown[side] > 0.0:
 			_cooldown[side] -= delta
@@ -497,6 +514,15 @@ func _process(delta: float) -> void:
 			var side: int = _pending_side
 			_pending_side = -1
 			_cast_single(side)
+	if (auto & AutoCast.JOIN) != 0 and _hand_ready(0) and _hand_ready(1) and recipe_for_hands():
+		_pending_side = -1
+		_begin_combine()
+		if not _combining:
+			_auto.clear()  # no se pudo (la Resonancia aún vibra): no se reintenta cada fotograma
+	for side: int in 2:
+		# Sólo con la mano lista (sin buffer): al soltar no queda ningún disparo guardado.
+		if (auto & (1 << side)) != 0 and _pending_side < 0 and _hand_ready(side):
+			_request_single(side)
 	if _combining:
 		_update_combine(delta)
 	_resonance_lock = maxf(0.0, _resonance_lock - delta)

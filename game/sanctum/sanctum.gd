@@ -67,6 +67,8 @@ func _ready() -> void:
 	_build_lectern()
 	_build_props()
 	_build_poof()
+	# Trofeos de los nodos hito (Lanzamiento continuo, Vórtice, Rompefacetas).
+	add_child(MilestoneTrophies.new())
 	_shown = mini(GameState.total_upgrade_levels(), PROPS.size())
 	for i: int in PROPS.size():
 		_props[PROPS[i]].visible = i < _shown

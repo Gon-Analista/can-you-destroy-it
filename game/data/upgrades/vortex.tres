@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"vortex"
+display_name = "Vórtice"
+description = "Un remolino de maná gira a tu alrededor: aspira en espiral los fragmentos sueltos del claro y los manda solos a la tolva. Las Lágrimas no: ésas las recoges tú."
+branch = 3
+element = &""
+star_pos = Vector2i(214, 252)
+costs = PackedInt32Array(120000)
+prerequisites = Array[StringName]([&"direct_send", &"pylon:0.75"])
+stat = &"vortex_radius"
+values = PackedFloat32Array(0, 45)
+value_format = "aspira a %d m"
+level_names = PackedStringArray("Sin vórtice")
