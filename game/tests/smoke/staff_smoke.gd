@@ -7,6 +7,7 @@ extends SceneTree
 ## el Glaciar Tronante y la Supernova golpean y se descubren; el Libro enseña las triples en su
 ## propia página; la Vitrina del Báculo se enciende al comprarlo y abre su página. No toca la
 ## partida guardada.
+## Con el báculo apagado (`StaffCombos.ENABLED`), sólo comprueba que no queda rastro de él.
 ## godot --headless --path game --script res://tests/smoke/staff_smoke.gd
 
 const PLAYER_PATH: NodePath = ^"WorldView/WorldViewport/Player"
@@ -24,7 +25,11 @@ func _initialize() -> void:
 	root.get_node(^"SaveSystem").set(&"enabled", false)
 	var gs: Node = root.get_node(^"GameState")
 	gs.call(&"reset")
-	_check_data()
+	var staff_script: Script = load("res://spells/staff_combos.gd")
+	if not bool(staff_script.get(&"ENABLED")):
+		await _check_disabled(gs)
+		return
+	_check_data(staff_script)
 	change_scene_to_file("res://main/main.tscn")
 	for i: int in 240:
 		await process_frame
@@ -264,8 +269,7 @@ func _alive(critters: Array[Node]) -> int:
 
 
 ## Datos: cada triple tiene tres elementos, se resuelve en cualquier orden y no hay dos iguales.
-func _check_data() -> void:
-	var sc: Script = load("res://spells/staff_combos.gd")
+func _check_data(sc: Script) -> void:
 	var triples: Array = sc.get(&"TRIPLES")
 	_check(triples.size() >= 4, "al menos cuatro triples (%d)" % triples.size())
 	for r: Resource in triples:
@@ -318,6 +322,42 @@ func _cast_and_wait(recipe: Resource) -> void:
 		waited += 0.2
 	_check(int(_prog.get(&"essence")) < before, "%s: quita esencia" % recipe.get(&"id"))
 	_check(_found(recipe.get(&"id")), "%s: descubierta" % recipe.get(&"id"))
+
+
+## Con el báculo apagado (StaffCombos.ENABLED): ni mejoras, ni página del Grimorio, ni triples,
+## ni vitrina, ni báculo en pantalla, aunque una partida guardada lo tuviera comprado; R no hace
+## nada y las parejas siguen como siempre.
+func _check_disabled(gs: Node) -> void:
+	var staff_ids: Array[String] = []
+	for n: UpgradeNode in gs.get(&"UPGRADES"):
+		if String(n.id).begins_with("staff"):
+			staff_ids.append(String(n.id))
+	_check(staff_ids.is_empty(), "sin mejoras del báculo en el Grimorio %s" % [staff_ids])
+	_prog = gs.get(&"progression")
+	# Como una partida guardada que ya lo tenía comprado.
+	(_prog.get(&"upgrade_levels") as Dictionary)[&"staff"] = 1
+	change_scene_to_file("res://main/main.tscn")
+	for i: int in 240:
+		await process_frame
+	var main: Node = current_scene
+	var menu: Node = main.get_node(^"HUDLayer/Hud/GameMenu")
+	if bool(menu.call(&"is_open")):
+		menu.call(&"_close")
+	var grimoire: Node = main.get_node(GRIMOIRE_PATH)
+	for page: Array in grimoire.get(&"PAGES"):
+		_check(page[0] != &"staff", "el Grimorio no tiene página %s" % page[0])
+	_check(main.get_tree().get_first_node_in_group(&"staff_vitrine") == null, "no hay vitrina")
+	var player: Node3D = main.get_node(PLAYER_PATH)
+	_caster = player.call(&"get_caster")
+	var view: Node = player.get_node(^"Hands").get(&"staff")
+	_caster.call(&"_cycle_staff", 1)
+	await process_frame
+	_check(not bool(view.call(&"is_shown")), "el báculo no sale en pantalla")
+	_check(int(_caster.get(&"staff").get(&"element_index")) < 0, "R no enciende ninguna gema")
+	var book: Node = main.get_node(BOOK_PATH)
+	_check(int(book.call(&"_tab_count")) == 1, "el Libro sólo tiene PAREJAS")
+	print("staff_smoke: ", "OK" if _ok else "FALLO")
+	quit(0 if _ok else 1)
 
 
 func _found(id: StringName) -> bool:

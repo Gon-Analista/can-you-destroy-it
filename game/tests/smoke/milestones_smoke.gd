@@ -161,7 +161,9 @@ func _vortex(gs: Node, world: Node) -> void:
 	player.global_position = Vector3(-26.0, 1.0, 88.0)
 	await _wait(0.3)
 	var base: Vector3 = player.global_position
-	var before: int = int(shards.call(&"count_of", shard_t))
+	# Se cuentan los de alrededor (no todos los del valle: los de los golpes de antes aún se
+	# recogen o caducan y movían la cuenta).
+	var before: int = _loose_around(shards, base, 40.0)
 	for k: int in 10:
 		var a: float = TAU * float(k) / 10.0
 		var at: Vector3 = base + Vector3(cos(a), 0.0, sin(a)) * (10.0 + float(k) * 2.0)
@@ -169,7 +171,8 @@ func _vortex(gs: Node, world: Node) -> void:
 	tears.call(&"drop", base + Vector3(6, 3, 0), Vector3.UP)
 	await _wait(2.0)
 	_check(
-		int(shards.call(&"count_of", shard_t)) - before == 10, "sin el Vórtice, siguen en el suelo"
+		_loose_around(shards, base, 40.0) - before == 10,
+		"sin el Vórtice, siguen en el suelo (%d)" % (_loose_around(shards, base, 40.0) - before)
 	)
 	# Un familiar ya va a por uno: el Vórtice no se lo quita.
 	var claimed: int = int(shards.call(&"loose_near", base, 60.0, PackedInt32Array(), 0.0))
@@ -191,6 +194,17 @@ func _vortex(gs: Node, world: Node) -> void:
 	flock.set(&"claims", claims_before)
 	prog.upgrade_levels.erase(&"vortex")
 	prog.upgrade_levels.erase(&"direct_send")
+
+
+## Fragmentos sueltos a menos de `radius` m de `at`.
+func _loose_around(shards: Node, at: Vector3, radius: float) -> int:
+	var seen := PackedInt32Array()
+	while true:
+		var i: int = int(shards.call(&"loose_near", at, radius, seen, 0.0))
+		if i < 0:
+			return seen.size()
+		seen.append(i)
+	return seen.size()
 
 
 func _facets(gs: Node, world: Node) -> void:

@@ -442,7 +442,7 @@ func _on_recipe_discovered(recipe: SpellRecipe) -> void:
 	_discovery_name.visible = true
 	_discovery_time = DISCOVERY_SEC
 	var found: int = GameState.progression.discovered_recipes.size()
-	var total: int = SpellCaster.RECIPES.size() + StaffCombos.TRIPLES.size()
+	var total: int = SpellCaster.RECIPES.size() + StaffCombos.triples().size()
 	var triple: bool = recipe.is_triple()
 	_discovery_title.text = (
 		(tr("¡COMBINACIÓN TRIPLE!") if triple else tr("¡COMBINACIÓN NUEVA!"))

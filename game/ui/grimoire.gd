@@ -32,7 +32,7 @@ const PAGES: Array[Array] = [
 	[&"bolt", "RAYO", "#ffe66b", "#2a2450", "#1b1838", 0.25],
 	[&"earth", "TIERRA", "#c9a26b", "#2e2a24", "#1f1c18", 0.5],
 	[&"arcane", "ARCANO", "#c79bff", "#24164a", "#170e33", 0.75],
-	[&"staff", "BÁCULO", "#ffc46b", "#2b2140", "#1c152c", 0.1],
+	# [&"staff", "BÁCULO", ...]: apagada con el báculo (StaffCombos.ENABLED).
 	[CORE_PAGE, "NÚCLEO", "#ff7ad9", "#1e0c33", "#12061f", 0.8],
 ]
 # i18n
@@ -43,7 +43,6 @@ const PAGE_TITLES: PackedStringArray = [
 	"CONSTELACIÓN DEL RAYO",
 	"CONSTELACIÓN DE LA TIERRA",
 	"CONSTELACIÓN DEL ARCANO",
-	"CONSTELACIÓN DEL BÁCULO",
 	"CONSTELACIÓN DEL NÚCLEO",
 ]
 const TAB_W: int = 26

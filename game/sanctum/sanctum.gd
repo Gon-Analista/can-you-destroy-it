@@ -163,7 +163,9 @@ func _build_mirror() -> void:
 	var rt: Vector3 = WorldLayout.RUNE_TABLE
 	_rune_table.global_position = Vector3(rt.x, Valley.ground_height(rt.x, rt.z) - 0.05, rt.z)
 	_rune_table.rotation.y = deg_to_rad(WorldLayout.RUNE_TABLE_YAW_DEG)
-	# La Vitrina del Báculo, junto al final del camino.
+	# La Vitrina del Báculo, junto al final del camino (sólo con el báculo encendido).
+	if not StaffCombos.ENABLED:
+		return
 	_vitrine = StaffVitrine.new()
 	_vitrine.name = "StaffVitrine"
 	_vitrine.top_level = true

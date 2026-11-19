@@ -36,9 +36,7 @@ const UPGRADES: Array[UpgradeNode] = [
 	preload("res://data/upgrades/earth_power.tres"),
 	preload("res://data/upgrades/awaken_arcane.tres"),
 	preload("res://data/upgrades/arcane_power.tres"),
-	preload("res://data/upgrades/staff.tres"),
-	preload("res://data/upgrades/staff_power.tres"),
-	preload("res://data/upgrades/staff_focus.tres"),
+	# El Báculo (staff, staff_power, staff_focus) está apagado por ahora: ver StaffCombos.ENABLED.
 	preload("res://data/upgrades/familiar.tres"),
 	preload("res://data/upgrades/familiar_wings.tres"),
 	preload("res://data/upgrades/familiar_caster.tres"),

@@ -112,6 +112,8 @@ FRONT, SKY, RAIN, LANCE, BEAM, GROUND, MAGNET, GRAVITY, RESONANCE, STORM, NOVA =
 HAIL_PER_VOLLEY = 2  # elemental_storm.gd: bolas de granizo de cada ráfaga
 STORM_PARTNERS = 8  # combinaciones que se prueban junto a la Tormenta
 STAFF_UPGRADE = "staff"  # StaffCombos.UNLOCK_UPGRADE
+# StaffCombos.ENABLED: el báculo (y sus triples y mejoras) puede estar apagado.
+STAFF_ENABLED = "const ENABLED: bool = true" in (ROOT / "spells" / "staff_combos.gd").read_text()
 ZERO = (0.0, 0.0, 0.0, 0.0)
 # RuneDef.Kind
 MULTISHOT, BOUNCE, PIERCE, ECHO, HARVEST = range(5)
@@ -308,6 +310,8 @@ def load():
         main, subs = parse_tres(p)
         if main.get("is_reaction", "false") == "true" or not main.get("elements"):
             continue
+        if len(main["elements"]) >= 3 and not STAFF_ENABLED:
+            continue  # sin báculo no hay triples
         t = main.get("tier")
         tier = tier_from(subs[t[1]]) if isinstance(t, tuple) and t[1] in subs else Tier()
         recipes[main["id"]] = Recipe(
@@ -361,6 +365,8 @@ def load():
     upgrades: dict[str, Upgrade] = {}
     for p in sorted((DATA / "upgrades").glob("*.tres")):
         main, _ = parse_tres(p)
+        if main["id"].startswith(STAFF_UPGRADE) and not STAFF_ENABLED:
+            continue  # el Báculo está apagado (StaffCombos.ENABLED)
         upgrades[main["id"]] = Upgrade(
             main["id"],
             [int(c) for c in main.get("costs", [])],

@@ -3,7 +3,8 @@ extends Control
 ## Libro de Combinaciones (tecla B): todas las combinaciones y reacciones del juego. Las que ya
 ## has descubierto, con su nombre, cómo se lanzan y qué hacen; las que no, como "???" con un
 ## acertijo de pista; y las que piden un elemento que aún no has despertado (o el báculo), con
-## candado. Dos marcapáginas arriba: PAREJAS (las manos) y TRIPLES (las manos y el báculo).
+## candado. Dos marcapáginas arriba: PAREJAS (las manos) y TRIPLES (las manos y el báculo; sólo
+## con el báculo encendido, ver `StaffCombos.ENABLED`).
 ## Mismo aspecto que el Grimorio (los dos libros son hermanos).
 
 const OPEN_SFX: AudioStream = preload("res://audio/sfx/sfx_book_open_01.ogg")
@@ -100,7 +101,7 @@ func _ready() -> void:
 		Rect2(LEFT.position + Vector2(0, 28), Vector2(LEFT.size.x, UiFonts.LINE)),
 		1
 	)
-	for i: int in TABS.size():
+	for i: int in _tab_count():
 		var tr_rect: Rect2 = _tab_rect(i)
 		_tab_labels.append(
 			_label(
@@ -196,12 +197,17 @@ func _element_name(id: StringName) -> String:
 
 ## Las recetas de la página abierta.
 func _list() -> Array[SpellRecipe]:
-	return StaffCombos.TRIPLES if _page == 1 else SpellCaster.RECIPES
+	return StaffCombos.triples() if _page == 1 else SpellCaster.RECIPES
+
+
+## Marcapáginas que se ven: sin báculo, sólo PAREJAS.
+func _tab_count() -> int:
+	return TABS.size() if StaffCombos.ENABLED else 1
 
 
 ## Abre una página del libro (0 parejas, 1 triples).
 func open_page(page: int) -> void:
-	page = clampi(page, 0, TABS.size() - 1)
+	page = clampi(page, 0, _tab_count() - 1)
 	if page == _page:
 		return
 	_page = page
@@ -219,7 +225,7 @@ func _refresh() -> void:
 	var found: int = 0
 	for i: int in _rows.size():
 		_rows[i].visible = i < list.size()
-	for i: int in TABS.size():
+	for i: int in _tab_count():
 		_tab_labels[i].text = tr(TABS[i])
 		_tab_labels[i].add_theme_color_override(
 			&"font_color", C_GOLD_LIGHT if i == _page else C_LOCKED.lightened(0.45)
@@ -317,7 +323,7 @@ func _gui_input(event: InputEvent) -> void:
 		return
 	var local: Vector2 = pos - _ofs()
 	if event is InputEventMouseButton:
-		for t: int in TABS.size():
+		for t: int in _tab_count():
 			if _tab_rect(t).has_point(local):
 				open_page(t)
 	if local.x > LEFT.position.x and local.x < LEFT.end.x:
@@ -381,7 +387,7 @@ func _draw() -> void:
 	]:
 		draw_rect(Rect2(corner, Vector2(8, 8)), C_GOLD)
 	# Marcapáginas: cintas que asoman por arriba del libro (la abierta, más alta y dorada).
-	for t: int in TABS.size():
+	for t: int in _tab_count():
 		var tab: Rect2 = _tab_rect(t)
 		var open_tab: bool = t == _page
 		if not open_tab:

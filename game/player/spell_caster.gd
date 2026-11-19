@@ -412,6 +412,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## R o la rueda del ratón: cambia el elemento de la gema del báculo. Devuelve si era eso.
 func _staff_input(event: InputEvent) -> bool:
+	if not StaffCombos.ENABLED:
+		return false
 	if event.is_action_pressed(&"cycle_staff"):
 		_cycle_staff(1)
 		return true
@@ -841,5 +843,5 @@ func _randomizer(streams: Array[AudioStream], pitch: float) -> AudioStreamRandom
 ## Pantalla de carga: un proyectil de cada aspecto (ver SpellDelivery.warm_up).
 func warm_up(target: Vector3) -> void:
 	var all: Array[SpellRecipe] = RECIPES.duplicate()
-	all.append_array(StaffCombos.TRIPLES)
+	all.append_array(StaffCombos.triples())
 	_delivery.warm_up(target, ELEMENTS, all)

@@ -477,7 +477,7 @@ func buy_everything() -> void:
 		hud.tutorial.skip()
 	for r: SpellRecipe in SpellCaster.RECIPES:
 		prog.discover_recipe(r.id)
-	for r: SpellRecipe in StaffCombos.TRIPLES:
+	for r: SpellRecipe in StaffCombos.triples():
 		prog.discover_recipe(r.id)
 	# Mejoras que piden el Pilón a cierta altura (el Báculo): sube hasta ahí.
 	for node: UpgradeNode in GameState.UPGRADES:

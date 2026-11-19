@@ -2,7 +2,7 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
-## 2026-11-19 · Pulido del mundo: cristal más grande, nubes, nombres de las estaciones, Vitrina del Báculo
+## 2026-11-19 · Pulido del mundo: cristal más grande, nubes, nombres de las estaciones; báculo apagado
 
 **Qué hay nuevo**
 
@@ -18,7 +18,14 @@ Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev
 - **Nombres de las estaciones** (`ui/guide/station_labels.gd`): al acercarse (30 a 6 m) se lee qué es cada
   cosa (Pilón, Trituradora, Santuario, Mesa de Runas, Espejo, Vitrina, Jaula). Debajo, para qué sirve, sólo en
   la más cercana a la mira y hasta que se usa una vez. Si se pisan, las lejanas suben.
-- **Vitrina del Báculo** (`sanctum/staff_vitrine.gd`, GDD 4.3): una urna de cristal con marco de oro junto al
+- **El báculo, apagado por ahora** (`StaffCombos.ENABLED = false`): en las pruebas confundía, así que el
+  juego queda sólo con la magia de las manos. Sin mejoras del báculo (`staff`, `staff_power`, `staff_focus`
+  fuera de `GameState.UPGRADES`), sin su página en el Grimorio, sin triples en el Libro (sólo PAREJAS), sin R
+  ni rueda para la gema y sin vitrina. Una partida guardada que ya lo tenía comprado no lo enseña (el maná
+  gastado no se devuelve). El Espejo y la pantalla final cuentan 17 combinaciones en vez de 22. Todo el código
+  sigue ahí: para volver, `ENABLED = true` y devolver las tres mejoras y la página. El simulador
+  (`tools/balance_sim.py`, que lee el interruptor) termina la partida igual: ~1 h 51 el jugador eficiente.
+- **Vitrina del Báculo** (`sanctum/staff_vitrine.gd`, GDD 4.3; no se construye con el báculo apagado): una urna de cristal con marco de oro junto al
   final del camino del Santuario. Dentro flota el báculo: gris y con candado hasta comprarlo; luego se enciende
   con un destello y su gema toma el color del elemento que lleva. Con F se abre el Grimorio directamente por la
   constelación del Báculo (y se puede comprar ahí). Tiene nombre y línea de ayuda como las demás estaciones.
@@ -36,7 +43,9 @@ Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev
 
 - Pruebas en headless: todas en verde salvo `grimoire_click_smoke`, que ya fallaba antes ("clic en INSCRIBIR
   compra"). `staff_smoke` apunta ahora por encima de la puntita del pie del cristal, que con el tamaño nuevo
-  llega casi al cruce de caminos, y comprueba la Vitrina (se enciende al comprar el báculo y abre su página).
+  llega casi al cruce de caminos; con el báculo apagado comprueba que no queda rastro de él (mejoras,
+  página, vitrina, R, triples). `ranks_smoke` cuenta 17 combinaciones sin báculo. `milestones_smoke` cuenta
+  los fragmentos del Vórtice alrededor del mago (contaba los de todo el valle y fallaba según el ritmo).
   Varias pruebas abortan al salir ("corrupted size vs. prev_size"); también pasa sin estos cambios.
 - Capturas a 1280x720 de día, al atardecer y de noche:
   [nubes en la punta](docs/capturas/nubes_punta_cristal.png), [cristal grande](docs/capturas/cristal_grande.png),
