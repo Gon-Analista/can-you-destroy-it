@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="UpgradeNode" format=3]
+
+[ext_resource type="Script" path="res://data/defs/upgrade_node.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = &"wind_power"
+display_name = "Potencia"
+description = "Ráfagas más fuertes, más seguidas y que barren más fragmentos. Desde el nivel 6 salen de la mano con círculos de runas; el 11, Ascensión, espera a que el cristal esté casi roto."
+branch = 0
+element = &"wind"
+star_pos = Vector2i(118, 196)
+costs = PackedInt32Array(450, 700, 1100, 1700, 2700, 4300, 7000, 11000, 18000, 100000)
+prerequisites = Array[StringName]([&"awaken_wind"])
+apex_destroyed_ratio = 0.8
+stat = &"wind_tier"
+values = PackedFloat32Array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+value_format = "%s"
+level_names = PackedStringArray("Brisa", "Soplo", "Ráfaga", "Vendaval", "Remolino", "Galerna", "Viento arcano", "Huracán", "Ciclón", "Tifón", "Viento ascendido")

@@ -30,13 +30,13 @@ func _run() -> void:
 
 
 func _check_levels(table: PackedInt32Array) -> void:
-	_check(table.size() == 10, "una entrada por nivel (1..10)")
+	_check(table.size() == 11, "una entrada por nivel (1..11)")
 	_check(ChargeStages.count_for_level(1, table) == 0, "nivel 1: carga continua")
 	_check(ChargeStages.count_for_level(2, table) == 1, "nivel 2 (1.ª Potencia): una etapa")
 	_check(ChargeStages.count_for_level(5, table) == 2, "nivel 5: dos etapas")
 	_check(ChargeStages.count_for_level(10, table) == 5, "nivel 10: cinco etapas")
 	var up: bool = true
-	for lvl: int in range(2, 11):
+	for lvl: int in range(2, 12):
 		up = (
 			up
 			and (
@@ -146,19 +146,25 @@ func _check_circles() -> void:
 	circles.call(&"cancel")
 	await create_timer(0.5).timeout
 	_check(_visible(circles) == 0, "al cancelar se apagan")
-	var sky := to + Vector3(0, 40, 10)
-	circles.call(&"charging_sky", 0.05, 4, to, Vector3.BACK, sky, Color.RED, Color.WHITE, 2)
+	circles.call(&"charging_sky", 0.05, 4, to, 40.0, Color.RED, Color.WHITE, 2)
 	_check(
 		_visible(circles) == 1,
 		"cielo: el círculo del blanco marca dónde caerá desde el principio (%d)" % _visible(circles)
 	)
-	circles.call(&"charging_sky", 0.5, 4, to, Vector3.BACK, sky, Color.RED, Color.WHITE, 2)
+	circles.call(&"charging_sky", 0.5, 4, to, 40.0, Color.RED, Color.WHITE, 2)
 	_check(
 		_visible(circles) == 2,
 		"cielo, 4 círculos en 2 etapas: la 1.ª abre el primero del camino (%d)" % _visible(circles)
 	)
-	circles.call(&"charging_sky", 1.0, 4, to, Vector3.BACK, sky, Color.RED, Color.WHITE, 2)
+	circles.call(&"charging_sky", 1.0, 4, to, 40.0, Color.RED, Color.WHITE, 2)
 	_check(_visible(circles) == 4, "cielo: con la última, todos (%d)" % _visible(circles))
+	var vertical: bool = true
+	for q: Node in circles.get_children():
+		var n3: Node3D = q as Node3D
+		if n3.visible:
+			var flat := Vector2(n3.global_position.x - to.x, n3.global_position.z - to.z)
+			vertical = vertical and flat.length() < 0.01 and n3.global_position.y > to.y
+	_check(vertical, "cielo: los círculos se apilan a plomo sobre el blanco")
 	circles.call(&"release")
 	await create_timer(0.7).timeout
 	_check(_visible(circles) == 0, "al lanzar destellan y se apagan")

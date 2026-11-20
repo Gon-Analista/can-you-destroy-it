@@ -1,7 +1,7 @@
 extends SceneTree
 ## Menú de depuración: Alt+F1 lo abre (y suelta el ratón), "COMPRAR TODO Y HECHIZOS AL MÁXIMO"
 ## deja todas las mejoras al máximo, todos los elementos despiertos, todas las combinaciones
-## descubiertas y todos los hechizos (elementos y combinados) a nivel 10; el maná, la bolsa, la
+## descubiertas y todos los hechizos (elementos y combinados) a nivel 11; el maná, la bolsa, la
 ## velocidad del juego y el Pilón responden; Esc lo cierra. No toca la partida guardada.
 ## godot --headless --path game --script res://tests/smoke/debug_menu_smoke.gd
 
@@ -62,14 +62,14 @@ func _initialize() -> void:
 		var el: ElementDef = elements[i]
 		_check(bool(caster.call(&"is_unlocked", el)), "%s despierto" % el.id)
 		hands[0] = i
-		_check(int(caster.call(&"level_of", 0)) == 10, "%s a nivel 10" % el.id)
+		_check(int(caster.call(&"level_of", 0)) == 11, "%s a nivel 11" % el.id)
 	hands[0] = 0
 	var recipes: Array = caster.get(&"RECIPES")
 	var discovered: Array = prog.get(&"discovered_recipes")
 	for r: SpellRecipe in recipes:
 		_check(discovered.has(r.id), "%s descubierta" % r.id)
 		if not r.is_reaction:
-			_check(int(caster.call(&"recipe_level", r)) == 10, "%s a nivel 10" % r.id)
+			_check(int(caster.call(&"recipe_level", r)) == 11, "%s a nivel 11" % r.id)
 	_check(int(gs.call(&"bag_capacity")) == 100, "bolsa grande (%d)" % gs.call(&"bag_capacity"))
 	var flock: Node = current_scene.get_node(^"WorldView/WorldViewport/FamiliarFlock")
 	await process_frame

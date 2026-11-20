@@ -1,5 +1,5 @@
 extends SceneTree
-## Combinaciones: cada pareja de los cinco elementos (15) tiene exactamente una receta lanzable
+## Combinaciones: cada pareja de los seis elementos (21) tiene exactamente una receta lanzable
 ## (las reacciones no se lanzan), los Ecos repiten una receta que existe, y cada combinación
 ## lanzada de verdad contra el cristal se descubre y le quita esencia (salvo las de utilidad:
 ## Magnetismo y Gravedad, que atraen fragmentos).
@@ -14,8 +14,9 @@ func _initialize() -> void:
 	var caster_script: Script = load("res://player/spell_caster.gd")
 	var elements: Array = caster_script.get(&"ELEMENTS")
 	var recipes: Array = caster_script.get(&"RECIPES")
-	_check(elements.size() == 5, "cinco elementos")
+	_check(elements.size() == 6, "seis elementos")
 	_check(elements[4].get(&"id") == &"arcane", "el quinto es el Arcano")
+	_check(elements[5].get(&"id") == &"wind", "el sexto es el Viento")
 	var pairs: int = 0
 	for i: int in elements.size():
 		for j: int in range(i, elements.size()):
@@ -27,7 +28,7 @@ func _initialize() -> void:
 					n += 1
 			_check(n == 1, "%s + %s: una combinación (%d)" % [a, b, n])
 			pairs += 1
-	_check(pairs == 15, "15 parejas")
+	_check(pairs == 21, "21 parejas")
 	for r: Resource in recipes:
 		if bool(r.get(&"is_reaction")):
 			_check(not bool(r.call(&"matches", &"spark", &"frost")), "la reacción no se lanza")
@@ -57,14 +58,19 @@ func _initialize() -> void:
 	var gs: Node = root.get_node(^"GameState")
 	var prog: RefCounted = gs.get(&"progression")
 	var levels: Dictionary = prog.get(&"upgrade_levels")
-	for id: String in ["awaken_frost", "awaken_bolt", "awaken_earth", "awaken_arcane"]:
+	for id: String in ["awaken_frost", "awaken_bolt", "awaken_earth", "awaken_arcane", "awaken_wind"]:
 		levels[StringName(id)] = 1
 	player.global_position = Vector3(0.0, 0.3, 60.0)
 	player.rotation.y = 0.0
 	(player.get_node(^"Head") as Node3D).rotation.x = deg_to_rad(8.0)
+	var shot: int = 0
 	for r: Resource in recipes:
 		if bool(r.get(&"is_reaction")):
 			continue
+		# Cada una a otro punto de la Corteza: las que perforan, todas en el mismo sitio, acababan
+		# en el Manto y las de nivel 1 ya no le hacían nada.
+		player.rotation.y = deg_to_rad(-15.0 + 1.4 * float(shot))
+		shot += 1
 		var els: Array = r.get(&"elements")
 		var idx: Array[int] = []
 		for e: StringName in els:

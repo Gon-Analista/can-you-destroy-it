@@ -153,7 +153,7 @@ func _initialize() -> void:
 	_check(float(storm.call(&"lock_left")) <= 0.0, "pasado el cierre, se puede lanzar otra")
 	# El Libro enseña las triples en su página.
 	book.call(&"open")
-	book.call(&"open_page", 1)
+	book.call(&"open_page", SpellBook.TRIPLES_PAGE)
 	await process_frame
 	var listed: Array = book.call(&"_list")
 	_check(listed.size() == 5, "el Libro tiene 5 triples")

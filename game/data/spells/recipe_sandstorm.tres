@@ -1,0 +1,75 @@
+[gd_resource type="Resource" script_class="SpellRecipe" format=3]
+
+[ext_resource type="Script" path="res://data/defs/spell_recipe.gd" id="main"]
+[ext_resource type="Script" path="res://data/defs/spell_tier.gd" id="tier"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_spell_combine_01.ogg" id="combine"]
+[ext_resource type="Resource" path="res://data/spells/vfx_sandstorm.tres" id="vis"]
+[ext_resource type="AudioStream" path="res://audio/sfx/amb_wind_charge_loop.ogg" id="loop"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_tornado_01.ogg" id="sfx_tornado_01"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_earth_impact_01.ogg" id="sfx_earth_impact_01"]
+
+[sub_resource type="Gradient" id="ramp"]
+offsets = PackedFloat32Array(0, 0.2, 0.45, 0.72, 1)
+colors = PackedColorArray(2.4, 2.1, 1.5, 1, 1.8, 1.45, 0.85, 1, 1.2, 0.9, 0.5, 1, 0.65, 0.45, 0.25, 1, 0.22, 0.15, 0.08, 1)
+
+[sub_resource type="Resource" id="t"]
+script = ExtResource("tier")
+damage = 4
+speed = 200.0
+wobble = 0.0
+shards_min = 1
+shards_max = 2
+shard_scale = 1.2
+impact_particles = 22
+light_energy = 2.0
+crack_radius = 1.0
+shake = 0.08
+orb_scale = 6.0
+trail_width = 0.5
+trail_length = 0.15
+trail_smoke = 0.8
+color_core = Color(1, 0.95, 0.8, 1)
+color_glow = Color(0.95, 0.75, 0.4, 1)
+impact_tint = Color(1, 0.85, 0.6, 1)
+size = 0.5
+cooldown_sec = 3.4
+visual = ExtResource("vis")
+trail_ramp = SubResource("ramp")
+flight_sfx = ExtResource("loop")
+
+[resource]
+script = ExtResource("main")
+id = &"sandstorm"
+display_name = "Tormenta de Arena"
+elements = Array[StringName]([&"wind", &"earth"])
+description = "Un chorro de arena que lija el cristal mientras lo sigues con la mirilla; arranca fragmentos grandes."
+riddle = "La piedra no vuela... salvo que la muelas en arena y soples."
+delivery = 4
+damage_multiplier = 7.0
+area_radius = 0.0
+area_hits = 0
+burn_sec = 0.0
+burn_damage = 2
+burn_tick_sec = 0.4
+sky_height = 40.0
+fall_sec = 1.0
+sky_circles = 3
+rain_count = 0
+rain_radius = 4.0
+pierce_depth = 0.0
+freeze_trail = false
+chain_count = 0
+beam_sec = 1.8
+shard_bonus = 1
+circle_color = Color(1.4, 1.1, 0.6, 1)
+circle_hot = Color(1.8, 1.6, 1.1, 1)
+charge_sec = 1.0
+min_power = 0.4
+charge_payoff = 1.0
+cooldown_sec = 3.4
+tier = SubResource("t")
+visual = ExtResource("vis")
+combine_sfx = ExtResource("combine")
+charge_loop_sfx = ExtResource("loop")
+cast_sfx = Array[AudioStream]([ExtResource("sfx_tornado_01")])
+impact_sfx = Array[AudioStream]([ExtResource("sfx_earth_impact_01")])

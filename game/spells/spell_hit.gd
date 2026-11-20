@@ -40,8 +40,11 @@ var vein_weak: bool = false
 ## False si no lo lanzó el jugador (rayo del Pilón, familiares): no cuenta para la racha ni mueve
 ## la mirilla, la cámara o la levitación, y no da avisos.
 var by_player: bool = true
-## Nivel del hechizo (1..10): en las combinaciones, el de su Potencia. Sólo cambia el aspecto.
+## Nivel del hechizo (1..11): en las combinaciones, el de su Potencia. Sólo cambia el aspecto.
 var level: int = 1
+## Escala sólo visual del impacto (estallido, grietas, sacudida): los combinados cargados a tope
+## estallan más grandes (ver `SpellCaster._launch_combine`). 1 = el de siempre.
+var fx_scale: float = 1.0
 ## Runas (RuneCaster, al lanzar): rebotes que le quedan al golpe y el daño de cada rebote
 ## (fracción del golpe del que sale); fracción de su daño que sigue por dentro del cristal
 ## (Perforación; 0 = no perfora) y fondo de ese túnel (m).

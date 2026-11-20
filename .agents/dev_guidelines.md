@@ -318,7 +318,7 @@ godot --headless --path game --script res://tests/smoke/progression_smoke.gd
   `tests/smoke/localization_smoke.gd`, que todos los idiomas cargan, están completos y conservan los `%d`/`%s`;
   `tests/smoke/combos_smoke.gd`, que cada pareja de elementos tiene combinación y que las diez se lanzan,
   se descubren y dañan el cristal (carga la escena; ~1 min);
-  `tests/smoke/spell_levels_smoke.gd`, los niveles 6 a 10 y los círculos mágicos;
+  `tests/smoke/spell_levels_smoke.gd`, los niveles 6 a 11 (Ascensión) y los círculos mágicos;
   `tests/smoke/movement_smoke.gd`, el doble salto y la levitación (no toca la partida guardada);
   `tests/smoke/tutorial_smoke.gd`, el tutorial del principio de punta a punta (no toca la partida guardada);
   `tests/smoke/arcane_smoke.gd`, el Arcano, sus ecos, la Gravedad y la Resonancia Arcana;
@@ -326,7 +326,7 @@ godot --headless --path game --script res://tests/smoke/progression_smoke.gd
   `tests/smoke/veins_pylon_smoke.gd`, las venas, la Pureza, los hitos y el rayo del Pilón;
   `tests/smoke/charge_stages_smoke.gd`, los escalones de carga por nivel, que cada uno suena una vez y que el
   daño no baja al subir de escalón;
-  `tests/smoke/meteor_smoke.gd`, la trayectoria del meteorito (entra alto, de lado y sin atravesar el cristal);
+  `tests/smoke/meteor_smoke.gd`, la caída del meteorito (a plomo desde lo alto, aterriza en lo primero que toca);
   `tests/smoke/fireball_flight_smoke.gd`, la Bola de Fuego en vuelo (precreada, crece con el nivel, apaga su luz);
   `tests/smoke/core_tears_smoke.gd`, las Lágrimas (sólo en el Corazón, piedad, contador, nodos que cuestan Lágrimas);
   `tests/smoke/ending_smoke.gd`, el final (Núcleo expuesto e inmune, Gran Convergencia, pantalla final, guardado);

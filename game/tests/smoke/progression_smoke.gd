@@ -116,6 +116,27 @@ func _init() -> void:
 	_check(streak.expire(3.6) and streak.streak == 0, "la racha caduca fuera de la ventana")
 	_check(streak.register_hit(10.0) == 1, "tras caducar se empieza de nuevo")
 
+	# Nivel 11 (Ascensión): la última compra de Potencia espera a que el cristal esté casi roto.
+	var apex := Progression.new(1000)
+	var power: UpgradeNode = load("res://data/upgrades/spark_power.tres")
+	apex.upgrade_levels[power.id] = power.get_max_level() - 1
+	apex.mana = 10_000_000
+	_check(apex.purchase_block(power) == &"apex", "Ascensión: espera con el cristal entero")
+	apex.essence = 150
+	_check(apex.purchase_block(power) == &"", "Ascensión: se abre con el cristal al 85 %")
+
+	# Cargar a tope vale la pena (y más a nivel 11); los hechizos "de toque" no premian la carga.
+	var bal: BalanceConfig = load("res://data/balance/default_balance.tres")
+	var table: PackedFloat32Array = bal.full_charge_bonus_by_level
+	_check(table.size() == 11, "premio de carga: uno por nivel")
+	_check(ChargeStages.full_bonus(11, table, 1.0) >= 10.0, "nivel 11 cargado: x10 o más")
+	_check(is_equal_approx(ChargeStages.full_bonus(11, table, 0.0), 1.0), "de toque: sin premio")
+	_check(is_equal_approx(ChargeStages.bonus(0.0, 10.0), 1.0), "sin cargar: sin premio")
+	var fireball: SpellRecipe = load("res://data/spells/recipe_fireball.tres")
+	var lance: SpellRecipe = load("res://data/spells/recipe_ice_lance.tres")
+	_check(not fireball.is_tap_spell(), "la Bola de Fuego se carga")
+	_check(lance.is_tap_spell(), "la Lanza de Hielo es de toque")
+
 	print("progression_smoke: %s" % ("OK" if _failures == 0 else "%d fallos" % _failures))
 	quit(1 if _failures > 0 else 0)
 

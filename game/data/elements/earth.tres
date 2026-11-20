@@ -97,3 +97,4 @@ shard_bonus = 1
 circle_color = Color(1.2, 0.8, 0.35, 1)
 damage_growth = 1.094
 cooldown_growth = 0.97
+apex_damage_mult = 70.0

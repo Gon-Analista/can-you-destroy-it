@@ -32,6 +32,8 @@ const UPGRADES: Array[UpgradeNode] = [
 	preload("res://data/upgrades/thermal_power.tres"),
 	preload("res://data/upgrades/awaken_bolt.tres"),
 	preload("res://data/upgrades/bolt_power.tres"),
+	preload("res://data/upgrades/awaken_wind.tres"),
+	preload("res://data/upgrades/wind_power.tres"),
 	preload("res://data/upgrades/awaken_earth.tres"),
 	preload("res://data/upgrades/earth_power.tres"),
 	preload("res://data/upgrades/awaken_arcane.tres"),

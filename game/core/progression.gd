@@ -159,7 +159,8 @@ func get_level(upgrade_id: StringName) -> int:
 
 
 ## Por qué no se puede comprar (o &"" si se puede): &"max", &"hidden" (aún no se ve),
-## &"locked", &"mana" o &"tears" (faltan Lágrimas).
+## &"locked", &"apex" (la Ascensión espera a que el cristal esté más destruido), &"mana" o
+## &"tears" (faltan Lágrimas).
 func purchase_block(node: UpgradeNode) -> StringName:
 	var level: int = get_level(node.id)
 	if level >= node.get_max_level():
@@ -169,6 +170,9 @@ func purchase_block(node: UpgradeNode) -> StringName:
 	for req: StringName in node.prerequisites:
 		if not _has_requirement(req):
 			return &"locked"
+	if node.apex_destroyed_ratio > 0.0 and level == node.get_max_level() - 1 and not reveal_all:
+		if float(essence) > float(total_essence) * (1.0 - node.apex_destroyed_ratio) + 0.5:
+			return &"apex"
 	var funds: int = tears if node.pays_with_tears() else mana
 	if funds < node.cost_for_level(level):
 		return &"tears" if node.pays_with_tears() else &"mana"
