@@ -87,6 +87,9 @@ var _tears: CoreTears
 ## El final: el Núcleo expuesto al 99 % (ver CoreReveal).
 var _reveal: CoreReveal
 var _facets := FacetBreaker.new()  # Rompefacetas (nodo hito): losas enteras en los resonantes
+var _aftershocks := CrystalAftershocks.new()  # golpes enormes: el resto del cráter, en réplicas
+## Aspecto del golpe que está excavando (las réplicas estallan con él).
+var _dig_tier: SpellTier
 var _shards: ShardPool
 var _fx: ImpactFx
 var _hd_fx: HdImpact
@@ -202,6 +205,9 @@ func _ready() -> void:
 	add_child(_geodes)
 	_geodes.setup(self, _arcs, _shards, _hd_fx)
 	_facets.setup(self, _arcs, _shards, _hd_fx)
+	_aftershocks.name = "Aftershocks"
+	add_child(_aftershocks)
+	_aftershocks.setup(self)
 	_burn_fire = CrystalBurn.new()
 	_burn_fire.name = "Burn"
 	_burn_fire.burned.connect(_on_burn_tick)
@@ -360,6 +366,7 @@ func receive_hit(hit: SpellHit) -> void:
 	_veins.apply(hit)
 	_tears.apply(hit)
 	_facets.prepare(hit)
+	_dig_tier = hit.tier
 	var removed: float = _dig(
 		hit.position, hit.normal, float(hit.damage), hit.recipe != null, hit.size
 	)
@@ -368,7 +375,7 @@ func receive_hit(hit: SpellHit) -> void:
 		return
 	hit.layer = _hit_layer
 	var tier: SpellTier = hit.tier
-
+	var fx_size: float = hit.size * hit.fx_scale  # lo que se ve (los cargados a tope, más)
 	_hits[_hit_index] = Vector4(hit.position.x, hit.position.y, hit.position.z, _now)
 	# 1: resonante; 2: fuego (destello naranja en vez de blanco azulado).
 	var fire: bool = (
@@ -380,7 +387,7 @@ func receive_hit(hit: SpellHit) -> void:
 		hit.position.x,
 		hit.position.y,
 		hit.position.z,
-		tier.crack_radius * (1.6 if hit.resonant else 1.0) * hit.size * _rng.randf_range(0.85, 1.15)
+		tier.crack_radius * (1.6 if hit.resonant else 1.0) * fx_size * _rng.randf_range(0.85, 1.15)
 	)
 	_crack_index = (_crack_index + 1) % MAX_CRACKS
 	var weak: bool = hit.size < 0.6
@@ -422,17 +429,17 @@ func receive_hit(hit: SpellHit) -> void:
 		_shards.spawn_worth(
 			hit.position, hit.normal, float(hit.damage) * (1.0 + 0.25 * bonus), power, _hit_layer
 		)
-	_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.size)
+	_fx.play(hit.position, hit.normal, tier, hit.resonant, fx_size)
 	_crystal_reacts(hit)
 	_facets.try_break(hit)
 	_veins.react(hit)
 	_tears.react(hit)
 	if hit.resonant or hit.recipe != null or _now - _last_hd >= 0.12:
 		_last_hd = _now
-		_hd_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.recipe != null, hit.size)
+		_hd_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.recipe != null, fx_size)
 	if hit.recipe and hit.recipe.delivery == SpellRecipe.Delivery.SKY:
 		# Lo que cae del cielo estalla dos veces: el golpe y la onda que se abre.
-		_hd_fx.play(hit.position, hit.normal, tier, false, true, hit.size * 2.0)
+		_hd_fx.play(hit.position, hit.normal, tier, false, true, fx_size * 2.0)
 		_arcs.storm(hit.position - Vector3.UP * 2.0, 18.0, 6.0, hit.recipe.circle_color * 1.2)
 		_global_flash = maxf(_global_flash, 0.25)
 	_play_tink(hit)
@@ -557,7 +564,10 @@ func _dig(at: Vector3, normal: Vector3, damage: float, combo: bool, size: float 
 	# centro un poco dentro (la malla queda unos centímetros por fuera en lo cóncavo).
 	var vol: float = damage / volume.layer_density[layer]
 	# Los hechizos más grandes (mejora de Tamaño) abren cráteres más anchos.
-	var radius: float = clampf(pow(vol / 0.3, 1.0 / 3.0) * sqrt(size), 0.85, 14.0)
+	var wanted: float = pow(vol / 0.3, 1.0 / 3.0) * sqrt(size)
+	var radius: float = clampf(wanted, 0.85, CrystalAftershocks.MAX_RADIUS)
+	# Más grande que el tope: el resto se lo llevan réplicas alrededor (ver CrystalAftershocks).
+	_aftershocks.queue(at, normal, wanted, _dig_tier)
 	var center: Vector3 = p - n * radius * 0.25
 	var amount: float = radius * 0.2
 	# Ajuste en seco: la esencia sale de las celdas que dejan de estar llenas, así que hay que
@@ -625,6 +635,18 @@ func magnet_pulse(at: Vector3, pulled: int) -> void:
 ## Resonancia Arcana: todo el cristal vibra (ver CrystalCombos.resonance_pulse).
 func resonance_pulse(hit: SpellHit) -> void:
 	_combos.resonance_pulse(hit)
+
+
+## Réplica de un golpe enorme (ver CrystalAftershocks): cráter de `radius` m en `at` (global) sin
+## volver a contar la esencia, con el estallido de `tier`, polvo, un temblor y un crujido.
+func aftershock(at: Vector3, normal: Vector3, radius: float, tier: SpellTier) -> void:
+	_dig_local(to_local(at), radius, radius * 0.22, _allowed_mask(true), 0.0)
+	if tier:
+		_fx.play(at, normal, tier, false, radius * 0.25)
+		_hd_fx.play(at, normal, tier, false, true, radius * 0.18)
+	_shudder = minf(1.0, _shudder + 0.25)
+	_break_player.global_position = at
+	_break_player.play()
 
 
 ## Para CrystalCombos: arranca cristal en `at` como un golpe (ver `_dig`).

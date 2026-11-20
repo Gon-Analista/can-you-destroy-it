@@ -30,6 +30,7 @@ const PAGES: Array[Array] = [
 	[&"spark", "CHISPA", "#ff9a3a", "#3a1840", "#26102e", 0.0],
 	[&"frost", "ESCARCHA", "#a5dae5", "#14305a", "#0d2042", 0.1],
 	[&"bolt", "RAYO", "#ffe66b", "#2a2450", "#1b1838", 0.25],
+	[&"wind", "VIENTO", "#9ff0d0", "#163a3a", "#0e2828", 0.35],
 	[&"earth", "TIERRA", "#c9a26b", "#2e2a24", "#1f1c18", 0.5],
 	[&"arcane", "ARCANO", "#c79bff", "#24164a", "#170e33", 0.75],
 	# [&"staff", "BÁCULO", ...]: apagada con el báculo (StaffCombos.ENABLED).
@@ -41,6 +42,7 @@ const PAGE_TITLES: PackedStringArray = [
 	"CONSTELACIÓN DE LA CHISPA",
 	"CONSTELACIÓN DE LA ESCARCHA",
 	"CONSTELACIÓN DEL RAYO",
+	"CONSTELACIÓN DEL VIENTO",
 	"CONSTELACIÓN DE LA TIERRA",
 	"CONSTELACIÓN DEL ARCANO",
 	"CONSTELACIÓN DEL NÚCLEO",
@@ -457,6 +459,10 @@ func _refresh() -> void:
 			_button.text = tr("¡CONSTELACIÓN COMPLETA!")
 		&"locked":
 			_button.text = tr("NECESITA: %s") % _prereq_names(node)
+		&"apex":
+			_button.text = (
+				tr("ASCENSIÓN: CON EL CRISTAL AL %d %%") % roundi(node.apex_destroyed_ratio * 100.0)
+			)
 		&"mana":
 			_button.text = (
 				tr("TE FALTAN %s DE MANÁ") % Hud.format_int(node.cost_for_level(level) - prog.mana)

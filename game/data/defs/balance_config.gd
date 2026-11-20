@@ -30,9 +30,19 @@ extends Resource
 ## el poder al soltar es el de la última etapa (ver `ChargeStages`). Empieza en el nivel 2, la
 ## primera Potencia de la Bola de Fuego (minuto 5 a 16 según el simulador), para que se
 ## descubra pronto y como premio visible de esa compra: un círculo que encaja con la carga
-## completa y avisa de cuándo soltar; luego uno más cada dos niveles, hasta 5 a nivel 10.
+## completa y avisa de cuándo soltar; luego uno más cada dos niveles, hasta 5 a nivel 10 y 11.
 @export
-var charge_stages_by_level: PackedInt32Array = PackedInt32Array([0, 1, 1, 2, 2, 3, 3, 4, 4, 5])
+var charge_stages_by_level: PackedInt32Array = PackedInt32Array([0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5])
+## Premio de la carga completa según el nivel del combinado (una entrada por nivel, del 1 al 11):
+## soltar con todas las etapas multiplica el daño por esto (en los combinados que se cargan,
+## `SpellRecipe.charge_payoff` = 1); cada etapa completada se lleva su parte (geométrica: con 5
+## etapas y x10, cada círculo que encaja multiplica x1,58). Los de toque (`charge_payoff` 0) no lo
+## tienen: salen casi enteros sin cargar. Hasta el nivel 10 es poco (el ritmo de la partida no
+## cambia: lo que premia cargar es `SpellRecipe.min_power`); en la Ascensión (nivel 11) es lo que
+## hace que tres o cuatro combinados cargados deshagan el cristal. Ver `ChargeStages.bonus`.
+@export var full_charge_bonus_by_level: PackedFloat32Array = PackedFloat32Array(
+	[1.0, 1.0, 1.0, 1.0, 1.0, 1.05, 1.1, 1.15, 1.2, 1.3, 10.0]
+)
 ## Duración mínima de cada etapa (s): si las etapas no caben en la carga del hechizo, la carga
 ## se alarga y ese tiempo se descuenta de la recarga (el ciclo y el daño por segundo no cambian).
 @export var charge_stage_min_sec: float = 0.28

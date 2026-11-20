@@ -20,11 +20,11 @@ func _initialize() -> void:
 	_check(arcane.get(&"unlock_upgrade") == &"awaken_arcane", "se despierta con awaken_arcane")
 	arcane.call(&"ensure_levels")
 	var tiers: Array = arcane.get(&"tiers")
-	_check(tiers.size() == 10, "llega a nivel 10")
+	_check(tiers.size() == 11, "llega a nivel 11")
 	var echoes: Array[int] = []
 	for t: Resource in tiers:
 		echoes.append(int(t.get(&"echoes")))
-	_check(echoes == [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], "ecos por nivel %s" % str(echoes))
+	_check(echoes == [1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 5], "ecos por nivel %s" % str(echoes))
 	var ghosts: RefCounted = load("res://spells/spell_ghost.gd").new()
 	var ghost: Resource = ghosts.call(&"tier", tiers[0])
 	_check(ghost != null and ghost != tiers[0], "hay versión fantasma")
@@ -37,8 +37,8 @@ func _initialize() -> void:
 	_check(ups.has(&"awaken_arcane") and ups.has(&"arcane_power"), "mejoras del Arcano")
 	if ups.has(&"arcane_power"):
 		var power: Resource = ups[&"arcane_power"]
-		_check((power.get(&"costs") as PackedInt32Array).size() == 9, "Potencia: 9 niveles")
-		_check((power.get(&"level_names") as PackedStringArray).size() == 10, "10 nombres")
+		_check((power.get(&"costs") as PackedInt32Array).size() == 10, "Potencia: 10 compras")
+		_check((power.get(&"level_names") as PackedStringArray).size() == 11, "11 nombres")
 		_check(power.get(&"element") == &"arcane", "en la página del Arcano")
 		var wake: Resource = ups[&"awaken_arcane"]
 		_check((wake.get(&"prerequisites") as Array).has(&"awaken_earth"), "pide la Tierra")

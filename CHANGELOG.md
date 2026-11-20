@@ -22,6 +22,38 @@ castillo, el bosque y el valle. `ending_smoke` y `veins_pylon_smoke` pasan; `gdl
 
 **Capturas (antes | después)**: `docs/capturas/paleta_azulada_niebla.png`, `docs/capturas/noche_luciernagas.png`.
 
+## 2026-11-20 · Hechizos: Viento, nivel 11, cargas que valen la pena y círculos que se ven
+
+**Qué hay nuevo**
+
+- **Viento**, sexto elemento (página propia en el Grimorio, se abre con el Pilón al 35 %): rápido y ligero, y cada
+  golpe barre hacia la mano los fragmentos del suelo cerca del impacto. Seis combinaciones nuevas, en su pestaña
+  VIENTO del Libro: **Tornado** (perfora), **Torbellino de Fuego** (estalla y quema), **Ventisca** (lluvia de hielo),
+  **Tempestad** (lluvia de rayos, de toque), **Tormenta de Arena** (haz que lija) y **Eco del Viento**. Sonidos
+  nuevos con `tools/sfx_wind.py`.
+- **Cada elemento con su forma**, no sólo su color (`hd_fire.gdshader`, `style`): la Tierra es una roca que rueda
+  con vetas doradas (antes, fuego marrón), la Escarcha un cristal facetado con copo, el Rayo arcos quebrados que
+  saltan y el Viento medialunas de aire que giran. Laboratorio para compararlos: `tests/vfx_gallery/element_lab.tscn`.
+- **Nivel 11 (Ascensión)** en cada Potencia: se abre con el cristal destruido al 80 % y cuesta 100 k de maná.
+  Golpea unas 70 veces más que el nivel 10 y su carga completa multiplica x10. Con todo al máximo, de 3 a 5 golpes
+  cargados de las mejores combinaciones (Terremoto, Lluvia de Estalactitas, Tormenta de Arena, Tornado, Ventisca,
+  Torbellino, Meteoro, Eco de Fuego) rompen el cristal.
+- **Cargar vale la pena**: el premio de carga completa sube con el nivel (`full_charge_bonus_by_level`) y el daño
+  se reparte por círculos. Sólo algunos hechizos se tiran mejor de toque (Lanza de Hielo, Haz de Plasma, Lanza
+  Cargada, Eco de Hielo, Tempestad y las de utilidad): sueltos sin cargar ya hacen casi todo su daño.
+- **Círculos en primera persona**: salen de las manos y se colocan delante, separados y cada vez más lejos; al
+  soltar vuelan hacia delante en vez de amontonarse en la mano.
+- **Lo que cae del cielo cae a plomo** (Meteoro, Trueno, Glaciar, lluvias): sus círculos son anillos horizontales
+  apilados encima del blanco, y si hay una punta de cristal en medio, el hechizo aterriza ahí.
+- **Réplicas** (`CrystalAftershocks`): un golpe que pediría un cráter de más de 14 m se queda en ese tope y el
+  resto del volumen lo excavan réplicas alrededor, una por fotograma.
+
+**Balance** (`tools/balance_sim.py`, ya entiende niveles 11, carga y toque): normal ~138 min, eficiente ~106 min,
+todas las mejoras compradas, la Ascensión al final.
+
+**Cómo se probó**: tests de humo (nuevos casos en `progression_smoke`, `charge_stages_smoke`, `meteor_smoke`,
+`spell_levels_smoke`, `combos_smoke`), `gdlint` limpio, capturas en `docs/capturas/`.
+
 ## 2026-11-20 · Rendimiento: bosque y hierba por trozos con LOD
 
 **Qué hay nuevo**

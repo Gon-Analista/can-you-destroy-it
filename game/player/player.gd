@@ -128,12 +128,34 @@ func _apply_upgrades(celebrate: bool = false) -> void:
 ## Impulso del cristal (mejora): cada golpe que llega al cristal estando en el aire devuelve
 ## carga de levitación. Así se sube hasta la punta golpeando.
 func _on_spell_impacted(hit: SpellHit) -> void:
+	if hit.by_player and hit.element_def and hit.element_def.gust_radius > 0.0 and not hit.echo:
+		_gust(hit)
 	if not hit.by_player or is_on_floor() or levitation_max <= 0.0:
 		return
 	var refill: float = GameState.stat(&"levitation_refill", 0.0)
 	if refill > 0.0:
 		levitation_fuel = minf(levitation_max, levitation_fuel + refill)
 		refill_flash = 1.0
+
+
+## Ráfaga del Viento: barre hacia la mano los fragmentos del suelo cerca del impacto (ver
+## `ElementDef.gust_radius`), mientras quepan en la bolsa (o a la tolva con Envío directo).
+func _gust(hit: SpellHit) -> void:
+	if _shards == null:
+		return
+	var el: ElementDef = hit.element_def
+	var count: int = el.gust_count + floori(maxf(0.0, float(el.tiers.find(hit.tier))) * 0.5)
+	var n: int = 0
+	for k: int in count:
+		if not GameState.has_direct_send() and GameState.is_bag_full():
+			break
+		var i: int = _shards.nearest(hit.position, el.gust_radius)
+		if i < 0:
+			break
+		_collect(i)
+		n += 1
+	if n > 0:
+		AudioDirector.play_sfx(TELEKINESIS_SFX, -10.0, 1.3)
 
 
 ## Magnetismo (combinación Tierra + Rayo): atrae los fragmentos del suelo en `radius` mientras

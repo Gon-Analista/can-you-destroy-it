@@ -157,7 +157,7 @@ func _setup_autoplay() -> void:
 			GameState.emit_all()
 		elif a.begins_with("--hands="):
 			# --hands=0,4: elemento de cada mano (índices de SpellCaster.ELEMENTS: 0 Chispa,
-			# 1 Escarcha, 2 Rayo, 3 Tierra, 4 Arcano); despierta la Escarcha y los de las manos.
+			# 1 Escarcha, 2 Rayo, 3 Tierra, 4 Arcano, 5 Viento); despierta la Escarcha y los de las manos.
 			GameState.progression.upgrade_levels[&"awaken_frost"] = 1
 			var hs: PackedStringArray = a.get_slice("=", 1).split(",")
 			var caster: SpellCaster = _player.get_caster()
@@ -221,7 +221,7 @@ func _setup_autoplay() -> void:
 				func() -> void: Input.action_release(&"jump")
 			)
 		elif a.begins_with("--spell-level="):
-			# --spell-level=N: todos los hechizos a nivel N (1..10), con sus efectos.
+			# --spell-level=N: todos los hechizos a nivel N (1..11), con sus efectos.
 			_player.get_caster().set_debug_level(int(a.get_slice("=", 1)))
 		elif a.begins_with("--discover="):
 			# --discover=fireball,meteor: combinaciones ya descubiertas (Libro de Combinaciones).

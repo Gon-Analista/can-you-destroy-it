@@ -2,8 +2,10 @@ class_name ElementDef
 extends Resource
 ## Un elemento base (Chispa, Escarcha, Rayo, Tierra, Arcano).
 
-## Nivel máximo de todos los hechizos.
-const MAX_LEVEL: int = 10
+## Nivel máximo de todos los hechizos (el 11 es la Ascensión: ver `apex_damage_mult`).
+const MAX_LEVEL: int = 11
+## Nivel de la Ascensión: el último, el que convierte al mago en un cataclismo.
+const APEX_LEVEL: int = 11
 ## Desde este nivel empiezan los efectos de nivel alto (círculos mágicos...).
 const ASCENDED_LEVEL: int = 6
 
@@ -19,6 +21,11 @@ const ASCENDED_LEVEL: int = 6
 @export var damage_growth: float = 1.38
 ## Y el enfriamiento (x0,92 por nivel).
 @export var cooldown_growth: float = 0.92
+## Los niveles 9 y 10 pegan además x`late_growth` cada uno (antes casi no se notaban).
+@export var late_growth: float = 1.0
+## Nivel 11 (Ascensión): x`apex_damage_mult` del daño del 10. Con todo al máximo, tres o cuatro
+## combinados cargados a tope deshacen el cristal (ver tools/balance_sim.py).
+@export var apex_damage_mult: float = 1.0
 ## Lo que flota sobre la palma de la mano que lleva este elemento.
 @export var hand_visual: SpellVisualDef
 ## Estadística de mejora que da su nivel (índice en `tiers`), p. ej. &"spark_tier".
@@ -42,6 +49,10 @@ const ASCENDED_LEVEL: int = 6
 @export var chain_count: int = 0
 ## Fragmentos un tamaño más grandes (Tierra).
 @export var shard_bonus: int = 0
+## Ráfaga (Viento): cada golpe barre hacia ti hasta `gust_count` fragmentos del suelo que haya a
+## `gust_radius` m del impacto (+1 cada dos niveles). 0 = nada.
+@export var gust_radius: float = 0.0
+@export var gust_count: int = 0
 ## Color de sus círculos de toque (nivel 6+).
 @export var circle_color: Color = Color(1.0, 0.6, 0.2)
 
@@ -56,15 +67,22 @@ const ASCENDED_LEVEL: int = 6
 @export var resonant_bonus: float = 0.0
 
 
-## Completa `tiers` hasta el nivel 10 a partir del último escrito a mano: cada nivel nuevo pega
-## más (`damage_growth`), es algo más rápido, más grande y de más área, y el color tira hacia el
-## violeta arcano. Los números salen del simulador de balance (tools/balance_sim.py).
+## Completa `tiers` hasta el nivel 11 a partir del último escrito a mano: cada nivel nuevo pega
+## más (`damage_growth`; los niveles 9 y 10, además x`late_growth`), es algo más rápido, más grande
+## y de más área, y el color tira hacia el violeta arcano. El 11 (Ascensión) multiplica el daño por
+## `apex_damage_mult` y brilla dorado. Los números salen del simulador (tools/balance_sim.py).
 func ensure_levels() -> void:
 	while tiers.size() < MAX_LEVEL and not tiers.is_empty():
 		var prev: SpellTier = tiers[tiers.size() - 1]
 		var t: SpellTier = prev.duplicate()
 		var k: float = float(tiers.size() - 4) / float(MAX_LEVEL - 5)
-		t.damage = maxi(prev.damage + 1, roundi(float(prev.damage) * damage_growth))
+		var level: int = tiers.size() + 1
+		var growth: float = damage_growth
+		if level >= 9 and level < APEX_LEVEL:
+			growth *= late_growth
+		elif level == APEX_LEVEL:
+			growth *= apex_damage_mult
+		t.damage = maxi(prev.damage + 1, roundi(float(prev.damage) * growth))
 		t.cooldown_sec = maxf(0.1, prev.cooldown_sec * cooldown_growth)
 		t.speed = prev.speed + 4.0
 		t.orb_scale = prev.orb_scale + 0.5
@@ -76,7 +94,15 @@ func ensure_levels() -> void:
 		t.shake = minf(prev.shake + 0.02, 0.3)
 		t.trail_width = prev.trail_width * 1.06
 		t.color_glow = prev.color_glow.lerp(Color(0.78, 0.45, 1.0), 0.12 + k * 0.1)
-		# Lo que deja ecos suma uno más a nivel 6 y a nivel 9.
-		if prev.echoes > 0 and (tiers.size() + 1 == 6 or tiers.size() + 1 == 9):
+		# Lo que deja ecos suma uno más a nivel 6, a nivel 9 y en la Ascensión.
+		if prev.echoes > 0 and (level == 6 or level == 9 or level == APEX_LEVEL):
 			t.echoes = prev.echoes + 1
+		if level == APEX_LEVEL:
+			# Ascensión: más grande, con más luz y con el resplandor dorado.
+			t.orb_scale = prev.orb_scale * 1.3
+			t.crack_radius = prev.crack_radius * 1.5
+			t.shake = minf(prev.shake + 0.08, 0.4)
+			t.light_energy = prev.light_energy * 1.4
+			t.trail_width = prev.trail_width * 1.3
+			t.color_glow = prev.color_glow.lerp(Color(1.0, 0.85, 0.45), 0.45)
 		tiers.append(t)

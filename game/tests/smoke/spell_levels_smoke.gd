@@ -1,25 +1,30 @@
 extends SceneTree
-## Hechizos hasta nivel 10: los elementos completan sus niveles (daño que sube), las mejoras de
-## Potencia llegan a 10 y los círculos mágicos salen según el nivel (uno por nivel desde el 6 al
-## cargar; 1/2/3 de toque).
+## Hechizos hasta nivel 11: los elementos completan sus niveles (daño que sube), las mejoras de
+## Potencia llegan a 11 (la Ascensión espera al cristal casi roto) y los círculos mágicos salen
+## según el nivel (uno por nivel desde el 6 al cargar; 1/2/3 de toque).
 ## godot --headless --path game --script res://tests/smoke/spell_levels_smoke.gd
 
 var _ok: bool = true
 
 
 func _initialize() -> void:
-	for path: String in ["res://data/elements/spark.tres", "res://data/elements/frost.tres"]:
+	for path: String in [
+		"res://data/elements/spark.tres",
+		"res://data/elements/frost.tres",
+		"res://data/elements/wind.tres"
+	]:
 		var el: Resource = load(path)
 		el.call(&"ensure_levels")
 		var tiers: Array = el.get(&"tiers")
-		_check(tiers.size() == 10, "%s llega a nivel 10" % path.get_file())
+		_check(tiers.size() == 11, "%s llega a nivel 11" % path.get_file())
 		var ok_up: bool = true
 		for i: int in range(1, tiers.size()):
 			ok_up = ok_up and int(tiers[i].get(&"damage")) > int(tiers[i - 1].get(&"damage"))
 		_check(ok_up, "%s: el daño sube en cada nivel" % path.get_file())
-	for id: String in ["spark_power", "frost_power", "fireball_power", "thermal_power"]:
+	for id: String in ["spark_power", "frost_power", "fireball_power", "thermal_power", "wind_power"]:
 		var node: Resource = load("res://data/upgrades/%s.tres" % id)
-		_check(int(node.call(&"get_max_level")) == 9, "%s: 9 niveles (nivel 10)" % id)
+		_check(int(node.call(&"get_max_level")) == 10, "%s: 10 compras (nivel 11)" % id)
+		_check(float(node.get(&"apex_destroyed_ratio")) > 0.0, "%s: la Ascensión espera" % id)
 	var circles: Node3D = load("res://spells/vfx/magic_circles.gd").new()
 	root.add_child(circles)
 	await process_frame

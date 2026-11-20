@@ -27,6 +27,9 @@ enum Currency { MANA, TEARS }
 ## > 0: la estrella no se ve ni se puede comprar hasta que el cristal esté destruido a esa
 ## fracción (la Gran Convergencia, con el Núcleo expuesto al 99 %).
 @export_range(0.0, 1.0) var reveal_destroyed_ratio: float = 0.0
+## > 0: el último nivel (la Ascensión de los hechizos, nivel 11) no se puede inscribir hasta que el
+## cristal esté destruido a esa fracción: con él, tres o cuatro combinados cargados lo deshacen.
+@export_range(0.0, 1.0) var apex_destroyed_ratio: float = 0.0
 ## Ids de mejoras que hay que tener, o "recipe:<id>" para una combinación ya descubierta.
 @export var prerequisites: Array[StringName] = []
 ## Estadística que modifica (p. ej. &"bag_capacity").

@@ -1,7 +1,7 @@
 class_name DebugMenu
 extends Control
 ## Menú de depuración (Alt+F1): un panel a la derecha, sin pausar el juego (los trucos se ven
-## en vivo detrás), con lo más útil para probar: comprarlo todo con los hechizos a nivel 10,
+## en vivo detrás), con lo más útil para probar: comprarlo todo con los hechizos a nivel 11,
 ## maná, bolsa, nivel de los hechizos, Pilón, capas y geodas del cristal, hora, velocidad del
 ## juego, FPS, modo dios, teletransportes y la partida. Arriba, datos en vivo.
 ##
@@ -25,7 +25,7 @@ const MARGIN: float = 10.0
 ## Ancho de la columna con el nombre de cada fila.
 const LABEL_W: float = 62.0
 const BUTTON_H: float = 16.0
-const MAX_LEVEL: int = 10
+const MAX_LEVEL: int = ElementDef.MAX_LEVEL
 const MANA_STEPS: PackedInt32Array = [100, 1000, 100000, 1000000]
 const MANA_NAMES: PackedStringArray = ["+100", "+1K", "+100K", "+1M"]
 const PYLON_STEPS: PackedFloat32Array = [0.25, 0.5, 0.75, 0.99]
@@ -257,7 +257,7 @@ func _build() -> void:
 	_button(row, tr("LLENAR"), _fill_bag)
 	_button(row, tr("VACIAR"), _empty_bag)
 	_button(row, tr("+3 LÁGRIMAS"), _add_tears)
-	# Niveles 1-5 y AUTO arriba, 6-10 debajo, en la misma rejilla.
+	# Niveles 1-5 y AUTO arriba, 6-11 debajo, en la misma rejilla.
 	row = _row(box, tr("HECHIZOS"))
 	var grid := GridContainer.new()
 	grid.columns = 6
@@ -465,7 +465,7 @@ func _caster() -> SpellCaster:
 
 ## Compra todas las mejoras hasta su nivel máximo (pagando el maná justo, por GameState, así
 ## pasan todas sus consecuencias: elementos, familiares, telequinesis, bolsa, Santuario...),
-## descubre todas las combinaciones y pone todos los hechizos a nivel 10.
+## descubre todas las combinaciones y pone todos los hechizos a nivel 11 (la Ascensión).
 func buy_everything() -> void:
 	var prog: Progression = GameState.progression
 	# Sin tutorial ni casucha: se pasa directamente a jugar con todo.
@@ -553,7 +553,7 @@ func _empty_bag() -> void:
 	_feedback(tr("BOLSA VACÍA"), TICK_SFX)
 
 
-## Todos los hechizos a nivel `level` (1..10); 0 vuelve a los niveles comprados.
+## Todos los hechizos a nivel `level` (1..11); 0 vuelve a los niveles comprados.
 func _set_spell_level(level: int) -> void:
 	if _player == null:
 		return
