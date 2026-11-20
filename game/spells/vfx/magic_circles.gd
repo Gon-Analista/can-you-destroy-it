@@ -21,10 +21,12 @@ const MAX_CHARGE_CIRCLES: int = 5
 const FIRST_DIST: float = 1.4
 const STEP_DIST: float = 0.75
 ## Tamaño aparente (escala / distancia) del primer círculo de carga y cuánto crece cada uno: el
-## primero algo más ancho que el orbe y cada siguiente un 17 % más grande también en pantalla,
-## para que se lean como anillos concéntricos que se abren (no uno encima de otro).
-const FIRST_SPAN: float = 0.27
-const SPAN_GROWTH: float = 1.17
+## primero algo más ancho que el orbe y cada siguiente un 28 % más grande también en pantalla.
+## Sólo el primero lleva el dibujo entero; los demás son aros huecos (`hollow` en el shader) y,
+## con este paso, la banda de runas de cada uno cae fuera del anterior: se leen como anillos
+## concéntricos que se abren, no como una maraña (con un 17 % y todos llenos se pisaban).
+const FIRST_SPAN: float = 0.24
+const SPAN_GROWTH: float = 1.28
 ## Al encajar un círculo de etapa: tiempo en dibujarse, en asentarse y cuánto más grande llega.
 const SNAP_SWEEP: float = 0.07
 const SNAP_TIME: float = 0.2
@@ -151,6 +153,7 @@ func charging(
 			_mats[i].set_shader_parameter("color_hot", hot)
 			_mats[i].set_shader_parameter("ink_alpha", CHARGE_INK if stages > 0 else 0.55)
 			_mats[i].set_shader_parameter("rune_count", 10.0 + c * 3.0)
+			_mats[i].set_shader_parameter("hollow", 1.0 if c > 0 else 0.0)
 	var reached: int = _track_stage(k, stages)
 	var full: float = 1.0 if stages > 0 and reached >= stages else 0.0
 	if _wave_id >= 0:
@@ -488,3 +491,4 @@ func _free_quad(i: int) -> void:
 		_wave_id = -1
 	_state[i] = 0
 	_quads[i].visible = false
+	_mats[i].set_shader_parameter("hollow", 0.0)

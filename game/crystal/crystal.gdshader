@@ -158,8 +158,10 @@ void fragment() {
 	vec3 n = normalize(world_nrm);
 	vec3 v = normalize(CAMERA_POSITION_WORLD - world_pos);
 	vec3 L = normalize(-sun_dir);
-	float facet = hash13(floor(n * 6.0 + 0.5) * 7.13);
-	float level = dot(n, L) * 0.5 + 0.5 + (facet - 0.5) * 0.3;
+	// Sin variación por normal cuantizada: en una cara cuya normal caía cerca del borde de la
+	// cuantización, cada triángulo sacaba otro valor y salían hileras de dientes oscuros. La
+	// variación de cada cara la ponen las placas de abajo.
+	float level = dot(n, L) * 0.5 + 0.5;
 	// Placas: la cara grande se parte en láminas de cristal con su propio brillo, y alguna veta
 	// fina entre ellas (en lo excavado, más pequeñas: esquirlas).
 	float interior_k = smoothstep(0.5, 1.7, v_depth);

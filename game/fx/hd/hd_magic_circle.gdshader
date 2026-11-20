@@ -20,6 +20,10 @@ uniform float rune_count = 18.0;
 // Opacidad del contorno oscuro: más alta en los círculos de carga, que van delante del orbe
 // (sobre el fuego blanco, con poca tinta el trazo se pierde).
 uniform float ink_alpha = 0.55;
+// 1: sólo el aro de fuera (anillos, marcas y la banda de runas), sin hexagrama ni sello. Los
+// círculos de carga de fuera van huecos: así se leen como aros que se abren alrededor del primero
+// y no como una maraña de hexagramas uno encima de otro.
+uniform float hollow = 0.0;
 
 float hash11(float n) {
 	return fract(sin(n * 127.1 + rune_seed * 31.7) * 43758.5453);
@@ -77,6 +81,9 @@ float circle_lines(vec2 p, float r, float w) {
 	q = (q - 0.5) * vec2(1.35, 1.15) + 0.5;
 	if (q.x > 0.0 && q.x < 1.0 && q.y > 0.0 && q.y < 1.0) {
 		m = max(m, rune(q, floor(cell), w * 9.0));
+	}
+	if (hollow > 0.5) {
+		return m;
 	}
 	vec2 pi = rot(p, -spin * 1.6);
 	float ai = atan(pi.y, pi.x);

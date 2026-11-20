@@ -55,6 +55,7 @@ var _night: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var _mirror: ArchmageMirror
 var _rune_table: RuneTable
+var _vitrine: StaffVitrine
 
 
 func _ready() -> void:
@@ -144,8 +145,8 @@ func _on_upgrade_bought(_id: StringName, _level: int) -> void:
 		_shown += 1
 
 
-## El Espejo del Archimago y la Mesa de Runas, a los lados del templete (en `WorldLayout`, a ras
-## del suelo). Diferido: Main coloca el Santuario después de su _ready.
+## El Espejo del Archimago, la Mesa de Runas y la Vitrina del Báculo, alrededor del templete
+## (en `WorldLayout`, a ras del suelo). Diferido: Main coloca el Santuario después de su _ready.
 func _build_mirror() -> void:
 	_mirror = ArchmageMirror.new()
 	_mirror.name = "ArchmageMirror"
@@ -162,6 +163,16 @@ func _build_mirror() -> void:
 	var rt: Vector3 = WorldLayout.RUNE_TABLE
 	_rune_table.global_position = Vector3(rt.x, Valley.ground_height(rt.x, rt.z) - 0.05, rt.z)
 	_rune_table.rotation.y = deg_to_rad(WorldLayout.RUNE_TABLE_YAW_DEG)
+	# La Vitrina del Báculo, junto al final del camino (sólo con el báculo encendido).
+	if not StaffCombos.ENABLED:
+		return
+	_vitrine = StaffVitrine.new()
+	_vitrine.name = "StaffVitrine"
+	_vitrine.top_level = true
+	add_child(_vitrine)
+	var sv: Vector3 = WorldLayout.STAFF_VITRINE
+	_vitrine.global_position = Vector3(sv.x, Valley.ground_height(sv.x, sv.z) - 0.05, sv.z)
+	_vitrine.rotation.y = deg_to_rad(WorldLayout.STAFF_VITRINE_YAW_DEG)
 
 
 func _mesh(node_name: String, st: SurfaceTool, at: Vector3 = Vector3.ZERO) -> MeshInstance3D:
