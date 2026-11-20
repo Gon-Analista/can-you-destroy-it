@@ -2,6 +2,34 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-20 · Texturas pixel art en el paisaje, árboles redondos y formas sin pinchos
+
+**Qué hay nuevo**
+
+- **Textura pixel art procedural** (`world/terrain.gdshader`): el suelo, los caminos, las rocas, las montañas y
+  los árboles dejan de ser colores planos. Cada malla elige su dibujo con el alfa del color de vértice
+  (`MeshKit.tag`): hierba (manchas tramadas, matas y florecillas; roca en cuestas fuertes), tierra (vetas y
+  guijarros), roca (estratos y grietas), roca con nieve (borde tramado a la altura de cada montaña), hojas y
+  corteza. Los texeles van en una rejilla del mundo (14 por metro) y se doblan con la distancia para no bajar
+  nunca de un píxel: sin parpadeo ni texturas borrosas. Las bandas de luz se tramean (Bayer 4x4).
+- **Árboles nuevos** (`Valley._build_pine_mesh`, `_build_broadleaf_mesh`): dos abetos de pisos redondeados
+  con el borde ondulado y la punta roma, y dos árboles de copa redonda (varias bolas blandas). Normales
+  suaves, color por instancia para que no haya dos iguales. Copas redondas sobre todo en el linde del claro.
+- **Formas más suaves**: suelo, montañas (cima redondeada) y colina del castillo con normales suaves en vez
+  de facetas; rocas como cantos rodados (`MeshKit.add_blob`); setas con sombrero en cúpula; hierba de hojas
+  anchas y punta roma; losas y tocones con más lados.
+- `MeshKit`: `add_tri_smooth`, `add_grid` (rejilla con normales suaves) y `add_blob`.
+
+**Cómo se probó**: Godot 4.7 con Vulkan por software (lavapipe) y `--autoplay`, capturas desde el claro, el
+bosque y hacia el castillo. Tests de humo: los mismos que ya fallaban en la rama base (cierre con
+`double free` en headless) y ninguno nuevo; `grimoire_click_smoke` pasa con ventana. `gdlint` limpio.
+
+**Capturas (antes | después)**: `docs/capturas/texturas_arboles_front.png`, `..._forest.png`,
+`..._castle.png`, `..._side.png`.
+
+**Pendiente**: el Cristal Madre y los cristales que brotan del suelo siguen siendo facetados a propósito. El
+bosque tiene unas 10 veces más triángulos que antes (~400 k); la pasada de rendimiento va aparte.
+
 ## 2026-11-19 · Pulido del mundo: cristal más grande, nubes, nombres de las estaciones; báculo apagado
 
 **Qué hay nuevo**
