@@ -367,6 +367,9 @@ func _setup_autoplay() -> void:
 			for k: StringName in DEMO_STATS:
 				st.counts[k] = DEMO_STATS[k]
 			GameState.progression.critters_popped = 37
+		elif a.begins_with("--palette="):
+			# --palette=suave|azulada|pastel: prueba otra paleta del valle (ver ValleyPalette).
+			_day_night.set_palette(StringName(a.get_slice("=", 1)))
 		elif a.begins_with("--time="):
 			_day_night.time_of_day = float(a.get_slice("=", 1))
 		elif a.begins_with("--warp="):

@@ -197,11 +197,14 @@ const KEYS: Array[Array] = [
 @export_range(0.0, 1.0) var time_of_day: float = 0.33
 
 var night: float = 0.0
+var palette: StringName = &"actual"
 ## El final (GDD 9). `tension` (0..1): con el Núcleo expuesto el valle se oscurece hacia el
 ## violeta. `finale` (0..1): tras romperlo, un crepúsculo violeta con el cielo lleno de auroras.
 var tension: float = 0.0
 var finale: float = 0.0
 
+var _keys: Array[Array] = KEYS
+var _env_base: Dictionary = {}
 var _sun: DirectionalLight3D
 var _moon: DirectionalLight3D
 var _env: Environment
@@ -220,6 +223,12 @@ func setup(sun: DirectionalLight3D, env: Environment) -> void:
 	_sun = sun
 	_env = env
 	_sky = env.sky.sky_material as ShaderMaterial
+	_env_base = {
+		"sat": env.adjustment_saturation,
+		"contrast": env.adjustment_contrast,
+		"bright": env.adjustment_brightness,
+		"lut": env.adjustment_color_correction,
+	}
 	_setup_sun_shadows(sun)
 	_moon = DirectionalLight3D.new()
 	_moon.name = "Moon"
@@ -288,6 +297,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	):
 		# Debug: N adelanta la hora.
 		time_of_day = fposmod(time_of_day + 0.05, 1.0)
+
+
+## Paleta del valle (ver ValleyPalette). `actual` es la original.
+func set_palette(id: StringName) -> void:
+	if not ValleyPalette.has(id):
+		id = &"actual"
+	palette = id
+	_keys = ValleyPalette.day_keys(id, KEYS)
+	if _env != null:
+		ValleyPalette.apply_env(id, _env, _env_base)
+		_apply()
 
 
 func _apply() -> void:
@@ -360,12 +380,12 @@ func _sun_dir(t: float) -> Vector3:
 
 ## Interpola los fotogramas clave en `t`. Devuelve los valores ya convertidos.
 func _sample(t: float) -> Array:
-	var a: Array = KEYS[0]
-	var b: Array = KEYS[KEYS.size() - 1]
-	for i: int in KEYS.size() - 1:
-		if t >= float(KEYS[i][0]) and t <= float(KEYS[i + 1][0]):
-			a = KEYS[i]
-			b = KEYS[i + 1]
+	var a: Array = _keys[0]
+	var b: Array = _keys[_keys.size() - 1]
+	for i: int in _keys.size() - 1:
+		if t >= float(_keys[i][0]) and t <= float(_keys[i + 1][0]):
+			a = _keys[i]
+			b = _keys[i + 1]
 			break
 	var f: float = inverse_lerp(float(a[0]), float(b[0]), t)
 	f = f * f * (3.0 - 2.0 * f)
