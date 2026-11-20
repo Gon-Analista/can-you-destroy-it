@@ -2,6 +2,26 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-20 · Paleta azulada, niebla lejana y luciérnagas
+
+**Qué hay nuevo**
+
+- **Paleta "azulada" por defecto** (`world/valley_palette.gd`): la luz de la noche llevada al día para que
+  no canse la vista. Verdes más hondos y algo azulados, camino menos naranja, sombras azul pizarra, sol crema
+  más suave y cielo azul profundo. Se hace con una LUT 3D generada en código (`adjustment_color_correction`),
+  fotogramas de día propios en `DayNight` y el ajuste del entorno; no se tocó ningún asset.
+  `--palette=actual|suave|pastel` deja probar la original y las otras dos candidatas.
+- **Niebla lejana** (perspectiva atmosférica): empieza a 35 m y se funde hacia los 330 m con el color de la
+  hora. El fondo (bosque lejano, montañas, castillo) se calma y lo cercano queda nítido.
+- **Luciérnagas** (`world/fireflies.gd`): de noche, puntitos amarillo verdoso que flotan sobre la hierba
+  alrededor del mago y parpadean. Píxeles sólidos con HDR para el halo.
+- `tests/tools/palette_shots.gd`: capturas por paleta, hora y vista para comparar.
+
+**Cómo se probó**: Godot 4.7 con lavapipe, capturas de día, atardecer y noche desde el claro, el cristal, el
+castillo, el bosque y el valle. `ending_smoke` y `veins_pylon_smoke` pasan; `gdlint` limpio.
+
+**Capturas (antes | después)**: `docs/capturas/paleta_azulada_niebla.png`, `docs/capturas/noche_luciernagas.png`.
+
 ## 2026-11-20 · Rendimiento: bosque y hierba por trozos con LOD
 
 **Qué hay nuevo**
