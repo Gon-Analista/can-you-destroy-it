@@ -114,7 +114,7 @@ Todos estos números viven en recursos de datos (`.tres`), nunca hardcodeados (v
 fragmentos con F (la bolsa empieza en 1), los llevas al Pilón (se vacía solo al acercarte), ganas maná y compras
 en el Grimorio del Santuario mejoras que cambian los hechizos. Lo que hay:
 
-- **Valle** procedural (`world/valley.gd`): suelo ondulado con colisión, ~900 pinos en `MultiMesh`, montañas
+- **Valle** procedural (`world/valley.gd`): suelo ondulado con colisión, ~900 árboles (abetos y de copa redonda) en `MultiMesh`, montañas
   nevadas, colina con castillo de tejados azules y aldea de tejados rojos; cielo pixel art con tramado y nubes
   (`world/sky.gdshader`); niebla de profundidad para la perspectiva atmosférica.
 - **Cristal Madre** (`crystal/`): **destructible de verdad**. Un volumen (rejilla de distancias de 0,7 m,
@@ -304,6 +304,8 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-19 | Vitrina del Báculo (`StaffVitrine`, `WorldLayout.STAFF_VITRINE`): urna junto al final del camino del Santuario con el báculo dentro (silueta con candado hasta comprarlo; luego encendido, con la gema del color de su elemento). F abre el Grimorio por la constelación del Báculo (`Events.grimoire_page_requested`, `Grimoire.open_at`), con compra como en el atril. Las mejoras siguen en el Grimorio. | GDD 4.3 la lista como estación; un sitio físico sin duplicar la tienda. |
 | 2026-11-19 | Hierba y flores con `shrink_far` en `toon.gdshader` (se encogen de 16 a 40 m de la cámara); postes de los faroles sin sombra. | De lejos, cada mata era un palito negro por el contorno; con el sol bajo, los postes pintaban rayas larguísimas. |
 | 2026-11-19 | Círculos de carga: sólo el primero lleva el dibujo entero; los demás son aros huecos (`hollow` en `hd_magic_circle.gdshader`) y crecen un 28 % en pantalla cada uno (antes 17 %). Menú de depuración: los botones de cada fila van en un `HFlowContainer`. | Pedido del equipo: los círculos se amontonaban en una maraña; el menú se salía de la pantalla en inglés. |
+| 2026-11-20 | Paisaje con textura pixel art procedural en espacio de mundo (`world/terrain.gdshader`, dibujo elegido por el alfa del color de vértice con `MeshKit.tag`), normales suaves en suelo, montañas, colina, rocas y árboles, y árboles nuevos (abetos de pisos redondeados y árboles de copa redonda). | Pedido del equipo: las texturas eran planas, los árboles feos y todo muy puntiagudo. |
+| 2026-11-20 | Bosque, hierba y flores en trozos de rejilla (`ChunkedMultiMesh`, 48 m y 24 m) con recorte por cámara, LOD automático en los árboles y corte por distancia en las plantas; `MeshKit.commit` indexa. Banco `tests/stress/world_bench.gd`. | Pedido del equipo: más FPS sin cambiar lo visual. Un MultiMesh de todo el valle se dibujaba entero en cada vista y cascada de sombra. |
 
 ## 10. Preguntas abiertas
 
