@@ -305,6 +305,7 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-19 | Hierba y flores con `shrink_far` en `toon.gdshader` (se encogen de 16 a 40 m de la cámara); postes de los faroles sin sombra. | De lejos, cada mata era un palito negro por el contorno; con el sol bajo, los postes pintaban rayas larguísimas. |
 | 2026-11-19 | Círculos de carga: sólo el primero lleva el dibujo entero; los demás son aros huecos (`hollow` en `hd_magic_circle.gdshader`) y crecen un 28 % en pantalla cada uno (antes 17 %). Menú de depuración: los botones de cada fila van en un `HFlowContainer`. | Pedido del equipo: los círculos se amontonaban en una maraña; el menú se salía de la pantalla en inglés. |
 | 2026-11-20 | Paisaje con textura pixel art procedural en espacio de mundo (`world/terrain.gdshader`, dibujo elegido por el alfa del color de vértice con `MeshKit.tag`), normales suaves en suelo, montañas, colina, rocas y árboles, y árboles nuevos (abetos de pisos redondeados y árboles de copa redonda). | Pedido del equipo: las texturas eran planas, los árboles feos y todo muy puntiagudo. |
+| 2026-11-20 | Bosque, hierba y flores en trozos de rejilla (`ChunkedMultiMesh`, 48 m y 24 m) con recorte por cámara, LOD automático en los árboles y corte por distancia en las plantas; `MeshKit.commit` indexa. Banco `tests/stress/world_bench.gd`. | Pedido del equipo: más FPS sin cambiar lo visual. Un MultiMesh de todo el valle se dibujaba entero en cada vista y cascada de sombra. |
 
 ## 10. Preguntas abiertas
 

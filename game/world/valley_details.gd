@@ -10,6 +10,8 @@ const TERRAIN_SHADER: Shader = preload("res://world/terrain.gdshader")
 const SHARD_SHADER: Shader = preload("res://crystal/shard.gdshader")
 ## A partir de ~40% de esta distancia (m) la hierba y las flores se encogen; a ella ya no están.
 const PLANT_FADE_M: float = 40.0
+## Lado de los trozos de hierba y flores (ver ChunkedMultiMesh).
+const PLANT_CELL_M: float = 24.0
 const C_DIRT := Color("#b98d5a")
 const C_STONE := Color("#bdb3bf")
 const C_STONE_DARK := Color("#968aa3")
@@ -414,9 +416,7 @@ func _build_crystal_outcrops() -> void:
 func _build_grass() -> void:
 	var colors: Array[Color] = [C_GRASS_DARK, C_GRASS, C_GRASS_LIGHT]
 	for c: int in colors.size():
-		var mm := MultiMesh.new()
-		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.mesh = _tuft_mesh(colors[c], colors[mini(c + 1, colors.size() - 1)])
+		var mesh: ArrayMesh = _tuft_mesh(colors[c], colors[mini(c + 1, colors.size() - 1)])
 		var xforms: Array[Transform3D] = []
 		var target: int = grass_count / colors.size()
 		var attempts: int = 0
@@ -432,15 +432,18 @@ func _build_grass() -> void:
 			var s: float = _rng.randf_range(0.7, 1.4)
 			var basis := Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3(s, s, s))
 			xforms.append(Transform3D(basis, Vector3(x, _ground(x, z) - 0.02, z)))
-		mm.instance_count = xforms.size()
-		for i: int in xforms.size():
-			mm.set_instance_transform(i, xforms[i])
-		var mmi := MultiMeshInstance3D.new()
-		mmi.name = "Grass%d" % c
-		mmi.multimesh = mm
-		mmi.material_override = _plant
-		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		add_child(mmi)
+		# Por trozos y cortados a la distancia en que el shader ya las ha encogido a cero.
+		ChunkedMultiMesh.build(
+			self,
+			"Grass%d" % c,
+			mesh,
+			xforms,
+			[],
+			_plant,
+			PLANT_CELL_M,
+			GeometryInstance3D.SHADOW_CASTING_SETTING_OFF,
+			PLANT_FADE_M
+		)
 
 
 ## Mata de hierba: seis hojas anchas, cortas y de punta roma que se abren hacia fuera, con
@@ -472,9 +475,7 @@ func _tuft_mesh(col: Color, tip_col: Color) -> ArrayMesh:
 
 func _build_flowers() -> void:
 	for c: int in FLOWER_COLORS.size():
-		var mm := MultiMesh.new()
-		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.mesh = _flower_mesh(FLOWER_COLORS[c])
+		var mesh: ArrayMesh = _flower_mesh(FLOWER_COLORS[c])
 		var xforms: Array[Transform3D] = []
 		var target: int = flower_count / FLOWER_COLORS.size()
 		var attempts: int = 0
@@ -493,15 +494,18 @@ func _build_flowers() -> void:
 				var s: float = _rng.randf_range(0.8, 1.3)
 				var basis := Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3(s, s, s))
 				xforms.append(Transform3D(basis, Vector3(x, _ground(x, z), z)))
-		mm.instance_count = xforms.size()
-		for i: int in xforms.size():
-			mm.set_instance_transform(i, xforms[i])
-		var mmi := MultiMeshInstance3D.new()
-		mmi.name = "Flowers%d" % c
-		mmi.multimesh = mm
-		mmi.material_override = _plant
-		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		add_child(mmi)
+		# Por trozos y cortados a la distancia en que el shader ya las ha encogido a cero.
+		ChunkedMultiMesh.build(
+			self,
+			"Flowers%d" % c,
+			mesh,
+			xforms,
+			[],
+			_plant,
+			PLANT_CELL_M,
+			GeometryInstance3D.SHADOW_CASTING_SETTING_OFF,
+			PLANT_FADE_M
+		)
 
 
 ## Flor: tallo y corola de cinco pétalos con el centro dorado.

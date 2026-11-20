@@ -27,6 +27,9 @@ const C_ROOF_RED := Color("#c8423a")
 const C_WALL := Color("#f1e8d8")
 const C_BANNER := Color("#c8423a")
 
+## Lado de los trozos del bosque (ver ChunkedMultiMesh).
+const FOREST_CELL_M: float = 48.0
+
 @export var seed_value: int = 7
 @export var tree_count: int = 900
 @export var rebuild: bool = false:
@@ -300,7 +303,7 @@ func _build_pine_mesh(variant: int) -> ArrayMesh:
 	for i: int in tiers.size():
 		var t: Vector3 = tiers[i]
 		_add_fir_tier(st, t.x, t.y, t.z, i == tiers.size() - 1, greens[i], rng)
-	return MeshKit.commit(st)
+	return ChunkedMultiMesh.with_lods(st)
 
 
 func _add_trunk(
@@ -405,7 +408,7 @@ func _build_broadleaf_mesh(variant: int) -> ArrayMesh:
 		MeshKit.add_blob(
 			st, Vector3(b.x, b.y, b.z), b.w, Vector3(1.0, 0.86, 1.0), 5, 10, cols, rng, 0.1
 		)
-	return MeshKit.commit(st)
+	return ChunkedMultiMesh.with_lods(st)
 
 
 func _add_forest(rng: RandomNumberGenerator) -> void:
@@ -450,17 +453,15 @@ func _add_forest(rng: RandomNumberGenerator) -> void:
 		var tint_list: Array = tints[kind]
 		tint_list.append(Color(v, v * rng.randf_range(0.97, 1.03), v * 0.97, 1.0))
 		placed += 1
+	# Por trozos de 48 m: la cámara y las sombras descartan los que no ven.
 	for k: int in meshes.size():
-		var mm := MultiMesh.new()
-		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.use_colors = true
-		mm.mesh = meshes[k]
-		mm.instance_count = xforms[k].size()
-		for i: int in xforms[k].size():
-			mm.set_instance_transform(i, xforms[k][i] as Transform3D)
-			mm.set_instance_color(i, tints[k][i] as Color)
-		var mmi := MultiMeshInstance3D.new()
-		mmi.name = "Forest%d" % k
-		mmi.multimesh = mm
-		mmi.material_override = _toon
-		add_child(mmi)
+		ChunkedMultiMesh.build(
+			self,
+			"Forest%d" % k,
+			meshes[k],
+			xforms[k],
+			tints[k],
+			_toon,
+			FOREST_CELL_M,
+			GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		)

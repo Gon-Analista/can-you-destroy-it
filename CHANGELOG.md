@@ -2,6 +2,38 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-20 · Rendimiento: bosque y hierba por trozos con LOD
+
+**Qué hay nuevo**
+
+- **`ChunkedMultiMesh`** (`core/chunked_multimesh.gd`): el bosque (trozos de 48 m) y la hierba y las flores
+  (24 m) ya no son un único `MultiMesh` por tipo con una caja que cubría todo el valle. La cámara y cada
+  cascada de sombra descartan los trozos que no ven; las plantas se cortan con `visibility_range_end` justo
+  donde el shader ya las había encogido a cero.
+- **LOD automático** en los cuatro árboles (`ImporterMesh.generate_lods`): de lejos usan versiones con menos
+  triángulos; el motor sólo cambia cuando la diferencia es de menos de un píxel.
+- **Mallas indexadas**: `MeshKit.commit` comparte los vértices repetidos (menos trabajo de vértices).
+- **Banco de pruebas** `tests/stress/world_bench.gd`: cinco vistas fijas con ms por frame, draw calls,
+  objetos y triángulos (también de la sombra).
+
+**Medido** (lavapipe, CPU; los ms sirven para comparar, los triángulos son exactos). Media de las cinco vistas:
+
+| | ms / frame | FPS | Triángulos en el claro | Triángulos de sombra en el claro |
+|---|---|---|---|---|
+| Antes de las texturas nuevas | 282,7 | 3,5 | 376 k | 1,51 M |
+| Con texturas nuevas, sin optimizar | 421,4 | 2,4 | 932 k | 5,07 M |
+| Con texturas nuevas y optimizado | 238,6 | 4,2 | 262 k | 0,82 M |
+
+Mirando hacia otro lado (vista "atrás") se pasa de 740 k a 45 k triángulos. Las draw calls suben algo (claro:
+298 a 413), lejos del límite de 1.500.
+
+**Cómo se probó**: capturas de las cuatro vistas comparadas píxel a píxel con las de antes de optimizar: las
+siluetas son las mismas; sólo cambian puntitos sueltos del dibujo de las hojas en árboles lejanos (~1 % de la
+imagen). Tests de humo que pasaban siguen pasando; `gdlint` limpio.
+
+**Scripts**: perfilados en headless desactivando nodos uno a uno; con el ruido de la máquina de pruebas no
+salió ningún punto caliente claro, así que no se tocaron.
+
 ## 2026-11-20 · Texturas pixel art en el paisaje, árboles redondos y formas sin pinchos
 
 **Qué hay nuevo**

@@ -252,6 +252,14 @@ godot --path game --write-movie /tmp/captura/f.png --fixed-fps 60 --quit-after 1
 - Sólo usar `_process` donde haga falta; desactivar el procesado de nodos inactivos (`set_process(false)`).
 - Usar señales y temporizadores en vez de sondear cada frame.
 - Shaders sencillos: el look pixel art no necesita efectos caros. Medir cualquier post-proceso nuevo.
+- **Nada de un `MultiMesh` que cubra todo el valle**: su caja lo abarca todo y se dibuja entero (y en cada cascada de
+  sombra) aunque no se vea. Repartir con `ChunkedMultiMesh.build` (trozos de rejilla, recorte por cámara y
+  `visibility_range_end` para lo que se encoge de lejos) y dar LOD a las mallas detalladas con
+  `ChunkedMultiMesh.with_lods`. `MeshKit.commit` ya indexa.
+- **Medir antes y después** con `tests/stress/world_bench.gd` (tiempo de frame, draw calls, objetos y triángulos,
+  también de sombra, en cinco vistas):
+  `xvfb-run godot --path game --script res://tests/stress/world_bench.gd -- --autoplay --no-cast`.
+  Con lavapipe los ms no valen como cifra absoluta, pero sí para comparar; los triángulos y draw calls son exactos.
 - Iluminación global costosa (SDFGI, VoxelGI) **desactivada** salvo que se mida y se justifique.
 - Audio con polifonía limitada por sonido (un "tink" no puede sonar 300 veces en el mismo frame).
 

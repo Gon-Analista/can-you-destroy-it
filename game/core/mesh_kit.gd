@@ -293,5 +293,7 @@ static func tag(color: Color, pattern: int) -> Color:
 	return Color(color.r, color.g, color.b, 1.0 - float(pattern) * 0.1)
 
 
+## Indexa (comparte los vértices repetidos: menos trabajo de vértices en la GPU) y crea la malla.
 static func commit(st: SurfaceTool) -> ArrayMesh:
+	st.index()
 	return st.commit()
