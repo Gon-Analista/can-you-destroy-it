@@ -69,6 +69,10 @@ func _ready() -> void:
 	_world.add_child(_day_night)
 	var env: Environment = (_world.get_node(^"WorldEnvironment") as WorldEnvironment).environment
 	_day_night.setup(_sun, env)
+	# Luciérnagas sobre la hierba cuando cae la noche.
+	var fireflies := Fireflies.new()
+	fireflies.name = "Fireflies"
+	_world.add_child(fireflies)
 	# El valle cambia con los hitos del Pilón (faroles, estandartes; las auroras van en el cielo).
 	var milestones := ValleyMilestones.new()
 	milestones.name = "ValleyMilestones"
@@ -367,6 +371,9 @@ func _setup_autoplay() -> void:
 			for k: StringName in DEMO_STATS:
 				st.counts[k] = DEMO_STATS[k]
 			GameState.progression.critters_popped = 37
+		elif a.begins_with("--palette="):
+			# --palette=actual|suave|pastel: otra paleta del valle (por defecto, azulada).
+			_day_night.set_palette(StringName(a.get_slice("=", 1)))
 		elif a.begins_with("--time="):
 			_day_night.time_of_day = float(a.get_slice("=", 1))
 		elif a.begins_with("--warp="):
