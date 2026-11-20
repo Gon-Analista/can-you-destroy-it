@@ -197,7 +197,7 @@ const KEYS: Array[Array] = [
 @export_range(0.0, 1.0) var time_of_day: float = 0.33
 
 var night: float = 0.0
-var palette: StringName = &"actual"
+var palette: StringName = &"azulada"
 ## El final (GDD 9). `tension` (0..1): con el Núcleo expuesto el valle se oscurece hacia el
 ## violeta. `finale` (0..1): tras romperlo, un crepúsculo violeta con el cielo lleno de auroras.
 var tension: float = 0.0
@@ -228,6 +228,10 @@ func setup(sun: DirectionalLight3D, env: Environment) -> void:
 		"contrast": env.adjustment_contrast,
 		"bright": env.adjustment_brightness,
 		"lut": env.adjustment_color_correction,
+		"fog_begin": env.fog_depth_begin,
+		"fog_end": env.fog_depth_end,
+		"fog_curve": env.fog_depth_curve,
+		"fog_density": env.fog_density,
 	}
 	_setup_sun_shadows(sun)
 	_moon = DirectionalLight3D.new()
@@ -245,7 +249,7 @@ func setup(sun: DirectionalLight3D, env: Environment) -> void:
 		p.attenuation_filter_cutoff_hz = 6000.0
 		add_child(p)
 		_oneshots.append(p)
-	_apply()
+	set_palette(palette)
 
 
 ## Sombras del sol estables a cualquier hora (el sol va de rasante a alto):

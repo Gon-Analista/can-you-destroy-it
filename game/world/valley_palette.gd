@@ -46,6 +46,7 @@ const PALETTES: Dictionary = {
 		"sat": 1.0,
 		"contrast": 1.08,
 		"bright": 0.95,
+		"fog": {"begin": 35.0, "end": 330.0, "curve": 1.6, "density": 0.65},
 		"day":
 		{
 			0.33:
@@ -200,6 +201,12 @@ static func apply_env(id: StringName, env: Environment, base: Dictionary) -> voi
 	env.adjustment_contrast = p.get("contrast", base["contrast"])
 	env.adjustment_brightness = p.get("bright", base["bright"])
 	env.adjustment_color_correction = lut(id) if p.has("grade") else base["lut"]
+	# Niebla lejana: lo de cerca queda nítido y el fondo se funde con el aire.
+	var fog: Dictionary = p.get("fog", {})
+	env.fog_depth_begin = fog.get("begin", base["fog_begin"])
+	env.fog_depth_end = fog.get("end", base["fog_end"])
+	env.fog_depth_curve = fog.get("curve", base["fog_curve"])
+	env.fog_density = fog.get("density", base["fog_density"])
 
 
 static func lut(id: StringName) -> Texture3D:
