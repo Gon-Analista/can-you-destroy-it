@@ -58,3 +58,4 @@ glow_rays = 0.0
 converge_amount = 0
 spark_amount = 10
 release_flash = 0.25
+boulder = true

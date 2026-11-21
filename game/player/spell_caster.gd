@@ -66,6 +66,17 @@ const CAST_SFX: Array[AudioStream] = [
 ]
 const READY_SFX: AudioStream = preload("res://audio/sfx/sfx_spark_ready_01.ogg")
 const FIZZLE_SFX: AudioStream = preload("res://audio/sfx/sfx_spark_fizzle_01.ogg")
+## El golpe grave al soltar un combinado (el estruendo del meteorito, más agudo y bajo).
+const RELEASE_SFX: AudioStream = preload("res://audio/sfx/sfx_meteor_boom_01.ogg")
+## Entregas que salen disparadas de las manos hacia delante: al soltarlas, empujan al mago.
+const FORWARD_DELIVERIES: Array[SpellRecipe.Delivery] = [
+	SpellRecipe.Delivery.FRONT,
+	SpellRecipe.Delivery.LANCE,
+	SpellRecipe.Delivery.BEAM,
+	SpellRecipe.Delivery.GROUND,
+	SpellRecipe.Delivery.NOVA,
+	SpellRecipe.Delivery.RESONANCE,
+]
 ## Ecos fantasma del Arcano en vuelo a la vez (disparos sueltos y Ecos de X).
 const ECHO_PROJECTILE_POOL: int = 10
 const ARCANE_COLOR := Color(1.4, 0.7, 1.9)
@@ -134,6 +145,8 @@ var _resonance_lock: float = 0.0
 var _wheel_at: int = -WHEEL_STEP_MS
 ## Lanzamiento continuo (nodo hito): mantener un botón lanza esa mano en ráfaga.
 var _auto: AutoCast
+## El golpe de poder en las manos al soltar un combinado.
+var _burst: CastBurst
 
 
 func _ready() -> void:
@@ -186,6 +199,9 @@ func _ready() -> void:
 	_auto.camera = camera
 	_auto.hands = hands
 	add_child(_auto)
+	_burst = CastBurst.new()
+	_burst.name = "CastBurst"
+	add_child(_burst)
 	# Menú, Grimorio o libro a media carga la deshacen (el botón se suelta fuera del juego).
 	Events.menu_opened.connect(_cancel_combine)
 	Events.grimoire_opened.connect(_cancel_combine)
@@ -754,7 +770,7 @@ func _launch_combine() -> void:
 	_start_cooldown(0, cd)
 	_start_cooldown(1, cd)
 	if hands:
-		hands.release_combine()
+		hands.release_combine(release_strength(power, 1.0))
 		if hands.staff and recipe.is_triple():
 			hands.staff.release_triple()
 	var tier: SpellTier = recipe.tier
@@ -797,6 +813,7 @@ func _launch_combine() -> void:
 		damage = 1
 	hit.damage = damage * (GameState.BALANCE.resonant_damage_mult if hit.resonant else 1)
 	_delivery.deliver(effect, hit, power)
+	_release_kick(effect, power, hit.fx_scale)
 	if base:
 		_echoes.echo_recipe(recipe, base, hit, damage, power)
 		AudioDirector.play_sfx(_combo_sounds[base], lerpf(-7.0, -3.0, power))
@@ -808,6 +825,43 @@ func _launch_combine() -> void:
 	GameState.progression.spells_cast += 1
 	Events.spell_cast.emit(tier, BOTH_HANDS)
 	GameState.register_recipe_cast(recipe)
+
+
+## Fuerza del golpe al soltar un combinado (0..~2.5): la carga, y a nivel alto lo que
+## multiplica el premio de la carga (`fx_scale`).
+static func release_strength(power: float, fx_scale: float) -> float:
+	return clampf(power, 0.0, 1.0) * maxf(fx_scale, 1.0)
+
+
+## El hechizo sale de las manos con un golpe de poder (`CastBurst`): fogonazo y ondas de choque
+## hacia delante, la cámara cabecea y se abre, y lo que sale disparado hacia delante te empuja
+## un poco hacia atrás (más cuanto más cargado). Lo que cae del cielo o se queda delante (pozo,
+## imán, tormenta) sólo da el fogonazo, sin empujón.
+func _release_kick(recipe: SpellRecipe, power: float, fx_scale: float) -> void:
+	var s: float = release_strength(power, fx_scale)
+	var origin: Vector3 = _hand_origin(BOTH_HANDS)
+	var aim_at: Vector3 = _aim()["position"]
+	var dir: Vector3 = (aim_at - origin).normalized()
+	var forward: bool = recipe.delivery in FORWARD_DELIVERIES
+	if not forward:
+		# Hacia arriba (al cielo) o delante: el fogonazo sin cono largo.
+		dir = (dir + Vector3.UP * 0.6).normalized()
+	_burst.play(origin, dir, recipe.circle_color, recipe.circle_hot, s * (1.0 if forward else 0.6))
+	AudioDirector.play_sfx(
+		RELEASE_SFX, lerpf(-16.0, -4.0, clampf(s / 2.0, 0.0, 1.0)), 1.25 - 0.1 * s
+	)
+	if camera is CameraRig:
+		(camera as CameraRig).recoil(s * (1.0 if forward else 0.45))
+	if not forward or s < 0.2:
+		return
+	var player: Node = get_tree().get_first_node_in_group(&"player")
+	if player and player.has_method(&"knockback"):
+		var back: Vector3 = -dir
+		back.y = 0.0
+		back = back.normalized() if back.length_squared() > 0.001 else Vector3.ZERO
+		# Un empujón corto; cargado a tope a nivel alto, un saltito hacia atrás.
+		var hop: float = 1.6 * clampf(s - 1.0, 0.0, 1.0)
+		player.call(&"knockback", back * (1.5 + 2.6 * s) + Vector3.UP * hop)
 
 
 ## Deshace la combinación sin lanzar (menú, Grimorio o foco perdido a media carga): sin

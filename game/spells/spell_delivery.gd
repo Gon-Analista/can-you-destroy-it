@@ -21,6 +21,14 @@ const STORM_MIN_RISE: float = 7.0
 const RAIN_SLANT: float = 0.3
 ## Lado que usan las señales y las manos para el hechizo combinado.
 const BOTH_HANDS: int = 2
+## Velocidad de vuelo de lo que sale de las manos (x la de su `SpellTier`) sin cargar y con la
+## carga completa: cuanto más cargado, más disparado sale (la Bola de Fuego iba lenta). Las
+## lanzas ya eran rápidas; el peñasco del Terremoto rueda pesado (casi a su paso: si no, no se ve).
+const FRONT_SPEED := Vector2(1.6, 3.4)
+const LANCE_SPEED := Vector2(1.2, 2.2)
+const GROUND_SPEED := Vector2(0.9, 1.2)
+## Metros por delante del mago a los que brota el peñasco del Terremoto.
+const GROUND_AHEAD: float = 6.0
 
 var camera: Camera3D
 ## Proyectiles de los disparos sueltos (y de la lluvia y el granizo) y de los combinados.
@@ -139,6 +147,7 @@ func deliver(recipe: SpellRecipe, hit: SpellHit, charge: float) -> void:
 			if c:
 				c.magnet_pulse(camera.global_position - Vector3(0, 1.4, 0), n)
 		SpellRecipe.Delivery.GROUND:
+			hit.speed_mult = _speed_for(GROUND_SPEED, charge)
 			_deliver_ground(hit, charge)
 		SpellRecipe.Delivery.GRAVITY:
 			# El pozo se abre delante del mago, algo por encima de la mirada.
@@ -171,6 +180,8 @@ func deliver(recipe: SpellRecipe, hit: SpellHit, charge: float) -> void:
 				# Misma carga que el orbe entre las manos (ver WizardHands): sale sin cambiar
 				# de tamaño.
 				projectile.orb_charge = lerpf(0.15, 1.0, charge)
+				var lance: bool = recipe.delivery == SpellRecipe.Delivery.LANCE
+				hit.speed_mult = _speed_for(LANCE_SPEED if lance else FRONT_SPEED, charge)
 				launch(projectile, hit, BOTH_HANDS)
 
 
@@ -198,7 +209,7 @@ func deliver_sky(
 	if c and recipe.fall_sec < 0.3:
 		# El Trueno: el rayo baja ya, del cielo al blanco (violeta si es un eco).
 		var col: Color = recipe.circle_hot if hit.tier == recipe.tier else hit.tier.color_glow * 1.8
-		c.sky_bolt(origin, target, col)
+		c.sky_bolt(origin, target, col, hit.fx_scale)
 	return origin
 
 
@@ -242,6 +253,7 @@ func _deliver_rain(recipe: SpellRecipe, hit: SpellHit) -> void:
 		sub.damage = each
 		sub.minor = i > 0
 		sub.size = hit.size
+		sub.fx_scale = hit.fx_scale
 		sub.resonant = hit.resonant and i == 0
 		sub.position = r["position"]
 		sub.normal = r["normal"]
@@ -272,11 +284,13 @@ func _deliver_ground(hit: SpellHit, charge: float) -> void:
 	hit.position = r["position"]
 	hit.normal = r["normal"]
 	hit.direction = flat
+	# El peñasco brota unos metros por delante (pegado a la cámara taparía la pantalla).
+	var ahead: float = minf(GROUND_AHEAD, from.distance_to(hit.position) * 0.4)
 	var projectile: SparkProjectile = free_projectile(combo_projectiles)
 	if projectile:
 		projectile.orb_charge = lerpf(0.4, 1.0, charge)
 		var collider: Object = r["collider"]
-		projectile.launch(from, hit.position, hit, collider)
+		projectile.launch(from + flat * ahead, hit.position, hit, collider)
 	_trauma(0.5)
 
 
@@ -292,7 +306,12 @@ func _process(delta: float) -> void:
 	var c: MotherCrystal = crystal()
 	if c:
 		var aim_at: Vector3 = aim["position"]
-		c.draw_beam(origin, aim_at, _beam_hit.recipe.circle_color)
+		c.draw_beam(
+			origin,
+			aim_at,
+			_beam_hit.recipe.circle_color,
+			SparkProjectile.charged_scale(_beam_hit.fx_scale) * _beam_hit.size
+		)
 	if _beam_tick <= 0.0:
 		_beam_tick = BEAM_TICK
 		var collider: Object = null if CritterHerd.beam(_beam_hit, aim) else aim["collider"]
@@ -315,6 +334,11 @@ func _process(delta: float) -> void:
 	_trauma(delta * 0.6)
 	if _beam_left <= 0.0:
 		_beam_player.stop()
+
+
+## Multiplicador de velocidad para la carga `charge` (0..1) entre `range.x` y `range.y`.
+static func _speed_for(range_xy: Vector2, charge: float) -> float:
+	return lerpf(range_xy.x, range_xy.y, clampf(charge, 0.0, 1.0))
 
 
 func _trauma(amount: float) -> void:
