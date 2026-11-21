@@ -34,8 +34,8 @@ func _run() -> void:
 		var p: Vector3 = player.global_position
 		p.y = Valley.ground_height(p.x, p.z) + 0.2
 		player.global_position = p
-		player.rotation.y = deg_to_rad(v["yaw"] as float)
-		head.rotation.x = deg_to_rad(v["pitch"] as float)
+		player.rotation.y = deg_to_rad(VariantCast.to_float(v["yaw"]))
+		head.rotation.x = deg_to_rad(VariantCast.to_float(v["pitch"]))
 		for i: int in WARM_FRAMES:
 			await process_frame
 		var t0: int = Time.get_ticks_usec()

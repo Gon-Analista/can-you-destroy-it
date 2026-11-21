@@ -186,7 +186,7 @@ static func add_tri_smooth(
 
 
 ## Rejilla de puntos (filas x columnas) con normales suaves, para formas redondeadas: laderas,
-## copas de árbol, rocas. `wrap` cierra las columnas en anillo. Las normales salen de las
+## copas de árbol, rocas. `wrap_around` cierra las columnas en anillo. Las normales salen de las
 ## diferencias entre vecinos y se orientan hacia fuera de `inside`; en un polo (fila degenerada)
 ## usan la dirección desde `inside`. `colors` da un color por fila (o uno solo para todo).
 ## `uv` va en todos los vértices (terrain.gdshader lee en UV.x la altura de la nieve).
@@ -195,7 +195,7 @@ static func add_grid(
 	rows: Array[PackedVector3Array],
 	colors: Array[Color],
 	inside: Vector3,
-	wrap: bool = true,
+	wrap_around: bool = true,
 	uv: Vector2 = Vector2.ZERO
 ) -> void:
 	if uv != Vector2.ZERO:
@@ -208,8 +208,8 @@ static func add_grid(
 		var row_n := PackedVector3Array()
 		row_n.resize(nc)
 		for j: int in nc:
-			var jl: int = (j - 1 + nc) % nc if wrap else maxi(j - 1, 0)
-			var jr: int = (j + 1) % nc if wrap else mini(j + 1, nc - 1)
+			var jl: int = (j - 1 + nc) % nc if wrap_around else maxi(j - 1, 0)
+			var jr: int = (j + 1) % nc if wrap_around else mini(j + 1, nc - 1)
 			var du: Vector3 = rows[i][jr] - rows[i][jl]
 			var dv: Vector3 = rows[mini(i + 1, nr - 1)][j] - rows[maxi(i - 1, 0)][j]
 			var p: Vector3 = rows[i][j]
@@ -221,7 +221,7 @@ static func add_grid(
 				nn = -nn
 			row_n[j] = nn.normalized()
 		normals.append(row_n)
-	var cols: int = nc if wrap else nc - 1
+	var cols: int = nc if wrap_around else nc - 1
 	for i: int in nr - 1:
 		var col: Color = colors[mini(i, colors.size() - 1)]
 		for j: int in cols:

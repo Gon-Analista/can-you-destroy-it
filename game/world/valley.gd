@@ -444,11 +444,11 @@ func _add_forest(rng: RandomNumberGenerator) -> void:
 		var broad_chance: float = lerpf(0.6, 0.15, smoothstep(110.0, 190.0, r))
 		var kind: int = (2 if rng.randf() < broad_chance else 0) + rng.randi_range(0, 1)
 		var s: float = rng.randf_range(1.6, 3.0) if kind < 2 else rng.randf_range(1.3, 2.1)
-		var basis := Basis(Vector3.UP, rng.randf() * TAU).scaled(
+		var rot := Basis(Vector3.UP, rng.randf() * TAU).scaled(
 			Vector3(s, s * rng.randf_range(0.9, 1.2), s)
 		)
 		var list: Array = xforms[kind]
-		list.append(Transform3D(basis, Vector3(x, ground_height(x, z) - 0.2, z)))
+		list.append(Transform3D(rot, Vector3(x, ground_height(x, z) - 0.2, z)))
 		var v: float = rng.randf_range(0.88, 1.08)
 		var tint_list: Array = tints[kind]
 		tint_list.append(Color(v, v * rng.randf_range(0.97, 1.03), v * 0.97, 1.0))

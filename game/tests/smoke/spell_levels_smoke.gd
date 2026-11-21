@@ -19,15 +19,29 @@ func _initialize() -> void:
 		_check(tiers.size() == 11, "%s llega a nivel 11" % path.get_file())
 		var ok_up: bool = true
 		for i: int in range(1, tiers.size()):
-			ok_up = ok_up and int(tiers[i].get(&"damage")) > int(tiers[i - 1].get(&"damage"))
+			var tier: Resource = tiers[i]
+			var below: Resource = tiers[i - 1]
+			ok_up = (
+				ok_up
+				and (
+					VariantCast.to_int(tier.get(&"damage"))
+					> VariantCast.to_int(below.get(&"damage"))
+				)
+			)
 		_check(ok_up, "%s: el daño sube en cada nivel" % path.get_file())
 	for id: String in [
 		"spark_power", "frost_power", "fireball_power", "thermal_power", "wind_power"
 	]:
 		var node: Resource = load("res://data/upgrades/%s.tres" % id)
-		_check(int(node.call(&"get_max_level")) == 10, "%s: 10 compras (nivel 11)" % id)
-		_check(float(node.get(&"apex_destroyed_ratio")) > 0.0, "%s: la Ascensión espera" % id)
-	var circles: Node3D = load("res://spells/vfx/magic_circles.gd").new()
+		_check(
+			VariantCast.to_int(node.call(&"get_max_level")) == 10, "%s: 10 compras (nivel 11)" % id
+		)
+		_check(
+			VariantCast.to_float(node.get(&"apex_destroyed_ratio")) > 0.0,
+			"%s: la Ascensión espera" % id
+		)
+	var circles_script: GDScript = load("res://spells/vfx/magic_circles.gd")
+	var circles: Node3D = circles_script.new()
 	root.add_child(circles)
 	await process_frame
 	circles.call(&"charging", 1.0, 5, Vector3.ZERO, Vector3(0, 0, -40), Color.ORANGE, Color.WHITE)

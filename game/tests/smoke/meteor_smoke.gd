@@ -18,7 +18,7 @@ func _initialize() -> void:
 		"a plomo: justo encima, no de lado"
 	)
 	var land: Dictionary = sky_path.call(&"landing", null, target, Vector3.BACK, 70.0)
-	_check(land["position"] == target, "sin mundo, aterriza en el blanco")
+	_check(VariantCast.to_bool(land["position"] == target), "sin mundo, aterriza en el blanco")
 	var meteor_def: Resource = load("res://data/spells/vfx_meteor.tres")
 	_check(VariantCast.to_bool(meteor_def.get(&"meteor")), "vfx_meteor lleva el aspecto de meteoro")
 	_check(

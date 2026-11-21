@@ -26,7 +26,7 @@ func _initialize() -> void:
 		await process_frame
 	var main: Node = current_scene
 	var menu: Node = main.get_node(^"HUDLayer/Hud/GameMenu")
-	if bool(menu.call(&"is_open")):
+	if VariantCast.to_bool(menu.call(&"is_open")):
 		menu.call(&"_close")
 	paused = false
 	var tutorial: Node = main.get_node(^"HUDLayer/Hud").get(&"tutorial")
@@ -54,7 +54,8 @@ func _save_load(gs: Node) -> void:
 		_check(found, "%s está en GameState.UPGRADES" % id)
 		prog.upgrade_levels[id] = 1
 	var copy := Progression.new(prog.total_essence)
-	copy.load_dict(JSON.parse_string(JSON.stringify(prog.to_dict())))
+	var saved: Dictionary = JSON.parse_string(JSON.stringify(prog.to_dict()))
+	copy.load_dict(saved)
 	for id: StringName in [&"autocast", &"vortex", &"facet_break"]:
 		_check(copy.get_level(id) == 1, "%s se guarda y se carga" % id)
 	gs.call(&"reset")
@@ -65,7 +66,8 @@ func _autocast(gs: Node, world: Node) -> void:
 	var caster: Node = world.get_node(^"Player").call(&"get_caster")
 	caster.set_process_unhandled_input(false)
 	caster.call(&"set_tier", 4)
-	var hold: float = (gs.get(&"BALANCE") as BalanceConfig).autocast_hold_sec
+	var balance: BalanceConfig = gs.get(&"BALANCE")
+	var hold: float = balance.autocast_hold_sec
 	# Sin el nodo: mantener pulsado sólo lanza una vez.
 	await _wait(1.5)
 	_casts.clear()
@@ -84,13 +86,16 @@ func _autocast(gs: Node, world: Node) -> void:
 	var n_held: int = _casts.size()
 	_check(n_held >= 3 and not _casts.has(1), "manteniendo, la mano lanza sola (%d)" % n_held)
 	var auto: Node = caster.get_node(^"AutoCast")
-	_check((auto.get(&"channeling") as Array)[0], "la mano está en ráfaga")
+	var channeling: Array = auto.get(&"channeling")
+	_check(VariantCast.to_bool(channeling[0]), "la mano está en ráfaga")
 	var hands: Node = world.get_node(^"Player/Hands")
-	_check(float((hands.get(&"tremble") as PackedFloat32Array)[0]) > 0.5, "la mano tiembla")
+	var tremble: PackedFloat32Array = hands.get(&"tremble")
+	_check(tremble[0] > 0.5, "la mano tiembla")
 	caster.call(&"_on_release", 0)
 	await _wait(2.0)
 	_check(_casts.size() == n_held, "al soltar para (%d -> %d)" % [n_held, _casts.size()])
-	_check(not (auto.get(&"channeling") as Array)[0], "y deja de crepitar")
+	channeling = auto.get(&"channeling")
+	_check(not VariantCast.to_bool(channeling[0]), "y deja de crepitar")
 	# Un clic corto no se vuelve ráfaga (menos que el umbral).
 	_casts.clear()
 	caster.call(&"_on_press", 1)
@@ -103,7 +108,7 @@ func _autocast(gs: Node, world: Node) -> void:
 	caster.call(&"_on_press", 0)
 	await process_frame
 	caster.call(&"_on_press", 1)
-	_check(bool(caster.call(&"is_combining")), "dos clics a la vez juntan las manos")
+	_check(VariantCast.to_bool(caster.call(&"is_combining")), "dos clics a la vez juntan las manos")
 	await _wait(0.6)
 	caster.call(&"_on_release", 0)
 	_check(_casts == [2], "sale el combinado (%s)" % [_casts])
@@ -119,7 +124,7 @@ func _autocast(gs: Node, world: Node) -> void:
 	var joined: bool = false
 	for i: int in 200:
 		await process_frame
-		if bool(caster.call(&"is_combining")):
+		if VariantCast.to_bool(caster.call(&"is_combining")):
 			joined = true
 			break
 	_check(joined, "con una mano en ráfaga, la otra junta las manos")
@@ -138,7 +143,7 @@ func _autocast(gs: Node, world: Node) -> void:
 	caster.call(&"_on_press", 1)
 	caster.call(&"_on_release", 0)
 	caster.call(&"_on_release", 1)
-	_check(bool(caster.call(&"is_combining")), "clic para cargar: soltar no lanza")
+	_check(VariantCast.to_bool(caster.call(&"is_combining")), "clic para cargar: soltar no lanza")
 	await _wait(0.5)
 	caster.call(&"_on_press", 0)
 	caster.call(&"_on_release", 0)
@@ -175,22 +180,28 @@ func _vortex(gs: Node, world: Node) -> void:
 		"sin el Vórtice, siguen en el suelo (%d)" % (_loose_around(shards, base, 40.0) - before)
 	)
 	# Un familiar ya va a por uno: el Vórtice no se lo quita.
-	var claimed: int = int(shards.call(&"loose_near", base, 60.0, PackedInt32Array(), 0.0))
+	var claimed: int = VariantCast.to_int(
+		shards.call(&"loose_near", base, 60.0, PackedInt32Array(), 0.0)
+	)
 	var claims_before: PackedInt32Array = flock.get(&"claims")
 	flock.set(&"claims", PackedInt32Array([claimed]))
 	prog.upgrade_levels[&"direct_send"] = 1
 	prog.upgrade_levels[&"vortex"] = 1
-	var hopper0: int = int(crusher.call(&"queued_count"))
+	var hopper0: int = VariantCast.to_int(crusher.call(&"queued_count"))
 	var caught0: int = vortex.get(&"caught_total")
 	await _wait(7.0)
-	var caught: int = int(vortex.get(&"caught_total")) - caught0
+	var caught: int = VariantCast.to_int(vortex.get(&"caught_total")) - caught0
 	_check(caught >= 9, "el Vórtice aspira los sueltos (%d)" % caught)
 	_check(
-		bool(shards.call(&"is_loose", claimed)), "el que va a buscar un familiar sigue en el suelo"
+		VariantCast.to_bool(shards.call(&"is_loose", claimed)),
+		"el que va a buscar un familiar sigue en el suelo"
 	)
-	var sent: int = int(crusher.call(&"queued_count")) - hopper0
+	var sent: int = VariantCast.to_int(crusher.call(&"queued_count")) - hopper0
 	_check(sent == caught, "y van a la tolva (%d)" % sent)
-	_check(int(tears.call(&"loose_count")) == 1, "la Lágrima sigue ahí (la recoge el mago)")
+	_check(
+		VariantCast.to_int(tears.call(&"loose_count")) == 1,
+		"la Lágrima sigue ahí (la recoge el mago)"
+	)
 	flock.set(&"claims", claims_before)
 	prog.upgrade_levels.erase(&"vortex")
 	prog.upgrade_levels.erase(&"direct_send")
@@ -200,7 +211,7 @@ func _vortex(gs: Node, world: Node) -> void:
 func _loose_around(shards: Node, at: Vector3, radius: float) -> int:
 	var seen := PackedInt32Array()
 	while true:
-		var i: int = int(shards.call(&"loose_near", at, radius, seen, 0.0))
+		var i: int = VariantCast.to_int(shards.call(&"loose_near", at, radius, seen, 0.0))
 		if i < 0:
 			return seen.size()
 		seen.append(i)
@@ -216,14 +227,17 @@ func _facets(gs: Node, world: Node) -> void:
 	var e0: int = prog.essence
 	crystal.call(&"receive_hit", _surface_hit(crystal, 0.0, 300))
 	var plain: int = e0 - prog.essence
-	_check(plain > 0 and int(facets.get(&"broken")) == 0, "resonante normal (%d)" % plain)
+	_check(
+		plain > 0 and VariantCast.to_int(facets.get(&"broken")) == 0,
+		"resonante normal (%d)" % plain
+	)
 	prog.upgrade_levels[&"facet_break"] = 1
 	await _wait(0.3)
 	var e1: int = prog.essence
 	crystal.call(&"receive_hit", _surface_hit(crystal, 1.3, 300))
 	var big: int = e1 - prog.essence
-	var slab: int = roundi(float(facets.get(&"last_essence")))
-	_check(int(facets.get(&"broken")) == 1, "con el nodo, la faceta se rompe")
+	var slab: int = roundi(VariantCast.to_float(facets.get(&"last_essence")))
+	_check(VariantCast.to_int(facets.get(&"broken")) == 1, "con el nodo, la faceta se rompe")
 	_check(big > plain * 1.25, "arranca bastante más esencia (%d frente a %d)" % [big, plain])
 	_check(
 		slab >= (big - slab) * 3,
@@ -243,7 +257,10 @@ func _facets(gs: Node, world: Node) -> void:
 	heart.damage = 300
 	heart.layer = 3
 	heart.tier = spark.tiers[0]
-	_check(float(facets.call(&"try_break", heart)) == 0.0, "en el Corazón, suelto no rompe")
+	_check(
+		VariantCast.to_float(facets.call(&"try_break", heart)) == 0.0,
+		"en el Corazón, suelto no rompe"
+	)
 	prog.upgrade_levels.erase(&"facet_break")
 
 
@@ -255,7 +272,8 @@ func _surface_hit(crystal: Node3D, turn: float, damage: int) -> SpellHit:
 	var s: Dictionary = crystal.call(&"surface_toward", from)
 	var hit := SpellHit.new()
 	hit.position = s["position"]
-	hit.normal = (s["normal"] as Vector3).normalized()
+	var normal: Vector3 = s["normal"]
+	hit.normal = normal.normalized()
 	hit.direction = -hit.normal
 	hit.damage = damage
 	hit.resonant = true

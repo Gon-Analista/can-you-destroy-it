@@ -324,7 +324,7 @@ func _apply() -> void:
 	var moon_to: Vector3 = -sun_to
 	# Luces: el sol se apaga bajo el horizonte; la luna toma el relevo.
 	_sun.light_color = k[5]
-	_sun.light_energy = float(k[6]) * smoothstep(-0.05, 0.12, sun_to.y)
+	_sun.light_energy = VariantCast.to_float(k[6]) * smoothstep(-0.05, 0.12, sun_to.y)
 	_sun.visible = _sun.light_energy > 0.01
 	if _sun.visible:
 		_sun.look_at_from_position(Vector3.ZERO, -sun_to, Vector3.UP)
@@ -340,17 +340,16 @@ func _apply() -> void:
 	_sky.set_shader_parameter("horizon_color", k[3])
 	_sky.set_shader_parameter("cloud_tint", k[4])
 	_sky.set_shader_parameter("sun_dir", sun_to)
-	_sky.set_shader_parameter("sun_color", (k[5] as Color).lightened(0.3))
+	var sun_color: Color = k[5]
+	_sky.set_shader_parameter("sun_color", sun_color.lightened(0.3))
 	_sky.set_shader_parameter("moon_dir", moon_to)
 	_sky.set_shader_parameter("stars", k[11])
 	# Auroras de maná: sólo de noche y más fuertes cuanto más lleno el Pilón (GDD 3).
-	_sky.set_shader_parameter(
-		"aurora",
-		maxf(
-			float(k[11]) * ValleyMilestones.aurora_strength(GameState.progression.pylon_ratio()),
-			finale
-		)
+	var stars: float = k[11]
+	var aurora: float = (
+		stars * ValleyMilestones.aurora_strength(GameState.progression.pylon_ratio())
 	)
+	_sky.set_shader_parameter("aurora", maxf(aurora, finale))
 	_sky.set_shader_parameter("aurora_fill", finale)
 	RenderingServer.global_shader_parameter_set(&"world_tint", k[10])
 	var n: float = k[12]
@@ -363,11 +362,12 @@ func _apply() -> void:
 ## (0..1) y apaga el sol en `dim`; con el final salen las estrellas.
 func _blend_mood(k: Array, cols: PackedColorArray, w: float, dim: float) -> void:
 	for j: int in MOOD_KEYS.size():
-		k[MOOD_KEYS[j]] = (k[MOOD_KEYS[j]] as Color).lerp(cols[j], w)
-	k[6] = float(k[6]) * (1.0 - dim * w)
-	k[8] = lerpf(float(k[8]), 0.55, w)
-	k[11] = maxf(float(k[11]), finale * 0.9)
-	k[12] = maxf(float(k[12]), w * 0.6)
+		var col: Color = k[MOOD_KEYS[j]]
+		k[MOOD_KEYS[j]] = col.lerp(cols[j], w)
+	k[6] = VariantCast.to_float(k[6]) * (1.0 - dim * w)
+	k[8] = lerpf(VariantCast.to_float(k[8]), 0.55, w)
+	k[11] = maxf(VariantCast.to_float(k[11]), finale * 0.9)
+	k[12] = maxf(VariantCast.to_float(k[12]), w * 0.6)
 
 
 ## Dirección hacia el sol: recorre un círculo máximo inclinado que sale por el horizonte a las
@@ -387,18 +387,18 @@ func _sample(t: float) -> Array:
 	var a: Array = _keys[0]
 	var b: Array = _keys[_keys.size() - 1]
 	for i: int in _keys.size() - 1:
-		if t >= float(_keys[i][0]) and t <= float(_keys[i + 1][0]):
+		if t >= VariantCast.to_float(_keys[i][0]) and t <= VariantCast.to_float(_keys[i + 1][0]):
 			a = _keys[i]
 			b = _keys[i + 1]
 			break
-	var f: float = inverse_lerp(float(a[0]), float(b[0]), t)
+	var f: float = inverse_lerp(VariantCast.to_float(a[0]), VariantCast.to_float(b[0]), t)
 	f = f * f * (3.0 - 2.0 * f)
 	var out: Array = [t]
 	for j: int in range(1, a.size()):
 		if a[j] is String:
-			out.append(Color(a[j] as String).lerp(Color(b[j] as String), f))
+			out.append(Color(str(a[j])).lerp(Color(str(b[j])), f))
 		else:
-			out.append(lerpf(float(a[j]), float(b[j]), f))
+			out.append(lerpf(VariantCast.to_float(a[j]), VariantCast.to_float(b[j]), f))
 	return out
 
 
