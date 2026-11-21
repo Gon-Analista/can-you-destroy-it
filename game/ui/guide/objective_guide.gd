@@ -383,8 +383,8 @@ func _color() -> Color:
 func _update_world(at: Vector3, delta: float) -> void:
 	if _trail == null or not _trail.is_inside_tree():
 		return
-	var show: bool = kind != Guidance.Kind.NONE and kind != Guidance.Kind.CRYSTAL and visible
-	if not show:
+	var shown: bool = kind != Guidance.Kind.NONE and kind != Guidance.Kind.CRYSTAL and visible
+	if not shown:
 		_trail.hide_all(delta)
 		return
 	var k: float = _alpha if _urgent else 0.0
@@ -501,7 +501,7 @@ func _draw_gem(p: Vector2, col: Color) -> void:
 	var a: float = _alpha
 	var frame: int = int(_t * 8.0) % 8
 	var spin: float = cos(float(frame) / 8.0 * TAU)
-	var bob: float = roundf(sin(floor(_t * 6.0) * 0.7) * 1.5) - roundf(_pop * 3.0)
+	var bob: float = roundf(sin(floorf(_t * 6.0) * 0.7) * 1.5) - roundf(_pop * 3.0)
 	var c := Vector2(p.x, p.y + bob)
 	if _urgent:
 		var ph: float = fmod(_t, 1.4) / 1.4

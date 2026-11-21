@@ -112,7 +112,8 @@ func launch(projectile: SparkProjectile, hit: SpellHit, side: int) -> void:
 	hit.position = target
 	var origin: Vector3 = _hand_origin.call(side)
 	hit.direction = (target - origin).normalized()
-	projectile.launch(origin, target, hit, result["collider"])
+	var collider: Object = result["collider"]
+	projectile.launch(origin, target, hit, collider)
 	runes.on_launch(hit, side, origin, result)
 
 
@@ -133,7 +134,7 @@ func deliver(recipe: SpellRecipe, hit: SpellHit, charge: float) -> void:
 			set_process(true)
 		SpellRecipe.Delivery.MAGNET:
 			var player: Node = get_tree().get_first_node_in_group(&"player")
-			var n: int = int(player.call(&"magnet_pull", 45.0)) if player else 0
+			var n: int = VariantCast.to_int(player.call(&"magnet_pull", 45.0)) if player else 0
 			var c: MotherCrystal = crystal()
 			if c:
 				c.magnet_pulse(camera.global_position - Vector3(0, 1.4, 0), n)
@@ -159,15 +160,10 @@ func deliver(recipe: SpellRecipe, hit: SpellHit, charge: float) -> void:
 			var cloud: Vector3 = (
 				target + back * STORM_FRONT + Vector3.UP * maxf(STORM_MIN_RISE, dist * STORM_RISE)
 			)
-			_storm.start(
-				recipe,
-				hit,
-				cloud,
-				target,
-				aim["normal"],
-				_hand_origin.call(BOTH_HANDS),
-				aim["collider"]
-			)
+			var normal: Vector3 = aim["normal"]
+			var hand: Vector3 = _hand_origin.call(BOTH_HANDS)
+			var collider: Object = aim["collider"]
+			_storm.start(recipe, hit, cloud, target, normal, hand, collider)
 			_trauma(0.45)
 		_:
 			var projectile: SparkProjectile = free_projectile(combo_projectiles)
@@ -186,14 +182,16 @@ func deliver_sky(
 	if aim.is_empty():
 		aim = _aim.call()
 	var target: Vector3 = aim["position"]
-	var origin: Vector3 = sky_origin(recipe, target, aim["normal"])
+	var normal: Vector3 = aim["normal"]
+	var origin: Vector3 = sky_origin(recipe, target, normal)
 	hit.position = target
 	hit.normal = aim["normal"]
 	hit.direction = (target - origin).normalized()
 	var projectile: SparkProjectile = free_projectile(combo_projectiles)
 	if projectile:
 		projectile.orb_charge = lerpf(0.4, 1.0, charge)
-		projectile.launch(origin, target, hit, aim["collider"])
+		var collider: Object = aim["collider"]
+		projectile.launch(origin, target, hit, collider)
 	var c: MotherCrystal = crystal()
 	if c and recipe.fall_sec < 0.3:
 		# El Trueno: el rayo baja ya, del cielo al blanco (violeta si es un eco).
@@ -256,7 +254,8 @@ func _deliver_rain(recipe: SpellRecipe, hit: SpellHit) -> void:
 			func() -> void:
 				var p: SparkProjectile = free_projectile(projectiles)
 				if p:
-					p.launch(sky, sub.position, sub, r["collider"])
+					var collider: Object = r["collider"]
+					p.launch(sky, sub.position, sub, collider)
 		)
 
 
@@ -279,7 +278,8 @@ func _deliver_ground(hit: SpellHit, charge: float) -> void:
 	var projectile: SparkProjectile = free_projectile(combo_projectiles)
 	if projectile:
 		projectile.orb_charge = lerpf(0.4, 1.0, charge)
-		projectile.launch(from, hit.position, hit, r["collider"])
+		var collider: Object = r["collider"]
+		projectile.launch(from, hit.position, hit, collider)
 	_trauma(0.5)
 
 
@@ -294,7 +294,8 @@ func _process(delta: float) -> void:
 	var aim: Dictionary = _aim.call()
 	var c: MotherCrystal = crystal()
 	if c:
-		c.draw_beam(origin, aim["position"], _beam_hit.recipe.circle_color)
+		var aim_at: Vector3 = aim["position"]
+		c.draw_beam(origin, aim_at, _beam_hit.recipe.circle_color)
 	if _beam_tick <= 0.0:
 		_beam_tick = BEAM_TICK
 		var collider: Object = null if CritterHerd.beam(_beam_hit, aim) else aim["collider"]
@@ -312,7 +313,8 @@ func _process(delta: float) -> void:
 			sub.position = aim["position"]
 			sub.normal = aim["normal"]
 			sub.direction = (sub.position - origin).normalized()
-			((collider as Node).get_meta(&"mother_crystal") as MotherCrystal).receive_hit(sub)
+			var target_crystal: MotherCrystal = (collider as Node).get_meta(&"mother_crystal")
+			target_crystal.receive_hit(sub)
 	_trauma(delta * 0.6)
 	if _beam_left <= 0.0:
 		_beam_player.stop()

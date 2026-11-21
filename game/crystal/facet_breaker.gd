@@ -181,7 +181,8 @@ func _break(hit: SpellHit, target: float, allowed: int) -> float:
 	var final_shape: PackedVector2Array = _scaled(poly, radius)
 	var thick: float = radius * bal.facet_depth_ratio
 	var r: Dictionary = vol.carve_facet(p0, frame, final_shape, thick, tilt, allowed)
-	var essence: float = minf(float(r["essence"]), target * 1.25)
+	var carved: float = r["essence"]
+	var essence: float = minf(carved, target * 1.25)
 	if essence < 1.0:
 		return 0.0
 	var removed: float = _crystal.apply_carve(r, p0, radius, essence)

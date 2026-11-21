@@ -140,6 +140,7 @@ func burst(c: Critter, gore: bool) -> void:
 		var kind: Kind = Kind.ICE if c.flavor == Critter.Flavor.FROST else Kind.CHUNK
 		var n: int = def.chunks
 		if c.flavor == Critter.Flavor.EARTH:
+			@warning_ignore("integer_division")
 			n = maxi(3, n / 2)
 		for i: int in n:
 			_spawn_piece(kind, at, push, goo, _rng.randf_range(0.16, 0.32) * s, 1.0)

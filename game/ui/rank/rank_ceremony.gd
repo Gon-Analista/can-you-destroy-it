@@ -190,8 +190,8 @@ func _draw() -> void:
 		return
 	_draw_rays(def, out)
 	_draw_sparks(def, out)
-	var size := Vector2(RankCrest.SIZE * px)
-	RankCrest.draw(self, rank, (CREST_CENTER - size * 0.5).round(), px, Color(1, 1, 1, out))
+	var crest_size := Vector2(RankCrest.SIZE * px)
+	RankCrest.draw(self, rank, (CREST_CENTER - crest_size * 0.5).round(), px, Color(1, 1, 1, out))
 
 
 ## Rayos de luz que giran despacio detrás del escudo (triángulos a píxel entero).

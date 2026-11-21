@@ -379,7 +379,7 @@ func _refresh() -> void:
 	var prog: Progression = GameState.progression
 	var page: Array = PAGES[_page]
 	_title.text = tr(PAGE_TITLES[_page])
-	_title.add_theme_color_override(&"font_color", Color(page[2] as String))
+	_title.add_theme_color_override(&"font_color", Color(str(page[2])))
 	for i: int in GameState.UPGRADES.size():
 		var n: UpgradeNode = GameState.UPGRADES[i]
 		var lvl: int = prog.get_level(n.id)
@@ -399,11 +399,11 @@ func _refresh() -> void:
 		label.add_theme_color_override(&"font_color", c)
 		_place_star_label(label, n)
 	if _page_locked():
-		_page_title.text = tr(page[1] as String)
+		_page_title.text = tr(str(page[1]))
 		_level.text = tr("ELEMENTO DORMIDO")
 		_desc.text = (
 			tr("Su constelación aún no brilla. Despertará cuando el Pilón de Maná llegue al %d %%.")
-			% roundi(float(page[5]) * 100.0)
+			% roundi(VariantCast.to_float(page[5]) * 100.0)
 		)
 		if page[0] == CORE_PAGE:
 			_level.text = tr("PÁGINA SELLADA")
@@ -552,8 +552,8 @@ func _draw() -> void:
 
 func _draw_left_page(o: Vector2) -> void:
 	var page_def: Array = PAGES[_page]
-	var sky := Color(page_def[3] as String)
-	var deep := Color(page_def[4] as String)
+	var sky := Color(str(page_def[3]))
+	var deep := Color(str(page_def[4]))
 	var page := Rect2(Vector2(LEFT_PAGE.position) + o, Vector2(LEFT_PAGE.size))
 	draw_rect(page, sky)
 	# Franja más profunda abajo, separada con tramado de 1 px.
@@ -596,11 +596,11 @@ func _draw_left_page(o: Vector2) -> void:
 func _draw_tabs(o: Vector2) -> void:
 	for i: int in PAGES.size():
 		var r := Rect2(_tab_rect(i).position + o, _tab_rect(i).size)
-		var col := Color(PAGES[i][2] as String)
+		var col := Color(str(PAGES[i][2]))
 		var open_tab: bool = i == _page
 		var empty: bool = _page_sealed(i)
 		draw_rect(r.grow(1), C_SHADOW)
-		draw_rect(r, Color(PAGES[i][3] as String) if open_tab else C_COVER_DARK)
+		draw_rect(r, Color(str(PAGES[i][3])) if open_tab else C_COVER_DARK)
 		if open_tab:
 			draw_rect(Rect2(r.position + Vector2(0, r.size.y - 2), Vector2(r.size.x, 2)), col)
 		var icon: PackedStringArray = (
@@ -652,7 +652,7 @@ func _draw_star(i: int, c: Vector2) -> void:
 			var ray: float = r * 3.0 + 3.0 + fmod(_t * 2.0, 1.0) * 4.0
 			for j: int in range(r * 2 + 2, roundi(ray), 2):
 				var p := (c + Vector2(cos(a), sin(a)) * float(j)).round()
-				draw_rect(Rect2(p, Vector2(1, 1)), Color(PAGES[k + 1][2] as String))
+				draw_rect(Rect2(p, Vector2(1, 1)), Color(str(PAGES[k + 1][2])))
 	# Anillo giratorio de la estrella elegida (8 puntos que avanzan a 8 fps).
 	if i == _selected:
 		var rr: float = r * 2.0 + 6.0
@@ -705,10 +705,7 @@ func _draw_right_page(o: Vector2) -> void:
 		draw_rect(Rect2(lock_at - Vector2(2, 2), Vector2(32, 32)), C_PAGE_EDGE)
 		draw_rect(Rect2(lock_at, Vector2(28, 28)), C_COVER_DARK)
 		_draw_icon(
-			GrimoireIcons.PAGE_ICONS[_page],
-			lock_at + Vector2(2, 2),
-			3,
-			Color(PAGES[_page][2] as String)
+			GrimoireIcons.PAGE_ICONS[_page], lock_at + Vector2(2, 2), 3, Color(str(PAGES[_page][2]))
 		)
 		return
 	var node: UpgradeNode = GameState.UPGRADES[_selected]
@@ -719,12 +716,10 @@ func _draw_right_page(o: Vector2) -> void:
 	var icon_at: Vector2 = page.position + Vector2(10, 8)
 	draw_rect(Rect2(icon_at - Vector2(2, 2), Vector2(32, 32)), C_GOLD)
 	draw_rect(Rect2(icon_at, Vector2(28, 28)), C_SKY)
-	_draw_icon(
-		GrimoireIcons.ICONS.get(node.id, GrimoireIcons.ICONS[&"resonance"]),
-		icon_at + Vector2(2, 2),
-		3,
-		C_GOLD_LIGHT
+	var icon: PackedStringArray = GrimoireIcons.ICONS.get(
+		node.id, GrimoireIcons.ICONS[&"resonance"]
 	)
+	_draw_icon(icon, icon_at + Vector2(2, 2), 3, C_GOLD_LIGHT)
 	# Pips de nivel.
 	for k: int in max_level:
 		var p: Vector2 = page.position + Vector2(46 + k * 9, 44)

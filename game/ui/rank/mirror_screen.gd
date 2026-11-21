@@ -179,9 +179,11 @@ func requirement_text(def: RankDef) -> String:
 ## 3723 s -> "1 h 02 min"; 95 s -> "1 min 35 s".
 static func time_text(sec: float) -> String:
 	var s: int = floori(sec)
+	@warning_ignore_start("integer_division")
 	if s >= 3600:
 		return "%d h %02d min" % [s / 3600, (s % 3600) / 60]
 	return "%d min %02d s" % [s / 60, s % 60]
+	@warning_ignore_restore("integer_division")
 
 
 ## 0.0008 -> "0,08 %"; 0.123 -> "12,3 %"; 0.5 -> "50 %".
@@ -320,6 +322,7 @@ func _draw_glass(def: RankDef) -> void:
 	var step: int = floori(_t * 6.0)
 	for i: int in 40:
 		var h: int = (i * 7919 + 104729) % 9973
+		@warning_ignore("integer_division")
 		var p := Vector2(g.position.x + 6 + (h % 271), g.position.y + 34 + (h / 271) % 280)
 		var on: bool = ((h + step * (i % 3 + 1)) % 7) != 0
 		if on:

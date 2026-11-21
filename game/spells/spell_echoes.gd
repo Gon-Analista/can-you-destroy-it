@@ -66,10 +66,8 @@ func echo_single(side: int, hit: SpellHit, base_damage: int, collider: Object, c
 		get_tree().create_timer(el.echo_delay * float(k + 1)).timeout.connect(
 			func() -> void:
 				var cam: Camera3D = _caster.camera
-				var origin: Vector3 = (
-					(_hand_origin.call(side) as Vector3)
-					+ cam.global_basis * Vector3(spot.x, spot.y, 0.0)
-				)
+				var hand: Vector3 = _hand_origin.call(side)
+				var origin: Vector3 = hand + cam.global_basis * Vector3(spot.x, spot.y, 0.0)
 				_launch(echo, origin, collider)
 				_circles.muzzle(origin, echo.position, 1, el.circle_color, HOT)
 				_play(el, k, -6.0)
@@ -106,7 +104,7 @@ func ghost(hit: SpellHit, damage: int, fraction: float) -> SpellHit:
 	echo.echo = true
 	echo.minor = true
 	var bonus: float = hit.element_def.resonant_bonus if hit.element_def else 0.0
-	echo.resonant = _rng.randf() < float(_resonant_chance.call(bonus))
+	echo.resonant = _rng.randf() < VariantCast.to_float(_resonant_chance.call(bonus))
 	echo.damage = _echo_damage(damage, fraction, echo.resonant)
 	echo.position = hit.position
 	echo.normal = hit.normal
@@ -145,7 +143,8 @@ func _deliver(
 			0.6,
 			7.0
 		)
-		_launch(echo, origin, aim["collider"], lerpf(0.3, 0.6, charge))
+		var collider: Object = aim["collider"]
+		_launch(echo, origin, collider, lerpf(0.3, 0.6, charge))
 	else:
 		_deliver_recipe.call(base, echo, charge)
 	_play(recipe, k, 0.0)
@@ -182,7 +181,8 @@ func _scattered_aim(k: int) -> Dictionary:
 	var up: Vector3 = side.cross(n).normalized()
 	var a: float = float(k) * 2.4 + _rng.randf() * 0.6
 	var off: Vector3 = (side * cos(a) + up * sin(a)) * _rng.randf_range(2.5, 4.5)
-	var from: Vector3 = (aim["position"] as Vector3) + off + n * 4.0
+	var aim_at: Vector3 = aim["position"]
+	var from: Vector3 = aim_at + off + n * 4.0
 	var q := PhysicsRayQueryParameters3D.create(from, from - n * 10.0, 1 << 1)
 	var r: Dictionary = _caster.camera.get_world_3d().direct_space_state.intersect_ray(q)
 	return aim if r.is_empty() else r

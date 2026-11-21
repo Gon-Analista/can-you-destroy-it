@@ -287,7 +287,8 @@ func _strike(k: int) -> void:
 				crystal.sky_bolt(from, sub.position, _recipe.circle_hot)
 				# Tronco grueso y dorado: se lee contra el azul del cristal y el gris de la nube.
 				crystal.draw_bolt(from + Vector3.UP * 2.0, sub.position, 1.2, BOLT_GOLD, 0.3)
-			_bolt_lands(sub, aim["collider"], crystal)
+			var collider: Object = aim["collider"]
+			_bolt_lands(sub, collider, crystal)
 			_flash_cloud(from, 1.0)
 			_delivery_trauma(0.12)
 		&"frost":
@@ -344,7 +345,8 @@ func ground_impact(sub: SpellHit) -> void:
 func _fall(sub: SpellHit, from: Vector3, aim: Dictionary) -> void:
 	var p: SparkProjectile = SpellDelivery.free_projectile(_delivery.projectiles)
 	if p:
-		p.launch(from, sub.position, sub, aim["collider"])
+		var collider: Object = aim["collider"]
+		p.launch(from, sub.position, sub, collider)
 
 
 ## Un punto de la panza de la nube.

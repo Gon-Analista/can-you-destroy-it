@@ -247,45 +247,47 @@ func to_dict() -> Dictionary:
 
 
 func load_dict(data: Dictionary) -> void:
-	essence = clampi(int(data.get("essence", total_essence)), 0, total_essence)
-	pylon_progress = clampi(int(data.get("pylon_progress", 0)), 0, total_essence)
-	mana = maxi(int(data.get("mana", 0)), 0)
+	essence = clampi(VariantCast.to_int(data.get("essence", total_essence)), 0, total_essence)
+	pylon_progress = clampi(VariantCast.to_int(data.get("pylon_progress", 0)), 0, total_essence)
+	mana = maxi(VariantCast.to_int(data.get("mana", 0)), 0)
 	upgrade_levels.clear()
 	var levels: Dictionary = data.get("upgrade_levels", {})
 	for key: Variant in levels:
-		upgrade_levels[StringName(str(key))] = int(levels[key])
+		upgrade_levels[StringName(str(key))] = VariantCast.to_int(levels[key])
 	bag.clear()
 	var saved_bag: Dictionary = data.get("bag", {})
 	for key: Variant in saved_bag:
-		bag[StringName(str(key))] = maxi(int(saved_bag[key]), 0)
-	deepest_layer = maxi(int(data.get("deepest_layer", 0)), 0)
-	hut_door_open = bool(data.get("hut_door_open", false))
-	tutorial_step = int(data.get("tutorial_step", 8 if pylon_progress > 0 else 0))
-	critters_popped = maxi(int(data.get("critters_popped", 0)), 0)
-	game_complete = bool(data.get("game_complete", false))
-	ending_seen = bool(data.get("ending_seen", game_complete))
+		bag[StringName(str(key))] = maxi(VariantCast.to_int(saved_bag[key]), 0)
+	deepest_layer = maxi(VariantCast.to_int(data.get("deepest_layer", 0)), 0)
+	hut_door_open = VariantCast.to_bool(data.get("hut_door_open", false))
+	tutorial_step = VariantCast.to_int(data.get("tutorial_step", 8 if pylon_progress > 0 else 0))
+	critters_popped = maxi(VariantCast.to_int(data.get("critters_popped", 0)), 0)
+	game_complete = VariantCast.to_bool(data.get("game_complete", false))
+	ending_seen = VariantCast.to_bool(data.get("ending_seen", game_complete))
 	learned.clear()
 	var saved_learned: Dictionary = data.get("learned", {})
 	for key: Variant in saved_learned:
-		learned[StringName(str(key))] = maxi(int(saved_learned[key]), 0)
+		learned[StringName(str(key))] = maxi(VariantCast.to_int(saved_learned[key]), 0)
 	seen_upgrades.clear()
 	var saved_seen: Dictionary = data.get("seen_upgrades", {})
 	for key: Variant in saved_seen:
-		seen_upgrades[StringName(str(key))] = maxi(int(saved_seen[key]), 0)
-	tears = maxi(int(data.get("tears", 0)), 0)
-	tears_total = maxi(int(data.get("tears_total", tears)), tears)
-	tear_pity = maxf(float(data.get("tear_pity", 0.0)), 0.0)
+		seen_upgrades[StringName(str(key))] = maxi(VariantCast.to_int(saved_seen[key]), 0)
+	tears = maxi(VariantCast.to_int(data.get("tears", 0)), 0)
+	tears_total = maxi(VariantCast.to_int(data.get("tears_total", tears)), tears)
+	tear_pity = maxf(VariantCast.to_float(data.get("tear_pity", 0.0)), 0.0)
 	loose_tears.clear()
 	var saved_loose: Array = data.get("loose_tears", [])
 	for v: Variant in saved_loose:
 		var xyz: Array = v if v is Array else []
 		if xyz.size() == 3:
-			loose_tears.append(Vector3(float(xyz[0]), float(xyz[1]), float(xyz[2])))
-	stats.load_dict(data.get("stats", {}))
+			var c := PackedFloat64Array(xyz)
+			loose_tears.append(Vector3(c[0], c[1], c[2]))
+	var saved_stats: Dictionary = data.get("stats", {})
+	stats.load_dict(saved_stats)
 	geodes.clear()
 	var saved_geodes: Dictionary = data.get("geodes", {})
 	for key: Variant in saved_geodes:
-		geodes[int(str(key))] = int(saved_geodes[key])
+		geodes[int(str(key))] = VariantCast.to_int(saved_geodes[key])
 	inscribed_runes.clear()
 	var saved_runes: Array = data.get("inscribed_runes", [])
 	for r: Variant in saved_runes:
@@ -298,7 +300,7 @@ func load_dict(data: Dictionary) -> void:
 	# El rango guardado tal cual; las partidas de antes de los rangos reciben el que les toca,
 	# sin ceremonia.
 	if data.has("rank"):
-		rank = clampi(int(data["rank"]), 0, WizardRanks.last())
+		rank = clampi(VariantCast.to_int(data["rank"]), 0, WizardRanks.last())
 	else:
 		rank = WizardRanks.earned(self)
 

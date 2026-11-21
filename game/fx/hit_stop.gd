@@ -20,7 +20,7 @@ static func trigger(tree: SceneTree, duration_sec: float, time_scale: float = 0.
 		return
 	_tree = tree
 	duration_sec = minf(duration_sec, MAX_FREEZE_SEC)
-	var end: int = Time.get_ticks_msec() + int(ceil(duration_sec * 1000.0))
+	var end: int = Time.get_ticks_msec() + ceili(duration_sec * 1000.0)
 	_until_msec = maxi(_until_msec, end)
 	Engine.time_scale = time_scale * base_scale
 	_schedule(duration_sec)

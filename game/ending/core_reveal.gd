@@ -502,9 +502,11 @@ static func reachable_shell(v: CrystalVolume, src: PackedFloat32Array) -> float:
 ## Igual que CrystalVolume._touch: el trozo de la celda (los vecinos de borde los rehace la
 ## malla de la celda de al lado, que también cambia).
 static func _chunk_of(v: CrystalVolume, x: int, y: int, z: int) -> int:
+	@warning_ignore_start("integer_division")
 	var cx: int = clampi(x / v.chunk, 0, v.chunks.x - 1)
 	var cy: int = clampi(y / v.chunk, 0, v.chunks.y - 1)
 	var cz: int = clampi(z / v.chunk, 0, v.chunks.z - 1)
+	@warning_ignore_restore("integer_division")
 	return cx + v.chunks.x * (cy + v.chunks.y * cz)
 
 
@@ -526,7 +528,8 @@ func _poll_tasks() -> void:
 		WorkerThreadPool.wait_for_task_completion(_task)
 		_task = -1
 		if state == State.CRACKING:
-			_sites = PackedVector4Array(_clear_result.get("sites", []))
+			var sites: Array = _clear_result.get("sites", [])
+			_sites = PackedVector4Array(sites)
 			_peel_t = 0.0
 		else:
 			_apply_clear()

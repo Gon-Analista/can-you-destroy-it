@@ -72,5 +72,6 @@ func load_game() -> void:
 		return
 	var data: Dictionary = parsed
 	# Aquí van las migraciones cuando SAVE_VERSION suba.
-	GameState.progression.load_dict(data.get("progression", {}))
+	var saved: Dictionary = data.get("progression", {})
+	GameState.progression.load_dict(saved)
 	GameState.emit_all()

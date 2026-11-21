@@ -149,9 +149,11 @@ func _bolt(
 		var j: int = _next
 		_next = (_next + 1) % MAX_BOLTS
 		var bpts := PackedVector3Array()
+		@warning_ignore("integer_division")
 		var bp: Vector3 = pts[SEGMENTS / 2]
 		var bdir: Vector3 = (dir + side * _rng.randf_range(-1.2, 1.2)).normalized()
 		bpts.append(bp)
+		@warning_ignore("integer_division")
 		for s: int in SEGMENTS / 2:
 			bp += (
 				bdir * seg * 0.8

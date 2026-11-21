@@ -323,10 +323,10 @@ func _add_forest(rng: RandomNumberGenerator) -> void:
 		):
 			continue
 		var s: float = rng.randf_range(1.6, 3.2)
-		var basis := Basis(Vector3.UP, rng.randf() * TAU).scaled(
+		var rot := Basis(Vector3.UP, rng.randf() * TAU).scaled(
 			Vector3(s, s * rng.randf_range(0.9, 1.25), s)
 		)
-		xforms.append(Transform3D(basis, Vector3(x, ground_height(x, z) - 0.2, z)))
+		xforms.append(Transform3D(rot, Vector3(x, ground_height(x, z) - 0.2, z)))
 	mm.instance_count = xforms.size()
 	for i: int in xforms.size():
 		mm.set_instance_transform(i, xforms[i])

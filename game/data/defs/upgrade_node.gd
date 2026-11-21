@@ -51,7 +51,7 @@ func pays_with_tears() -> bool:
 func cost_for_level(level: int) -> int:
 	if not costs.is_empty():
 		return costs[clampi(level, 0, costs.size() - 1)]
-	return int(round(base_cost * pow(cost_growth, level)))
+	return roundi(base_cost * pow(cost_growth, level))
 
 
 func value_at(level: int) -> float:

@@ -372,6 +372,7 @@ func _build_grass() -> void:
 		mm.transform_format = MultiMesh.TRANSFORM_3D
 		mm.mesh = _tuft_mesh(colors[c], colors[mini(c + 1, colors.size() - 1)])
 		var xforms: Array[Transform3D] = []
+		@warning_ignore("integer_division")
 		var target: int = grass_count / colors.size()
 		var attempts: int = 0
 		while xforms.size() < target and attempts < target * 6:
@@ -384,8 +385,8 @@ func _build_grass() -> void:
 			if not _free(x, z, 0.0):
 				continue
 			var s: float = _rng.randf_range(0.7, 1.4)
-			var basis := Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3(s, s, s))
-			xforms.append(Transform3D(basis, Vector3(x, _ground(x, z) - 0.02, z)))
+			var rot := Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3(s, s, s))
+			xforms.append(Transform3D(rot, Vector3(x, _ground(x, z) - 0.02, z)))
 		mm.instance_count = xforms.size()
 		for i: int in xforms.size():
 			mm.set_instance_transform(i, xforms[i])
@@ -418,6 +419,7 @@ func _build_flowers() -> void:
 		mm.transform_format = MultiMesh.TRANSFORM_3D
 		mm.mesh = _flower_mesh(FLOWER_COLORS[c])
 		var xforms: Array[Transform3D] = []
+		@warning_ignore("integer_division")
 		var target: int = flower_count / FLOWER_COLORS.size()
 		var attempts: int = 0
 		while xforms.size() < target and attempts < target * 8:
@@ -433,8 +435,8 @@ func _build_flowers() -> void:
 				if not _free(x, z, 0.0):
 					continue
 				var s: float = _rng.randf_range(0.8, 1.3)
-				var basis := Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3(s, s, s))
-				xforms.append(Transform3D(basis, Vector3(x, _ground(x, z), z)))
+				var rot := Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3(s, s, s))
+				xforms.append(Transform3D(rot, Vector3(x, _ground(x, z), z)))
 		mm.instance_count = xforms.size()
 		for i: int in xforms.size():
 			mm.set_instance_transform(i, xforms[i])

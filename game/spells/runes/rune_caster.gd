@@ -128,6 +128,7 @@ static func _scale(def: RuneDef, hit: SpellHit) -> float:
 ## Daño del golpe sin la resonancia (lo que sale de más tira su propia resonancia o ninguna).
 static func _base_damage(hit: SpellHit) -> int:
 	var mult: int = GameState.BALANCE.resonant_damage_mult if hit.resonant else 1
+	@warning_ignore("integer_division")
 	return maxi(1, hit.damage / mult)
 
 
@@ -191,7 +192,8 @@ func _fan(hit: SpellHit, origin: Vector3, count: int, damage: int, def: RuneDef)
 func _fire_echo(echo: SpellHit, side: int, collider: Object, def: RuneDef) -> void:
 	var cam: Camera3D = _delivery.camera
 	var lift := Vector3(0.12 if side == 0 else -0.12, 0.14, 0.0)
-	var origin: Vector3 = (_hand_origin.call(side) as Vector3) + cam.global_basis * lift
+	var hand: Vector3 = _hand_origin.call(side)
+	var origin: Vector3 = hand + cam.global_basis * lift
 	_echoes.launch_ghost(echo, origin, collider, 0.55 if echo.recipe else 1.0)
 	fx.echo(origin, echo.position, def)
 
@@ -223,7 +225,8 @@ func _bounce(hit: SpellHit) -> void:
 	sub.normal = target["normal"]
 	var from: Vector3 = hit.position + hit.normal * 0.35
 	sub.direction = (sub.position - from).normalized()
-	p.launch(from, sub.position, sub, target["collider"])
+	var collider: Object = target["collider"]
+	p.launch(from, sub.position, sub, collider)
 	var k: int = RuneBook.active_level(GameState.progression, def.kind) - sub.rune_bounces - 1
 	fx.bounce(hit.position, hit.normal, sub.position, k, def)
 
@@ -254,7 +257,11 @@ func _bounce_target(hit: SpellHit) -> Dictionary:
 		var from: Vector3 = hit.position + off + n * 2.5
 		var q := PhysicsRayQueryParameters3D.create(from, from - n * 6.0, 1 << 1)
 		var r: Dictionary = space.intersect_ray(q)
-		if not r.is_empty() and _yields(crystal, r["position"], r["normal"]):
+		if r.is_empty():
+			continue
+		var at: Vector3 = r["position"]
+		var normal: Vector3 = r["normal"]
+		if _yields(crystal, at, normal):
 			return r
 	return {}
 

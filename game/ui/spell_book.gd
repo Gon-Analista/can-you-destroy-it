@@ -134,7 +134,13 @@ func _ready() -> void:
 
 
 func _label(
-	text: String, font: Font, size_px: int, col: Color, r: Rect2, align: int, wrap: bool = false
+	text: String,
+	font: Font,
+	size_px: int,
+	col: Color,
+	r: Rect2,
+	align: int,
+	wrap_text: bool = false
 ) -> Label:
 	var l := Label.new()
 	l.text = tr(text)
@@ -145,7 +151,7 @@ func _label(
 	l.position = r.position
 	l.size = r.size
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if wrap or r.size.y > 14.0:
+	if wrap_text or r.size.y > 14.0:
 		UiFonts.paragraph(l)
 	add_child(l)
 	return l
@@ -406,7 +412,7 @@ func _draw() -> void:
 		for k: int in mini(r.elements.size(), 3):
 			var at := Vector2(x0 + k * step, y + floorf((ROW_H - 9.0) * 0.5))
 			var page: int = ELEMENT_PAGE.get(r.elements[k], 0)
-			var col := Color(Grimoire.PAGES[page][2] as String)
+			var col := Color(str(Grimoire.PAGES[page][2]))
 			if st == &"found":
 				_icon(GrimoireIcons.PAGE_ICONS[page], at, col)
 			elif st == &"locked":
@@ -428,7 +434,7 @@ func _draw() -> void:
 			_icon(
 				GrimoireIcons.PAGE_ICONS[page],
 				Vector2(first_x + k * 22, 58),
-				Color(Grimoire.PAGES[page][2] as String),
+				Color(str(Grimoire.PAGES[page][2])),
 				2
 			)
 	draw_rect(Rect2(RIGHT.position.x + 14, 96, RIGHT.size.x - 28, 1), C_PAGE_SHADE)

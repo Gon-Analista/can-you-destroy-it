@@ -347,9 +347,7 @@ func _process(delta: float) -> void:
 	for side: int in 2:
 		var sprite: Sprite2D = _sprites[side]
 		var closed: float = _ease(charges[side])
-		sprite.frame = clampi(
-			int(round(lerpf(closed, float(FRAMES - 1), join_eased))), 0, FRAMES - 1
-		)
+		sprite.frame = clampi(roundi(lerpf(closed, float(FRAMES - 1), join_eased)), 0, FRAMES - 1)
 		var pos: Vector2 = _hand_pos(side)
 		if side == 1:
 			pos.x = screen_w - FRAME_SIZE.x - pos.x

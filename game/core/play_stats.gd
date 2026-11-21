@@ -33,5 +33,5 @@ func load_dict(data: Dictionary) -> void:
 	counts.clear()
 	var saved: Dictionary = data.get("counts", {})
 	for key: Variant in saved:
-		counts[StringName(str(key))] = maxi(int(saved[key]), 0)
-	play_time = maxf(float(data.get("play_time", 0.0)), 0.0)
+		counts[StringName(str(key))] = maxi(VariantCast.to_int(saved[key]), 0)
+	play_time = maxf(VariantCast.to_float(data.get("play_time", 0.0)), 0.0)

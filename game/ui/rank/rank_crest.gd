@@ -133,6 +133,7 @@ static func texture(rank: int) -> ImageTexture:
 				# Campo con un brillo arriba a la izquierda (la luz del juego viene de ahí).
 				var lit: bool = x + y < 12
 				img.set_pixel(x, y, field.lightened(0.08) if lit else field)
+	@warning_ignore("integer_division")
 	var first_row: int = clampi(def.emblem, 0, EMBLEMS.size() / EMBLEM_ROWS - 1) * EMBLEM_ROWS
 	for y: int in EMBLEM_ROWS:
 		var row: String = EMBLEMS[first_row + y]

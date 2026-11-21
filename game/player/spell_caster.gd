@@ -685,12 +685,14 @@ func _update_combine(delta: float) -> void:
 		# Hechizos del cielo: los círculos se abren siempre, encima del blanco y mirando hacia
 		# abajo (uno más por nivel desde el 6). Con la carga, el cielo retumba.
 		var aim: Dictionary = _aim()
+		var aim_at: Vector3 = aim["position"]
+		var aim_normal: Vector3 = aim["normal"]
 		_circles.charging_sky(
 			k,
 			r.sky_circles + maxi(0, lvl - ElementDef.ASCENDED_LEVEL + 1),
-			aim["position"],
-			aim["normal"],
-			_delivery.sky_origin(r, aim["position"], aim["normal"]),
+			aim_at,
+			aim_normal,
+			_delivery.sky_origin(r, aim_at, aim_normal),
 			r.circle_color,
 			r.circle_hot,
 			_stages.count
@@ -708,11 +710,13 @@ func _update_combine(delta: float) -> void:
 		var arcane_n: int = (
 			3 if r.is_triple() else (maxi(r.echo_count, 2) if _is_arcane_recipe(r) else 0)
 		)
+		var hand: Vector3 = _hand_origin(BOTH_HANDS)
+		var aim_at: Vector3 = _aim()["position"]
 		_circles.charging(
 			k,
 			maxi(maxi(_stages.count, lvl - ElementDef.ASCENDED_LEVEL + 1), arcane_n),
-			_hand_origin(BOTH_HANDS),
-			_aim()["position"],
+			hand,
+			aim_at,
 			r.circle_color,
 			r.circle_hot,
 			_stages.count

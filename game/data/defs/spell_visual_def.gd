@@ -74,8 +74,10 @@ extends Resource
 @export var release_time: float = 0.32
 ## Escala que alcanzan las órbitas al estallar.
 @export var release_ring_scale: float = 2.2
+# Se llama como la función global `seed()`, pero está guardada así en todos los `.tres` de
+# hechizos y en tools/gen_spells.py: renombrarla rompería los datos.
 ## Semilla para inclinaciones y fases (dos orbes con la misma semilla son idénticos).
-@export var seed: int = 7
+@warning_ignore("shadowed_global_identifier") @export var seed: int = 7
 
 @export_group("HD")
 ## 0 = fuego (lenguas que suben), 1 = arcano (remolino).

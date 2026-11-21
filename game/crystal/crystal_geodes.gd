@@ -34,7 +34,9 @@ func check_pockets(p: Vector3, radius: float) -> void:
 		if GameState.progression.geodes.has(i):
 			continue
 		var g: Dictionary = geodes[i]
-		if (g["center"] as Vector3).distance_to(p) < float(g["radius"]) + radius * 0.6:
+		var center: Vector3 = g["center"]
+		var g_radius: float = g["radius"]
+		if center.distance_to(p) < g_radius + radius * 0.6:
 			GameState.progression.geodes[i] = 1
 			_reveal(i, true)
 
@@ -52,12 +54,11 @@ func check_hit(hit: SpellHit) -> void:
 func _reveal(i: int, announce: bool) -> void:
 	var g: Dictionary = _crystal.volume.geodes[i]
 	var r: float = g["radius"]
+	var center: Vector3 = g["center"]
 	var node := Geode.new()
 	node.name = "Geode%d" % i
 	_crystal.add_child(node)
-	node.place(
-		_crystal.to_global((g["center"] as Vector3) - Vector3(0.0, r * 0.7, 0.0)), Vector3.UP
-	)
+	node.place(_crystal.to_global(center - Vector3(0.0, r * 0.7, 0.0)), Vector3.UP)
 	node.scale = Vector3.ONE * r * 1.4
 	_nodes[i] = node
 	if not announce:
