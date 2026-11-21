@@ -256,6 +256,14 @@ godot --path game --write-movie /tmp/captura/f.png --fixed-fps 60 --quit-after 1
 - Sólo usar `_process` donde haga falta; desactivar el procesado de nodos inactivos (`set_process(false)`).
 - Usar señales y temporizadores en vez de sondear cada frame.
 - Shaders sencillos: el look pixel art no necesita efectos caros. Medir cualquier post-proceso nuevo.
+- **Nada de un `MultiMesh` que cubra todo el valle**: su caja lo abarca todo y se dibuja entero (y en cada cascada de
+  sombra) aunque no se vea. Repartir con `ChunkedMultiMesh.build` (trozos de rejilla, recorte por cámara y
+  `visibility_range_end` para lo que se encoge de lejos) y dar LOD a las mallas detalladas con
+  `ChunkedMultiMesh.with_lods`. `MeshKit.commit` ya indexa.
+- **Medir antes y después** con `tests/stress/world_bench.gd` (tiempo de frame, draw calls, objetos y triángulos,
+  también de sombra, en cinco vistas):
+  `xvfb-run godot --path game --script res://tests/stress/world_bench.gd -- --autoplay --no-cast`.
+  Con lavapipe los ms no valen como cifra absoluta, pero sí para comparar; los triángulos y draw calls son exactos.
 - Iluminación global costosa (SDFGI, VoxelGI) **desactivada** salvo que se mida y se justifique.
 - Audio con polifonía limitada por sonido (un "tink" no puede sonar 300 veces en el mismo frame).
 - **Arranque**: el título no monta el mundo 3D; `SceneFlow` carga `main.tscn` en otro hilo mientras se ve y la
@@ -321,7 +329,7 @@ godot --headless --path game --script res://tests/smoke/progression_smoke.gd
   `tests/smoke/localization_smoke.gd`, que todos los idiomas cargan, están completos y conservan los `%d`/`%s`;
   `tests/smoke/combos_smoke.gd`, que cada pareja de elementos tiene combinación y que las diez se lanzan,
   se descubren y dañan el cristal (carga la escena; ~1 min);
-  `tests/smoke/spell_levels_smoke.gd`, los niveles 6 a 10 y los círculos mágicos;
+  `tests/smoke/spell_levels_smoke.gd`, los niveles 6 a 11 (Ascensión) y los círculos mágicos;
   `tests/smoke/movement_smoke.gd`, el doble salto y la levitación (no toca la partida guardada);
   `tests/smoke/tutorial_smoke.gd`, el tutorial del principio de punta a punta (no toca la partida guardada);
   `tests/smoke/arcane_smoke.gd`, el Arcano, sus ecos, la Gravedad y la Resonancia Arcana;
@@ -329,7 +337,7 @@ godot --headless --path game --script res://tests/smoke/progression_smoke.gd
   `tests/smoke/veins_pylon_smoke.gd`, las venas, la Pureza, los hitos y el rayo del Pilón;
   `tests/smoke/charge_stages_smoke.gd`, los escalones de carga por nivel, que cada uno suena una vez y que el
   daño no baja al subir de escalón;
-  `tests/smoke/meteor_smoke.gd`, la trayectoria del meteorito (entra alto, de lado y sin atravesar el cristal);
+  `tests/smoke/meteor_smoke.gd`, la caída del meteorito (a plomo desde lo alto, aterriza en lo primero que toca);
   `tests/smoke/fireball_flight_smoke.gd`, la Bola de Fuego en vuelo (precreada, crece con el nivel, apaga su luz);
   `tests/smoke/core_tears_smoke.gd`, las Lágrimas (sólo en el Corazón, piedad, contador, nodos que cuestan Lágrimas);
   `tests/smoke/ending_smoke.gd`, el final (Núcleo expuesto e inmune, Gran Convergencia, pantalla final, guardado);

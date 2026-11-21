@@ -178,22 +178,24 @@ func deliver(recipe: SpellRecipe, hit: SpellHit, charge: float) -> void:
 				launch(projectile, hit, BOTH_HANDS)
 
 
-## Meteoro, Trueno, Glaciar: cae desde lo alto sobre el punto que miras (en diagonal, para que
-## se vea). `aim` (opcional): otro blanco, como el de un eco.
+## Meteoro, Trueno, Glaciar: cae a plomo desde lo alto sobre el punto que miras (o sobre lo que
+## haya encima, ver SkyPath). `aim` (opcional): otro blanco, como el de un eco.
 func deliver_sky(
 	recipe: SpellRecipe, hit: SpellHit, charge: float, aim: Dictionary = {}
 ) -> Vector3:
 	if aim.is_empty():
 		aim = _aim.call()
-	var target: Vector3 = aim["position"]
-	var origin: Vector3 = sky_origin(recipe, target, aim["normal"])
+	var land: Dictionary = sky_landing(recipe, aim["position"], aim["normal"])
+	var target: Vector3 = land["position"]
+	var origin: Vector3 = SkyPath.origin(target, recipe.sky_height)
 	hit.position = target
-	hit.normal = aim["normal"]
-	hit.direction = (target - origin).normalized()
+	hit.normal = land["normal"]
+	hit.direction = Vector3.DOWN
+	var collider: Object = land["collider"] if land["collider"] else aim["collider"]
 	var projectile: SparkProjectile = free_projectile(combo_projectiles)
 	if projectile:
 		projectile.orb_charge = lerpf(0.4, 1.0, charge)
-		projectile.launch(origin, target, hit, aim["collider"])
+		projectile.launch(origin, target, hit, collider)
 	var c: MotherCrystal = crystal()
 	if c and recipe.fall_sec < 0.3:
 		# El Trueno: el rayo baja ya, del cielo al blanco (violeta si es un eco).
@@ -202,16 +204,11 @@ func deliver_sky(
 	return origin
 
 
-## De dónde cae un hechizo del cielo sobre `target`: alto, sobre el blanco y a un lado, para que
-## se vea caer en diagonal (ver SkyPath); sus círculos se abren por ese camino.
-func sky_origin(recipe: SpellRecipe, target: Vector3, normal: Vector3) -> Vector3:
-	return SkyPath.origin(
-		camera.get_world_3d().direct_space_state,
-		camera.global_position,
-		target,
-		normal,
-		recipe.sky_height,
-		sky_side
+## Dónde aterriza un hechizo del cielo que cae a plomo sobre `target` (ver SkyPath.landing): sus
+## círculos se apilan en la columna de encima.
+func sky_landing(recipe: SpellRecipe, target: Vector3, normal: Vector3) -> Dictionary:
+	return SkyPath.landing(
+		camera.get_world_3d().direct_space_state, target, normal, recipe.sky_height
 	)
 
 

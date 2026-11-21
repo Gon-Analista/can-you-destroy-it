@@ -98,3 +98,4 @@ weaken_mult = 2.0
 weaken_sec = 6.0
 damage_growth = 1.065
 cooldown_growth = 0.95
+apex_damage_mult = 70.0

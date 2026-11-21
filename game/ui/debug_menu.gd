@@ -1,7 +1,7 @@
 class_name DebugMenu
 extends Control
 ## Menú de depuración (Alt+F1): un panel a la derecha, sin pausar el juego (los trucos se ven
-## en vivo detrás), con lo más útil para probar: comprarlo todo con los hechizos a nivel 10,
+## en vivo detrás), con lo más útil para probar: comprarlo todo con los hechizos a nivel 11,
 ## maná, bolsa, nivel de los hechizos, Pilón, capas y geodas del cristal, hora, velocidad del
 ## juego, FPS, modo dios, teletransportes y la partida. Arriba, datos en vivo.
 ##
@@ -25,7 +25,7 @@ const MARGIN: float = 10.0
 ## Ancho de la columna con el nombre de cada fila.
 const LABEL_W: float = 62.0
 const BUTTON_H: float = 16.0
-const MAX_LEVEL: int = 10
+const MAX_LEVEL: int = ElementDef.MAX_LEVEL
 const MANA_STEPS: PackedInt32Array = [100, 1000, 100000, 1000000]
 const MANA_NAMES: PackedStringArray = ["+100", "+1K", "+100K", "+1M"]
 const PYLON_STEPS: PackedFloat32Array = [0.25, 0.5, 0.75, 0.99]
@@ -247,15 +247,17 @@ func _build() -> void:
 	all.name = "BuyAll"
 	all.icon = _star
 	all.custom_minimum_size = Vector2(0, 20)
+	# En otros idiomas el texto es más largo que el panel: que baje de línea.
+	all.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	all.add_theme_color_override(&"font_color", GameMenu.C_GOLD_LIGHT)
-	var row: HBoxContainer = _row(box, tr("MANÁ"))
+	var row: Container = _row(box, tr("MANÁ"))
 	for i: int in MANA_STEPS.size():
 		_button(row, MANA_NAMES[i], _add_mana.bind(MANA_STEPS[i]))
 	row = _row(box, tr("BOLSA"))
 	_button(row, tr("LLENAR"), _fill_bag)
 	_button(row, tr("VACIAR"), _empty_bag)
 	_button(row, tr("+3 LÁGRIMAS"), _add_tears)
-	# Niveles 1-5 y AUTO arriba, 6-10 debajo, en la misma rejilla.
+	# Niveles 1-5 y AUTO arriba, 6-11 debajo, en la misma rejilla.
 	row = _row(box, tr("HECHIZOS"))
 	var grid := GridContainer.new()
 	grid.columns = 6
@@ -315,8 +317,10 @@ func _build() -> void:
 	_scroll.size = _holder.size - Vector2(16, 18)
 
 
-## Fila: el nombre a la izquierda y sus botones repartidos a lo ancho.
-func _row(box: VBoxContainer, text: String) -> HBoxContainer:
+## Fila: el nombre a la izquierda y sus botones repartidos a lo ancho. Los botones van en un
+## contenedor que salta de línea: si no caben (textos largos, otros idiomas) bajan a la
+## siguiente en vez de ensanchar el panel y salirse de la pantalla.
+func _row(box: VBoxContainer, text: String) -> Container:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override(&"separation", 2)
 	box.add_child(row)
@@ -326,7 +330,12 @@ func _row(box: VBoxContainer, text: String) -> HBoxContainer:
 	l.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(l)
-	return row
+	var flow := HFlowContainer.new()
+	flow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	flow.add_theme_constant_override(&"h_separation", 2)
+	flow.add_theme_constant_override(&"v_separation", 3)
+	row.add_child(flow)
+	return flow
 
 
 ## Botón de una fila (`text` ya traducido).
@@ -456,7 +465,7 @@ func _caster() -> SpellCaster:
 
 ## Compra todas las mejoras hasta su nivel máximo (pagando el maná justo, por GameState, así
 ## pasan todas sus consecuencias: elementos, familiares, telequinesis, bolsa, Santuario...),
-## descubre todas las combinaciones y pone todos los hechizos a nivel 10.
+## descubre todas las combinaciones y pone todos los hechizos a nivel 11 (la Ascensión).
 func buy_everything() -> void:
 	var prog: Progression = GameState.progression
 	# Sin tutorial ni casucha: se pasa directamente a jugar con todo.
@@ -468,7 +477,7 @@ func buy_everything() -> void:
 		hud.tutorial.skip()
 	for r: SpellRecipe in SpellCaster.RECIPES:
 		prog.discover_recipe(r.id)
-	for r: SpellRecipe in StaffCombos.TRIPLES:
+	for r: SpellRecipe in StaffCombos.triples():
 		prog.discover_recipe(r.id)
 	# Mejoras que piden el Pilón a cierta altura (el Báculo): sube hasta ahí.
 	for node: UpgradeNode in GameState.UPGRADES:
@@ -544,7 +553,7 @@ func _empty_bag() -> void:
 	_feedback(tr("BOLSA VACÍA"), TICK_SFX)
 
 
-## Todos los hechizos a nivel `level` (1..10); 0 vuelve a los niveles comprados.
+## Todos los hechizos a nivel `level` (1..11); 0 vuelve a los niveles comprados.
 func _set_spell_level(level: int) -> void:
 	if _player == null:
 		return

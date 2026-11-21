@@ -69,11 +69,21 @@ func _ready() -> void:
 	_world.add_child(_day_night)
 	var env: Environment = (_world.get_node(^"WorldEnvironment") as WorldEnvironment).environment
 	_day_night.setup(_sun, env)
+	# Luciérnagas sobre la hierba cuando cae la noche.
+	var fireflies := Fireflies.new()
+	fireflies.name = "Fireflies"
+	_world.add_child(fireflies)
 	# El valle cambia con los hitos del Pilón (faroles, estandartes; las auroras van en el cielo).
 	var milestones := ValleyMilestones.new()
 	milestones.name = "ValleyMilestones"
 	_world.add_child(milestones)
+	# Nubes 3D que rodean la punta del cristal y dan escala al cielo.
+	var clouds := CrystalClouds.new()
+	clouds.name = "CrystalClouds"
+	_world.add_child(clouds)
 	_hud.bind(_player.get_camera(), _player.get_caster())
+	# Diferido: el Santuario crea el Espejo y la Mesa de Runas después de colocarse.
+	_hud.bind_world.call_deferred(_world)
 	_ending = EndingDirector.new()
 	_ending.name = "EndingDirector"
 	_ending.setup(self, _world, _player, _hud, _day_night)
@@ -144,7 +154,7 @@ func _setup_autoplay() -> void:
 			GameState.emit_all()
 		elif a.begins_with("--hands="):
 			# --hands=0,4: elemento de cada mano (índices de SpellCaster.ELEMENTS: 0 Chispa,
-			# 1 Escarcha, 2 Rayo, 3 Tierra, 4 Arcano); despierta la Escarcha y los de las manos.
+			# 1 Escarcha, 2 Rayo, 3 Tierra, 4 Arcano, 5 Viento); despierta la Escarcha y los de las manos.
 			GameState.progression.upgrade_levels[&"awaken_frost"] = 1
 			var hs: PackedStringArray = a.get_slice("=", 1).split(",")
 			var caster: SpellCaster = _player.get_caster()
@@ -208,7 +218,7 @@ func _setup_autoplay() -> void:
 				func() -> void: Input.action_release(&"jump")
 			)
 		elif a.begins_with("--spell-level="):
-			# --spell-level=N: todos los hechizos a nivel N (1..10), con sus efectos.
+			# --spell-level=N: todos los hechizos a nivel N (1..11), con sus efectos.
 			_player.get_caster().set_debug_level(int(a.get_slice("=", 1)))
 		elif a.begins_with("--discover="):
 			# --discover=fireball,meteor: combinaciones ya descubiertas (Libro de Combinaciones).
@@ -263,7 +273,7 @@ func _setup_autoplay() -> void:
 			# --milestone=s: a los s segundos se entrega justo lo que falta para la siguiente marca.
 			get_tree().create_timer(float(a.get_slice("=", 1))).timeout.connect(_demo_next_mark)
 		elif a.begins_with("--tutorial-step="):
-			# --tutorial-step=N (con --tutorial): empieza en ese paso (4 recoger, 5 triturar...).
+			# --tutorial-step=N (con --tutorial): empieza en ese paso (5 recoger, 6 triturar...).
 			get_tree().create_timer(0.4).timeout.connect(
 				_hud.tutorial.jump_to.bind(int(a.get_slice("=", 1)))
 			)
@@ -337,6 +347,14 @@ func _setup_autoplay() -> void:
 			var at: Vector3 = WorldLayout.RUNE_TABLE + front * 3.2
 			at.y = Valley.ground_height(at.x, at.z) + 0.2
 			debug_teleport.call_deferred(at, WorldLayout.RUNE_TABLE + Vector3.UP * 1.2)
+		elif a == "--at-staff-vitrine":
+			# --at-staff-vitrine: el mago delante de la Vitrina del Báculo, mirándola.
+			var front: Vector3 = Vector3.BACK.rotated(
+				Vector3.UP, deg_to_rad(WorldLayout.STAFF_VITRINE_YAW_DEG)
+			)
+			var at: Vector3 = WorldLayout.STAFF_VITRINE + front * 3.4
+			at.y = Valley.ground_height(at.x, at.z) + 0.2
+			debug_teleport.call_deferred(at, WorldLayout.STAFF_VITRINE + Vector3.UP * 1.6)
 		elif a.begins_with("--rune-unseal"):
 			# --rune-unseal[=s]: a los s segundos (3,4) el Pilón llega al 10 % y la mesa despierta.
 			var at_s: float = float(a.get_slice("=", 1)) if a.contains("=") else 3.4
@@ -361,6 +379,9 @@ func _setup_autoplay() -> void:
 			for k: StringName in DEMO_STATS:
 				st.counts[k] = DEMO_STATS[k]
 			GameState.progression.critters_popped = 37
+		elif a.begins_with("--palette="):
+			# --palette=actual|suave|pastel: otra paleta del valle (por defecto, azulada).
+			_day_night.set_palette(StringName(a.get_slice("=", 1)))
 		elif a.begins_with("--time="):
 			_day_night.time_of_day = float(a.get_slice("=", 1))
 		elif a.begins_with("--warp="):

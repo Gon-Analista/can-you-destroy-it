@@ -227,9 +227,12 @@ func _in_game() -> void:
 		await process_frame
 	var vals: Array = screen.get(&"_vals")
 	_check(String((vals[6] as Label).text) == "x14", "el espejo enseña la mejor racha")
+	# 28 con el báculo (23 parejas y reacciones + 5 triples); sin él, sólo las parejas.
+	var staff_on: bool = bool((load("res://spells/staff_combos.gd") as Script).get(&"ENABLED"))
+	var total: int = 28 if staff_on else 23
 	_check(
-		String((vals[1] as Label).text).ends_with("/ 22"),
-		"combinaciones x / total (parejas y triples)"
+		String((vals[1] as Label).text).ends_with("/ %d" % total),
+		"combinaciones x / total (parejas y, con báculo, triples)"
 	)
 	_check(String((vals[10] as Label).text) == "9", "el espejo enseña los bichos reventados")
 	_check(String((vals[0] as Label).text).contains("min"), "tiempo jugado en el espejo")

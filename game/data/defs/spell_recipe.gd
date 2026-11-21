@@ -111,6 +111,10 @@ enum Delivery { FRONT, SKY, RAIN, LANCE, BEAM, GROUND, MAGNET, GRAVITY, RESONANC
 @export var charge_sec: float = 0.7
 ## Potencia si se suelta nada más juntar las manos (con carga completa es 1).
 @export_range(0.0, 1.0) var min_power: float = 0.5
+## Cuánto premia cargarlo a tope (`BalanceConfig.full_charge_bonus_by_level`): 1 = se carga (cada
+## círculo multiplica el daño, a nivel 11 hasta x6); 0 = de toque (sale casi entero sin cargar y
+## cargarlo no da más que la potencia de siempre). Ver `ChargeStages.bonus`.
+@export_range(0.0, 1.0) var charge_payoff: float = 1.0
 ## Enfriamiento de las dos manos tras lanzar la combinación (s).
 @export var cooldown_sec: float = 2.0
 
@@ -130,10 +134,18 @@ enum Delivery { FRONT, SKY, RAIN, LANCE, BEAM, GROUND, MAGNET, GRAVITY, RESONANC
 
 ## Daño de la combinación según el daño de cada mano (y del báculo, en las triples) y la carga
 ## (0..1). Nunca menos de 1.
-func damage_for(left_damage: int, right_damage: int, charge: float, staff_damage: int = 0) -> int:
-	var power: float = lerpf(min_power, 1.0, clampf(charge, 0.0, 1.0))
+## `bonus`: el premio de la carga (`ChargeStages.bonus`, 1 = ninguno).
+func damage_for(
+	left_damage: int, right_damage: int, charge: float, staff_damage: int = 0, bonus: float = 1.0
+) -> int:
+	var power: float = lerpf(min_power, 1.0, clampf(charge, 0.0, 1.0)) * maxf(bonus, 1.0)
 	var total: int = left_damage + right_damage + (staff_damage if is_triple() else 0)
 	return maxi(1, roundi(float(total) * damage_multiplier * power))
+
+
+## True si sale mejor de toque que cargado (lo dice el Libro de Combinaciones).
+func is_tap_spell() -> bool:
+	return charge_payoff < 0.5 and min_power >= 0.75
 
 
 ## Combinación triple: dos manos y el báculo.

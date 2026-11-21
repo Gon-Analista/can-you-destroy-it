@@ -69,6 +69,8 @@ signal shard_sent_to_pylon(type: ShardType)
 signal grimoire_requested(at_sanctum: bool)
 ## Abrir las estadísticas del Espejo del Archimago (F junto al espejo).
 signal mirror_requested
+## Abrir el Grimorio por una página (id del elemento de `Grimoire.PAGES`): la Vitrina del Báculo.
+signal grimoire_page_requested(page_id: StringName)
 ## Abrir la Mesa de Runas (F junto a la mesa, ya abierta al 10 % del Pilón).
 signal rune_table_requested
 ## Se inscribió o se borró una runa, o se compró un nivel o una ranura (manos, mesa, HUD).

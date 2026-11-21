@@ -195,7 +195,9 @@ func _format(i: int, v: float) -> String:
 			var s: int = floori(v)
 			return "%d:%02d:%02d" % [s / 3600, (s / 60) % 60, s % 60]
 		2:
-			return "%d / %d" % [roundi(v), SpellCaster.RECIPES.size() + StaffCombos.TRIPLES.size()]
+			return (
+				"%d / %d" % [roundi(v), SpellCaster.RECIPES.size() + StaffCombos.triples().size()]
+			)
 	return Hud.format_int(roundi(v))
 
 

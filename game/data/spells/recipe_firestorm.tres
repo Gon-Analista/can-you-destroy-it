@@ -1,0 +1,76 @@
+[gd_resource type="Resource" script_class="SpellRecipe" format=3]
+
+[ext_resource type="Script" path="res://data/defs/spell_recipe.gd" id="main"]
+[ext_resource type="Script" path="res://data/defs/spell_tier.gd" id="tier"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_spell_combine_01.ogg" id="combine"]
+[ext_resource type="Resource" path="res://data/spells/vfx_firestorm.tres" id="vis"]
+[ext_resource type="AudioStream" path="res://audio/sfx/amb_wind_charge_loop.ogg" id="loop"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_fireball_charge_loop.ogg" id="flight"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_tornado_01.ogg" id="sfx_tornado_01"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_wind_impact_01.ogg" id="sfx_wind_impact_01"]
+
+[sub_resource type="Gradient" id="ramp"]
+offsets = PackedFloat32Array(0, 0.2, 0.45, 0.72, 1)
+colors = PackedColorArray(2.7, 2.3, 1.6, 1, 2.2, 1.2, 0.4, 1, 1.5, 0.55, 0.12, 1, 0.8, 0.22, 0.06, 1, 0.3, 0.08, 0.04, 1)
+
+[sub_resource type="Resource" id="t"]
+script = ExtResource("tier")
+damage = 6
+speed = 26.0
+wobble = 0.05
+shards_min = 2
+shards_max = 4
+shard_scale = 1.2
+impact_particles = 70
+light_energy = 3.5
+crack_radius = 2.2
+shake = 0.35
+orb_scale = 9.0
+trail_width = 1.2
+trail_length = 0.45
+trail_smoke = 0.6
+color_core = Color(1, 0.95, 0.75, 1)
+color_glow = Color(1, 0.5, 0.15, 1)
+impact_tint = Color(1, 0.7, 0.35, 1)
+size = 0.5
+cooldown_sec = 3.2
+visual = ExtResource("vis")
+trail_ramp = SubResource("ramp")
+flight_sfx = ExtResource("flight")
+
+[resource]
+script = ExtResource("main")
+id = &"firestorm"
+display_name = "Torbellino de Fuego"
+elements = Array[StringName]([&"wind", &"spark"])
+description = "El viento aviva la chispa: un remolino de llamas que estalla en una zona ancha y la deja ardiendo."
+riddle = "Sopla sobre una chispa y verás qué le pasa."
+delivery = 0
+damage_multiplier = 6.6
+area_radius = 4.5
+area_hits = 7
+burn_sec = 4.0
+burn_damage = 2
+burn_tick_sec = 0.4
+sky_height = 40.0
+fall_sec = 1.0
+sky_circles = 3
+rain_count = 0
+rain_radius = 4.0
+pierce_depth = 0.0
+freeze_trail = false
+chain_count = 0
+beam_sec = 0.0
+shard_bonus = 0
+circle_color = Color(1.6, 1, 0.4, 1)
+circle_hot = Color(1.9, 1.6, 1, 1)
+charge_sec = 1.0
+min_power = 0.4
+charge_payoff = 1.0
+cooldown_sec = 3.2
+tier = SubResource("t")
+visual = ExtResource("vis")
+combine_sfx = ExtResource("combine")
+charge_loop_sfx = ExtResource("loop")
+cast_sfx = Array[AudioStream]([ExtResource("sfx_tornado_01")])
+impact_sfx = Array[AudioStream]([ExtResource("sfx_wind_impact_01")])

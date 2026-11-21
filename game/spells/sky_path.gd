@@ -1,47 +1,41 @@
 class_name SkyPath
 extends RefCounted
-## De dónde cae un hechizo del cielo (Meteoro, Trueno) para que se lea como algo que cae: alto,
-## por encima del blanco y algo a un lado, de modo que cruza la pantalla en diagonal de arriba
-## abajo. Antes nacía casi encima del mago: se veía desde debajo, alejándose, y parecía una bola
-## de fuego lanzada desde el suelo.
-## Prueba varios puntos y se queda con el primero cuyo camino hasta el blanco no atraviese el
-## cristal (ni el suelo): primero desde detrás del blanco (cae del cielo que hay sobre el
-## cristal), luego de lado y, por último, desde el lado del mago.
+## De dónde cae un hechizo del cielo (Meteoro, Trueno) y dónde aterriza: a plomo, desde muy alto
+## justo encima del blanco. Sus círculos se apilan en horizontal a lo largo de esa columna (ver
+## `MagicCircles.charging_sky`), así se lee como algo que baja del cielo y no como una bola lanzada
+## de lado.
+## Si encima del blanco hay cristal (una punta que sobresale), lo que cae a plomo se para en lo
+## primero que toca: el hechizo aterriza ahí (`landing`).
 
 const MASK: int = 1 | (1 << 1)
-## Puntos que prueba: detrás del blanco, de lado y del lado del mago.
-const CANDIDATES: int = 3
+## Margen (m) para no tomar como obstáculo la propia superficie del blanco.
+const SURFACE_SLACK: float = 0.6
 
 
-## `side` (+1 o -1) elige el lado por el que entra; `normal`, la de la superficie del blanco.
-static func origin(
-	space: PhysicsDirectSpaceState3D,
-	cam_pos: Vector3,
-	target: Vector3,
-	normal: Vector3,
-	height: float,
-	side: float
-) -> Vector3:
-	var flat: Vector3 = target - cam_pos
-	flat.y = 0.0
-	var fwd: Vector3 = flat.normalized() if flat.length() > 0.5 else Vector3.FORWARD
-	var right: Vector3 = fwd.cross(Vector3.UP).normalized() * side
-	var up := Vector3.UP * height
-	var dist: float = flat.length()
-	var start: Vector3 = target + (normal if normal.length_squared() > 0.01 else Vector3.UP) * 1.5
-	# Sin arrays: se llama en cada frame mientras se carga (los círculos siguen el camino).
-	for i: int in CANDIDATES:
-		var c: Vector3 = target + up + right * height * (0.5 if i == 1 else 0.4)
-		if i == 0:
-			c += fwd * height * 0.3
-		elif i == 2:
-			c -= fwd * minf(height * 0.25, dist * 0.5)
-		# El último se usa aunque choque (o si no hay física para comprobarlo).
-		if i == CANDIDATES - 1:
-			return c
-		if (
-			space
-			and space.intersect_ray(PhysicsRayQueryParameters3D.create(start, c, MASK)).is_empty()
-		):
-			return c
-	return target + up
+## Origen a `height` m sobre el blanco, a plomo.
+static func origin(target: Vector3, height: float) -> Vector3:
+	return target + Vector3.UP * height
+
+
+## Dónde aterriza lo que cae a plomo sobre `target` (normal `normal`) desde `height` m: el blanco
+## o lo primero que haya en la columna. Devuelve {"position", "normal", "collider"} (el
+## colisionador sólo si cambió; si no, null).
+static func landing(
+	space: PhysicsDirectSpaceState3D, target: Vector3, normal: Vector3, height: float
+) -> Dictionary:
+	var out: Dictionary = {"position": target, "normal": normal, "collider": null}
+	if space == null:
+		return out
+	var from: Vector3 = origin(target, height)
+	var hit: Dictionary = space.intersect_ray(
+		PhysicsRayQueryParameters3D.create(from, target, MASK)
+	)
+	if hit.is_empty():
+		return out
+	var p: Vector3 = hit["position"]
+	if p.distance_to(target) <= SURFACE_SLACK:
+		return out
+	out["position"] = p
+	out["normal"] = hit["normal"]
+	out["collider"] = hit["collider"]
+	return out

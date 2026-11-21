@@ -1,0 +1,74 @@
+[gd_resource type="Resource" script_class="SpellRecipe" format=3]
+
+[ext_resource type="Script" path="res://data/defs/spell_recipe.gd" id="main"]
+[ext_resource type="Script" path="res://data/defs/spell_tier.gd" id="tier"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_spell_combine_01.ogg" id="combine"]
+[ext_resource type="Resource" path="res://data/spells/vfx_blizzard.tres" id="vis"]
+[ext_resource type="AudioStream" path="res://audio/sfx/amb_wind_charge_loop.ogg" id="loop"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_wind_cast_02.ogg" id="sfx_wind_cast_02"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_frost_impact_01.ogg" id="sfx_frost_impact_01"]
+[ext_resource type="AudioStream" path="res://audio/sfx/sfx_frost_impact_02.ogg" id="sfx_frost_impact_02"]
+
+[sub_resource type="Gradient" id="ramp"]
+offsets = PackedFloat32Array(0, 0.2, 0.45, 0.72, 1)
+colors = PackedColorArray(2.6, 2.8, 3, 1, 1.7, 2.2, 2.6, 1, 1, 1.6, 2.2, 1, 0.5, 0.9, 1.5, 1, 0.15, 0.3, 0.6, 1)
+
+[sub_resource type="Resource" id="t"]
+script = ExtResource("tier")
+damage = 2
+speed = 50.0
+wobble = 0.0
+shards_min = 1
+shards_max = 1
+impact_particles = 18
+light_energy = 2.0
+crack_radius = 0.8
+shake = 0.06
+orb_scale = 3.5
+trail_width = 0.25
+trail_length = 0.25
+color_core = Color(0.95, 1, 1, 1)
+color_glow = Color(0.6, 0.85, 1, 1)
+impact_tint = Color(0.85, 0.95, 1, 1)
+size = 0.5
+cooldown_sec = 3.2
+visual = ExtResource("vis")
+trail_ramp = SubResource("ramp")
+flight_sfx = ExtResource("loop")
+
+[resource]
+script = ExtResource("main")
+id = &"blizzard"
+display_name = "Ventisca"
+elements = Array[StringName]([&"wind", &"frost"])
+description = "Un círculo en el cielo y una ventisca de esquirlas de hielo que barre toda la zona y la congela."
+riddle = "El frío quieto corta. El frío que sopla... cubre todo."
+delivery = 2
+damage_multiplier = 7.4
+area_radius = 0.0
+area_hits = 0
+burn_sec = 0.0
+burn_damage = 2
+burn_tick_sec = 0.4
+sky_height = 28.0
+fall_sec = 1.0
+sky_circles = 2
+rain_count = 18
+rain_radius = 6.5
+pierce_depth = 0.0
+freeze_trail = true
+chain_count = 0
+beam_sec = 0.0
+shard_bonus = 0
+circle_color = Color(0.8, 1.2, 1.6, 1)
+circle_hot = Color(1.5, 1.7, 1.9, 1)
+charge_sec = 1.0
+min_power = 0.4
+charge_payoff = 1.0
+cooldown_sec = 3.2
+tier = SubResource("t")
+visual = ExtResource("vis")
+combine_sfx = ExtResource("combine")
+charge_loop_sfx = ExtResource("loop")
+cast_sfx = Array[AudioStream]([ExtResource("sfx_wind_cast_02")])
+impact_sfx = Array[AudioStream]([ExtResource("sfx_frost_impact_01"), ExtResource("sfx_frost_impact_02")])

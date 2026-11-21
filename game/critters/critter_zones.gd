@@ -35,6 +35,9 @@ static func is_free(x: float, z: float, margin: float) -> bool:
 		return false
 	if p.distance_to(Vector2(WorldLayout.RUNE_TABLE.x, WorldLayout.RUNE_TABLE.z)) < 2.2 + margin:
 		return false
+	var vitrine := Vector2(WorldLayout.STAFF_VITRINE.x, WorldLayout.STAFF_VITRINE.z)
+	if p.distance_to(vitrine) < 2.0 + margin:
+		return false
 	if (
 		p.distance_to(Vector2(WorldLayout.FAMILIAR_NEST.x, WorldLayout.FAMILIAR_NEST.z))
 		< 2.6 + margin

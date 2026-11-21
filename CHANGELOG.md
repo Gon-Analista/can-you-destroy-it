@@ -27,6 +27,182 @@ cargue menos cosas")
   quita HUD y manos; `--warp` respeta la altura del suelo.
 - Prueba nueva: `boot_smoke` (título → carga → juego → pausa → título → otra partida).
 - `tools/gd_warnings.py`: lista los avisos de GDScript del Depurador del editor (vía su LSP).
+## 2026-11-20 · Paleta azulada, niebla lejana y luciérnagas
+
+**Qué hay nuevo**
+
+- **Paleta "azulada" por defecto** (`world/valley_palette.gd`): la luz de la noche llevada al día para que
+  no canse la vista. Verdes más hondos y algo azulados, camino menos naranja, sombras azul pizarra, sol crema
+  más suave y cielo azul profundo. Se hace con una LUT 3D generada en código (`adjustment_color_correction`),
+  fotogramas de día propios en `DayNight` y el ajuste del entorno; no se tocó ningún asset.
+  `--palette=actual|suave|pastel` deja probar la original y las otras dos candidatas.
+- **Niebla lejana** (perspectiva atmosférica): empieza a 35 m y se funde hacia los 330 m con el color de la
+  hora. El fondo (bosque lejano, montañas, castillo) se calma y lo cercano queda nítido.
+- **Luciérnagas** (`world/fireflies.gd`): de noche, puntitos amarillo verdoso que flotan sobre la hierba
+  alrededor del mago y parpadean. Píxeles sólidos con HDR para el halo.
+- `tests/tools/palette_shots.gd`: capturas por paleta, hora y vista para comparar.
+
+**Cómo se probó**: Godot 4.7 con lavapipe, capturas de día, atardecer y noche desde el claro, el cristal, el
+castillo, el bosque y el valle. `ending_smoke` y `veins_pylon_smoke` pasan; `gdlint` limpio.
+
+**Capturas (antes | después)**: `docs/capturas/paleta_azulada_niebla.png`, `docs/capturas/noche_luciernagas.png`.
+
+## 2026-11-20 · Hechizos: Viento, nivel 11, cargas que valen la pena y círculos que se ven
+
+**Qué hay nuevo**
+
+- **Viento**, sexto elemento (página propia en el Grimorio, se abre con el Pilón al 35 %): rápido y ligero, y cada
+  golpe barre hacia la mano los fragmentos del suelo cerca del impacto. Seis combinaciones nuevas, en su pestaña
+  VIENTO del Libro: **Tornado** (perfora), **Torbellino de Fuego** (estalla y quema), **Ventisca** (lluvia de hielo),
+  **Tempestad** (lluvia de rayos, de toque), **Tormenta de Arena** (haz que lija) y **Eco del Viento**. Sonidos
+  nuevos con `tools/sfx_wind.py`.
+- **Cada elemento con su forma**, no sólo su color (`hd_fire.gdshader`, `style`): la Tierra es una roca que rueda
+  con vetas doradas (antes, fuego marrón), la Escarcha un cristal facetado con copo, el Rayo arcos quebrados que
+  saltan y el Viento medialunas de aire que giran. Laboratorio para compararlos: `tests/vfx_gallery/element_lab.tscn`.
+- **Nivel 11 (Ascensión)** en cada Potencia: se abre con el cristal destruido al 80 % y cuesta 100 k de maná.
+  Golpea unas 70 veces más que el nivel 10 y su carga completa multiplica x10. Con todo al máximo, de 3 a 5 golpes
+  cargados de las mejores combinaciones (Terremoto, Lluvia de Estalactitas, Tormenta de Arena, Tornado, Ventisca,
+  Torbellino, Meteoro, Eco de Fuego) rompen el cristal.
+- **Cargar vale la pena**: el premio de carga completa sube con el nivel (`full_charge_bonus_by_level`) y el daño
+  se reparte por círculos. Sólo algunos hechizos se tiran mejor de toque (Lanza de Hielo, Haz de Plasma, Lanza
+  Cargada, Eco de Hielo, Tempestad y las de utilidad): sueltos sin cargar ya hacen casi todo su daño.
+- **Círculos en primera persona**: salen de las manos y se colocan delante, separados y cada vez más lejos; al
+  soltar vuelan hacia delante en vez de amontonarse en la mano.
+- **Lo que cae del cielo cae a plomo** (Meteoro, Trueno, Glaciar, lluvias): sus círculos son anillos horizontales
+  apilados encima del blanco, y si hay una punta de cristal en medio, el hechizo aterriza ahí.
+- **Réplicas** (`CrystalAftershocks`): un golpe que pediría un cráter de más de 14 m se queda en ese tope y el
+  resto del volumen lo excavan réplicas alrededor, una por fotograma.
+
+**Balance** (`tools/balance_sim.py`, ya entiende niveles 11, carga y toque): normal ~138 min, eficiente ~106 min,
+todas las mejoras compradas, la Ascensión al final.
+
+**Cómo se probó**: tests de humo (nuevos casos en `progression_smoke`, `charge_stages_smoke`, `meteor_smoke`,
+`spell_levels_smoke`, `combos_smoke`), `gdlint` limpio, capturas en `docs/capturas/`.
+
+## 2026-11-20 · Rendimiento: bosque y hierba por trozos con LOD
+
+**Qué hay nuevo**
+
+- **`ChunkedMultiMesh`** (`core/chunked_multimesh.gd`): el bosque (trozos de 48 m) y la hierba y las flores
+  (24 m) ya no son un único `MultiMesh` por tipo con una caja que cubría todo el valle. La cámara y cada
+  cascada de sombra descartan los trozos que no ven; las plantas se cortan con `visibility_range_end` justo
+  donde el shader ya las había encogido a cero.
+- **LOD automático** en los cuatro árboles (`ImporterMesh.generate_lods`): de lejos usan versiones con menos
+  triángulos; el motor sólo cambia cuando la diferencia es de menos de un píxel.
+- **Mallas indexadas**: `MeshKit.commit` comparte los vértices repetidos (menos trabajo de vértices).
+- **Banco de pruebas** `tests/stress/world_bench.gd`: cinco vistas fijas con ms por frame, draw calls,
+  objetos y triángulos (también de la sombra).
+
+**Medido** (lavapipe, CPU; los ms sirven para comparar, los triángulos son exactos). Media de las cinco vistas:
+
+| | ms / frame | FPS | Triángulos en el claro | Triángulos de sombra en el claro |
+|---|---|---|---|---|
+| Antes de las texturas nuevas | 282,7 | 3,5 | 376 k | 1,51 M |
+| Con texturas nuevas, sin optimizar | 421,4 | 2,4 | 932 k | 5,07 M |
+| Con texturas nuevas y optimizado | 238,6 | 4,2 | 262 k | 0,82 M |
+
+Mirando hacia otro lado (vista "atrás") se pasa de 740 k a 45 k triángulos. Las draw calls suben algo (claro:
+298 a 413), lejos del límite de 1.500.
+
+**Cómo se probó**: capturas de las cuatro vistas comparadas píxel a píxel con las de antes de optimizar: las
+siluetas son las mismas; sólo cambian puntitos sueltos del dibujo de las hojas en árboles lejanos (~1 % de la
+imagen). Tests de humo que pasaban siguen pasando; `gdlint` limpio.
+
+**Scripts**: perfilados en headless desactivando nodos uno a uno; con el ruido de la máquina de pruebas no
+salió ningún punto caliente claro, así que no se tocaron.
+
+## 2026-11-20 · Texturas pixel art en el paisaje, árboles redondos y formas sin pinchos
+
+**Qué hay nuevo**
+
+- **Textura pixel art procedural** (`world/terrain.gdshader`): el suelo, los caminos, las rocas, las montañas y
+  los árboles dejan de ser colores planos. Cada malla elige su dibujo con el alfa del color de vértice
+  (`MeshKit.tag`): hierba (manchas tramadas, matas y florecillas; roca en cuestas fuertes), tierra (vetas y
+  guijarros), roca (estratos y grietas), roca con nieve (borde tramado a la altura de cada montaña), hojas y
+  corteza. Los texeles van en una rejilla del mundo (14 por metro) y se doblan con la distancia para no bajar
+  nunca de un píxel: sin parpadeo ni texturas borrosas. Las bandas de luz se tramean (Bayer 4x4).
+- **Árboles nuevos** (`Valley._build_pine_mesh`, `_build_broadleaf_mesh`): dos abetos de pisos redondeados
+  con el borde ondulado y la punta roma, y dos árboles de copa redonda (varias bolas blandas). Normales
+  suaves, color por instancia para que no haya dos iguales. Copas redondas sobre todo en el linde del claro.
+- **Formas más suaves**: suelo, montañas (cima redondeada) y colina del castillo con normales suaves en vez
+  de facetas; rocas como cantos rodados (`MeshKit.add_blob`); setas con sombrero en cúpula; hierba de hojas
+  anchas y punta roma; losas y tocones con más lados.
+- `MeshKit`: `add_tri_smooth`, `add_grid` (rejilla con normales suaves) y `add_blob`.
+
+**Cómo se probó**: Godot 4.7 con Vulkan por software (lavapipe) y `--autoplay`, capturas desde el claro, el
+bosque y hacia el castillo. Tests de humo: los mismos que ya fallaban en la rama base (cierre con
+`double free` en headless) y ninguno nuevo; `grimoire_click_smoke` pasa con ventana. `gdlint` limpio.
+
+**Capturas (antes | después)**: `docs/capturas/texturas_arboles_front.png`, `..._forest.png`,
+`..._castle.png`, `..._side.png`.
+
+**Pendiente**: el Cristal Madre y los cristales que brotan del suelo siguen siendo facetados a propósito. El
+bosque tiene unas 10 veces más triángulos que antes (~400 k); la pasada de rendimiento va aparte.
+
+## 2026-11-19 · Pulido del mundo: cristal más grande, nubes, nombres de las estaciones; báculo apagado
+
+**Qué hay nuevo**
+
+- **Cristal Madre un 25 % más grande en todo** (`tools/crystal_volume.py`, `S` 2,125): ~135 m de alto y ~95 m
+  de base. Capas, Núcleo y geodas crecen igual. La esencia por golpe no cambia (manda el daño; los cráteres se
+  ven algo mayores). `WorldLayout`: huella 50 m y Pilón, Santuario, Espejo, Mesa de Runas y Jaula alejados en
+  proporción; la casucha se queda donde estaba. Las partidas guardadas con el cristal excavado lo recuperan entero.
+- **Sin "dientes" en el cristal**: la normal de cada triángulo sale del gradiente del campo (no de su geometría)
+  y el shader ya no varía el tono por la normal cuantizada. Las caras planas se ven limpias.
+- **Nubes 3D** (`world/crystal_clouds.gd`, `world/cloud.gdshader`): siete abrazan la punta del cristal y once
+  forman un techo lejano. Sin luz del motor, con la paleta de las nubes del cielo y teñidas por la hora del día;
+  giran muy despacio alrededor del cristal.
+- **Nombres de las estaciones** (`ui/guide/station_labels.gd`): al acercarse (30 a 6 m) se lee qué es cada
+  cosa (Pilón, Trituradora, Santuario, Mesa de Runas, Espejo, Vitrina, Jaula). Debajo, para qué sirve, sólo en
+  la más cercana a la mira y hasta que se usa una vez. Si se pisan, las lejanas suben.
+- **El báculo, apagado por ahora** (`StaffCombos.ENABLED = false`): en las pruebas confundía, así que el
+  juego queda sólo con la magia de las manos. Sin mejoras del báculo (`staff`, `staff_power`, `staff_focus`
+  fuera de `GameState.UPGRADES`), sin su página en el Grimorio, sin triples en el Libro (sólo PAREJAS), sin R
+  ni rueda para la gema y sin vitrina. Una partida guardada que ya lo tenía comprado no lo enseña (el maná
+  gastado no se devuelve). El Espejo y la pantalla final cuentan 17 combinaciones en vez de 22. Todo el código
+  sigue ahí: para volver, `ENABLED = true` y devolver las tres mejoras y la página. El simulador
+  (`tools/balance_sim.py`, que lee el interruptor) termina la partida igual: ~1 h 51 el jugador eficiente.
+- **Vitrina del Báculo** (`sanctum/staff_vitrine.gd`, GDD 4.3; no se construye con el báculo apagado): una urna de cristal con marco de oro junto al
+  final del camino del Santuario. Dentro flota el báculo: gris y con candado hasta comprarlo; luego se enciende
+  con un destello y su gema toma el color del elemento que lleva. Con F se abre el Grimorio directamente por la
+  constelación del Báculo (y se puede comprar ahí). Tiene nombre y línea de ayuda como las demás estaciones.
+  Para capturas: `--at-staff-vitrine`.
+- **Hierba y flores de lejos**: se encogen entre 16 y 40 m de la cámara (`shrink_far` en `fx/toon.gdshader`).
+  Ya no se ven palitos negros por todo el valle.
+- **Faroles**: los postes ya no proyectan sombra (con el sol bajo dejaban rayas larguísimas).
+- **Tutorial**: el primer paso al salir de la casucha es "Acércate al cristal" (`Tutorial.Step.APPROACH`).
+  Lanzar antes de llegar también vale.
+- **Círculos de la carga**: sólo el primero lleva el dibujo entero; los demás son aros huecos y más separados.
+  Ya no se amontonan.
+- **Menú de depuración**: los botones bajan de línea si no caben; el panel ya no se sale de la pantalla.
+
+**Cómo se probó**
+
+- Pruebas en headless: todas en verde salvo `grimoire_click_smoke`, que ya fallaba antes ("clic en INSCRIBIR
+  compra"). `staff_smoke` apunta ahora por encima de la puntita del pie del cristal, que con el tamaño nuevo
+  llega casi al cruce de caminos; con el báculo apagado comprueba que no queda rastro de él (mejoras,
+  página, vitrina, R, triples). `ranks_smoke` cuenta 17 combinaciones sin báculo. `milestones_smoke` cuenta
+  los fragmentos del Vórtice alrededor del mago (contaba los de todo el valle y fallaba según el ritmo).
+  Varias pruebas abortan al salir ("corrupted size vs. prev_size"); también pasa sin estos cambios.
+- Capturas a 1280x720 de día, al atardecer y de noche:
+  [nubes en la punta](docs/capturas/nubes_punta_cristal.png), [cristal grande](docs/capturas/cristal_grande.png),
+  [nombres de las estaciones](docs/capturas/estaciones_nombres.png),
+  [tutorial](docs/capturas/tutorial_acercate.png), [círculos de carga](docs/capturas/circulos_carga_aros.png),
+  [menú de depuración](docs/capturas/menu_depuracion_cabe.png),
+  [Vitrina del Báculo desde el camino](docs/capturas/vitrina_baculo_camino.png),
+  [vitrina sin báculo](docs/capturas/vitrina_baculo_apagada.png),
+  [vitrina con báculo](docs/capturas/vitrina_baculo_encendida.png),
+  [hierba sin palitos](docs/capturas/hierba_lejos.png), [faroles sin rayas](docs/capturas/faroles_sin_sombra.png).
+
+**Pendientes y problemas conocidos**
+
+- Justo al empezar (unos 5 s) se ven restos de los efectos que precalienta la pantalla de carga delante del
+  cristal (bolas de luz, algún trozo de cristal en el aire, un brillo fuerte del sol); el título los tapa en una
+  partida normal y a los 15 o 20 s ya no queda nada.
+- La rejilla del cristal pasa de 3,8 a 8,4 millones de puntos (~67 MB): vigilar la carga y los tirones al excavar
+  en Steam Deck.
+- Sigue pendiente que los trozos de cristal que quedan sueltos al excavar caigan.
+- `runes_smoke` falló una vez ("rebota y vuelve a golpear") con cuatro pruebas a la vez; sola pasa.
 
 ## 2026-11-19 · Mesa de Runas y los tres nodos hito del Grimorio
 

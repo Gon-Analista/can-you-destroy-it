@@ -30,9 +30,10 @@ const PAGES: Array[Array] = [
 	[&"spark", "CHISPA", "#ff9a3a", "#3a1840", "#26102e", 0.0],
 	[&"frost", "ESCARCHA", "#a5dae5", "#14305a", "#0d2042", 0.1],
 	[&"bolt", "RAYO", "#ffe66b", "#2a2450", "#1b1838", 0.25],
+	[&"wind", "VIENTO", "#9ff0d0", "#163a3a", "#0e2828", 0.35],
 	[&"earth", "TIERRA", "#c9a26b", "#2e2a24", "#1f1c18", 0.5],
 	[&"arcane", "ARCANO", "#c79bff", "#24164a", "#170e33", 0.75],
-	[&"staff", "BÁCULO", "#ffc46b", "#2b2140", "#1c152c", 0.1],
+	# [&"staff", "BÁCULO", ...]: apagada con el báculo (StaffCombos.ENABLED).
 	[CORE_PAGE, "NÚCLEO", "#ff7ad9", "#1e0c33", "#12061f", 0.8],
 ]
 # i18n
@@ -41,9 +42,9 @@ const PAGE_TITLES: PackedStringArray = [
 	"CONSTELACIÓN DE LA CHISPA",
 	"CONSTELACIÓN DE LA ESCARCHA",
 	"CONSTELACIÓN DEL RAYO",
+	"CONSTELACIÓN DEL VIENTO",
 	"CONSTELACIÓN DE LA TIERRA",
 	"CONSTELACIÓN DEL ARCANO",
-	"CONSTELACIÓN DEL BÁCULO",
 	"CONSTELACIÓN DEL NÚCLEO",
 ]
 const TAB_W: int = 26
@@ -148,6 +149,7 @@ func _ready() -> void:
 	_mana = _label("", SMALL, C_GOLD_LIGHT, Rect2(rx + 106, ry - 11, 120, LINE), 2, true)
 	_footer = _label(_footer_text(), SMALL, C_CYAN, Rect2(10, 329, 620, LINE), 1, true)
 	Events.grimoire_requested.connect(open)
+	Events.grimoire_page_requested.connect(open_at)
 	Events.mana_changed.connect(func(_m: int) -> void: _refresh())
 	Events.tears_changed.connect(func(_n: int) -> void: _refresh())
 	Events.locale_changed.connect(func() -> void: _footer.text = _footer_text())
@@ -181,6 +183,19 @@ func open(at_sanctum: bool) -> void:
 	Events.grimoire_opened.emit()
 	_refresh()
 	set_process(true)
+
+
+## Abre el libro (para comprar) directamente por la página `page_id` (la Vitrina del Báculo).
+func open_at(page_id: StringName) -> void:
+	open(true)
+	for i: int in PAGES.size():
+		if PAGES[i][0] == page_id and i != _page:
+			_page = i
+			var nodes: Array[int] = _page_nodes()
+			if not nodes.is_empty():
+				_selected = nodes[0]
+			_refresh()
+			return
 
 
 func close() -> void:
@@ -444,6 +459,10 @@ func _refresh() -> void:
 			_button.text = tr("¡CONSTELACIÓN COMPLETA!")
 		&"locked":
 			_button.text = tr("NECESITA: %s") % _prereq_names(node)
+		&"apex":
+			_button.text = (
+				tr("ASCENSIÓN: CON EL CRISTAL AL %d %%") % roundi(node.apex_destroyed_ratio * 100.0)
+			)
 		&"mana":
 			_button.text = (
 				tr("TE FALTAN %s DE MANÁ") % Hud.format_int(node.cost_for_level(level) - prog.mana)

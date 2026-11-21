@@ -68,8 +68,9 @@ func _ready() -> void:
 	_glow_mat = _glow.material_override
 	_glow_mat.set_shader_parameter("color", def.light_color)
 	_glow_mat.set_shader_parameter("rays", def.glow_rays)
-	# El halo del fuego tiñe (no se suma a blanco sobre el cristal y el cielo claros).
-	_glow_mat.set_shader_parameter("cover", 0.8 if def.style == 0 else 0.0)
+	# El halo del fuego y el polvo de la roca tiñen (no se suman a blanco sobre el cristal y el
+	# cielo claros).
+	_glow_mat.set_shader_parameter("cover", 0.8 if def.style == 0 or def.style == 4 else 0.0)
 	_glow_mat.set_shader_parameter("seed", seed_f)
 	add_child(_glow)
 	_body = HdFx.quad(HdFx.FIRE_SHADER, 1.0, 5)

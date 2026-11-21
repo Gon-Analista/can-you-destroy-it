@@ -54,6 +54,7 @@ TRAE CRISTALES PARA TRITURAR,TRAE CRISTALES PARA TRITURAR,BRING CRYSTALS TO CRUS
 MESA DE RUNAS: SELLADA HASTA EL PILÓN AL %d %%,MESA DE RUNAS: SELLADA HASTA EL PILÓN AL %d %%,RUNE TABLE: SEALED UNTIL THE PYLON IS AT %d %%
 [F] MESA DE RUNAS,[F] MESA DE RUNAS,[F] RUNE TABLE
 ¡LA MESA DE RUNAS DESPIERTA! (JUNTO AL SANTUARIO),¡LA MESA DE RUNAS DESPIERTA! (JUNTO AL SANTUARIO),THE RUNE TABLE AWAKENS! (BY THE SANCTUM)
+[F] VITRINA DEL BÁCULO,[F] VITRINA DEL BÁCULO,[F] STAFF DISPLAY CASE
 NO HAY FRAGMENTOS SUELTOS EN EL VALLE,NO HAY FRAGMENTOS SUELTOS EN EL VALLE,NO LOOSE SHARDS IN THE VALLEY
 GRAVEDAD: %d FRAGMENTOS,GRAVEDAD: %d FRAGMENTOS,GRAVITY: %d SHARDS
 +%d FRAGMENTOS DEL POZO,+%d FRAGMENTOS DEL POZO,+%d SHARDS FROM THE WELL
@@ -153,6 +154,7 @@ AHORA: %s,AHORA: %s,NOW: %s
 SIGUIENTE: %s,SIGUIENTE: %s,NEXT: %s
 ¡CONSTELACIÓN COMPLETA!,¡CONSTELACIÓN COMPLETA!,CONSTELLATION COMPLETE!
 NECESITA: %s,NECESITA: %s,REQUIRES: %s
+ASCENSIÓN: CON EL CRISTAL AL %d %%,ASCENSIÓN: CON EL CRISTAL AL %d %%,ASCENSION: WITH THE CRYSTAL AT %d %%
 TE FALTAN %s DE MANÁ,TE FALTAN %s DE MANÁ,YOU NEED %s MORE MANA
 TE FALTA 1 LÁGRIMA,TE FALTA 1 LÁGRIMA,YOU NEED 1 MORE TEAR
 TE FALTAN %d LÁGRIMAS,TE FALTAN %d LÁGRIMAS,YOU NEED %d MORE TEARS
@@ -164,6 +166,7 @@ MAGO,MAGO,WIZARD
 CHISPA,CHISPA,SPARK
 ESCARCHA,ESCARCHA,FROST
 RAYO,RAYO,LIGHTNING
+VIENTO,VIENTO,WIND
 TIERRA,TIERRA,EARTH
 ARCANO,ARCANO,ARCANE
 NÚCLEO,NÚCLEO,CORE
@@ -171,9 +174,9 @@ CONSTELACIÓN DEL MAGO,CONSTELACIÓN DEL MAGO,WIZARD CONSTELLATION
 CONSTELACIÓN DE LA CHISPA,CONSTELACIÓN DE LA CHISPA,SPARK CONSTELLATION
 CONSTELACIÓN DE LA ESCARCHA,CONSTELACIÓN DE LA ESCARCHA,FROST CONSTELLATION
 CONSTELACIÓN DEL RAYO,CONSTELACIÓN DEL RAYO,LIGHTNING CONSTELLATION
+CONSTELACIÓN DEL VIENTO,CONSTELACIÓN DEL VIENTO,WIND CONSTELLATION
 CONSTELACIÓN DE LA TIERRA,CONSTELACIÓN DE LA TIERRA,EARTH CONSTELLATION
 CONSTELACIÓN DEL ARCANO,CONSTELACIÓN DEL ARCANO,ARCANE CONSTELLATION
-CONSTELACIÓN DEL BÁCULO,CONSTELACIÓN DEL BÁCULO,STAFF CONSTELLATION
 CONSTELACIÓN DEL NÚCLEO,CONSTELACIÓN DEL NÚCLEO,CORE CONSTELLATION
 PALANCA,PALANCA,LEVER
 TRITURADORA,TRITURADORA,CRUSHER
@@ -181,6 +184,14 @@ TRITURADORA,TRITURADORA,CRUSHER
 CRISTAL MADRE,CRISTAL MADRE,MOTHER CRYSTAL
 ¡LÁGRIMA!,¡LÁGRIMA!,TEAR!
 ¡EL NÚCLEO!,¡EL NÚCLEO!,THE CORE!
+JAULA DE FAMILIARES,JAULA DE FAMILIARES,FAMILIAR CAGE
+VITRINA DEL BÁCULO,VITRINA DEL BÁCULO,STAFF DISPLAY CASE
+SE LLENA CON EL MANÁ QUE TRITURAS,SE LLENA CON EL MANÁ QUE TRITURAS,FILLS UP WITH THE MANA YOU CRUSH
+ECHA LOS CRISTALES Y TIRA DE LA PALANCA,ECHA LOS CRISTALES Y TIRA DE LA PALANCA,DROP CRYSTALS IN AND PULL THE LEVER
+EL GRIMORIO: MEJORAS A CAMBIO DE MANÁ,EL GRIMORIO: MEJORAS A CAMBIO DE MANÁ,THE GRIMOIRE: UPGRADES FOR MANA
+INSCRIBE RUNAS EN TUS HECHIZOS,INSCRIBE RUNAS EN TUS HECHIZOS,INSCRIBE RUNES ON YOUR SPELLS
+TU RANGO Y TUS HAZAÑAS,TU RANGO Y TUS HAZAÑAS,YOUR RANK AND YOUR FEATS
+"LAS MEJORAS DEL BÁCULO, EN EL GRIMORIO","LAS MEJORAS DEL BÁCULO, EN EL GRIMORIO","STAFF UPGRADES, IN THE GRIMOIRE"
 ESENCIA DEL CRISTAL,ESENCIA DEL CRISTAL,CRYSTAL ESSENCE
 ESC: MENÚ Y OPCIONES,ESC: MENÚ Y OPCIONES,ESC: MENU AND OPTIONS
 ¡COMBINACIÓN NUEVA!,¡COMBINACIÓN NUEVA!,NEW COMBINATION!
@@ -348,6 +359,7 @@ LA PREGUNTA ES RETÓRICA. CREEMOS.,LA PREGUNTA ES RETÓRICA. CREEMOS.,THE QUESTI
 ...NI UN RASGUÑO.,...NI UN RASGUÑO.,...NOT EVEN A SCRATCH.
 ...TAMPOCO. QUÉ VERGÜENZA.,...TAMPOCO. QUÉ VERGÜENZA.,...NOPE. HOW EMBARRASSING.
 ¡1 DE DAÑO! ¡CAYÓ UN PEDACITO!,¡1 DE DAÑO! ¡CAYÓ UN PEDACITO!,1 DAMAGE! A TINY PIECE FELL!
+ACÉRCATE AL CRISTAL,ACÉRCATE AL CRISTAL,WALK UP TO THE CRYSTAL
 CLIC IZQUIERDO: LANZA TU MAGIA,CLIC IZQUIERDO: LANZA TU MAGIA,LEFT CLICK: CAST YOUR MAGIC
 CLIC DERECHO: TU OTRA MANO,CLIC DERECHO: TU OTRA MANO,RIGHT CLICK: YOUR OTHER HAND
 CLIC IZQUIERDO: TU OTRA MANO,CLIC IZQUIERDO: TU OTRA MANO,LEFT CLICK: YOUR OTHER HAND
@@ -356,6 +368,7 @@ RECOGE EL PEDACITO,RECOGE EL PEDACITO,PICK UP THE TINY PIECE
 LLÉVALO A LA TRITURADORA,LLÉVALO A LA TRITURADORA,TAKE IT TO THE CRUSHER
 JUNTA %d DE MANÁ  (%d / %d),JUNTA %d DE MANÁ  (%d / %d),GATHER %d MANA  (%d / %d)
 VE AL SANTUARIO,VE AL SANTUARIO,GO TO THE SANCTUM
+Sigue el camino. De cerca es aún más grande.,Sigue el camino. De cerca es aún más grande.,Follow the path. Up close it's even bigger.
 Tu mano izquierda guarda una chispa. Más o menos.,Tu mano izquierda guarda una chispa. Más o menos.,Your left hand holds a spark. Sort of.
 A lo mejor ésta tiene más ganas.,A lo mejor ésta tiene más ganas.,Maybe this one is keener.
 Mantén para cargar y suelta. Juntas son menos tímidas.,Mantén para cargar y suelta. Juntas son menos tímidas.,"Hold to charge, then release. Together they're less shy."
@@ -387,6 +400,7 @@ Escarcha,Escarcha,Frost
 Rayo,Rayo,Lightning
 Tierra,Tierra,Earth
 Arcano,Arcano,Arcane
+Viento,Viento,Wind
 Familiar hechicero,Familiar hechicero,Sorcerer familiar
 Familiar recolector,Familiar recolector,Gatherer familiar
 Aprendiz,Aprendiz,Apprentice
@@ -442,6 +456,9 @@ Fragmento,Fragmento,Shard
 fragmentos,fragmentos,shards
 Astilla,Astilla,Splinter
 astillas,astillas,splinters
+Ventisca,Ventisca,Blizzard
+Un círculo en el cielo y una ventisca de esquirlas de hielo que barre toda la zona y la congela.,Un círculo en el cielo y una ventisca de esquirlas de hielo que barre toda la zona y la congela.,A circle in the sky and a blizzard of ice shards that sweeps the whole area and freezes it.
+El frío quieto corta. El frío que sopla... cubre todo.,El frío quieto corta. El frío que sopla... cubre todo.,Still cold cuts. Cold that blows... covers everything.
 Lanza Cargada,Lanza Cargada,Charged Lance
 "Hielo cargado de rayo: perfora muy hondo, salta en chispas por el túnel y suelta fragmentos mayores.","Hielo cargado de rayo: perfora muy hondo, salta en chispas por el túnel y suelta fragmentos mayores.","Ice charged with lightning: it drills very deep, sparks jump along the tunnel and it drops bigger shards."
 "Si el hielo atraviesa, ¿qué hará con un rayo dentro?","Si el hielo atraviesa, ¿qué hará con un rayo dentro?","If ice pierces, what will it do with lightning inside?"
@@ -457,6 +474,9 @@ Una Lanza de Hielo y dos ecos que la siguen por el mismo túnel (o por el que mi
 Eco del Trueno,Eco del Trueno,Thunder Echo
 "Cae el Juicio del Trueno y el cielo lo repite: tres descargas fantasma más, cada una allí donde mires.","Cae el Juicio del Trueno y el cielo lo repite: tres descargas fantasma más, cada una allí donde mires.","The Thunder Judgment falls and the sky repeats it: three more ghostly strikes, each wherever you look."
 Dicen que un rayo nunca cae dos veces en el mismo sitio. Lo arcano no ha leído ese refrán.,Dicen que un rayo nunca cae dos veces en el mismo sitio. Lo arcano no ha leído ese refrán.,They say lightning never strikes the same place twice. The arcane hasn't heard that saying.
+Eco del Viento,Eco del Viento,Wind Echo
+"Un Tornado y dos ecos fantasma que taladran detrás de él, cada uno donde mires.","Un Tornado y dos ecos fantasma que taladran detrás de él, cada uno donde mires.","A Tornado and two ghost echoes that drill behind it, each wherever you look."
+Lo arcano repite. ¿Qué pasa si repite un remolino?,Lo arcano repite. ¿Qué pasa si repite un remolino?,The arcane repeats. What happens if it repeats a whirlwind?
 Tormenta Elemental,Tormenta Elemental,Elemental Storm
 "Triple. Una nube de tormenta se queda sobre el cristal y descarga, por turnos, rayos que saltan, granizo que congela y bolas de fuego que lo dejan ardiendo. Mientras dura, sigue lanzando.","Triple. Una nube de tormenta se queda sobre el cristal y descarga, por turnos, rayos que saltan, granizo que congela y bolas de fuego que lo dejan ardiendo. Mientras dura, sigue lanzando.","Triple. A storm cloud settles over the crystal and takes turns striking it with chaining lightning, freezing hail and fireballs that leave it burning. Keep casting while it lasts."
 "Fuego, hielo y rayo no caben en dos manos. Con un tercero, el cielo entero se enfada.","Fuego, hielo y rayo no caben en dos manos. Con un tercero, el cielo entero se enfada.","Fire, ice and lightning don't fit in two hands. With a third, the whole sky gets angry."
@@ -466,6 +486,9 @@ Piedra contra piedra hace temblar. ¿Y si en la grieta cae una chispa?,Piedra co
 Bola de Fuego,Bola de Fuego,Fireball
 Dos llamas fundidas en una bola que estalla en área y deja el cristal ardiendo. El primer hechizo de verdad.,Dos llamas fundidas en una bola que estalla en área y deja el cristal ardiendo. El primer hechizo de verdad.,Two flames fused into a ball that bursts over an area and leaves the crystal burning. Your first real spell.
 Una chispa sola es tímida. ¿Y si juntas dos y esperas?,Una chispa sola es tímida. ¿Y si juntas dos y esperas?,One spark alone is shy. What if you join two and wait?
+Torbellino de Fuego,Torbellino de Fuego,Fire Whirl
+El viento aviva la chispa: un remolino de llamas que estalla en una zona ancha y la deja ardiendo.,El viento aviva la chispa: un remolino de llamas que estalla en una zona ancha y la deja ardiendo.,The wind fans the spark: a whirl of flames that bursts over a wide area and leaves it burning.
+Sopla sobre una chispa y verás qué le pasa.,Sopla sobre una chispa y verás qué le pasa.,Blow on a spark and see what happens.
 Gravedad,Gravedad,Gravity
 Utilidad: abre un pozo de gravedad delante de ti y todos los fragmentos sueltos del valle vuelan en espiral hacia él. Lo que no quepa en la bolsa va derecho a la tolva.,Utilidad: abre un pozo de gravedad delante de ti y todos los fragmentos sueltos del valle vuelan en espiral hacia él. Lo que no quepa en la bolsa va derecho a la tolva.,Utility: opens a gravity well in front of you and every loose shard in the valley spirals into it. Whatever doesn't fit in the bag goes straight to the hopper.
 "La piedra siempre cae. Con lo arcano, cae hacia ti... desde todo el valle.","La piedra siempre cae. Con lo arcano, cae hacia ti... desde todo el valle.","Stone always falls. With the arcane, it falls toward you... from the whole valley."
@@ -484,6 +507,9 @@ El fuego que no se apaga y el rayo que no se va: mantenlos y no sueltes la mirad
 Resonancia Arcana,Resonancia Arcana,Arcane Resonance
 "El cristal entero vibra con tu golpe: saltan rayos resonantes por la superficie y, durante cinco segundos, cada golpe que des es resonante.","El cristal entero vibra con tu golpe: saltan rayos resonantes por la superficie y, durante cinco segundos, cada golpe que des es resonante.","The whole crystal hums with your hit: resonant sparks race across its surface and, for five seconds, every hit you land resonates."
 Lo puro con lo puro ni quema ni corta: hace cantar al cristal.,Lo puro con lo puro ni quema ni corta: hace cantar al cristal.,Pure with pure neither burns nor cuts: it makes the crystal sing.
+Tormenta de Arena,Tormenta de Arena,Sandstorm
+Un chorro de arena que lija el cristal mientras lo sigues con la mirilla; arranca fragmentos grandes.,Un chorro de arena que lija el cristal mientras lo sigues con la mirilla; arranca fragmentos grandes.,A jet of sand that grinds the crystal while you follow it with the crosshair; it tears off big shards.
+La piedra no vuela... salvo que la muelas en arena y soples.,La piedra no vuela... salvo que la muelas en arena y soples.,Stone doesn't fly... unless you grind it into sand and blow.
 Lluvia de Estalactitas,Lluvia de Estalactitas,Stalactite Rain
 Un círculo en el cielo y del cielo cae una lluvia de estalactitas de hielo sobre toda la zona.,Un círculo en el cielo y del cielo cae una lluvia de estalactitas de hielo sobre toda la zona.,"A circle in the sky, and from the sky a rain of ice stalactites falls over the whole area."
 "La piedra pesa, el hielo corta. Juntos, llueven.","La piedra pesa, el hielo corta. Juntos, llueven.","Stone is heavy, ice cuts. Together, they rain."
@@ -499,6 +525,9 @@ Supernova,Supernova,Supernova
 Temple,Temple,Tempering
 Reacción: la escarcha sobre cristal ardiendo lo templa de golpe y se parte en fragmentos grandes.,Reacción: la escarcha sobre cristal ardiendo lo templa de golpe y se parte en fragmentos grandes.,Reaction: frost on burning crystal tempers it at once and it splits into big shards.
 "Reacción: lo que arde, enfríalo de golpe.","Reacción: lo que arde, enfríalo de golpe.","Reaction: what burns, cool it down at once."
+Tempestad,Tempestad,Tempest
+"Una tempestad en miniatura: una lluvia de relámpagos sobre el blanco, cada uno salta a otro punto.","Una tempestad en miniatura: una lluvia de relámpagos sobre el blanco, cada uno salta a otro punto.","A tiny tempest: a rain of lightning on the target, each bolt jumping to another spot."
+"El rayo solo cae una vez. Con viento, no para de caer.","El rayo solo cae una vez. Con viento, no para de caer.","Lightning strikes only once. With wind, it never stops."
 Choque Térmico,Choque Térmico,Thermal Shock
 Fuego y hielo a la vez: el cristal se resquebraja y el siguiente golpe en esa zona hace el triple.,Fuego y hielo a la vez: el cristal se resquebraja y el siguiente golpe en esa zona hace el triple.,Fire and ice at once: the crystal cracks and the next hit on that spot deals triple damage.
 "Lo caliente y lo frío, de la mano, rompen lo que no rompe nada.","Lo caliente y lo frío, de la mano, rompen lo que no rompe nada.","Hot and cold, hand in hand, break what nothing breaks."
@@ -508,8 +537,11 @@ Abre círculos en el cielo sobre el blanco y descarga un rayo colosal que salta 
 Glaciar Tronante,Glaciar Tronante,Thundering Glacier
 "Triple. Un glaciar entero cae del cielo envuelto en rayos: perfora un túnel helado, se parte en esquirlas y los rayos saltan por todo el cristal.","Triple. Un glaciar entero cae del cielo envuelto en rayos: perfora un túnel helado, se parte en esquirlas y los rayos saltan por todo el cristal.","Triple. A whole glacier falls from the sky wrapped in lightning: it drills an icy tunnel, shatters into splinters and the lightning jumps all over the crystal."
 "El hielo pesa si le das piedra. Y si además le das un rayo, cae tronando.","El hielo pesa si le das piedra. Y si además le das un rayo, cae tronando.","Ice gets heavy if you give it stone. Give it lightning too, and it comes down thundering."
+Tornado,Tornado,Tornado
+Un tornado que taladra el cristal: abre un túnel hondo y escupe los fragmentos hacia ti.,Un tornado que taladra el cristal: abre un túnel hondo y escupe los fragmentos hacia ti.,A tornado that drills the crystal: it opens a deep tunnel and spits the shards toward you.
+El aire que se junta con el aire empieza a girar... y a cavar.,El aire que se junta con el aire empieza a girar... y a cavar.,Air that meets air starts to spin... and to dig.
 Potencia,Potencia,Power
-"Golpes arcanos más fuertes y más ecos (dos a nivel 3, tres a nivel 6, cuatro a nivel 9). Desde el nivel 6 salen de la mano con círculos de runas.","Golpes arcanos más fuertes y más ecos (dos a nivel 3, tres a nivel 6, cuatro a nivel 9). Desde el nivel 6 salen de la mano con círculos de runas.","Stronger arcane hits and more echoes (two at level 3, three at level 6, four at level 9). From level 6 they leave your hand through rune circles."
+"Golpes arcanos más fuertes y más ecos (dos a nivel 3, tres a nivel 6, cuatro a nivel 9). Desde el nivel 6 salen de la mano con círculos de runas. El nivel 11, Ascensión, se abre con el cristal casi roto y vale por muchos golpes.","Golpes arcanos más fuertes y más ecos (dos a nivel 3, tres a nivel 6, cuatro a nivel 9). Desde el nivel 6 salen de la mano con círculos de runas. El nivel 11, Ascensión, se abre con el cristal casi roto y vale por muchos golpes.","Stronger arcane hits and more echoes (two at level 3, three at level 6, four at level 9). From level 6 they leave your hand through rune circles. Level 11, Ascension, opens once the crystal is nearly broken and is worth many hits."
 Destello,Destello,Glimmer
 Doble eco,Doble eco,Double echo
 Prisma,Prisma,Prism
@@ -519,6 +551,7 @@ Paradoja,Paradoja,Paradox
 Eco infinito,Eco infinito,Endless echo
 Singularidad,Singularidad,Singularity
 Arcano primordial,Arcano primordial,Primordial arcane
+Arcano ascendido,Arcano ascendido,Ascended Arcane
 Lanzamiento continuo,Lanzamiento continuo,Continuous Casting
 "Mantén pulsado un botón y esa mano lanza sola a su ritmo: tiembla, crepita y no para hasta que sueltas. Con una mano en ráfaga, pulsa la otra y se juntan.","Mantén pulsado un botón y esa mano lanza sola a su ritmo: tiembla, crepita y no para hasta que sueltas. Con una mano en ráfaga, pulsa la otra y se juntan.","Hold a button and that hand casts on its own at its own pace: it trembles, crackles and keeps going until you let go. With one hand in a burst, press the other and they join."
 Clic a clic,Clic a clic,Click by click
@@ -535,10 +568,12 @@ Dormida,Dormida,Dormant
 Despierta,Despierta,Awake
 Despertar la Escarcha,Despertar la Escarcha,Awaken Frost
 "Aprendes el segundo elemento: lento, frío, y congela el cristal (los otros golpes hacen el doble allí). Cámbialo en cada mano con Q / E.","Aprendes el segundo elemento: lento, frío, y congela el cristal (los otros golpes hacen el doble allí). Cámbialo en cada mano con Q / E.","You learn the second element: slow, cold, and it freezes the crystal (other hits deal double damage there). Switch it on each hand with Q / E."
+Despertar el Viento,Despertar el Viento,Awaken Wind
+"Aprendes el Viento: rápido y ligero, y cada golpe barre hacia ti los fragmentos del suelo cercanos. Combínalo con todo.","Aprendes el Viento: rápido y ligero, y cada golpe barre hacia ti los fragmentos del suelo cercanos. Combínalo con todo.","You learn Wind: fast and light, and every hit sweeps nearby shards on the ground toward you. Combine it with everything."
 Bolsa de aprendiz,Bolsa de aprendiz,Apprentice's bag
 Una bolsita encantada: llevas más fragmentos en cada viaje al Pilón.,Una bolsita encantada: llevas más fragmentos en cada viaje al Pilón.,A small enchanted bag: carry more shards on each trip to the Pylon.
 caben %d,caben %d,holds %d
-"El rayo golpea más fuerte, sale antes y salta más. Desde el nivel 6 sale de la mano con círculos de runas.","El rayo golpea más fuerte, sale antes y salta más. Desde el nivel 6 sale de la mano con círculos de runas.","Lightning hits harder, comes out sooner and jumps further. From level 6 it leaves your hand through rune circles."
+"El rayo golpea más fuerte, sale antes y salta más. Desde el nivel 6 sale de la mano con círculos de runas. El nivel 11, Ascensión, se abre con el cristal casi roto y vale por muchos golpes.","El rayo golpea más fuerte, sale antes y salta más. Desde el nivel 6 sale de la mano con círculos de runas. El nivel 11, Ascensión, se abre con el cristal casi roto y vale por muchos golpes.","Lightning hits harder, comes out sooner and jumps further. From level 6 it leaves your hand through rune circles. Level 11, Ascension, opens once the crystal is nearly broken and is worth many hits."
 Chispazo,Chispazo,Zap
 Descarga,Descarga,Discharge
 Relámpago,Relámpago,Flash
@@ -548,6 +583,7 @@ Rayo arcano,Rayo arcano,Arcane bolt
 Trueno eterno,Trueno eterno,Eternal thunder
 Furia del cielo,Furia del cielo,Fury of the sky
 Juicio,Juicio,Judgment
+Trueno ascendido,Trueno ascendido,Ascended Thunder
 Cadencia,Cadencia,Cadence
 Las manos recargan antes: lanzas más a menudo.,Las manos recargan antes: lanzas más a menudo.,Your hands recharge sooner: you cast more often.
 recarga x%.2f,recarga x%.2f,recharge x%.2f
@@ -567,7 +603,7 @@ Doble salto,Doble salto,Double jump
 Un segundo impulso de aire mágico en pleno salto. Llega más alto y cae donde quieras.,Un segundo impulso de aire mágico en pleno salto. Llega más alto y cae donde quieras.,A second burst of magic air mid-jump. Reach higher and land wherever you like.
 Un salto,Un salto,One jump
 Dos saltos,Dos saltos,Two jumps
-Rocas más grandes y más pesadas. Desde el nivel 6 salen de la mano con círculos de runas.,Rocas más grandes y más pesadas. Desde el nivel 6 salen de la mano con círculos de runas.,"Bigger, heavier rocks. From level 6 they leave your hand through rune circles."
+"Rocas más grandes y más pesadas. Desde el nivel 6 salen de la mano con círculos de runas. El nivel 11, Ascensión, se abre con el cristal casi roto y vale por muchos golpes.","Rocas más grandes y más pesadas. Desde el nivel 6 salen de la mano con círculos de runas. El nivel 11, Ascensión, se abre con el cristal casi roto y vale por muchos golpes.","Bigger, heavier rocks. From level 6 they leave your hand through rune circles. Level 11, Ascension, opens once the crystal is nearly broken and is worth many hits."
 Guijarro,Guijarro,Pebble
 Piedra,Piedra,Stone
 Roca,Roca,Rock
@@ -578,6 +614,7 @@ Roca arcana,Roca arcana,Arcane rock
 Corazón de piedra,Corazón de piedra,Heart of stone
 Titán,Titán,Titan
 Planeta,Planeta,Planet
+Tierra ascendida,Tierra ascendida,Ascended Earth
 Rompefacetas,Rompefacetas,Facet Breaker
 "Los golpes resonantes parten una faceta entera: una losa del cristal se desprende de golpe y revienta en una lluvia de fragmentos. En el Corazón sólo la arrancan los combinados, y más pequeña.","Los golpes resonantes parten una faceta entera: una losa del cristal se desprende de golpe y revienta en una lluvia de fragmentos. En el Corazón sólo la arrancan los combinados, y más pequeña.","Resonant hits split a whole facet: a slab of crystal breaks off at once and bursts into a shower of shards. In the Heart only combos tear it off, and smaller."
 losa: la resonancia y %.1f golpes más,losa: la resonancia y %.1f golpes más,slab: the resonance plus %.1f more hits
@@ -596,14 +633,13 @@ Sin hechicero,Sin hechicero,No sorcerer
 Alas ligeras,Alas ligeras,Light wings
 Tus familiares vuelan más deprisa y hacen más viajes a la tolva.,Tus familiares vuelan más deprisa y hacen más viajes a la tolva.,Your familiars fly faster and make more trips to the hopper.
 vuelo x%.1f,vuelo x%.1f,flight x%.1f
-"La bola de fuego arde más. Desde el nivel 6, al cargarla se abren círculos mágicos con runas hacia donde apuntas: uno más por nivel.","La bola de fuego arde más. Desde el nivel 6, al cargarla se abren círculos mágicos con runas hacia donde apuntas: uno más por nivel.","The fireball burns hotter. From level 6, magic circles with runes open toward your aim while you charge it: one more per level."
+"La bola de fuego arde más. Desde el nivel 6, al cargarla se abren círculos mágicos con runas hacia donde apuntas: uno más por nivel. El nivel 11, Ascensión, se abre con el cristal casi roto y vale por muchos golpes.","La bola de fuego arde más. Desde el nivel 6, al cargarla se abren círculos mágicos con runas hacia donde apuntas: uno más por nivel. El nivel 11, Ascensión, se abre con el cristal casi roto y vale por muchos golpes.","The fireball burns hotter. From level 6, magic circles with runes open toward your aim while you charge it: one more per level. Level 11, Ascension, opens once the crystal is nearly broken and is worth many hits."
 daño x%.2f,daño x%.2f,damage x%.2f
 Bola colosal,Bola colosal,Colossal fireball
 "La Bola de Fuego se hincha al salir de las manos: explosión, cráter y fuego mucho más grandes.","La Bola de Fuego se hincha al salir de las manos: explosión, cráter y fuego mucho más grandes.","The Fireball swells as it leaves your hands: a much bigger blast, crater and fire."
 tamaño x%.2f,tamaño x%.2f,size x%.2f
-"La escarcha se endurece: más daño, más rápida y congela más grande. Desde el nivel 6 sale de la mano con círculos de runas.","La escarcha se endurece: más daño, más rápida y congela más grande. Desde el nivel 6 sale de la mano con círculos de runas.","Frost hardens: more damage, faster and a bigger freeze. From level 6 it leaves your hand through rune circles."
+"La escarcha se endurece: más daño, más rápida y congela más grande. Desde el nivel 6 sale de la mano con círculos de runas. El nivel 11, Ascensión, se abre con el cristal casi roto y vale por muchos golpes.","La escarcha se endurece: más daño, más rápida y congela más grande. Desde el nivel 6 sale de la mano con círculos de runas. El nivel 11, Ascensión, se abre con el cristal casi roto y vale por muchos golpes.","Frost hardens: more damage, faster and a bigger freeze. From level 6 it leaves your hand through rune circles. Level 11, Ascension, opens once the crystal is nearly broken and is worth many hits."
 Hielo,Hielo,Ice
-Ventisca,Ventisca,Blizzard
 Glaciar,Glaciar,Glacier
 Escarcha eterna,Escarcha eterna,Eternal frost
 Cero absoluto,Cero absoluto,Absolute zero
@@ -611,6 +647,7 @@ Invierno arcano,Invierno arcano,Arcane winter
 Tormenta polar,Tormenta polar,Polar storm
 Corazón de hielo,Corazón de hielo,Heart of ice
 Era glacial,Era glacial,Ice age
+Invierno ascendido,Invierno ascendido,Ascended Winter
 Granizo gigante,Granizo gigante,Giant hail
 La escarcha crece en el aire: hiela una zona mucho más grande y arranca más cristal.,La escarcha crece en el aire: hiela una zona mucho más grande y arranca más cristal.,Frost grows in the air: it freezes a much bigger area and tears off more crystal.
 Engranajes,Engranajes,Gears
@@ -636,7 +673,7 @@ Resonancia del Pilón,Resonancia del Pilón,Pylon Resonance
 un rayo cada %d s,un rayo cada %d s,one bolt every %d s
 Más golpes resonantes: triple de daño y el doble de fragmentos.,Más golpes resonantes: triple de daño y el doble de fragmentos.,More resonant hits: triple damage and twice the shards.
 %d %% resonantes,%d %% resonantes,%d %% resonant
-"La chispa arde más: más daño, más rápida y fragmentos más grandes. Desde el nivel 6 sale de la mano con círculos de runas.","La chispa arde más: más daño, más rápida y fragmentos más grandes. Desde el nivel 6 sale de la mano con círculos de runas.","The spark burns hotter: more damage, faster and bigger shards. From level 6 it leaves your hand through rune circles."
+"La chispa arde más: más daño, más rápida y fragmentos más grandes. Desde el nivel 6 sale de la mano con círculos de runas. El nivel 11, Ascensión, se abre con el cristal casi roto y vale por muchos golpes.","La chispa arde más: más daño, más rápida y fragmentos más grandes. Desde el nivel 6 sale de la mano con círculos de runas. El nivel 11, Ascensión, se abre con el cristal casi roto y vale por muchos golpes.","The spark burns hotter: more damage, faster and bigger shards. From level 6 it leaves your hand through rune circles. Level 11, Ascension, opens once the crystal is nearly broken and is worth many hits."
 Chispita,Chispita,Tiny spark
 Llama,Llama,Flame
 Llama mágica,Llama mágica,Magic flame
@@ -645,6 +682,7 @@ Corona solar,Corona solar,Solar corona
 Llama arcana,Llama arcana,Arcane flame
 Fuego primigenio,Fuego primigenio,Primordial fire
 Sol del mago,Sol del mago,Wizard's sun
+Sol ascendido,Sol ascendido,Ascended Sun
 Chispa enorme,Chispa enorme,Huge spark
 "La chispa sale de la mano como siempre y crece en el aire: estalla más ancha, arranca más cristal y suelta más fragmentos.","La chispa sale de la mano como siempre y crece en el aire: estalla más ancha, arranca más cristal y suelta más fragmentos.","The spark leaves your hand as always and grows in the air: it bursts wider, tears off more crystal and drops more shards."
 Báculo,Báculo,Staff
@@ -661,10 +699,22 @@ Los fragmentos cercanos vuelan solos a tus manos si te cabe alguno.,Los fragment
 atrae a %d m,atrae a %d m,pulls from %d m
 Sin telequinesis,Sin telequinesis,No telekinesis
 Choque profundo,Choque profundo,Deep shock
-"El Choque Térmico golpea más fuerte. Desde el nivel 6, al cargarlo se abren círculos mágicos hacia donde apuntas.","El Choque Térmico golpea más fuerte. Desde el nivel 6, al cargarlo se abren círculos mágicos hacia donde apuntas.","Thermal Shock hits harder. From level 6, magic circles open toward your aim while you charge it."
+"El Choque Térmico golpea más fuerte. Desde el nivel 6, al cargarlo se abren círculos mágicos hacia donde apuntas. El nivel 11, Ascensión, se abre con el cristal casi roto y vale por muchos golpes.","El Choque Térmico golpea más fuerte. Desde el nivel 6, al cargarlo se abren círculos mágicos hacia donde apuntas. El nivel 11, Ascensión, se abre con el cristal casi roto y vale por muchos golpes.","Thermal Shock hits harder. From level 6, magic circles open toward your aim while you charge it. Level 11, Ascension, opens once the crystal is nearly broken and is worth many hits."
 Choque descomunal,Choque descomunal,Massive shock
 El Choque Térmico crece al salir: deja quebradiza una zona enorme del cristal.,El Choque Térmico crece al salir: deja quebradiza una zona enorme del cristal.,Thermal Shock grows as it flies: it leaves a huge patch of the crystal brittle.
 Vórtice,Vórtice,Vortex
 Un remolino de maná gira a tu alrededor: aspira en espiral los fragmentos sueltos del claro y los manda solos a la tolva. Las Lágrimas no: ésas las recoges tú.,Un remolino de maná gira a tu alrededor: aspira en espiral los fragmentos sueltos del claro y los manda solos a la tolva. Las Lágrimas no: ésas las recoges tú.,A whirl of mana spins around you: it spirals in the clearing's loose shards and sends them to the hopper on their own. Not the Tears: those you collect yourself.
 aspira a %d m,aspira a %d m,pulls from %d m
 Sin vórtice,Sin vórtice,No vortex
+"Ráfagas más fuertes, más seguidas y que barren más fragmentos. Desde el nivel 6 salen de la mano con círculos de runas; el 11, Ascensión, espera a que el cristal esté casi roto.","Ráfagas más fuertes, más seguidas y que barren más fragmentos. Desde el nivel 6 salen de la mano con círculos de runas; el 11, Ascensión, espera a que el cristal esté casi roto.","Stronger, faster gusts that sweep more shards. From level 6 they leave your hand with rune circles; level 11, Ascension, waits until the crystal is nearly broken."
+Brisa,Brisa,Breeze
+Soplo,Soplo,Puff
+Ráfaga,Ráfaga,Gust
+Vendaval,Vendaval,Gale
+Remolino,Remolino,Whirlwind
+Galerna,Galerna,Squall
+Viento arcano,Viento arcano,Arcane Wind
+Huracán,Huracán,Hurricane
+Ciclón,Ciclón,Cyclone
+Tifón,Tifón,Typhoon
+Viento ascendido,Viento ascendido,Ascended Wind

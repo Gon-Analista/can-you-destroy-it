@@ -78,8 +78,10 @@ extends Resource
 @export var seed: int = 7
 
 @export_group("HD")
-## 0 = fuego (lenguas que suben), 1 = arcano (remolino).
-@export_enum("Fuego", "Arcano") var style: int = 0
+## Forma del cuerpo (`hd_fire.gdshader`): 0 = fuego (lenguas que suben), 1 = arcano (remolino),
+## 2 = hielo (cristal tallado y copo), 3 = rayo (arcos quebrados), 4 = roca (canto que gira),
+## 5 = viento (medialunas que giran).
+@export_enum("Fuego", "Arcano", "Hielo", "Rayo", "Roca", "Viento") var style: int = 0
 ## Brillo del cuerpo (HDR: > 1 florece con el resplandor).
 @export var body_intensity: float = 2.2
 ## Tamaño del cuerpo respecto a `core_radius`.

@@ -210,6 +210,11 @@ func bind(camera: Camera3D, caster: SpellCaster) -> void:
 	_rune_halo.hands = caster.hands if caster else null
 
 
+## Las estaciones del valle cuyo nombre se enseña al acercarse (ver StationLabels).
+func bind_world(world: Node) -> void:
+	_loop.stations.bind_world(world)
+
+
 ## (Opciones enseña las mismas frases, sueltas, en su pestaña de controles.)
 func _controls_text() -> String:
 	return (
@@ -437,7 +442,7 @@ func _on_recipe_discovered(recipe: SpellRecipe) -> void:
 	_discovery_name.visible = true
 	_discovery_time = DISCOVERY_SEC
 	var found: int = GameState.progression.discovered_recipes.size()
-	var total: int = SpellCaster.RECIPES.size() + StaffCombos.TRIPLES.size()
+	var total: int = SpellCaster.RECIPES.size() + StaffCombos.triples().size()
 	var triple: bool = recipe.is_triple()
 	_discovery_title.text = (
 		(tr("¡COMBINACIÓN TRIPLE!") if triple else tr("¡COMBINACIÓN NUEVA!"))
