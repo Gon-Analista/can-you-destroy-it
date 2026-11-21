@@ -186,7 +186,10 @@ func _initialize() -> void:
 	)
 	# El Libro enseña las triples en su página.
 	book.call(&"open")
-	book.call(&"open_page", SpellBook.TRIPLES_PAGE)
+	# SpellBook usa los autoloads: no se puede nombrar en un test `--script` (no compilaría).
+	var book_script: Script = book.get_script()
+	var triples_page: int = book_script.get_script_constant_map()["TRIPLES_PAGE"]
+	book.call(&"open_page", triples_page)
 	await process_frame
 	var listed: Array = book.call(&"_list")
 	_check(listed.size() == 5, "el Libro tiene 5 triples")
@@ -424,7 +427,13 @@ func _check_disabled(gs: Node) -> void:
 	var staff: RefCounted = _caster.get(&"staff")
 	_check(VariantCast.to_int(staff.get(&"element_index")) < 0, "R no enciende ninguna gema")
 	var book: Node = main.get_node(BOOK_PATH)
-	_check(VariantCast.to_int(book.call(&"_tab_count")) == 1, "el Libro sólo tiene PAREJAS")
+	# Sin báculo se ven los marcapáginas de antes de TRIPLES (PAREJAS y VIENTO).
+	var book_script: Script = book.get_script()
+	var triples_page: int = book_script.get_script_constant_map()["TRIPLES_PAGE"]
+	_check(
+		VariantCast.to_int(book.call(&"_tab_count")) == triples_page,
+		"el Libro no tiene TRIPLES (%d marcapáginas)" % triples_page
+	)
 	print("staff_smoke: ", "OK" if _ok else "FALLO")
 	quit(0 if _ok else 1)
 
