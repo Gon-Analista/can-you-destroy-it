@@ -57,7 +57,7 @@ func _run() -> void:
 			env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 		env.tonemap_exposure = float(_arg("exposure", "1.0")) if soft else 1.0
 		env.tonemap_white = float(_arg("white", "1.0")) if soft else 1.0
-		env.adjustment_contrast = base_contrast * (0.94 if soft else 1.0)
+		env.adjustment_contrast = base_contrast / (1.0 if soft else ValleyPalette.AGX_CONTRAST)
 		env.adjustment_saturation = base_sat
 		var calm: float = 1.0 if f.has("calma") else (0.5 if f.has("calma50") else 0.0)
 		RenderingServer.global_shader_parameter_set(&"terrain_calm", calm)

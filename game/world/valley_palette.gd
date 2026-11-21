@@ -195,11 +195,16 @@ static func day_keys(id: StringName, keys: Array[Array]) -> Array[Array]:
 	return out
 
 
+## El entorno del mundo usa tonemapping AgX (main.tscn): con él, un poco menos de contraste de
+## ajuste deja los blancos y el cielo sin quemar y la escena más descansada para la vista.
+const AGX_CONTRAST: float = 0.94
+
+
 ## Aplica el ajuste y la LUT de la paleta `id` al entorno.
 static func apply_env(id: StringName, env: Environment, base: Dictionary) -> void:
 	var p: Dictionary = PALETTES.get(id, {})
 	env.adjustment_saturation = p.get("sat", base["sat"])
-	env.adjustment_contrast = p.get("contrast", base["contrast"])
+	env.adjustment_contrast = VariantCast.to_float(p.get("contrast", base["contrast"])) * AGX_CONTRAST
 	env.adjustment_brightness = p.get("bright", base["bright"])
 	env.adjustment_color_correction = lut(id) if p.has("grade") else base["lut"]
 	# Niebla lejana: lo de cerca queda nítido y el fondo se funde con el aire.

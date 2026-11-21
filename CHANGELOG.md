@@ -2,6 +2,30 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-21 · La vista ya no se cansa: hierba sin moiré y tonemapping AgX
+
+**Qué hay nuevo** (pedido: "sigue molestando a la vista y no sé bien qué es")
+
+- **Causa principal: la hierba hacía moiré.** A partir de unos 7 m los texeles del suelo medían 2-3 píxeles de
+  pantalla y la trama de 1 texel (Bayer, matas, motas y bordes de banda de luz tramados) formaba ondas y anillos
+  que hervían al moverse: medido caminando de lado, un 10-20 % de los píxeles del suelo parpadeaban cada fotograma.
+  El doblado de texel por distancia de `terrain.gdshader` casi nunca entraba porque el suelo visible está cerca.
+- **Calma del terreno** (`terrain.gdshader`, global `terrain_calm`, ahora 1.0): donde un texel mide menos de 2-4
+  píxeles, la trama se cambia por el tono medio de la rampa (un "mip" de pixel art) y la luz pasa de bandas tramadas
+  a degradado. De cerca el suelo no cambia. Parpadeo del suelo: de ~10-20 % a ~1-3 %. Hierba, tierra y hojas.
+- **Tonemapping AgX** en el entorno del mundo (antes lineal) con un 6 % menos de contraste de ajuste
+  (`ValleyPalette.AGX_CONTRAST`): los blancos y el cielo dejan de quemar (percentil 99 de luminancia 0,84 -> 0,74).
+  La capa de magia HD sigue en lineal (no se tocó).
+- Se probaron y descartaron: SMAA (casi no ayuda en pixel art a 640x360) y supermuestreo 2x (reduce el parpadeo a
+  la mitad pero renderiza 4 veces los píxeles y emborrona el estilo).
+- `tests/tools/look_shots.gd`: capturas por opción (`--looks=base,tono,calma,calma50,smaa,ssaa`, combinables con
+  `+`) y `--motion=N` para medir el parpadeo caminando.
+
+**Cómo se probó**: Godot 4.7 con lavapipe, capturas de día y de noche desde el cristal, el claro y el bosque, y
+20 fotogramas caminando por opción (parpadeo = píxeles que suben y bajan de brillo en fotogramas seguidos).
+
+**Capturas (antes | ahora)**: `docs/capturas/descanso_visual_agx_calma.png`, `docs/capturas/hierba_calma_movimiento.gif`.
+
 ## 2026-11-21 · Golpear el Núcleo ya no falla y los golpes enormes dan muchos menos tirones
 
 **Arreglos** (pedido del equipo: "me crasheó al tirarle un hechizo al núcleo morado… al explotar grandes pedazos
