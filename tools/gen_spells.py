@@ -116,7 +116,7 @@ VISUALS = {
                   [(1.8, 1.5, 0.9), (1.0, 0.75, 0.35), (0.7, 0.5, 0.25), (0.45, 0.32, 0.18)],
                   [(1, 0.8, 0.4), (0.7, 0.5, 0.25), (0.9, 0.7, 0.35), (0.5, 0.36, 0.2)],
                   {"core_spin": "0.5", "seed": "101", "style": "4", "ribbon_count": "2", "sparkle_rise": "-0.35",
-                   "glow_rays": "0.0", "flare_length": "0.0"}),
+                   "glow_rays": "0.0", "flare_length": "0.0", "boulder": "true"}),
     "vfx_magnet": ("vfx_arcane_orb", [(2.2, 2.2, 2.6), (1.8, 0.6, 0.6), (0.6, 0.6, 1.8), (0.35, 0.3, 0.9), (0.12, 0.1, 0.35)],
                    [(2.2, 2.2, 2.4), (1.6, 0.6, 0.6), (0.6, 0.7, 1.6), (0.8, 0.8, 1.2)],
                    [(1, 0.4, 0.4), (0.4, 0.55, 1), (1, 1, 1), (0.8, 0.8, 1)],
@@ -224,7 +224,8 @@ VISUALS = {
     "vfx_eruption": ("vfx_fireball", [(2.6, 1.9, 0.9), (2.0, 0.9, 0.2), (1.3, 0.35, 0.05), (0.55, 0.15, 0.05), (0.2, 0.07, 0.04)],
                      [(1.8, 1.1, 0.4), (1.3, 0.6, 0.15), (0.9, 0.4, 0.15), (0.5, 0.25, 0.12)],
                      [(1, 0.55, 0.15), (0.75, 0.4, 0.2), (1, 0.85, 0.35), (0.5, 0.3, 0.15)],
-                     {"seed": "167", "light_color": c(1, 0.5, 0.2, 1)}),
+                     {"seed": "167", "light_color": c(1, 0.5, 0.2, 1), "fireball_flight": "false", "boulder": "true",
+                      "boulder_heat": "1.0"}),
 }
 
 
@@ -404,7 +405,7 @@ RECIPES = [
          # Sin sonido de impacto en la receta: el estruendo lo pone MeteorRock (uno solo, no dos).
          impact=[], loop="amb_sky_charge_loop",
          tier=dict(damage=10, speed=60.0, wobble=0.0, shards_min=4, shards_max=6, shard_scale=1.4, impact_particles=90,
-                   light_energy=4.0, crack_radius=3.0, shake=0.6, orb_scale=26.0, trail_width=5.0, trail_length=0.7,
+                   light_energy=4.0, crack_radius=3.0, shake=0.6, orb_scale=36.0, trail_width=7.0, trail_length=0.7,
                    trail_smoke=1.0, core=(1, 0.9, 0.6), glow=(1, 0.4, 0.1), tint=(1, 0.6, 0.25),
                    ramp=[(2.4, 1.8, 1.0), (1.7, 0.8, 0.2), (1.0, 0.35, 0.06), (0.45, 0.14, 0.05), (0.18, 0.06, 0.04)])),
     dict(id="stalactites", name="Lluvia de Estalactitas", elements=["earth", "frost"], delivery=2,
@@ -437,12 +438,12 @@ RECIPES = [
                    core=(1, 1, 0.9), glow=(0.6, 0.95, 1), tint=(0.85, 1, 0.8),
                    ramp=[(2.4, 2.6, 2.6), (1.4, 2.0, 1.6), (0.6, 1.3, 1.6), (0.3, 0.6, 1.2), (0.1, 0.2, 0.55)])),
     dict(id="earthquake", name="Terremoto", elements=["earth", "earth"], delivery=5,
-         description="Golpeas el suelo: una onda corre hasta el cristal y su base revienta desde abajo.",
+         description="Golpeas el suelo: brota un peñasco que rueda hasta el cristal y revienta su base.",
          riddle="Piedra contra piedra no vuela: hace temblar.",
          dmg=6.38, area=3.5, area_hits=8, charge=1.2, cooldown=3.6, visual="vfx_quake", circle=(1.3, 0.9, 0.4),
          hot=(1.7, 1.4, 0.9), cast=["sfx_quake_01"], impact=["sfx_earth_impact_01"], loop="amb_sky_charge_loop",
          tier=dict(damage=8, speed=26.0, wobble=0.0, shards_min=3, shards_max=5, shard_scale=1.3, impact_particles=60,
-                   light_energy=3.0, crack_radius=2.4, shake=0.5, orb_scale=9.0, trail_width=1.4, trail_length=0.4,
+                   light_energy=3.0, crack_radius=2.4, shake=0.5, orb_scale=9.0, trail_width=0.7, trail_length=0.4,
                    trail_smoke=1.0, core=(1, 0.9, 0.7), glow=(0.9, 0.6, 0.25), tint=(0.95, 0.75, 0.45),
                    ramp=[(2.0, 1.7, 1.0), (1.3, 0.85, 0.35), (0.7, 0.45, 0.18), (0.38, 0.24, 0.1), (0.16, 0.1, 0.05)])),
     dict(id="magnetism", min_power=1.0, payoff=0.0, name="Magnetismo", elements=["earth", "bolt"], delivery=6,

@@ -276,6 +276,12 @@ func _air_moves(on_floor: bool, delta: float) -> void:
 		_jet_audio.pitch_scale = lerpf(1.25, 0.95, fuel_ratio())
 
 
+## Empujón de un hechizo que sale de las manos (`impulse` en m/s, en el mundo): el rozamiento
+## de siempre lo frena (en el suelo, en un instante; en el aire, algo más).
+func knockback(impulse: Vector3) -> void:
+	velocity += impulse
+
+
 func get_caster() -> SpellCaster:
 	return _caster
 

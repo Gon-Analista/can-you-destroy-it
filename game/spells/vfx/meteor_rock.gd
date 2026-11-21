@@ -15,7 +15,7 @@ const GLINT_SFX: AudioStream = preload("res://audio/sfx/sfx_meteor_glint_01.ogg"
 const WHISTLE_SFX: AudioStream = preload("res://audio/sfx/sfx_meteor_whistle_01.ogg")
 const BOOM_SFX: AudioStream = preload("res://audio/sfx/sfx_meteor_boom_01.ogg")
 ## Radio de la roca (m) con Tamaño 1.
-const ROCK_RADIUS: float = 2.4
+const ROCK_RADIUS: float = 3.4
 ## Lo que dura el impacto (el proyectil espera a que acabe antes de volver al pool).
 const IMPACT_SEC: float = 3.2
 const HOT := Color(1.0, 0.45, 0.14)

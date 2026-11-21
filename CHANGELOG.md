@@ -2,6 +2,36 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-21 · Los hechizos cargados salen con la fuerza que tienen
+
+**Qué hay nuevo** (pedido del equipo: "la bola de fuego es lenta y no se ve poderosa… que salgan con un efecto de
+poder e impacto de tus manos y te lancen un poquito para atrás… el meteorito más grande, el rayo más impactante… el de
+tierra es una piedrecita aburrida")
+
+- **Más rápidos cuanto más cargados**: lo que sale de las manos vuela a x1,6 sin cargar y hasta x3,4 con la carga
+  completa (`SpellDelivery.FRONT_SPEED`); las lanzas, x1,2-2,2. La Bola de Fuego cargada llega en ~0,4 s en vez de
+  ~1,2 s. El daño no cambia: sólo lo que tarda en llegar.
+- **Golpe de poder al soltar** (`CastBurst`): fogonazo entre las palmas, hasta tres ondas de choque en cono hacia
+  donde apuntas y chispas disparadas, con un estruendo grave. La cámara cabecea hacia arriba y se abre
+  (`CameraRig.recoil`), las manos salen despedidas y, si el hechizo sale hacia delante, **el mago retrocede**
+  (`Player.knockback`); cargado a tope a nivel alto, con un saltito. Todo escala con la carga.
+- **El tamaño va con la destrucción**: lo que se ve en vuelo crece con el premio de la carga (`SpellHit.fx_scale`,
+  `SparkProjectile.charged_scale`): un combinado de nivel 11 cargado a tope vuela casi al doble de grande, con estela
+  y luz a juego. Lluvias y haces también (Ventisca, Estalactitas, Tormenta de Arena).
+- **Meteoro más grande**: roca de 3,4 m de radio (antes 2,4) y fuego de 36 (antes 26), más la escala de la carga.
+- **Juicio del Trueno más impactante** (`CrystalCombos.sky_bolt(power)`): más descargas y hebras que convergen desde
+  el cielo cuanto más cargado, halo violeta para que se lea sobre el cristal claro, rayos que se abren por el cristal
+  al tocarlo y una columna que se queda encendida; más sacudida.
+- **Terremoto: un peñasco** (`BoulderRoll`, `SpellVisualDef.boulder`): brota del suelo unos metros por delante, rueda
+  sin resbalar con vetas doradas, da botes que retumban, levanta polvo y gravilla y revienta en cascotes contra la
+  base del cristal. La Erupción (triple) usa el mismo peñasco al rojo.
+
+**Cómo se probó**: Godot 4.7 con lavapipe, capturas antes/después de la Bola de Fuego, Terremoto, Tornado, Meteoro y
+Trueno a nivel 11 con carga completa (`docs/capturas/cargados_*.gif` y `cargados_antes_despues.png`). Tests de humo: `meteor_smoke`,
+`fireball_flight_smoke`, `combos_smoke`, `charge_stages_smoke`, `spell_levels_smoke`, `combine_input_smoke`,
+`progression_smoke`, `hit_stop_smoke`, `movement_smoke`, `staff_smoke`, `runes_smoke`, `arcane_smoke` y
+`localization_smoke` en verde; `gdlint` limpio.
+
 ## 2026-11-21 · Golpear el Núcleo ya no falla y los golpes enormes dan muchos menos tirones
 
 **Arreglos** (pedido del equipo: "me crasheó al tirarle un hechizo al núcleo morado… al explotar grandes pedazos
