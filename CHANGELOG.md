@@ -27,7 +27,7 @@ tierra es una piedrecita aburrida")
   base del cristal. La Erupción (triple) usa el mismo peñasco al rojo.
 
 **Cómo se probó**: Godot 4.7 con lavapipe, capturas antes/después de la Bola de Fuego, Terremoto, Tornado, Meteoro y
-Trueno a nivel 11 con carga completa (`docs/capturas/cargados_*.gif`). Tests de humo: `meteor_smoke`,
+Trueno a nivel 11 con carga completa (`docs/capturas/cargados_*.gif` y `cargados_antes_despues.png`). Tests de humo: `meteor_smoke`,
 `fireball_flight_smoke`, `combos_smoke`, `charge_stages_smoke`, `spell_levels_smoke`, `combine_input_smoke`,
 `progression_smoke`, `hit_stop_smoke` y `movement_smoke` en verde; `gdlint` limpio.
 

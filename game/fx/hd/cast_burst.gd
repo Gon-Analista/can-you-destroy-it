@@ -36,7 +36,7 @@ func _ready() -> void:
 	_flash_mat.set_shader_parameter("ray_count", 7.0)
 	_flash_mat.set_shader_parameter("falloff", 2.6)
 	# Tiñe más que suma: pegado a la cámara, sumado, sería un fogonazo blanco a pantalla entera.
-	_flash_mat.set_shader_parameter("cover", 0.55)
+	_flash_mat.set_shader_parameter("cover", 0.3)
 	add_child(_flash)
 	for i: int in RING_DIST.size():
 		var ring: MeshInstance3D = HdFx.quad(HdFx.RING_SHADER, 1.0, 8)
@@ -111,7 +111,7 @@ func _animate() -> void:
 	var s: float = _strength
 	var fk: float = clampf(_t / FLASH_SEC, 0.0, 1.0)
 	_flash.visible = fk < 1.0
-	_flash.scale = Vector3.ONE * lerpf(0.4, 1.0, sqrt(fk)) * (0.5 + 0.3 * s)
+	_flash.scale = Vector3.ONE * lerpf(0.3, 0.6, sqrt(fk)) * (0.4 + 0.2 * s)
 	_flash_mat.set_shader_parameter(
 		"intensity", (1.0 - fk) * (1.0 - fk) * (0.2 + 0.15 * s) * HdFx.flash_scale
 	)
