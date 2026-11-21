@@ -79,9 +79,11 @@ func _world(gs: Node, main: Node) -> void:
 	# Una geoda abierta antes del final: se va con el cristal y ningún golpe la vuelve a buscar
 	# (antes se borraba el nodo pero no la lista, y golpear el Núcleo fallaba).
 	var geodes: Node = crystal.get_node(^"Geodes")
-	var g0: Dictionary = (volume.get(&"geodes") as Array)[0]
+	var all_geodes: Array = volume.get(&"geodes")
+	var g0: Dictionary = all_geodes[0]
 	geodes.call(&"check_pockets", g0["center"], 1.0)
-	_check((geodes.get(&"_nodes") as Dictionary).size() == 1, "se abre una geoda")
+	var open_geodes: Dictionary = geodes.get(&"_nodes")
+	_check(open_geodes.size() == 1, "se abre una geoda")
 	# Al 99 %: el cristal se resquebraja y se desprende.
 	director.call(&"debug_core")
 	var waited: float = 0.0
@@ -114,7 +116,8 @@ func _world(gs: Node, main: Node) -> void:
 		if VariantCast.to_bool(volume.call(&"is_solid", p)):
 			stray += 1
 	_check(stray == 0, "no queda cristal fuera del Núcleo (%d puntos)" % stray)
-	_check((geodes.get(&"_nodes") as Dictionary).is_empty(), "las geodas abiertas se van")
+	var left_geodes: Dictionary = geodes.get(&"_nodes")
+	_check(left_geodes.is_empty(), "las geodas abiertas se van")
 	# Inmune: un golpe enorme rebota y la esencia no baja.
 	var center: Vector3 = reveal.call(&"core_position")
 	var radius: float = reveal.call(&"core_radius")

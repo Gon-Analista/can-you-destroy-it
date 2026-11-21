@@ -406,12 +406,15 @@ func _touch(touched: Dictionary[int, bool], x: int, y: int, z: int) -> void:
 ## `_touch` para un tramo de fila (x de `x0` a `x1`, en `y`, `z`): los mismos trozos que marcar
 ## cada celda, con una sola pasada por fila.
 func _touch_row(touched: Dictionary[int, bool], x0: int, x1: int, y: int, z: int) -> void:
+	# La división entera es a propósito: el índice del trozo de una celda.
+	@warning_ignore_start("integer_division")
 	var cx0: int = clampi((x0 - 1) / chunk, 0, chunks.x - 1)
 	var cy0: int = clampi((y - 1) / chunk, 0, chunks.y - 1)
 	var cz0: int = clampi((z - 1) / chunk, 0, chunks.z - 1)
 	var cx1: int = clampi((x1 + 1) / chunk, 0, chunks.x - 1)
 	var cy1: int = clampi((y + 1) / chunk, 0, chunks.y - 1)
 	var cz1: int = clampi((z + 1) / chunk, 0, chunks.z - 1)
+	@warning_ignore_restore("integer_division")
 	for cz: int in range(cz0, cz1 + 1):
 		for cy: int in range(cy0, cy1 + 1):
 			for cx: int in range(cx0, cx1 + 1):
