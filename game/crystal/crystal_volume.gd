@@ -39,38 +39,44 @@ func load_baked(path: String = PATH) -> bool:
 		push_error("CrystalVolume: no se puede abrir %s" % path)
 		return false
 	var header: Dictionary = JSON.parse_string(f.get_line())
-	var s: Array = header["size"]
-	size = Vector3i(int(s[0]), int(s[1]), int(s[2]))
-	cell = float(header["cell"])
-	var o: Array = header["origin"]
-	origin = Vector3(float(o[0]), float(o[1]), float(o[2]))
-	chunk = int(header["chunk"])
+	var saved_size: Array = header["size"]
+	var s := PackedInt32Array(saved_size)
+	size = Vector3i(s[0], s[1], s[2])
+	cell = VariantCast.to_float(header["cell"])
+	origin = _vec3(header["origin"])
+	chunk = VariantCast.to_int(header["chunk"])
+	@warning_ignore("integer_division")
 	chunks = (size - Vector3i.ONE) / chunk
-	var cc: Array = header["core_center"]
-	core_center = Vector3(float(cc[0]), float(cc[1]), float(cc[2]))
-	core_radius = float(header["core_radius"])
-	top = float(header["top"])
+	core_center = _vec3(header["core_center"])
+	core_radius = VariantCast.to_float(header["core_radius"])
+	top = VariantCast.to_float(header["top"])
 	for l: Dictionary in header["layers"]:
-		layer_ids.append(StringName(l["id"]))
-		layer_min_depth.append(float(l["min_depth"]))
-		layer_density.append(float(l["density"]))
+		layer_ids.append(StringName(str(l["id"])))
+		layer_min_depth.append(VariantCast.to_float(l["min_depth"]))
+		layer_density.append(VariantCast.to_float(l["density"]))
 	for g: Dictionary in header["geodes"]:
-		var c: Array = g["center"]
-		geodes.append(
-			{"center": Vector3(float(c[0]), float(c[1]), float(c[2])), "radius": float(g["radius"])}
-		)
-	surface_chunks = PackedInt32Array(header["surface_chunks"])
+		geodes.append({"center": _vec3(g["center"]), "radius": VariantCast.to_float(g["radius"])})
+	var saved_chunks: Array = header["surface_chunks"]
+	surface_chunks = PackedInt32Array(saved_chunks)
 	var n: int = size.x * size.y * size.z
-	var sb: PackedByteArray = f.get_buffer(int(header["sdf_bytes"]))
-	var db: PackedByteArray = f.get_buffer(int(header["depth_bytes"]))
+	var sb: PackedByteArray = f.get_buffer(VariantCast.to_int(header["sdf_bytes"]))
+	var db: PackedByteArray = f.get_buffer(VariantCast.to_int(header["depth_bytes"]))
 	sdf = _halfs(sb.decompress(n * 2, FileAccess.COMPRESSION_GZIP))
 	depth = _halfs(db.decompress(n * 2, FileAccess.COMPRESSION_GZIP))
 	return sdf.size() == n and depth.size() == n
 
 
+## Un `[x, y, z]` del JSON del horneado como vector.
+static func _vec3(xyz: Variant) -> Vector3:
+	var a: Array = xyz
+	var p := PackedFloat64Array(a)
+	return Vector3(p[0], p[1], p[2])
+
+
 ## float16 -> float32 en C++ (con Image), mucho más rápido que decodificar en GDScript.
 ## Por lonchas de z: una imagen no puede pasar de 16384 píxeles de alto.
 func _halfs(bytes: PackedByteArray) -> PackedFloat32Array:
+	@warning_ignore("integer_division")
 	var slab: int = maxi(1, 16384 / size.y)
 	var out := PackedByteArray()
 	var z: int = 0
@@ -341,12 +347,15 @@ func _fill(d: float) -> float:
 
 ## Un punto pertenece a su trozo y, si está en el borde, también a los vecinos de abajo.
 func _touch(touched: Dictionary[int, bool], x: int, y: int, z: int) -> void:
+	# La división entera es a propósito: el índice del trozo de una celda.
+	@warning_ignore_start("integer_division")
 	var cx0: int = clampi((x - 1) / chunk, 0, chunks.x - 1)
 	var cy0: int = clampi((y - 1) / chunk, 0, chunks.y - 1)
 	var cz0: int = clampi((z - 1) / chunk, 0, chunks.z - 1)
 	var cx1: int = clampi((x + 1) / chunk, 0, chunks.x - 1)
 	var cy1: int = clampi((y + 1) / chunk, 0, chunks.y - 1)
 	var cz1: int = clampi((z + 1) / chunk, 0, chunks.z - 1)
+	@warning_ignore_restore("integer_division")
 	for cz: int in range(cz0, cz1 + 1):
 		for cy: int in range(cy0, cy1 + 1):
 			for cx: int in range(cx0, cx1 + 1):
@@ -354,6 +363,7 @@ func _touch(touched: Dictionary[int, bool], x: int, y: int, z: int) -> void:
 
 
 func chunk_coords(chunk_index: int) -> Vector3i:
+	@warning_ignore("integer_division")
 	return Vector3i(
 		chunk_index % chunks.x,
 		(chunk_index / chunks.x) % chunks.y,

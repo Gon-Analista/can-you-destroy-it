@@ -32,23 +32,26 @@ func _initialize() -> void:
 	_check(v.is_solid(p), "hay superficie delante")
 	_check(v.layer_at(p) == 0, "la superficie es Corteza")
 	var r: Dictionary = v.carve(p, 1.0, 0.6, 0b01111)
-	_check(float(r["essence"]) > 0.5, "excavar quita esencia (%.2f)" % float(r["essence"]))
-	_check(not (r["chunks"] as Array).is_empty(), "y marca trozos para rehacer")
+	var essence: float = r["essence"]
+	var touched: Array = r["chunks"]
+	_check(essence > 0.5, "excavar quita esencia (%.2f)" % essence)
+	_check(not touched.is_empty(), "y marca trozos para rehacer")
 	_check(not v.is_solid(p), "y el cristal ya no está ahí")
 	var dry: Dictionary = v.carve(p, 1.0, 0.6, 0b01111, false)
 	var before: float = v.sample(v.sdf, p, 0.0)
 	v.carve(p, 1.0, 0.6, 0b01111, false)
 	_check(is_equal_approx(before, v.sample(v.sdf, p, 0.0)), "la prueba en seco no toca nada")
-	_check(float(dry["essence"]) >= 0.0, "la prueba en seco devuelve esencia")
+	_check(VariantCast.to_float(dry["essence"]) >= 0.0, "la prueba en seco devuelve esencia")
 	# El Núcleo no cede.
 	var core_r: Dictionary = v.carve(v.core_center, 2.0, 5.0, 0b01111)
-	_check(float(core_r["essence"]) == 0.0, "el Núcleo no se excava sin su bit")
+	_check(VariantCast.to_float(core_r["essence"]) == 0.0, "el Núcleo no se excava sin su bit")
 	# Malla de un trozo con superficie.
 	var arrays: Array = CrystalVolume.mesh_chunk(
 		v.sdf, v.depth, v.size, v.cell, v.origin, v.chunk, v.chunk_coords(v.surface_chunks[0])
 	)
 	_check(not arrays.is_empty(), "un trozo con superficie tiene malla")
-	var tris: int = (arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var tris: int = verts.size()
 	_check(tris > 0 and tris % 3 == 0, "triángulos completos (%d vértices)" % tris)
 	# Guardar y recuperar.
 	var bytes: PackedByteArray = v.state_bytes()

@@ -259,9 +259,9 @@ func _refresh() -> void:
 	}
 	_title.text = titles.get(step, "")
 	_sub.text = subs.get(step, "")
-	var show: bool = step != Step.DOOR and step != Step.DONE
-	_title.visible = show
-	_sub.visible = show
+	var shown: bool = step != Step.DOOR and step != Step.DONE
+	_title.visible = shown
+	_sub.visible = shown
 	_layout()
 	queue_redraw()
 

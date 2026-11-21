@@ -42,16 +42,22 @@ func _run() -> void:
 	caster.call(&"_on_press", 0)
 	await process_frame
 	caster.call(&"_on_press", 1)
-	_check(caster.call(&"is_combining"), "dos clics a la vez juntan las manos")
+	_check(VariantCast.to_bool(caster.call(&"is_combining")), "dos clics a la vez juntan las manos")
 	_check(casts.is_empty(), "al juntar no sale nada todavía")
 	await _wait(0.4)
-	_check(caster.call(&"combine_charge") > 0.3, "la carga sube mientras se mantiene")
+	_check(
+		VariantCast.to_bool(caster.call(&"combine_charge") > 0.3),
+		"la carga sube mientras se mantiene"
+	)
 	caster.call(&"_on_release", 0)
-	_check(not caster.call(&"is_combining"), "al soltar se lanza")
+	_check(not VariantCast.to_bool(caster.call(&"is_combining")), "al soltar se lanza")
 	_check(casts == [2], "sale un único hechizo combinado")
 	_check(discovered == [&"fireball"], "la primera Bola de Fuego se descubre")
 	_check(
-		caster.call(&"charge_ratio", 0) < 0.1 and caster.call(&"charge_ratio", 1) < 0.1,
+		(
+			VariantCast.to_float(caster.call(&"charge_ratio", 0)) < 0.1
+			and VariantCast.to_float(caster.call(&"charge_ratio", 1)) < 0.1
+		),
 		"las dos manos recargan"
 	)
 
@@ -71,14 +77,17 @@ func _run() -> void:
 	caster.call(&"_on_press", 0)
 	caster.call(&"_on_release", 0)
 	_check(casts == [0], "un clic corto sale en el acto")
-	_check(not caster.call(&"is_combining"), "un clic corto no combina")
+	_check(not VariantCast.to_bool(caster.call(&"is_combining")), "un clic corto no combina")
 
 	# Con una mano recargando no hay combinación: la otra sale ya.
 	await _wait(0.05)
 	casts.clear()
 	caster.call(&"_on_press", 1)
 	_check(casts.is_empty(), "la mano derecha sigue recargando: se guarda o se ignora")
-	_check(not caster.call(&"is_combining"), "sin las dos manos listas no se combina")
+	_check(
+		not VariantCast.to_bool(caster.call(&"is_combining")),
+		"sin las dos manos listas no se combina"
+	)
 	_check(
 		discovered == [&"fireball"],
 		"la segunda Bola de Fuego no vuelve a anunciarse (sigue descubierta)"
@@ -90,12 +99,12 @@ func _run() -> void:
 	# Chispa + Escarcha se combinan en el Choque Térmico.
 	await _wait(2.5)
 	caster.call(&"cycle_element", 0)
-	_check(int((caster.get(&"hand_element") as Array)[0]) == 0, "sin Escarcha, Q no cambia")
+	var hand: Array = caster.get(&"hand_element")
+	_check(VariantCast.to_int(hand[0]) == 0, "sin Escarcha, Q no cambia")
 	progression.upgrade_levels[&"awaken_frost"] = 1
 	caster.call(&"cycle_element", 0)
-	_check(
-		int((caster.get(&"hand_element") as Array)[0]) == 1, "con Escarcha, Q la pone en la mano"
-	)
+	hand = caster.get(&"hand_element")
+	_check(VariantCast.to_int(hand[0]) == 1, "con Escarcha, Q la pone en la mano")
 	var recipe_now: SpellRecipe = caster.call(&"recipe_for_hands")
 	_check(
 		recipe_now != null and recipe_now.id == &"thermal_shock",

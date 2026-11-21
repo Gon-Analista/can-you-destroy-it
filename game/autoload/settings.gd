@@ -67,10 +67,10 @@ func load_translations() -> void:
 	if dir == null:
 		return
 	for file: String in dir.get_files():
-		var path: String = LOCALIZATION_DIR.path_join(file.trim_suffix(".remap"))
-		if not path.ends_with(".translation"):
+		var file_path: String = LOCALIZATION_DIR.path_join(file.trim_suffix(".remap"))
+		if not file_path.ends_with(".translation"):
 			continue
-		var t := load(path) as Translation
+		var t := load(file_path) as Translation
 		if t and not TranslationServer.get_loaded_locales().has(t.locale):
 			TranslationServer.add_translation(t)
 
@@ -212,19 +212,31 @@ func load_settings() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(path) != OK:
 		return
-	screen_shake = float(cfg.get_value("accessibility", "screen_shake", screen_shake))
-	reduce_flashes = bool(cfg.get_value("accessibility", "reduce_flashes", reduce_flashes))
-	damage_numbers = bool(cfg.get_value("accessibility", "damage_numbers", damage_numbers))
-	cartoon_gore = bool(cfg.get_value("accessibility", "cartoon_gore", cartoon_gore))
-	hold_to_charge = bool(cfg.get_value("controls", "hold_to_charge", hold_to_charge))
-	mouse_sensitivity = float(cfg.get_value("controls", "mouse_sensitivity", mouse_sensitivity))
-	invert_y = bool(cfg.get_value("controls", "invert_y", invert_y))
-	fullscreen = bool(cfg.get_value("video", "fullscreen", fullscreen))
-	vsync = bool(cfg.get_value("video", "vsync", vsync))
-	fps_limit = maxi(int(cfg.get_value("video", "fps_limit", fps_limit)), 0)
-	show_fps = bool(cfg.get_value("video", "show_fps", show_fps))
-	fov = clampf(float(cfg.get_value("video", "fov", fov)), FOV_MIN, FOV_MAX)
-	locale = String(cfg.get_value("general", "locale", locale))
-	menu_hint_seen = bool(cfg.get_value("general", "menu_hint_seen", menu_hint_seen))
+	screen_shake = VariantCast.to_float(
+		cfg.get_value("accessibility", "screen_shake", screen_shake)
+	)
+	reduce_flashes = VariantCast.to_bool(
+		cfg.get_value("accessibility", "reduce_flashes", reduce_flashes)
+	)
+	damage_numbers = VariantCast.to_bool(
+		cfg.get_value("accessibility", "damage_numbers", damage_numbers)
+	)
+	cartoon_gore = VariantCast.to_bool(cfg.get_value("accessibility", "cartoon_gore", cartoon_gore))
+	hold_to_charge = VariantCast.to_bool(
+		cfg.get_value("controls", "hold_to_charge", hold_to_charge)
+	)
+	mouse_sensitivity = VariantCast.to_float(
+		cfg.get_value("controls", "mouse_sensitivity", mouse_sensitivity)
+	)
+	invert_y = VariantCast.to_bool(cfg.get_value("controls", "invert_y", invert_y))
+	fullscreen = VariantCast.to_bool(cfg.get_value("video", "fullscreen", fullscreen))
+	vsync = VariantCast.to_bool(cfg.get_value("video", "vsync", vsync))
+	fps_limit = maxi(VariantCast.to_int(cfg.get_value("video", "fps_limit", fps_limit)), 0)
+	show_fps = VariantCast.to_bool(cfg.get_value("video", "show_fps", show_fps))
+	fov = clampf(VariantCast.to_float(cfg.get_value("video", "fov", fov)), FOV_MIN, FOV_MAX)
+	locale = str(cfg.get_value("general", "locale", locale))
+	menu_hint_seen = VariantCast.to_bool(cfg.get_value("general", "menu_hint_seen", menu_hint_seen))
 	for bus_name: String in bus_volumes:
-		bus_volumes[bus_name] = float(cfg.get_value("audio", bus_name, bus_volumes[bus_name]))
+		bus_volumes[bus_name] = VariantCast.to_float(
+			cfg.get_value("audio", bus_name, bus_volumes[bus_name])
+		)

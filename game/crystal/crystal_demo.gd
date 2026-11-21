@@ -78,8 +78,9 @@ static func tunnel_to_vein(c: MotherCrystal, sector: int) -> Array[Vector3]:
 static func _path_hits_geode(c: MotherCrystal, from: Vector3, dir: Vector3, length: float) -> bool:
 	for g: Dictionary in c.volume.geodes:
 		var gc: Vector3 = g["center"]
+		var radius: float = g["radius"]
 		var k: float = clampf((gc - from).dot(dir), 0.0, length)
-		if (from + dir * k).distance_to(gc) < float(g["radius"]) + 4.0:
+		if (from + dir * k).distance_to(gc) < radius + 4.0:
 			return true
 	return false
 
@@ -100,7 +101,8 @@ static func tunnel_to_geode(c: MotherCrystal, from: Vector3) -> Array[Vector3]:
 	var best_d: float = INF
 	var p0: Vector3 = c.to_local(from)
 	for i: int in c.volume.geodes.size():
-		var d: float = (c.volume.geodes[i]["center"] as Vector3).distance_to(p0)
+		var center: Vector3 = c.volume.geodes[i]["center"]
+		var d: float = center.distance_to(p0)
 		if d < best_d:
 			best_d = d
 			best = i

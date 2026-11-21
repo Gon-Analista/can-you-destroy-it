@@ -367,6 +367,7 @@ func _update_motes(delta: float) -> void:
 	var k: float = charge_ratio()
 	for i: int in _motes.size():
 		var e: int = i % STAGES
+		@warning_ignore("integer_division")
 		var side: int = i / STAGES
 		var q: MeshInstance3D = _motes[i]
 		q.visible = e < _assigned or state != State.ASSIGNING

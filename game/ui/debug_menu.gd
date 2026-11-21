@@ -627,14 +627,15 @@ func _set_time(t: float) -> void:
 		return
 	_day_night.time_of_day = t
 	var minutes: int = roundi(t * 24.0 * 60.0) % (24 * 60)
+	@warning_ignore("integer_division")
 	_feedback(tr("HORA: %02d:%02d") % [minutes / 60, minutes % 60], TICK_SFX)
 
 
-func _set_speed(scale: float) -> void:
-	HitStop.base_scale = scale
+func _set_speed(speed: float) -> void:
+	HitStop.base_scale = speed
 	if not HitStop.is_active():
-		Engine.time_scale = scale
-	_feedback(tr("VELOCIDAD DEL JUEGO x%d") % roundi(scale), TICK_SFX)
+		Engine.time_scale = speed
+	_feedback(tr("VELOCIDAD DEL JUEGO x%d") % roundi(speed), TICK_SFX)
 
 
 func _toggle_fps() -> void:

@@ -390,7 +390,8 @@ func _update_pickup(delta: float) -> void:
 	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
 	var target: int = -1
 	if not hit.is_empty():
-		target = _shards.index_of(hit["collider"])
+		var collider: Object = hit["collider"]
+		target = _shards.index_of(collider)
 	if target < 0:
 		var ahead: Vector3 = global_position + Vector3(forward.x, 0.0, forward.z).normalized() * 1.2
 		target = _shards.nearest(ahead, pickup_assist_radius)

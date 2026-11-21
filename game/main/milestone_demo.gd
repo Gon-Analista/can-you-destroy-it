@@ -71,9 +71,12 @@ static func _facet_hit(player: Player, damage: int) -> void:
 	var from: Vector3 = cam.global_position
 	var q := PhysicsRayQueryParameters3D.create(from, from - cam.global_basis.z * 250.0, 1 << 1)
 	var r: Dictionary = cam.get_world_3d().direct_space_state.intersect_ray(q)
-	if r.is_empty() or not (r["collider"] as Node).has_meta(&"mother_crystal"):
+	if r.is_empty():
 		return
-	var crystal: MotherCrystal = (r["collider"] as Node).get_meta(&"mother_crystal")
+	var collider: Node = r["collider"]
+	if not collider.has_meta(&"mother_crystal"):
+		return
+	var crystal: MotherCrystal = collider.get_meta(&"mother_crystal")
 	var hit := SpellHit.new()
 	hit.position = r["position"]
 	hit.normal = r["normal"]

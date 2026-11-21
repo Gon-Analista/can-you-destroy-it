@@ -95,7 +95,6 @@ var _rollers: Array[Node3D] = []
 var _gears: Array[Node3D] = []
 var _lever: Node3D
 var _pile: MultiMeshInstance3D
-var _pile_meshes: Dictionary[ShardType, int] = {}
 var _window_light: OmniLight3D
 var _pipe_glow: StandardMaterial3D
 var _beads: Array[MeshInstance3D] = []
@@ -454,11 +453,11 @@ func _layout_pile() -> void:
 		var r: float = lerpf(0.2, 0.62, (y - HOPPER_BOTTOM) / (HOPPER_TOP - HOPPER_BOTTOM))
 		var a: float = rng.randf() * TAU
 		var p := Vector3(cos(a), 0.0, sin(a)) * r * sqrt(rng.randf()) + Vector3.UP * y
-		var basis := Basis.from_euler(
+		var rot := Basis.from_euler(
 			Vector3(rng.randf() * TAU, rng.randf() * TAU, rng.randf() * TAU)
 		)
 		mm.set_instance_transform(
-			i, Transform3D(basis.scaled(Vector3.ONE * rng.randf_range(0.7, 1.4)), p)
+			i, Transform3D(rot.scaled(Vector3.ONE * rng.randf_range(0.7, 1.4)), p)
 		)
 	mm.visible_instance_count = 0
 
@@ -545,7 +544,9 @@ func _build_rollers_and_gears() -> void:
 		holder.name = "Gear"
 		holder.position = g[0]
 		_body.add_child(holder)
-		_mesh("Mesh", _gear_mesh(float(g[1]), int(g[2]), 0.1, C_GOLD_DARK, C_GOLD), holder)
+		var gear_radius: float = g[1]
+		var teeth: int = g[2]
+		_mesh("Mesh", _gear_mesh(gear_radius, teeth, 0.1, C_GOLD_DARK, C_GOLD), holder)
 		_gears.append(holder)
 
 
@@ -737,7 +738,8 @@ func _build_audio() -> void:
 		var a := AudioStreamPlayer3D.new()
 		a.name = p[0]
 		a.bus = &"SFX"
-		a.unit_size = float(p[1])
+		var unit_size: float = p[1]
+		a.unit_size = unit_size
 		a.position = Vector3(0.5, 1.2, 0)
 		add_child(a)
 		match p[0]:

@@ -175,7 +175,7 @@ func _push_hint(text: String, color: Color) -> void:
 	# sólo se lee la última.
 	var key: String = _hint_key(text)
 	for i: int in range(_hint_queue.size() - 1, -1, -1):
-		if _hint_key(String(_hint_queue[i][0])) == key:
+		if _hint_key(str(_hint_queue[i][0])) == key:
 			_hint_queue.remove_at(i)
 	if _hint.visible and _hint_key(_hint.text) == key:
 		_hint.text = text
@@ -199,7 +199,8 @@ func _next_hint() -> void:
 		return
 	var h: Array = _hint_queue.pop_front()
 	_hint.text = h[0]
-	_hint.add_theme_color_override(&"font_color", h[1])
+	var color: Color = h[1]
+	_hint.add_theme_color_override(&"font_color", color)
 	_hint.visible = true
 	_hint_t = HINT_SEC
 
@@ -276,8 +277,8 @@ func _update_hand_tags() -> void:
 		var el: ElementDef = caster.element_of(side)
 		if el != _tag_shown[side]:
 			_tag_shown[side] = el
-			var name: String = tr(el.display_name).to_upper()
-			l.text = ("[Q] " + name) if side == 0 else (name + " [E]")
+			var el_name: String = tr(el.display_name).to_upper()
+			l.text = ("[Q] " + el_name) if side == 0 else (el_name + " [E]")
 			l.add_theme_color_override(&"font_color", el.color)
 	var gem: ElementDef = caster.staff.element(SpellCaster.ELEMENTS)
 	_staff_tag.visible = gem != null
@@ -287,8 +288,8 @@ func _update_hand_tags() -> void:
 			_staff_tag.text = "%s %s [R]" % [tr("BÁCULO"), tr(gem.display_name).to_upper()]
 			_staff_tag.add_theme_color_override(&"font_color", gem.color)
 		var recipe: SpellRecipe = caster.recipe_for_hands()
-		var ready: bool = recipe != null and recipe.is_triple()
-		_staff_tag.modulate.a = (0.75 + 0.25 * sin(_t * 9.0)) if ready else 0.8
+		var triple_ready: bool = recipe != null and recipe.is_triple()
+		_staff_tag.modulate.a = (0.75 + 0.25 * sin(_t * 9.0)) if triple_ready else 0.8
 
 
 ## Aviso de la tecla junto a la mira: trituradora, puerta de la casucha, atril del Santuario,
@@ -355,7 +356,7 @@ func _draw_pylon_bar() -> void:
 		draw_rect(Rect2(r.position, Vector2(w, r.size.y - 2)), fill_col)
 		draw_rect(Rect2(r.position + Vector2(0, 1), Vector2(w, 1)), C_PINK)
 		# Brillo que recorre el líquido a saltos.
-		var sx: float = fmod(floor(_t * 12.0) * 6.0, maxf(w, 1.0))
+		var sx: float = fmod(floorf(_t * 12.0) * 6.0, maxf(w, 1.0))
 		draw_rect(Rect2(r.position + Vector2(sx, 2), Vector2(3, 2)), Color(1.0, 1.0, 1.0, 0.8))
 		draw_rect(Rect2(r.position + Vector2(w - 1, 0), Vector2(1, r.size.y)), Color("#c9f6ff"))
 	for i: int in ManaPylon.MARKS.size():
@@ -376,6 +377,7 @@ func _draw_levitation() -> void:
 	draw_rect(r.grow(1), C_SHADOW)
 	draw_rect(r, Color(C_SHADOW, 0.6))
 	var col: Color = C_CYAN.lerp(C_PINK, clampf(1.0 - k * 2.0, 0.0, 1.0))
+	@warning_ignore("integer_division")
 	if k < 0.25 and player.levitating and int(Time.get_ticks_msec() / 120) % 2 == 0:
 		col = Color.WHITE
 	draw_rect(Rect2(r.position, Vector2(roundf(r.size.x * k), r.size.y)), col)

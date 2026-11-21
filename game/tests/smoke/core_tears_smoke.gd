@@ -27,7 +27,7 @@ func _initialize() -> void:
 		await process_frame
 	var main: Node = current_scene
 	var menu: Node = main.get_node(^"HUDLayer/Hud/GameMenu")
-	if bool(menu.call(&"is_open")):
+	if VariantCast.to_bool(menu.call(&"is_open")):
 		menu.call(&"_close")
 	paused = false
 	await _world(gs, main)
@@ -93,14 +93,15 @@ func _currency(gs: Node) -> void:
 	var prog: Progression = gs.get(&"progression")
 	var eye: UpgradeNode = load("res://data/upgrades/core_eye.tres")
 	var gc: UpgradeNode = load("res://data/upgrades/grand_convergence.tres")
-	_check((gs.get(&"UPGRADES") as Array).has(eye), "los nodos del Núcleo están en UPGRADES")
+	var upgrades: Array = gs.get(&"UPGRADES")
+	_check(upgrades.has(eye), "los nodos del Núcleo están en UPGRADES")
 	prog.mana = 1_000_000
 	_check(prog.purchase_block(eye) == &"tears", "sin Lágrimas no se compra (aunque sobre maná)")
-	_check(not bool(gs.call(&"buy_upgrade", eye)), "no se inscribe")
+	_check(not VariantCast.to_bool(gs.call(&"buy_upgrade", eye)), "no se inscribe")
 	prog.tears = 2
-	_check(bool(gs.call(&"buy_upgrade", eye)), "con Lágrimas, sí")
+	_check(VariantCast.to_bool(gs.call(&"buy_upgrade", eye)), "con Lágrimas, sí")
 	_check(prog.tears == 1 and prog.mana == 1_000_000, "gasta Lágrimas, no maná")
-	_check(bool(gs.call(&"has_upgrade", &"core_eye")), "has_upgrade")
+	_check(VariantCast.to_bool(gs.call(&"has_upgrade", &"core_eye")), "has_upgrade")
 	# El Grimorio se abre por una estrella del Núcleo nueva, pero una ya vista no tapa las de maná
 	# (un coste de 1 Lágrima no es "más barato" que 5 de maná).
 	var cheapest: UpgradeNode = gs.call(&"cheapest_affordable")
@@ -111,17 +112,23 @@ func _currency(gs: Node) -> void:
 	prog.seen_upgrades.clear()
 	prog.tears = 10
 	_check(prog.purchase_block(gc) == &"hidden", "la Gran Convergencia no se ve antes del 99 %")
-	_check(not bool(gs.get(&"core_exposed")), "Núcleo tapado")
+	_check(not VariantCast.to_bool(gs.get(&"core_exposed")), "Núcleo tapado")
 	prog.essence = roundi(prog.total_essence * 0.0105)
 	_check(prog.purchase_block(gc) == &"hidden", "al 98,95 % tampoco")
 	var revealed: Array[int] = [0]
 	events.connect(&"grimoire_final_revealed", func() -> void: revealed[0] += 1)
 	gs.call(&"hit_crystal", roundi(prog.total_essence * 0.0005), Vector3.ZERO)
-	_check(bool(gs.get(&"core_exposed")) and revealed[0] == 1, "al 99 %: Núcleo expuesto, aviso")
+	_check(
+		VariantCast.to_bool(gs.get(&"core_exposed")) and revealed[0] == 1,
+		"al 99 %: Núcleo expuesto, aviso"
+	)
 	_check(prog.purchase_block(gc) == &"", "y se puede inscribir")
-	_check(bool(gs.call(&"buy_upgrade", gc)), "Gran Convergencia inscrita")
+	_check(VariantCast.to_bool(gs.call(&"buy_upgrade", gc)), "Gran Convergencia inscrita")
 	_check(_unlocked == 1, "avisa grand_convergence_unlocked")
-	_check(bool(gs.call(&"has_upgrade", &"grand_convergence")), "has_upgrade(grand_convergence)")
+	_check(
+		VariantCast.to_bool(gs.call(&"has_upgrade", &"grand_convergence")),
+		"has_upgrade(grand_convergence)"
+	)
 	# Se guarda: ida y vuelta por to_dict / load_dict.
 	prog.tears_total = 9
 	prog.tear_pity = 37.5
@@ -144,7 +151,8 @@ func _world(gs: Node, main: Node) -> void:
 	events.connect(&"tear_collected", func(_at: Vector3) -> void: _collected += 1)
 	var saves: bool = false
 	for c: Dictionary in events.get_signal_connection_list(&"tear_collected"):
-		if (c["callable"] as Callable).get_object() == root.get_node(^"SaveSystem"):
+		var callable: Callable = c["callable"]
+		if callable.get_object() == root.get_node(^"SaveSystem"):
 			saves = true
 	_check(saves, "recoger una Lágrima guarda la partida")
 	var prog: Progression = gs.get(&"progression")
@@ -161,12 +169,14 @@ func _world(gs: Node, main: Node) -> void:
 	var veins_hit: SpellHit = _tunnel_hit(crystal, 2, fireball)
 	crystal.call(&"receive_hit", veins_hit)
 	_check(veins_hit.layer == 2, "golpe en las Venas")
-	_check(int(tears.call(&"loose_count")) == 0, "fuera del Corazón no brotan")
+	_check(VariantCast.to_int(tears.call(&"loose_count")) == 0, "fuera del Corazón no brotan")
 	# El Corazón: un golpe suelto rebota y no da nada.
 	_demo.call(&"tunnel_to_layer", crystal, 3)
 	var single: SpellHit = _tunnel_hit(crystal, 3, null)
 	crystal.call(&"receive_hit", single)
-	_check(int(tears.call(&"loose_count")) == 0, "un golpe suelto en el Corazón: nada")
+	_check(
+		VariantCast.to_int(tears.call(&"loose_count")) == 0, "un golpe suelto en el Corazón: nada"
+	)
 	# Fractura del Corazón: más daño a los combinados en el Corazón.
 	var levels: Dictionary = prog.get(&"upgrade_levels")
 	levels[&"heart_fracture"] = 3
@@ -179,9 +189,12 @@ func _world(gs: Node, main: Node) -> void:
 	var combo: SpellHit = _tunnel_hit(crystal, 3, fireball)
 	crystal.call(&"receive_hit", combo)
 	_check(combo.layer == 3, "golpe combinado en el Corazón")
-	_check(int(tears.call(&"loose_count")) == 1, "brota una Lágrima del Núcleo")
+	_check(VariantCast.to_int(tears.call(&"loose_count")) == 1, "brota una Lágrima del Núcleo")
 	_check(prog.loose_tears.size() == 1, "se apunta dónde flota (para guardarla)")
-	_check(int(shards.call(&"count_of", tear_type)) == 0, "no es un fragmento (familiares no)")
+	_check(
+		VariantCast.to_int(shards.call(&"count_of", tear_type)) == 0,
+		"no es un fragmento (familiares no)"
+	)
 	await create_timer(3.2).timeout
 	# Recogerla: vuela a la mano y suma al contador, no a la bolsa.
 	var bag0: int = prog.bag_count()
@@ -191,14 +204,18 @@ func _world(gs: Node, main: Node) -> void:
 	_check(prog.tears == 1 and prog.tears_total == 1, "suma al contador (%d)" % prog.tears)
 	_check(_collected == 1, "aviso tear_collected")
 	_check(prog.bag_count() == bag0, "no ocupa la bolsa")
-	_check(int(tears.call(&"loose_count")) == 0 and prog.loose_tears.is_empty(), "ya no flota")
+	_check(
+		VariantCast.to_int(tears.call(&"loose_count")) == 0 and prog.loose_tears.is_empty(),
+		"ya no flota"
+	)
 	# El Ojo del Núcleo: vuelan solas desde lejos.
 	levels[&"core_eye"] = 1
 	prog.tear_pity = 10_000.0
 	var again: SpellHit = _tunnel_hit(crystal, 3, fireball)
 	crystal.call(&"receive_hit", again)
-	_check(int(tears.call(&"loose_count")) == 1, "otra Lágrima")
-	player.global_position = (tears.call(&"position_of", 0) as Vector3) + Vector3(0, 0, 12)
+	_check(VariantCast.to_int(tears.call(&"loose_count")) == 1, "otra Lágrima")
+	var tear_at: Vector3 = tears.call(&"position_of", 0)
+	player.global_position = tear_at + Vector3(0, 0, 12)
 	await create_timer(3.5).timeout
 	_check(prog.tears == 2, "con el Ojo del Núcleo vuela sola al mago (%d)" % prog.tears)
 	# Sin plazas libres nunca se pierde una: la más vieja (o la nueva) cuenta sola.
@@ -207,7 +224,10 @@ func _world(gs: Node, main: Node) -> void:
 	var max_tears: int = tears.get(&"MAX_TEARS")
 	for i: int in max_tears + 2:
 		tears.call(&"drop", crystal.global_position + Vector3(0, 30, 0), Vector3.UP)
-	_check(int(tears.call(&"loose_count")) == max_tears, "pool lleno: %d flotando" % max_tears)
+	_check(
+		VariantCast.to_int(tears.call(&"loose_count")) == max_tears,
+		"pool lleno: %d flotando" % max_tears
+	)
 	_check(prog.tears == 4, "y las que no caben cuentan solas (%d)" % prog.tears)
 
 
@@ -218,7 +238,7 @@ func _tunnel_hit(crystal: Node3D, layer: int, recipe: SpellRecipe) -> SpellHit:
 	var p: Vector3 = ray[0]
 	var dir: Vector3 = ray[1]
 	var t: float = 0.0
-	while t < 80.0 and not bool(volume.call(&"is_solid", p + dir * t)):
+	while t < 80.0 and not VariantCast.to_bool(volume.call(&"is_solid", p + dir * t)):
 		t += 0.2
 	var spark: Resource = load("res://data/elements/spark.tres")
 	var hit := SpellHit.new()
@@ -229,7 +249,8 @@ func _tunnel_hit(crystal: Node3D, layer: int, recipe: SpellRecipe) -> SpellHit:
 	hit.element = &"spark"
 	hit.element_def = spark if recipe == null else null
 	hit.recipe = recipe
-	hit.tier = (spark.get(&"tiers") as Array)[0] if recipe == null else recipe.tier
+	var spark_tiers: Array = spark.get(&"tiers")
+	hit.tier = spark_tiers[0] if recipe == null else recipe.tier
 	return hit
 
 

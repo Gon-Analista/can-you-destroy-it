@@ -72,7 +72,7 @@ static func intercept(hit: SpellHit, collider: Object) -> bool:
 
 ## Haz de Plasma: true si la mira está sobre un bicho (y lo revienta); el haz no sigue al cristal.
 static func beam(hit: SpellHit, aim: Dictionary) -> bool:
-	var node: Node = aim["collider"] as Node
+	var node: Node = aim["collider"]
 	if _instance == null or node == null or not node.has_meta(&"critter"):
 		return false
 	hit.position = aim["position"]
@@ -365,7 +365,7 @@ func on_spell_arrived(hit: SpellHit, collider: Object) -> bool:
 		return false
 	var direct: Critter = null
 	if node and node.has_meta(&"critter"):
-		direct = node.get_meta(&"critter") as Critter
+		direct = node.get_meta(&"critter")
 	if hit.damage <= 0:
 		return _bonk(hit, direct)
 	var flavor: Critter.Flavor = flavor_of(hit)

@@ -33,14 +33,17 @@ func _initialize() -> void:
 	]
 	for p: Vector3 in probes:
 		var expect: int = posmod(floori((atan2(p.z, p.x) + PI) / TAU * 5.0), 5)
-		_check(int(veins_script.call(&"sector_at", p)) == expect, "sector de %s" % p)
-	_check(int(veins_script.call(&"sector_at", Vector3(0, 5, 30))) == 3, "delante: vena de Tierra")
+		_check(VariantCast.to_int(veins_script.call(&"sector_at", p)) == expect, "sector de %s" % p)
+	_check(
+		VariantCast.to_int(veins_script.call(&"sector_at", Vector3(0, 5, 30))) == 3,
+		"delante: vena de Tierra"
+	)
 	change_scene_to_file("res://main/main.tscn")
 	for i: int in 240:
 		await process_frame
 	var main: Node = current_scene
 	var menu: Node = main.get_node(^"HUDLayer/Hud/GameMenu")
-	if bool(menu.call(&"is_open")):
+	if VariantCast.to_bool(menu.call(&"is_open")):
 		menu.call(&"_close")
 	var events: Node = root.get_node(^"Events")
 	events.connect(&"pylon_milestone", func(i: int, _m: float) -> void: _milestones.append(i))
@@ -55,7 +58,10 @@ func _initialize() -> void:
 	var veins: Node = crystal.get_node(^"Veins")
 	var resonant: Resource = load("res://data/shards/resonant.tres")
 	var chunk: Resource = load("res://data/shards/chunk.tres")
-	_check(int(resonant.get(&"value")) == 5 * int(chunk.get(&"value")), "resonante = 5 grandes")
+	_check(
+		VariantCast.to_int(resonant.get(&"value")) == 5 * VariantCast.to_int(chunk.get(&"value")),
+		"resonante = 5 grandes"
+	)
 
 	# --- Venas: túnel hasta la capa de las venas por delante (sector 3, Tierra) ---
 	_demo.call(&"tunnel_to_layer", crystal, 2)
@@ -64,24 +70,30 @@ func _initialize() -> void:
 	var hit: SpellHit = _vein_hit(crystal, earth)
 	# Un golpe fuerte (625, x2 = 1250): los Resonantes valen un 20 % del daño (vein_bonus), 2 de 125.
 	hit.damage = 625
-	_check(int(veins.call(&"layer_under", hit)) == 2, "el fondo del túnel es la capa de las venas")
+	_check(
+		VariantCast.to_int(veins.call(&"layer_under", hit)) == 2,
+		"el fondo del túnel es la capa de las venas"
+	)
 	var before_res: int = shards.call(&"count_of", resonant)
 	var before_essence: int = prog.get(&"essence")
 	crystal.call(&"receive_hit", hit)
 	_check(hit.vein == 3 and hit.vein_weak, "Tierra en la vena de Tierra: golpe en la vena")
 	_check(hit.damage == 1250, "daño x2 en la vena (%d)" % hit.damage)
 	_check(
-		int(shards.call(&"count_of", resonant)) == before_res + 2,
+		VariantCast.to_int(shards.call(&"count_of", resonant)) == before_res + 2,
 		"suelta Fragmentos Resonantes por el 20 % de su daño"
 	)
-	_check(int(prog.get(&"essence")) < before_essence, "quita esencia")
+	_check(VariantCast.to_int(prog.get(&"essence")) < before_essence, "quita esencia")
 	await process_frame
 	var wrong: SpellHit = _vein_hit(crystal, spark)
 	var res_now: int = shards.call(&"count_of", resonant)
 	crystal.call(&"receive_hit", wrong)
 	_check(wrong.vein == 3 and not wrong.vein_weak, "Chispa en la vena de Tierra: no")
 	_check(wrong.damage == 10, "sin daño extra (%d)" % wrong.damage)
-	_check(int(shards.call(&"count_of", resonant)) == res_now, "sin Fragmentos Resonantes")
+	_check(
+		VariantCast.to_int(shards.call(&"count_of", resonant)) == res_now,
+		"sin Fragmentos Resonantes"
+	)
 	var combo: SpellHit = _vein_hit(crystal, spark)
 	combo.recipe = load("res://data/spells/recipe_meteor.tres")
 	veins.call(&"apply", combo)
@@ -96,14 +108,16 @@ func _initialize() -> void:
 	prog = gs.get(&"progression")
 	levels = prog.get(&"upgrade_levels")
 	pylon.call(&"receive_mana", chunk)
-	_check(int(prog.get(&"mana")) == 25, "sin Pureza: 25")
+	_check(VariantCast.to_int(prog.get(&"mana")) == 25, "sin Pureza: 25")
 	levels[&"purity"] = 2
 	pylon.call(&"receive_mana", chunk)
-	_check(int(prog.get(&"mana")) == 25 + 29, "Pureza II: x1,166 (29)")
+	_check(VariantCast.to_int(prog.get(&"mana")) == 25 + 29, "Pureza II: x1,166 (29)")
 	pylon.call(&"receive_mana", resonant)
-	_check(int(prog.get(&"mana")) == 25 + 29 + 146, "Pureza II con un resonante (146)")
 	_check(
-		int(prog.get(&"pylon_progress")) == 25 + 25 + 125,
+		VariantCast.to_int(prog.get(&"mana")) == 25 + 29 + 146, "Pureza II con un resonante (146)"
+	)
+	_check(
+		VariantCast.to_int(prog.get(&"pylon_progress")) == 25 + 25 + 125,
 		"el Pilón suma el valor sin Pureza (lo que perdió el cristal)"
 	)
 
@@ -120,29 +134,30 @@ func _initialize() -> void:
 	gs.call(&"deliver", 400_000)
 	_check(_milestones.size() == 3 and _milestones[2] == 2, "al pasar del 25 y del 50: dos más")
 	var valley: Node = world.get_node(^"ValleyMilestones")
-	_check(int(valley.call(&"shown_count")) == 3, "el valle enseña tres hitos")
+	_check(VariantCast.to_int(valley.call(&"shown_count")) == 3, "el valle enseña tres hitos")
 	await create_timer(2.0).timeout
-	_check(int(valley.call(&"shown_count")) == 3, "tras encenderse siguen ahí")
+	_check(VariantCast.to_int(valley.call(&"shown_count")) == 3, "tras encenderse siguen ahí")
 	var sky: ShaderMaterial = (
 		(world.get_node(^"WorldEnvironment") as WorldEnvironment).environment.sky.sky_material
 	)
 	var day_night: Node = world.get_node(^"DayNight")
-	if bool(menu.call(&"is_open")):
+	if VariantCast.to_bool(menu.call(&"is_open")):
 		menu.call(&"_close")
 	paused = false
 	day_night.set(&"time_of_day", 0.0)
 	await process_frame
 	await process_frame
-	_check(float(sky.get_shader_parameter("aurora")) > 0.3, "auroras de noche")
+	_check(VariantCast.to_float(sky.get_shader_parameter("aurora")) > 0.3, "auroras de noche")
 
 	# --- Resonancia del Pilón: el rayo quita esencia ---
 	levels = prog.get(&"upgrade_levels")
 	levels[&"pylon_resonance"] = 1
 	var essence0: int = prog.get(&"essence")
-	var at: Variant = (pylon.call(&"resonance") as Node).call(&"fire")
+	var resonance: Node = pylon.call(&"resonance")
+	var at: Variant = resonance.call(&"fire")
 	_check(at is Vector3, "el rayo encuentra el cristal")
 	_check(_bolts == 1, "aviso del rayo")
-	_check(int(prog.get(&"essence")) < essence0, "el rayo quita esencia")
+	_check(VariantCast.to_int(prog.get(&"essence")) < essence0, "el rayo quita esencia")
 	_check(
 		_last_impact != null and not _last_impact.by_player and _last_impact.streak == 0,
 		"el rayo no es del jugador: no cuenta para la racha"
@@ -160,7 +175,7 @@ func _vein_hit(crystal: Node3D, element: Resource) -> SpellHit:
 	var p: Vector3 = ray[0]
 	var dir: Vector3 = ray[1]
 	var t: float = 0.0
-	while t < 60.0 and not bool(volume.call(&"is_solid", p + dir * t)):
+	while t < 60.0 and not VariantCast.to_bool(volume.call(&"is_solid", p + dir * t)):
 		t += 0.2
 	var hit := SpellHit.new()
 	hit.position = p + dir * (t - 0.3)
@@ -169,7 +184,8 @@ func _vein_hit(crystal: Node3D, element: Resource) -> SpellHit:
 	hit.damage = 10
 	hit.element = element.get(&"id")
 	hit.element_def = element
-	hit.tier = (element.get(&"tiers") as Array)[0]
+	var tiers: Array = element.get(&"tiers")
+	hit.tier = tiers[0]
 	return hit
 
 

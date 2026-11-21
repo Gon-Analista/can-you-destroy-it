@@ -627,9 +627,9 @@ func _build_furniture() -> void:
 		holder.name = "Hanging%d" % i
 		# En los lados: nada delante de la puerta.
 		var side: float = -1.0 if i % 2 == 0 else 1.0
-		holder.position = Vector3(
-			side * (1.25 + 0.3 * float(i / 2)), 2.2, 0.2 + 0.55 * float(i / 2)
-		)
+		@warning_ignore("integer_division")
+		var row: int = i / 2
+		holder.position = Vector3(side * (1.25 + 0.3 * float(row)), 2.2, 0.2 + 0.55 * float(row))
 		add_child(holder)
 		var h: SurfaceTool = MeshKit.begin()
 		MeshKit.add_prism(

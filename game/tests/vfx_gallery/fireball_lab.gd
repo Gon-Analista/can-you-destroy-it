@@ -81,7 +81,9 @@ func _relaunch(shot: Dictionary) -> void:
 	hit.normal = Vector3.BACK
 	hit.position = shot["to"]
 	p.orb_charge = 1.0
-	p.launch(shot["from"], shot["to"], hit, null)
+	var from: Vector3 = shot["from"]
+	var to: Vector3 = shot["to"]
+	p.launch(from, to, hit, null)
 
 
 func _backdrop(pos: Vector3, size: Vector2, col: Color) -> void:

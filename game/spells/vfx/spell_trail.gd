@@ -84,7 +84,8 @@ func add_point(at: Vector3) -> void:
 func _process(delta: float) -> void:
 	_now += delta
 	if _emitting:
-		add_point(get_parent().global_position if get_parent() is Node3D else global_position)
+		var parent := get_parent() as Node3D
+		add_point(parent.global_position if parent else global_position)
 	_rebuild()
 
 

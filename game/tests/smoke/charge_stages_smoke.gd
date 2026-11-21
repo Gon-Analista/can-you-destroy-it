@@ -126,7 +126,8 @@ func _check_damage(table: PackedInt32Array) -> void:
 
 
 func _check_circles() -> void:
-	var circles: Node3D = load("res://spells/vfx/magic_circles.gd").new()
+	var circles_script: GDScript = load("res://spells/vfx/magic_circles.gd")
+	var circles: Node3D = circles_script.new()
 	root.add_child(circles)
 	await process_frame
 	var from := Vector3.ZERO
@@ -186,44 +187,49 @@ func _check_game() -> void:
 	caster.call(&"set_debug_level", 10)
 
 	# Mantener mucho rato: cada etapa una vez, y luego nada más.
-	_check(caster.call(&"try_begin_combine"), "nivel 10: se juntan las manos")
-	var dur: float = (caster.call(&"charge_stages") as ChargeStages).duration
+	_check(VariantCast.to_bool(caster.call(&"try_begin_combine")), "nivel 10: se juntan las manos")
+	var held: ChargeStages = caster.call(&"charge_stages")
+	var dur: float = held.duration
 	await create_timer(dur * 3.0 + 0.5).timeout
 	_check(stages == [0, 1, 2, 3, 4, 5], "mantener: 5 etapas, una vez cada una (%s)" % [stages])
 	var st: ChargeStages = caster.call(&"charge_stages")
 	_check(st.is_full(), "mantener: potencia completa")
 	caster.call(&"try_release_combine")
-	_check(stages.back() == -1, "al soltar termina la carga")
-	_check(not caster.call(&"is_combining"), "al soltar se lanza")
+	_check(VariantCast.to_bool(stages.back() == -1), "al soltar termina la carga")
+	_check(not VariantCast.to_bool(caster.call(&"is_combining")), "al soltar se lanza")
 
 	# Soltar antes de tiempo: se queda en la etapa a la que llegó.
 	await create_timer(recipe.cooldown_sec + 0.2).timeout
 	stages.clear()
-	_check(caster.call(&"try_begin_combine"), "otra vez a juntar")
+	_check(VariantCast.to_bool(caster.call(&"try_begin_combine")), "otra vez a juntar")
 	await create_timer(dur * 0.5).timeout
-	var early: int = (caster.call(&"charge_stages") as ChargeStages).reached
+	var halfway: ChargeStages = caster.call(&"charge_stages")
+	var early: int = halfway.reached
 	_check(early >= 1 and early <= 3, "a media carga, etapas a medias (%d)" % early)
 	# Cambiar de elemento a media carga no hace nada (las manos están juntas).
-	var before: int = int((caster.get(&"hand_element") as Array)[0])
+	var hand: Array = caster.get(&"hand_element")
+	var before: int = VariantCast.to_int(hand[0])
 	caster.call(&"cycle_element", 0)
-	_check(
-		int((caster.get(&"hand_element") as Array)[0]) == before,
-		"a media carga, Q no cambia el elemento"
-	)
-	_check(caster.call(&"is_combining"), "y la carga sigue")
+	hand = caster.get(&"hand_element")
+	_check(VariantCast.to_int(hand[0]) == before, "a media carga, Q no cambia el elemento")
+	_check(VariantCast.to_bool(caster.call(&"is_combining")), "y la carga sigue")
 	caster.call(&"try_release_combine")
 	_check(stages.count(early) == 1, "soltar antes: cada etapa sonó una vez")
 
 	# Pausa (menú) a media carga: se deshace sin gastar la recarga.
 	await create_timer(recipe.cooldown_sec + 0.2).timeout
 	stages.clear()
-	_check(caster.call(&"try_begin_combine"), "y otra vez")
+	_check(VariantCast.to_bool(caster.call(&"try_begin_combine")), "y otra vez")
 	await create_timer(dur * 0.3).timeout
 	events.emit_signal(&"menu_opened")
-	_check(not caster.call(&"is_combining"), "al abrir el menú la carga se deshace")
-	_check(stages.back() == -1, "y termina")
 	_check(
-		float(caster.call(&"charge_ratio", 0)) >= 1.0, "cancelar no gasta la recarga de las manos"
+		not VariantCast.to_bool(caster.call(&"is_combining")),
+		"al abrir el menú la carga se deshace"
+	)
+	_check(VariantCast.to_bool(stages.back() == -1), "y termina")
+	_check(
+		VariantCast.to_float(caster.call(&"charge_ratio", 0)) >= 1.0,
+		"cancelar no gasta la recarga de las manos"
 	)
 	var n_before: int = stages.size()
 	await create_timer(dur).timeout

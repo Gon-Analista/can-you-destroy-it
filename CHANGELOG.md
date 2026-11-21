@@ -26,7 +26,10 @@ cargue menos cosas")
 - `--autoplay` sigue yendo directo al juego; `--title-play` pulsa JUGAR solo (capturas de la carga); `--backdrop`
   quita HUD y manos; `--warp` respeta la altura del suelo.
 - Prueba nueva: `boot_smoke` (título → carga → juego → pausa → título → otra partida).
-- `tools/gd_warnings.py`: lista los avisos de GDScript del Depurador del editor (vía su LSP).
+- **Cero avisos de GDScript** en el Depurador del editor (eran ~830: conversiones desde Variant, divisiones enteras,
+  señales del bus, nombres que tapaban otros). Tipado de verdad donde se podía; `VariantCast` (`core/variant_cast.gd`)
+  para leer números de guardados, opciones y JSON igual que `int()`/`float()`/`bool()`; `@warning_ignore` sólo en
+  las señales de `Events` y en divisiones enteras buscadas. `tools/gd_warnings.py` los lista (vía el LSP del editor).
 - **Rebote** (runa): con el cristal más grande, un golpe cerca de la base buscaba el siguiente punto desde bajo
   tierra y rebotaba contra la cara de abajo del cristal; ahora descarta puntos bajo el suelo y caras que miran al
   otro lado, y si los rayos fallan busca otra cara visible hacia el eje del cristal.

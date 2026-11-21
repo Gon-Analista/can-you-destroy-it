@@ -111,11 +111,12 @@ func chain(hit: SpellHit, count: int) -> void:
 		if r.is_empty():
 			continue
 		var p: Vector3 = r["position"]
+		var normal: Vector3 = r["normal"]
 		_arcs.bolt_between(hit.position + n * 0.2, p, 0.12, col, 0.4)
 		var worth: float = maxf(1.0, float(hit.damage) * 0.2)
-		if _crystal.dig(p, r["normal"], worth, hit.recipe != null) > 0.0:
-			_shards.spawn_worth(p, r["normal"], worth, 1.0, _crystal.hit_layer())
-		_fx.play(p, r["normal"], hit.tier, false, 0.7)
+		if _crystal.dig(p, normal, worth, hit.recipe != null) > 0.0:
+			_shards.spawn_worth(p, normal, worth, 1.0, _crystal.hit_layer())
+		_fx.play(p, normal, hit.tier, false, 0.7)
 
 
 ## Juicio del Trueno: el rayo baja del cielo al blanco (varias hebras), con destello.

@@ -15,35 +15,42 @@ func _initialize() -> void:
 	var elements: Array = caster_script.get(&"ELEMENTS")
 	var recipes: Array = caster_script.get(&"RECIPES")
 	_check(elements.size() == 6, "seis elementos")
-	_check(elements[4].get(&"id") == &"arcane", "el quinto es el Arcano")
-	_check(elements[5].get(&"id") == &"wind", "el sexto es el Viento")
+	var fifth: Resource = elements[4]
+	_check(VariantCast.to_bool(fifth.get(&"id") == &"arcane"), "el quinto es el Arcano")
+	var sixth: Resource = elements[5]
+	_check(VariantCast.to_bool(sixth.get(&"id") == &"wind"), "el sexto es el Viento")
 	var pairs: int = 0
 	for i: int in elements.size():
 		for j: int in range(i, elements.size()):
-			var a: StringName = elements[i].get(&"id")
-			var b: StringName = elements[j].get(&"id")
+			var el_a: Resource = elements[i]
+			var el_b: Resource = elements[j]
+			var a: StringName = el_a.get(&"id")
+			var b: StringName = el_b.get(&"id")
 			var n: int = 0
 			for r: Resource in recipes:
-				if bool(r.call(&"matches", a, b)):
+				if VariantCast.to_bool(r.call(&"matches", a, b)):
 					n += 1
 			_check(n == 1, "%s + %s: una combinación (%d)" % [a, b, n])
 			pairs += 1
 	_check(pairs == 21, "21 parejas")
 	for r: Resource in recipes:
-		if bool(r.get(&"is_reaction")):
-			_check(not bool(r.call(&"matches", &"spark", &"frost")), "la reacción no se lanza")
+		if VariantCast.to_bool(r.get(&"is_reaction")):
+			_check(
+				not VariantCast.to_bool(r.call(&"matches", &"spark", &"frost")),
+				"la reacción no se lanza"
+			)
 		else:
 			_check(
 				r.get(&"tier") != null and r.get(&"visual") != null,
 				"%s tiene aspecto" % r.get(&"id")
 			)
-			_check(String(r.get(&"riddle")) != "", "%s tiene acertijo" % r.get(&"id"))
-			_check(String(r.get(&"description")) != "", "%s tiene descripción" % r.get(&"id"))
+			_check(str(r.get(&"riddle")) != "", "%s tiene acertijo" % r.get(&"id"))
+			_check(str(r.get(&"description")) != "", "%s tiene descripción" % r.get(&"id"))
 			var echo_of: StringName = r.get(&"echo_of")
 			if echo_of != &"":
 				var base: Resource = load("res://spells/spell_echoes.gd").call(&"base_of", r)
 				_check(
-					base != null and int(r.get(&"echo_count")) > 0,
+					base != null and VariantCast.to_int(r.get(&"echo_count")) > 0,
 					"%s repite %s" % [r.get(&"id"), echo_of]
 				)
 	change_scene_to_file("res://main/main.tscn")
@@ -51,7 +58,7 @@ func _initialize() -> void:
 		await process_frame
 	var main: Node = current_scene
 	var menu: Node = main.get_node(^"HUDLayer/Hud/GameMenu")
-	if bool(menu.call(&"is_open")):
+	if VariantCast.to_bool(menu.call(&"is_open")):
 		menu.call(&"_close")
 	var player: Node3D = main.get_node(^"WorldView/WorldViewport/Player")
 	var caster: Node = player.call(&"get_caster")
@@ -67,7 +74,7 @@ func _initialize() -> void:
 	(player.get_node(^"Head") as Node3D).rotation.x = deg_to_rad(8.0)
 	var shot: int = 0
 	for r: Resource in recipes:
-		if bool(r.get(&"is_reaction")):
+		if VariantCast.to_bool(r.get(&"is_reaction")):
 			continue
 		# Cada una a otro punto de la Corteza: las que perforan, todas en el mismo sitio, acababan
 		# en el Manto y las de nivel 1 ya no le hacían nada.
@@ -77,31 +84,38 @@ func _initialize() -> void:
 		var idx: Array[int] = []
 		for e: StringName in els:
 			for k: int in elements.size():
-				if elements[k].get(&"id") == e:
+				var el: Resource = elements[k]
+				if el.get(&"id") == e:
 					idx.append(k)
-		(caster.get(&"hand_element") as Array)[0] = idx[0]
-		(caster.get(&"hand_element") as Array)[1] = idx[1]
+		var hand: Array = caster.get(&"hand_element")
+		hand[0] = idx[0]
+		hand[1] = idx[1]
 		caster.set(&"_cooldown", PackedFloat32Array([0.0, 0.0]))
 		await process_frame
-		var before: int = int(prog.get(&"essence"))
+		var before: int = VariantCast.to_int(prog.get(&"essence"))
 		var began: bool = caster.call(&"try_begin_combine")
 		_check(began, "%s: se juntan las manos" % r.get(&"id"))
-		await create_timer(float(r.get(&"charge_sec")) + 0.2).timeout
+		await create_timer(VariantCast.to_float(r.get(&"charge_sec")) + 0.2).timeout
 		caster.call(&"try_release_combine")
 		# 6 Magnetismo y 7 Gravedad: utilidad, no dañan.
-		var damages: bool = int(r.get(&"delivery")) < 6 or int(r.get(&"delivery")) > 7
+		var damages: bool = (
+			VariantCast.to_int(r.get(&"delivery")) < 6 or VariantCast.to_int(r.get(&"delivery")) > 7
+		)
 		# Lo lento (Bola de Fuego) tarda más cuanto más hondo es el túnel: se espera al golpe.
 		var waited: float = 0.0
 		while (
-			waited < 2.6 + float(r.get(&"beam_sec"))
-			or (damages and int(prog.get(&"essence")) >= before and waited < 9.0)
+			waited < 2.6 + VariantCast.to_float(r.get(&"beam_sec"))
+			or (damages and VariantCast.to_int(prog.get(&"essence")) >= before and waited < 9.0)
 		):
 			await create_timer(0.2).timeout
 			waited += 0.2
 		var found: Array = prog.get(&"discovered_recipes")
 		_check(found.has(r.get(&"id")), "%s: descubierta" % r.get(&"id"))
 		if damages:
-			_check(int(prog.get(&"essence")) < before, "%s: quita esencia" % r.get(&"id"))
+			_check(
+				VariantCast.to_int(prog.get(&"essence")) < before,
+				"%s: quita esencia" % r.get(&"id")
+			)
 	print("combos_smoke: ", "OK" if _ok else "FALLO")
 	quit(0 if _ok else 1)
 

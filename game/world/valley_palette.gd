@@ -185,9 +185,10 @@ static func day_keys(id: StringName, keys: Array[Array]) -> Array[Array]:
 	if not p.has("day"):
 		return keys
 	var out: Array[Array] = []
+	var day: Dictionary = p["day"]
 	for row: Array in keys:
 		var r: Array = row.duplicate()
-		var over: Dictionary = (p["day"] as Dictionary).get(float(row[0]), {})
+		var over: Dictionary = day.get(VariantCast.to_float(row[0]), {})
 		for col: int in over:
 			r[col] = over[col]
 		out.append(r)
@@ -238,22 +239,28 @@ static func _grade(c: Color, g: Dictionary) -> Color:
 	var green: float = _band(h, 0.16, 0.24, 0.42, 0.5)
 	var orange: float = _band(h, 0.0, 0.04, 0.12, 0.17)
 	var blue: float = _band(h, 0.5, 0.55, 0.7, 0.76)
-	h = fposmod(h + float(g.get("green_shift", 0.0)) * green, 1.0)
-	v *= lerpf(1.0, float(g.get("green_val", 1.0)), green * smoothstep(0.1, 0.4, s))
-	s *= lerpf(1.0, float(g.get("green_sat", 1.0)), green)
-	s *= lerpf(1.0, float(g.get("orange_sat", 1.0)), orange)
+	var green_shift: float = g.get("green_shift", 0.0)
+	var green_val: float = g.get("green_val", 1.0)
+	var green_sat: float = g.get("green_sat", 1.0)
+	var orange_sat: float = g.get("orange_sat", 1.0)
+	h = fposmod(h + green_shift * green, 1.0)
+	v *= lerpf(1.0, green_val, green * smoothstep(0.1, 0.4, s))
+	s *= lerpf(1.0, green_sat, green)
+	s *= lerpf(1.0, orange_sat, orange)
 	# Croma: por encima de la rodilla la saturación (por valor) crece a medias.
 	var chroma: float = s * v
 	var knee: float = g.get("chroma_knee", 1.0)
 	if chroma > knee and v > 0.0:
 		# El azul del cielo se respeta más: es lo que da aire al día.
-		var keep: float = lerpf(float(g.get("chroma_keep", 1.0)), 1.0, blue * 0.7)
+		var chroma_keep: float = g.get("chroma_keep", 1.0)
+		var keep: float = lerpf(chroma_keep, 1.0, blue * 0.7)
 		chroma = knee + (chroma - knee) * keep
 		s = chroma / v
 	# Blancos: los valores altos se comprimen (menos deslumbre en el cristal y las nubes).
 	var wk: float = g.get("white_knee", 1.0)
 	if v > wk:
-		v = wk + (v - wk) * float(g.get("white_keep", 1.0))
+		var white_keep: float = g.get("white_keep", 1.0)
+		v = wk + (v - wk) * white_keep
 	var out := Color.from_hsv(h, clampf(s, 0.0, 1.0), clampf(v, 0.0, 1.0))
 	# Tinte de sombras y luces según la luminancia.
 	var lum: float = out.get_luminance()

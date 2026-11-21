@@ -70,4 +70,5 @@ func _process(delta: float) -> void:
 	_wait = INTERVAL
 	var q: Vector4 = _queue.pop_front()
 	var n: Vector3 = _normals.pop_front()
-	_crystal.aftershock(Vector3(q.x, q.y, q.z), n, q.w, _tiers.pop_front())
+	var tier: SpellTier = _tiers.pop_front()
+	_crystal.aftershock(Vector3(q.x, q.y, q.z), n, q.w, tier)

@@ -81,7 +81,7 @@ func _px(p: Vector2, c: Color) -> void:
 
 func _draw() -> void:
 	var c: Vector2 = (size * 0.5).floor()
-	var gap: int = 2 + int(round(_cast_kick * 3.0))
+	var gap: int = 2 + roundi(_cast_kick * 3.0)
 	# Cruz con sombra de 1 píxel para leerse sobre el cielo y el cristal.
 	for i: int in range(gap, gap + 3):
 		for d: Vector2 in [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]:
@@ -90,7 +90,7 @@ func _draw() -> void:
 	_px(c, C_MAIN)
 	# Anillo de carga: sólo visible mientras se recarga (y un destello al completarse).
 	if charge < 1.0 or _ready_flash > 0.0:
-		var lit: int = int(floor(charge * DOTS))
+		var lit: int = floori(charge * DOTS)
 		var radius: float = 9.0 + roundf(_stage_kick * 2.0)
 		for i: int in DOTS:
 			var a: float = -PI * 0.5 + TAU * float(i) / DOTS
@@ -107,7 +107,7 @@ func _draw() -> void:
 	if _hit_flash > 0.0:
 		var hc: Color = C_RESONANT if _hit_resonant else C_HIT
 		hc.a = _hit_flash
-		var r: int = 5 + int(round((1.0 - _hit_flash) * 3.0)) + (2 if _hit_resonant else 0)
+		var r: int = 5 + roundi((1.0 - _hit_flash) * 3.0) + (2 if _hit_resonant else 0)
 		for d: Vector2 in [Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]:
 			for i: int in 3:
 				_px(c + d * (r + i), hc)

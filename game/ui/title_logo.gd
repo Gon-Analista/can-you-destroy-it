@@ -192,7 +192,8 @@ func _burst(at: Vector2, n: int) -> void:
 		_parts_pos.append(at)
 		_parts_vel.append(Vector2(cos(a), sin(a)) * _rng.randf_range(30.0, 140.0) + Vector2(0, -50))
 		_parts_life.append(_rng.randf_range(0.5, 1.1))
-		_parts_col.append([C_ICE, C_CYAN, C_ICE_DARK, Color.WHITE][k % 4])
+		var col: Color = [C_ICE, C_CYAN, C_ICE_DARK, Color.WHITE][k % 4]
+		_parts_col.append(col)
 
 
 func _process(delta: float) -> void:

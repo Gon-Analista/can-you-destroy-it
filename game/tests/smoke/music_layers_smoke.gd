@@ -30,7 +30,7 @@ func _process(_delta: float) -> bool:
 		director.call("set_music_layers", 3, 0.05)
 	elif _frames == 40:
 		var stream: AudioStreamSynchronized = director.get("_music_stream")
-		_check(int(director.call("get_music_layers")) == 3, "3 capas activas")
+		_check(VariantCast.to_int(director.call("get_music_layers")) == 3, "3 capas activas")
 		for i: int in NAMES.size():
 			var db: float = stream.get_sync_stream_volume(i)
 			_check(

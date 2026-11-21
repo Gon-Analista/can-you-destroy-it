@@ -426,6 +426,7 @@ func _on_streak_changed(streak: int) -> void:
 
 
 func _on_streak_milestone(streak: int) -> void:
+	@warning_ignore("integer_division")
 	_show_banner(tr("¡RACHA x%d!") % streak, STREAK_COLORS[clampi(streak / 20, 0, 3)])
 
 
@@ -493,7 +494,7 @@ func _process(delta: float) -> void:
 		_shown_essence = lerpf(_shown_essence, float(_target_essence), 1.0 - exp(-delta * 14.0))
 		if absf(_shown_essence - _target_essence) < 0.5:
 			_shown_essence = _target_essence
-		_essence.text = format_int(int(round(_shown_essence)))
+		_essence.text = format_int(roundi(_shown_essence))
 	_essence_punch = maxf(0.0, _essence_punch - delta * 6.0)
 	_essence.scale = Vector2.ONE * (1.0 + _essence_punch * 0.18)
 	_essence.add_theme_color_override(&"font_color", C_TEXT.lerp(C_CYAN, _essence_punch))

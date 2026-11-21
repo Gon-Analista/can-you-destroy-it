@@ -253,7 +253,7 @@ func _update_pose(delta: float) -> void:
 		pitch = -0.55 * clampf(flat.length() / speed(), 0.0, 1.0) + clampf(_vel.y * 0.04, -0.3, 0.3)
 	rotation.x = lerpf(rotation.x, pitch, 1.0 - exp(-delta * 6.0))
 	# Aleteo en poses fijas a 12 fps (como un sprite animado a mano).
-	var frame: int = int(floor((_t + _phase_offset) * ANIM_FPS))
+	var frame: int = floori((_t + _phase_offset) * ANIM_FPS)
 	var deg: float = FLAP_POSES[frame % FLAP_POSES.size()]
 	var sweep: float = 0.0
 	match state:
@@ -570,7 +570,8 @@ func _cast() -> void:
 	hit.normal = r["normal"]
 	hit.direction = dir
 	projectile.orb_charge = 0.8
-	projectile.launch(origin, hit.position, hit, r["collider"])
+	var collider: Object = r["collider"]
+	projectile.launch(origin, hit.position, hit, collider)
 	casts += 1
 	_burst.restart()
 	flock.voice(FamiliarFlock.Voice.CAST, origin)

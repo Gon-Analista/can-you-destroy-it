@@ -152,10 +152,11 @@ func _build_audio(page: VBoxContainer) -> void:
 		[tr("AMBIENTE"), "Ambience"],
 		[tr("INTERFAZ"), "UI"],
 	]:
+		var bus_label: String = bus[0]
 		var bus_name: String = bus[1]
 		_slider(
 			page,
-			bus[0],
+			bus_label,
 			[0.0, 1.0, 0.05, Settings.bus_volumes.get(bus_name, 1.0)],
 			_percent,
 			func(v: float) -> void:
@@ -267,7 +268,7 @@ func _slider(
 	s.min_value = range_value[0]
 	s.max_value = range_value[1]
 	s.step = range_value[2]
-	s.value = clampf(range_value[3], s.min_value, s.max_value)
+	s.value = clampf(VariantCast.to_float(range_value[3]), s.min_value, s.max_value)
 	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	s.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	s.custom_minimum_size = Vector2(0, 10)

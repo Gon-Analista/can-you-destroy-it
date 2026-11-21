@@ -131,7 +131,8 @@ func _process(delta: float) -> void:
 		var grow: float = clampf((_total[i] - _left[i]) / 0.25, 0.0, 1.0)
 		var k: float = grow * smoothstep(0.0, 0.35, life)
 		for f: MeshInstance3D in _flames[i]:
-			f.scale = Vector3.ONE * float(f.get_meta(&"base")) * k
+			var base: float = f.get_meta(&"base")
+			f.scale = Vector3.ONE * base * k
 			(f.material_override as ShaderMaterial).set_shader_parameter("fade", k)
 		_audio[i].volume_db = lerpf(-30.0, -8.0, k)
 		_tick[i] -= delta

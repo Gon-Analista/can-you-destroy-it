@@ -80,6 +80,7 @@ func _process(_delta: float) -> void:
 ## Resolución nativa de la zona de juego (640x360 escalado por enteros).
 func _resize() -> void:
 	var win: Vector2i = get_window().size
+	@warning_ignore("integer_division")
 	var k: int = maxi(1, mini(win.x / 640, win.y / 360))
 	_viewport.size = Vector2i(640 * k, 360 * k)
 

@@ -259,7 +259,8 @@ func _apply_charge() -> void:
 	var spin_mul: float = lerpf(1.0, def.charge_spin_boost, charge)
 	for i: int in _ribbons.size():
 		var r: MeshInstance3D = _ribbons[i]
-		r.scale = Vector3.ONE * float(r.get_meta(&"radius")) * s
+		var radius: float = r.get_meta(&"radius")
+		r.scale = Vector3.ONE * radius * s
 		_ribbon_mats[2 * i].set_shader_parameter("speed", _ribbon_base_speed[i] * spin_mul)
 		_ribbon_mats[2 * i + 1].set_shader_parameter("speed", _ribbon_base_speed[i] * spin_mul)
 	_embers.amount_ratio = lerpf(0.3, 1.0, charge)

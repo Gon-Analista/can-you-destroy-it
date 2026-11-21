@@ -27,7 +27,8 @@ static func build(
 		var key := Vector2i(floori(t.origin.x / cell), floori(t.origin.z / cell))
 		if not buckets.has(key):
 			buckets[key] = []
-		(buckets[key] as Array).append(i)
+		var bucket: Array = buckets[key]
+		bucket.append(i)
 	var out: Array[MultiMeshInstance3D] = []
 	var use_colors: bool = not colors.is_empty()
 	for key: Vector2i in buckets:
@@ -39,9 +40,11 @@ static func build(
 		mm.instance_count = ids.size()
 		for k: int in ids.size():
 			var idx: int = ids[k]
-			mm.set_instance_transform(k, xforms[idx] as Transform3D)
+			var xform: Transform3D = xforms[idx]
+			mm.set_instance_transform(k, xform)
 			if use_colors:
-				mm.set_instance_color(k, colors[idx] as Color)
+				var col: Color = colors[idx]
+				mm.set_instance_color(k, col)
 		var mmi := MultiMeshInstance3D.new()
 		mmi.name = "%s_%d_%d" % [base_name, key.x, key.y]
 		mmi.multimesh = mm

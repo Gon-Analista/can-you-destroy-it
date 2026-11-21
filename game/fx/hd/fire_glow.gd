@@ -12,17 +12,17 @@ static var _owner: int = 0
 static var _strength: float = 0.0
 
 
-## `owner` pone la luz en `pos` con radio `radius` (m) y fuerza 0..1.
-static func put(owner: Object, pos: Vector3, radius: float, color: Color, strength: float) -> void:
+## `owner` pone la luz en `pos` con radio `radius` (m) y fuerza `power` (0..1).
+static func put(owner: Object, pos: Vector3, radius: float, color: Color, power: float) -> void:
 	var f: int = Engine.get_process_frames()
 	if f != _frame:
 		_frame = f
 		_best = -1.0
-	if strength <= _best:
+	if power <= _best:
 		return
-	_best = strength
+	_best = power
 	_owner = owner.get_instance_id()
-	_strength = clampf(strength, 0.0, 1.0)
+	_strength = clampf(power, 0.0, 1.0)
 	RenderingServer.global_shader_parameter_set(&"fire_glow", Vector4(pos.x, pos.y, pos.z, radius))
 	RenderingServer.global_shader_parameter_set(
 		&"fire_glow_color", Color(color.r, color.g, color.b, _strength)
