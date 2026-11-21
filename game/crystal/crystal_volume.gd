@@ -182,35 +182,76 @@ func carve(
 	if apply:
 		stride = 1
 	var vol: float = cell * cell * cell * float(stride * stride * stride)
-	var inv_r: float = 1.0 / radius
 	var total: float = 0.0
+	# Es el bucle más caliente del juego (un cráter grande pasa por decenas de miles de celdas en
+	# el hilo principal): sólo recorre las celdas dentro de la esfera (cuerda de cada fila), sin
+	# raíces (k^2 = d^2 / r^2) y con `_layer_of`, `_fill` y `_touch` metidos a mano.
+	var r2: float = r_cells * r_cells
+	var inv_r2: float = 1.0 / r2
+	var inv_cell: float = 1.0 / cell
+	var core_r2: float = core_radius * core_radius / (cell * cell)
+	var core_g: Vector3 = to_grid(core_center)
+	var core_layer: int = layer_density.size() - 1
+	var top_layer: int = layer_density.size() - 2
+	var mins: PackedFloat32Array = layer_min_depth
+	var dens: PackedFloat32Array = layer_density
+	var sx: int = size.x
+	var sxy: int = size.x * size.y
 	for z: int in range(lo.z, hi.z + 1, stride):
+		var dz: float = float(z) - g.z
+		var dz2: float = dz * dz
+		var cdz: float = float(z) - core_g.z
 		for y: int in range(lo.y, hi.y + 1, stride):
-			var row: int = size.x * (y + size.y * z)
-			for x: int in range(lo.x, hi.x + 1, stride):
-				var p := Vector3(x, y, z)
-				var dist: float = p.distance_to(g) * cell
-				if dist >= radius:
-					continue
+			var dy: float = float(y) - g.y
+			var dyz2: float = dy * dy + dz2
+			if dyz2 >= r2:
+				continue
+			# Cuerda de la esfera en esta fila, alineada a la rejilla del muestreo.
+			var w: float = sqrt(r2 - dyz2)
+			var x0: int = maxi(lo.x, ceili(g.x - w))
+			if stride > 1:
+				x0 = lo.x + ceili(float(x0 - lo.x) / float(stride)) * stride
+			var x1: int = mini(hi.x, floori(g.x + w))
+			var cdy: float = float(y) - core_g.y
+			var core_yz2: float = cdy * cdy + cdz * cdz
+			var row: int = sx * y + sxy * z
+			var mx0: int = -1
+			var mx1: int = -1
+			for x: int in range(x0, x1 + 1, stride):
 				var i: int = row + x
 				var old: float = sdf[i]
 				if old > cell:
 					continue  # ya es aire
-				var wp: Vector3 = origin + p * cell
-				var layer: int = _layer_of(depth[i], wp)
+				var dx: float = float(x) - g.x
+				var d2: float = dx * dx + dyz2
+				if d2 >= r2:
+					continue
+				var cdx: float = float(x) - core_g.x
+				var layer: int = 0
+				if cdx * cdx + core_yz2 < core_r2:
+					layer = core_layer
+				else:
+					var dep: float = depth[i]
+					layer = top_layer
+					while layer > 0 and dep < mins[layer]:
+						layer -= 1
 				if (allowed >> layer) & 1 == 0:
 					continue
-				var k: float = dist * inv_r
-				var nv: float = old + amount * (1.0 - k * k)
-				if apply:
-					sdf[i] = nv
-				var lost: float = _fill(old) - _fill(nv)
+				var nv: float = old + amount * (1.0 - d2 * inv_r2)
+				var lost: float = (
+					clampf(0.5 - old * inv_cell, 0.0, 1.0) - clampf(0.5 - nv * inv_cell, 0.0, 1.0)
+				)
 				if lost > 0.0:
-					var e: float = lost * vol * layer_density[layer]
+					var e: float = lost * vol * dens[layer]
 					by_layer[layer] += e
 					total += e
 				if apply:
-					_touch(touched, x, y, z)
+					sdf[i] = nv
+					if mx0 < 0:
+						mx0 = x
+					mx1 = x
+			if mx0 >= 0:
+				_touch_row(touched, mx0, mx1, y, z)
 	return {"essence": total, "by_layer": by_layer, "chunks": touched.keys()}
 
 
@@ -356,6 +397,21 @@ func _touch(touched: Dictionary[int, bool], x: int, y: int, z: int) -> void:
 	var cy1: int = clampi((y + 1) / chunk, 0, chunks.y - 1)
 	var cz1: int = clampi((z + 1) / chunk, 0, chunks.z - 1)
 	@warning_ignore_restore("integer_division")
+	for cz: int in range(cz0, cz1 + 1):
+		for cy: int in range(cy0, cy1 + 1):
+			for cx: int in range(cx0, cx1 + 1):
+				touched[cx + chunks.x * (cy + chunks.y * cz)] = true
+
+
+## `_touch` para un tramo de fila (x de `x0` a `x1`, en `y`, `z`): los mismos trozos que marcar
+## cada celda, con una sola pasada por fila.
+func _touch_row(touched: Dictionary[int, bool], x0: int, x1: int, y: int, z: int) -> void:
+	var cx0: int = clampi((x0 - 1) / chunk, 0, chunks.x - 1)
+	var cy0: int = clampi((y - 1) / chunk, 0, chunks.y - 1)
+	var cz0: int = clampi((z - 1) / chunk, 0, chunks.z - 1)
+	var cx1: int = clampi((x1 + 1) / chunk, 0, chunks.x - 1)
+	var cy1: int = clampi((y + 1) / chunk, 0, chunks.y - 1)
+	var cz1: int = clampi((z + 1) / chunk, 0, chunks.z - 1)
 	for cz: int in range(cz0, cz1 + 1):
 		for cy: int in range(cy0, cy1 + 1):
 			for cx: int in range(cx0, cx1 + 1):

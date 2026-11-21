@@ -605,9 +605,7 @@ func _apply_clear() -> void:
 	if cur.size() == res.size():
 		_volume.sdf = res
 	# Las geodas abiertas que quedaban se van con el resto del cristal.
-	for child: Node in _crystal.get_children():
-		if child is Geode:
-			child.queue_free()
+	_crystal.clear_geodes()
 	for gi: int in _volume.geodes.size():
 		GameState.progression.geodes[gi] = 2
 	var glints: GPUParticles3D = _crystal.get_node_or_null(^"Arcs/AmbientGlints") as GPUParticles3D

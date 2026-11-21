@@ -51,6 +51,14 @@ func check_hit(hit: SpellHit) -> void:
 			return
 
 
+## El Núcleo queda expuesto (CoreReveal): las geodas abiertas se van con el resto del cristal.
+## Se olvidan aquí también para que ningún golpe busque una geoda ya borrada.
+func clear_all() -> void:
+	for i: int in _nodes:
+		_nodes[i].queue_free()
+	_nodes.clear()
+
+
 func _reveal(i: int, announce: bool) -> void:
 	var g: Dictionary = _crystal.volume.geodes[i]
 	var r: float = g["radius"]

@@ -2,6 +2,41 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-21 · Golpear el Núcleo ya no falla y los golpes enormes dan muchos menos tirones
+
+**Arreglos** (pedido del equipo: "me crasheó al tirarle un hechizo al núcleo morado… al explotar grandes pedazos
+del cristal me bajan mucho los fps")
+
+- **Error al golpear el Núcleo**: al quedar expuesto, `CoreReveal` borraba las geodas abiertas pero `CrystalGeodes`
+  las seguía teniendo en su lista; el siguiente golpe buscaba una geoda ya borrada ("previously freed" en
+  `crystal_geodes.gd:47`) y el golpe se cortaba. Ahora las borra `CrystalGeodes.clear_all()` (vía
+  `MotherCrystal.clear_geodes()`). `ending_smoke` abre una geoda antes del final y golpea el Núcleo: con el código
+  viejo falla con el mismo error.
+- **Tirones en los golpes enormes** (medido en Intel Iris Xe con un Meteoro de 20.000 de daño, 3 golpes):
+  | | antes | ahora |
+  |---|---|---|
+  | `receive_hit` | 64-147 ms | 20-35 ms |
+  | peor fotograma tras el golpe | 140-196 ms | 38-47 ms |
+  | fotogramas > 20 ms (de 150) | 35-116 | 34-38, casi todos de 20-30 ms |
+  - **El remallado del cristal ocupaba todos los núcleos.** Las tareas de malla iban con prioridad alta; con
+    decenas de trozos a la vez llenaban los 8 hilos y el render (hilo principal y driver) se quedaba sin CPU:
+    el "render" de un fotograma subía de 8 a 110 ms. Ahora van con prioridad baja (`CrystalChunks._start`).
+  - **`CrystalVolume.carve` 4,2 veces más rápido**: sólo recorre las celdas dentro de la esfera, sin raíces y con
+    la capa, el llenado y los trozos tocados calculados en línea (por fila, no por celda). Mismo resultado (esencia,
+    capas y trozos idénticos; la rejilla difiere en redondeos de 2·10⁻⁶). Se nota en el golpe y en cada réplica.
+  - **Los trozos rehechos se aplican con presupuesto** (`CrystalChunks.APPLY_BUDGET_MS` = 3 ms por fotograma):
+    malla, oclusor y colisión de decenas de trozos ya no caen en el mismo fotograma.
+  - **Las tareas de malla se esperan** (al terminar y al borrar el cristal): antes nadie las esperaba y, al salir o
+    cambiar de escena con alguna en marcha, un hilo podía seguir con el nodo ya borrado.
+
+**Cómo se probó**: banco temporal con 3 Meteoros enormes (tiempos por fotograma de scripts, física y render),
+comparación del `carve` nuevo con el viejo en 40 cráteres al azar, y `ending_smoke`, `crystal_volume_smoke`,
+`meteor_smoke`, `veins_pylon_smoke`, `boot_smoke` y `combos_smoke` en verde.
+
+**Pendiente**: el primer fotograma de un golpe enorme sigue costando 20-35 ms (excavar y los ajustes en seco en el
+hilo principal) y cada réplica ~10 ms; pasarlo a un hilo es lo siguiente si hace falta. `ending_smoke` termina con un
+segfault al cerrar también con el código anterior (no es de este cambio).
+
 ## 2026-11-21 · Arranque nuevo: título ligero, pantalla de carga con barra y menos tirones
 
 **Qué hay nuevo** (pedido del equipo: "lagea un montón al iniciar… falta una pantalla de carga… y un menú que

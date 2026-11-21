@@ -316,6 +316,7 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-20 | Cada elemento con su forma en `hd_fire.gdshader` (`style`): fuego (0), arcano (1), hielo facetado con copo (2), rayo de arcos quebrados (3), roca que rueda con vetas (4) y viento de medialunas que giran (5). Viento: sexto elemento (índice 5 de `SpellCaster.ELEMENTS`, página entre Rayo y Tierra, Pilón al 35 %), rápido, y cada golpe barre fragmentos del suelo hacia la mano (`ElementDef.gust_radius`); seis combinaciones (Tornado, Torbellino de Fuego, Ventisca, Tempestad, Tormenta de Arena, Eco del Viento) en su propia pestaña del Libro. | Pedido del equipo: la tierra parecía fuego marrón, muchos hechizos se parecían y faltaba el viento. |
 | 2026-11-21 | Arranque en dos escenas: `title/title_screen.tscn` (escena principal, fondo pintado, sin 3D) y `main/main.tscn`, que se carga en otro hilo desde el título; `SceneFlow` lleva de una a otra con `LoadingCover` en su propia CanvasLayer; el cristal se talla en hilos antes de montar (`CrystalPrebuild`); la pausa gana MENÚ PRINCIPAL; `--autoplay` sigue yendo directo al juego. | El equipo veía tirones y cuelgues al arrancar: el valle entero se montaba (~2,5 s bloqueado) antes de enseñar nada y el título era el juego ya cargado. Ahora el título sale en ~0,3 s y lo que bloquea al montar baja a ~0,9 s (medido en este servidor sin GPU) tapado por la barra. |
 | 2026-11-21 | Cero avisos de GDScript (`tools/gd_warnings.py`). Valores de guardados, opciones y JSON con `VariantCast.to_int/to_float/to_bool` (mismo resultado que `int()`... pero tipado); `@warning_ignore` sólo para las señales del bus `Events` y divisiones enteras buscadas. | El equipo veía cientos de avisos en el Depurador y tapaban los errores de verdad. |
+| 2026-11-21 | El remallado del cristal va en tareas de prioridad baja del WorkerThreadPool y los trozos rehechos se aplican con un presupuesto de 3 ms por fotograma (`CrystalChunks`). | Con prioridad alta, un golpe enorme ocupaba todos los núcleos y el render se quedaba sin CPU (tirones de 100-200 ms en Iris Xe). |
 
 ## 10. Preguntas abiertas
 
@@ -323,7 +324,8 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 - Arte 3D (valle, cristal): seguir procedural y pulir; el arte 2D sale de Sprite AI.
 - ¿Puntas que se caen enteras al cortarles la base (islas sueltas del volumen)? Sería muy vistoso; pide detectar
   conectividad en una rejilla gruesa en otro hilo.
-- Golpes enormes del final (miles de daño): excavar cuesta ~20 ms en el hilo principal; habrá que pasarlo a un hilo.
+- Golpes enormes del final (miles de daño): excavar cuesta 20-35 ms en el hilo principal (tras optimizar `carve`, 2026-11-21) y
+  cada réplica ~10 ms; si molesta, pasarlo a un hilo.
 - Resolución interna final (640x360 propuesta) tras probarla en 1440p y Steam Deck.
 - ¿Modo infinito o New Game+ tras el final?
 - Precio y fecha objetivo en Steam.

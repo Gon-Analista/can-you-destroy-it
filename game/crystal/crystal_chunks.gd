@@ -5,6 +5,9 @@ extends Node3D
 ## copia de la rejilla; el resultado se aplica en el hilo principal. Si un trozo se vuelve a
 ## tocar mientras se rehace, se rehace otra vez al terminar.
 
+## Milisegundos por fotograma para aplicar trozos rehechos (ver `_process`).
+const APPLY_BUDGET_MS: float = 3.0
+
 var volume: CrystalVolume
 var material: Material
 ## Cuerpo estático con una forma por trozo (los hechizos y el jugador chocan con él).
@@ -17,6 +20,12 @@ var _occluder_material: ShaderMaterial
 var _shapes: Dictionary[int, CollisionShape3D] = {}
 var _running: Dictionary[int, bool] = {}
 var _again: Dictionary[int, bool] = {}
+## Mallas ya hechas que esperan a aplicarse (índice de trozo -> arrays), por orden de llegada.
+var _pending: Dictionary[int, Array] = {}
+var _order: Array[int] = []
+## Tarea del WorkerThreadPool de cada trozo en marcha: hay que esperarlas todas (al terminar cada
+## una y al salir del árbol), o un hilo puede seguir con el nodo ya borrado.
+var _tasks: Dictionary[int, int] = {}
 
 
 func setup(p_volume: CrystalVolume, p_material: Material, p_body: StaticBody3D) -> void:
@@ -26,6 +35,7 @@ func setup(p_volume: CrystalVolume, p_material: Material, p_body: StaticBody3D) 
 	_occluder_material = ShaderMaterial.new()
 	_occluder_material.shader = preload("res://crystal/crystal_occluder.gdshader")
 	_occluder_material.render_priority = Material.RENDER_PRIORITY_MIN
+	set_process(false)
 
 
 ## Malla inicial: aplica las mallas que dejó hechas `CrystalPrebuild` (índice de trozo ->
@@ -44,32 +54,66 @@ func mark_dirty(chunk_ids: Array) -> void:
 
 
 func is_busy() -> bool:
-	return not _running.is_empty()
+	return not _running.is_empty() or not _pending.is_empty()
 
 
 func _start(ci: int) -> void:
 	_running[ci] = true
 	# Copia de la rejilla (COW): si el hilo principal sigue excavando, no se pisan.
+	# Prioridad baja: un golpe enorme rehace decenas de trozos y, con prioridad alta, ocupaban
+	# todos los núcleos y el render (hilo principal y driver) se quedaba sin CPU (tirones de
+	# 100 ms). En baja usan sólo una parte de los hilos del pool.
 	var field: PackedFloat32Array = volume.sdf
 	var v: CrystalVolume = volume
 	var coords: Vector3i = v.chunk_coords(ci)
-	WorkerThreadPool.add_task(
+	_tasks[ci] = WorkerThreadPool.add_task(
 		func() -> void:
 			var arrays: Array = CrystalVolume.mesh_chunk(
 				field, v.depth, v.size, v.cell, v.origin, v.chunk, coords
 			)
 			_finish.call_deferred(ci, arrays),
-		true,
+		false,
 		"crystal_chunk"
 	)
 
 
+## Un trozo rehecho en el hilo: no se aplica en el acto, se pone en cola (ver `_process`). Si lo
+## volvieron a tocar mientras tanto, se rehace ya; el resultado nuevo sustituye al de la cola.
 func _finish(ci: int, arrays: Array) -> void:
+	if _tasks.has(ci):
+		WorkerThreadPool.wait_for_task_completion(_tasks[ci])
+		_tasks.erase(ci)
 	_running.erase(ci)
-	_apply(ci, arrays)
+	if not _pending.has(ci):
+		_order.append(ci)
+	_pending[ci] = arrays
+	set_process(true)
 	if _again.has(ci):
 		_again.erase(ci)
 		_start(ci)
+
+
+## Al borrar el cristal (salir, volver al título, nueva partida) se esperan los hilos que queden.
+func _exit_tree() -> void:
+	for ci: int in _tasks:
+		WorkerThreadPool.wait_for_task_completion(_tasks[ci])
+	_tasks.clear()
+
+
+## Aplicar un trozo (malla, oclusor y colisión) cuesta hasta varios ms en el hilo principal y un
+## golpe enorme rehace decenas a la vez: se aplican por orden de llegada hasta gastar
+## `APPLY_BUDGET_MS` por fotograma (al menos uno), y la cola se vacía en unos pocos fotogramas.
+func _process(_delta: float) -> void:
+	var t0: int = Time.get_ticks_usec()
+	while not _order.is_empty():
+		var ci: int = _order.pop_front()
+		var arrays: Array = _pending[ci]
+		_pending.erase(ci)
+		_apply(ci, arrays)
+		if Time.get_ticks_usec() - t0 >= APPLY_BUDGET_MS * 1000.0:
+			break
+	if _order.is_empty():
+		set_process(false)
 
 
 func _apply(ci: int, arrays: Array) -> void:

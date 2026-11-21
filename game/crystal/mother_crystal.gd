@@ -661,6 +661,11 @@ func add_crack(at: Vector3, radius: float) -> void:
 	_material.set_shader_parameter("cracks", _cracks)
 
 
+## Para CoreReveal: borra las geodas abiertas que quedaban (ver CrystalGeodes.clear_all).
+func clear_geodes() -> void:
+	_geodes.clear_all()
+
+
 ## Para CrystalGeodes: un sonido de acento del cristal.
 func play_accent(stream: AudioStream, pitch: float, db: float) -> void:
 	_accent_player.stream = stream
