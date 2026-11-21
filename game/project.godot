@@ -129,6 +129,11 @@ textures/canvas_textures/default_texture_filter=0
 
 [shader_globals]
 
+terrain_calm={
+"type": "float",
+"value": 0.0
+}
+
 world_tint={
 "type": "color",
 "value": Color(1, 1, 1, 1)

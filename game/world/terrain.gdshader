@@ -18,10 +18,18 @@ uniform float band_dither = 0.22;
 uniform float snow_line = 70.0;
 uniform vec4 snow_color : source_color = vec4(0.95, 0.965, 1.0, 1.0);
 uniform vec4 rock_tone : source_color = vec4(0.49, 0.525, 0.79, 1.0);
+// Calma (0 apagada, 1 entera): donde un texel mide menos de 2 a 4 píxeles de pantalla, la trama
+// de 1 texel (Bayer, matas, motas) se cambia por el tono medio de su rejilla, como un "mip" de
+// pixel art. Sin eso, a partir de unos 7 m la hierba es un tablero de 2-3 píxeles que hace moiré
+// y hierve al moverse, y eso cansa la vista.
+global uniform float terrain_calm;
+// Cuánto de la trama se quita del todo donde hay calma (lo que queda, con menos contraste).
+const float terrain_calm_mix = 0.8;
 
 varying vec3 v_world;
 varying vec3 v_wnormal;
 varying float v_dither;
+varying float v_calm;
 
 float hash12(vec2 p) {
 	vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -100,11 +108,16 @@ void fragment() {
 	float d = bayer4(cell);
 	float h = hash12(cell + lod * 37.0);
 	float detail = 1.0 - smoothstep(2.0, 4.0, lod);
+	// 0 cerca (trama entera) -> 1 cuando el texel ya mide menos de ~2 píxeles (tono medio sin trama).
+	float calm = terrain_calm * (1.0 - smoothstep(2.0, 4.0, base_tex / pix));
+	float smooth_t = -1.0;
 	v_dither = d;
+	v_calm = calm;
 	if (kind == 1) {
 		// Hierba: manchas grandes tramadas, matas sueltas y alguna florecilla; en las cuestas, roca.
 		float t = vnoise(cw * 0.07) * 0.65 + vnoise(cw * 0.33 + 17.0) * 0.35;
 		c = ramp3(base, t, d, 0.3);
+		smooth_t = t;
 		float clump = hash12(floor(cell / vec2(1.0, 2.0)) + 3.1 + lod * 11.0);
 		if (clump > 0.95) {
 			c = tone_light(c);
@@ -123,6 +136,7 @@ void fragment() {
 		// Tierra: vetas suaves y guijarros de 2x2 texeles con luz arriba a la izquierda.
 		float t = vnoise(cw * 0.18) * 0.65 + vnoise(cw * 0.8 + 5.0) * 0.35;
 		c = ramp3(base, t, d, 0.25);
+		smooth_t = t;
 		vec2 big = floor(cell / 2.0);
 		if (hash12(big + 7.7 + lod) > 0.975) {
 			vec2 sub = cell - big * 2.0;
@@ -155,6 +169,7 @@ void fragment() {
 		float t = vnoise(cw * 1.4) * 0.6 + vnoise(cw * 3.1 + 4.0) * 0.4;
 		t += n.y * 0.25;
 		c = ramp3(base, t, d, 0.35);
+		smooth_t = 0.5 + n.y * 0.25;
 		if (h > 0.93) {
 			c = tone_light(tone_light(base));
 		} else if (h < 0.06) {
@@ -165,6 +180,13 @@ void fragment() {
 		float t = vnoise(vec2(uv.x * 6.0, uv.y * 0.6));
 		c = ramp3(base, t, d, 0.3);
 	}
+	if (smooth_t >= 0.0 && calm > 0.0) {
+		// Tono medio de la rampa oscuro/base/claro: sin píxeles sueltos que parpadeen.
+		vec3 mid = smooth_t < 0.5
+			? mix(tone_dark(base), base, smoothstep(0.2, 0.5, smooth_t))
+			: mix(base, tone_light(base), smoothstep(0.5, 0.8, smooth_t));
+		c = mix(c, mid, calm * terrain_calm_mix);
+	}
 	ALBEDO = to_linear(c);
 	ROUGHNESS = 1.0;
 	SPECULAR = 0.0;
@@ -173,6 +195,8 @@ void fragment() {
 void light() {
 	float ndl = clamp(dot(NORMAL, LIGHT), 0.0, 1.0) * ATTENUATION;
 	float q = clamp(floor(ndl * bands + 0.35 + (v_dither - 0.5) * band_dither * 2.0), 0.0, bands) / bands;
+	// Con calma, la luz pasa a degradado suave: sin bordes de banda tramados que bailen.
+	q = mix(q, clamp(ndl * (1.0 + 0.35 / bands), 0.0, 1.0), v_calm);
 	DIFFUSE_LIGHT += q * LIGHT_COLOR / PI;
 	if (rim > 0.0) {
 		float r = 1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0);
