@@ -74,7 +74,9 @@ static func open(tree: SceneTree, fade_in: bool = false) -> LoadingCover:
 	cover.name = "LoadingCover"
 	cover._fade_in = 0.0 if fade_in else 1.0
 	layer.add_child(cover)
-	tree.root.add_child(layer)
+	# Diferido: si se llama desde el `_ready` de la escena que se está montando, la raíz está
+	# ocupada y no admite hijos todavía.
+	tree.root.add_child.call_deferred(layer)
 	current = cover
 	return cover
 
@@ -91,7 +93,7 @@ func _ready() -> void:
 	_sub = _label("", UiFonts.BOLD, UiFonts.SMALL, C_CYAN, Rect2(0, 190, 640, UiFonts.LINE))
 	_pct = _label("", UiFonts.BOLD, UiFonts.SMALL, C_GOLD, Rect2(0, 228, 640, UiFonts.LINE))
 	_tip = _label("", UiFonts.BOLD, UiFonts.SMALL, C_STAR, Rect2(16, 318, 608, UiFonts.LINE))
-	_set_stage("PREPARANDO LA MAGIA")
+	_set_stage("PREPARANDO LA MAGIA" if _stage == "" else _stage)
 	_show_tip()
 	modulate.a = _fade_in
 
@@ -113,7 +115,8 @@ func finish() -> void:
 
 func _set_stage(stage: String) -> void:
 	_stage = stage
-	_sub.text = tr(stage)
+	if _sub:
+		_sub.text = tr(stage)
 
 
 func _show_tip() -> void:
