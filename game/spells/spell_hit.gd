@@ -45,6 +45,9 @@ var level: int = 1
 ## Escala sólo visual del impacto (estallido, grietas, sacudida): los combinados cargados a tope
 ## estallan más grandes (ver `SpellCaster._launch_combine`). 1 = el de siempre.
 var fx_scale: float = 1.0
+## Multiplicador de la velocidad de vuelo (los combinados cargados salen disparados de las manos,
+## ver `SpellDelivery.deliver`). 1 = la de su `SpellTier`.
+var speed_mult: float = 1.0
 ## Runas (RuneCaster, al lanzar): rebotes que le quedan al golpe y el daño de cada rebote
 ## (fracción del golpe del que sale); fracción de su daño que sigue por dentro del cristal
 ## (Perforación; 0 = no perfora) y fondo de ese túnel (m).

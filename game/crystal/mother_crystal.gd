@@ -607,8 +607,9 @@ func apply_carve(r: Dictionary, p: Vector3, radius: float, credit: float = -1.0)
 
 
 ## Juicio del Trueno: el rayo baja del cielo al blanco.
-func sky_bolt(from: Vector3, to: Vector3, col: Color) -> void:
-	_combos.sky_bolt(from, to, col)
+## `power`: `SpellHit.fx_scale` del golpe (cargado a tope, rayo más gordo y más descargas).
+func sky_bolt(from: Vector3, to: Vector3, col: Color, power: float = 1.0) -> void:
+	_combos.sky_bolt(from, to, col, power)
 
 
 ## Un rayo de un punto a otro (Rayo).
@@ -616,10 +617,12 @@ func draw_bolt(from: Vector3, to: Vector3, width: float, col: Color, life: float
 	_arcs.bolt_between(from, to, width, col * 1.6, life)
 
 
-## Haz de Plasma: vaina rosa gruesa casi recta y un núcleo blanco fino.
-func draw_beam(from: Vector3, to: Vector3, col: Color) -> void:
-	_arcs.bolt_between(from, to, 0.32, Color(col.r, col.g, col.b) * 0.75, 0.08, 0.06, false)
-	_arcs.bolt_between(from, to, 0.08, Color(1.3, 1.1, 1.3), 0.08, 0.03, false)
+## Haz de Plasma: vaina rosa gruesa casi recta y un núcleo blanco fino. `width`: escala (Tamaño
+## y lo cargado que salió).
+func draw_beam(from: Vector3, to: Vector3, col: Color, width: float = 1.0) -> void:
+	var c := Color(col.r, col.g, col.b) * 0.75
+	_arcs.bolt_between(from, to, 0.32 * width, c, 0.08, 0.06, false)
+	_arcs.bolt_between(from, to, 0.08 * width, Color(1.3, 1.1, 1.3), 0.08, 0.03, false)
 
 
 ## Magnetismo: rayos desde el mago hacia lo que atrae.

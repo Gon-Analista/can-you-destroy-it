@@ -56,6 +56,12 @@ var _meteor: MeteorRock
 var _falls: bool = false
 ## Bola de Fuego (`SpellVisualDef.fireball_flight`): esfera de fuego en vez del orbe.
 var _fireball: FireballFlight
+## Terremoto (`SpellVisualDef.boulder`): peñasco que rueda por el suelo en vez del orbe.
+var _boulder: BoulderRoll
+var _rolls: bool = false
+## Escala de lo que se ve en vuelo por lo cargado que salió (`SpellHit.fx_scale`): un combinado
+## cargado a tope destroza mucho más y tiene que verse igual de grande.
+var _vis: float = 1.0
 var _ball_on: bool = false
 ## Ancho de bola con el que se dimensionaron las brasas (-1: nunca): sólo se rehacen si cambia.
 var _embers_for: float = -1.0
@@ -80,7 +86,13 @@ func launch(from: Vector3, to: Vector3, p_hit: SpellHit, collider: Object) -> vo
 	target_collider = collider
 	_from = from
 	_to = to
-	_duration = maxf(0.08, from.distance_to(to) / tier.speed)
+	_duration = maxf(0.08, from.distance_to(to) / (tier.speed * maxf(p_hit.speed_mult, 0.1)))
+	_vis = charged_scale(p_hit.fx_scale)
+	var r0: SpellRecipe = p_hit.recipe
+	if r0 and r0.delivery == SpellRecipe.Delivery.SKY and r0.fall_sec < 0.3:
+		# El Trueno: su fuerza la lleva el rayo (CrystalCombos.sky_bolt); una bola blanca enorme
+		# cayendo sólo tapaba la columna.
+		_vis = 1.0
 	_t = 0.0
 	_wobble = tier.wobble
 	_wobble_phase = randf() * TAU
@@ -88,8 +100,9 @@ func launch(from: Vector3, to: Vector3, p_hit: SpellHit, collider: Object) -> vo
 	_linger = -1.0
 	global_position = from
 	_set_orb(tier.visual)
-	_orb_scale = tier.orb_scale * (1.35 if p_hit.resonant else 1.0)
+	_orb_scale = tier.orb_scale * (1.35 if p_hit.resonant else 1.0) * _vis
 	_falls = tier.visual != null and tier.visual.meteor
+	_rolls = tier.visual != null and tier.visual.boulder
 	if _falls:
 		# Cae del cielo acelerando, sin arco ni bamboleo, en lo que diga la receta.
 		var r: SpellRecipe = p_hit.recipe
@@ -97,12 +110,23 @@ func launch(from: Vector3, to: Vector3, p_hit: SpellHit, collider: Object) -> vo
 		_arc = 0.0
 		_wobble = 0.0
 		prepare_combo()
-		_meteor.launch(from, to, p_hit.size, p_hit.warmup)
+		_meteor.launch(from, to, p_hit.size * _vis, p_hit.warmup)
 	elif _meteor:
 		_meteor.stop()
+	if _rolls:
+		# Rueda por el suelo: sin arco ni bamboleo (los botes los pone el peñasco).
+		_arc = 0.0
+		_wobble = 0.0
+		_prepare_boulder()
+		_boulder.launch(from, to, p_hit.size * _vis, tier.visual.boulder_heat, p_hit.warmup)
+		if _orb:
+			_orb.visible = false
+	elif _boulder:
+		_boulder.stop()
 	if _ball_on:
 		_fireball.launch(_ball_size(), clampf(float(p_hit.level - 1) / 9.0, 0.0, 1.0))
-	elif _orb:
+	elif _orb and not _rolls:
+		_orb.visible = true
 		_orb.appear()
 		_orb.charge = orb_charge
 		_orb.set_flow(UP_2D, 1.0)
@@ -110,7 +134,7 @@ func launch(from: Vector3, to: Vector3, p_hit: SpellHit, collider: Object) -> vo
 		_orb.set_center_shift(0.0 if _falls else 1.0)
 		_face_camera()
 	_grow = 1.0
-	_trail_width = tier.trail_width * (1.35 if p_hit.resonant else 1.0)
+	_trail_width = tier.trail_width * (1.35 if p_hit.resonant else 1.0) * _vis
 	_trail.width = _trail_width
 	_trail.length_sec = tier.trail_length
 	_trail.near_depth = HANDS_DEPTH
@@ -215,13 +239,29 @@ func _process(delta: float) -> void:
 		if _ball_on:
 			_fireball.release()
 			_linger = maxf(_linger, FireballFlight.TAIL_SEC)
-		elif _orb:
+		elif _orb and not _rolls:
 			_orb.release()
 			_linger = maxf(_linger, _orb_def.release_time + _orb_def.sparkle_lifetime)
 		if _falls:
 			_meteor.impact(_to, hit.normal, hit.warmup)
 			_linger = maxf(_linger, MeteorRock.IMPACT_SEC)
+		if _rolls:
+			_boulder.impact(_to, hit.normal)
+			_linger = maxf(_linger, BoulderRoll.IMPACT_SEC)
 		arrived.emit(self)
+
+
+## Escala de un hechizo en vuelo para el `fx_scale` de su golpe (1 sin cargar; un combinado de
+## nivel 11 cargado a tope, ~1,9).
+static func charged_scale(fx_scale: float) -> float:
+	return lerpf(1.0, maxf(fx_scale, 1.0), 0.85)
+
+
+func _prepare_boulder() -> void:
+	if _boulder == null:
+		_boulder = BoulderRoll.new()
+		_boulder.name = "Boulder"
+		add_child(_boulder)
 
 
 ## Cambia el aspecto del orbe sólo si es otro (al subir de nivel); si no, se reutiliza.
@@ -372,6 +412,8 @@ func _deactivate() -> void:
 	_trail.stop()
 	if _meteor:
 		_meteor.stop()
+	if _boulder:
+		_boulder.stop()
 	if _fireball:
 		_fireball.stop()
 	_linger = -1.0

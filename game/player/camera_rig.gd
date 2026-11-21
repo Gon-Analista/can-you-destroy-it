@@ -20,6 +20,11 @@ var _noise := FastNoiseLite.new()
 var _t: float = 0.0
 var _dip: float = 0.0
 var _dip_vel: float = 0.0
+## Retroceso al soltar un combinado: la cámara cabecea hacia arriba (muelle) y el campo de
+## visión se abre un instante, como si el hechizo te empujara.
+var _recoil: float = 0.0
+var _recoil_vel: float = 0.0
+var _fov_push: float = 0.0
 
 
 func _ready() -> void:
@@ -38,6 +43,15 @@ func add_trauma(amount: float) -> void:
 ## Settings.screen_shake (accesibilidad).
 func punch_fov(degrees: float) -> void:
 	_fov_kick = minf(_fov_kick, degrees * Settings.screen_shake)
+
+
+## Retroceso de un hechizo que sale de las manos (`amount` 0..2: un toque .. cargado a tope).
+## Escala con Settings.screen_shake (accesibilidad).
+func recoil(amount: float) -> void:
+	var a: float = clampf(amount, 0.0, 2.5) * Settings.screen_shake
+	_recoil_vel += 1.1 * a
+	_fov_push = maxf(_fov_push, 4.5 * a)
+	add_trauma(0.18 + 0.2 * amount)
 
 
 func _on_impact(hit: SpellHit) -> void:
@@ -62,12 +76,20 @@ func _process(delta: float) -> void:
 	h_offset = max_offset * shake * _noise.get_noise_2d(_t, 0.0) + bob.x
 	v_offset = max_offset * shake * _noise.get_noise_2d(0.0, _t) + bob.y + _dip
 	rotation.z = deg_to_rad(max_roll_deg) * shake * _noise.get_noise_2d(_t, _t)
+	# Muelle del retroceso en pasos cortos (estable aunque el fotograma sea largo).
+	var steps: int = clampi(ceili(delta * 120.0), 1, 8)
+	var dt: float = delta / float(steps)
+	for i: int in steps:
+		_recoil_vel += (-_recoil * 160.0 - _recoil_vel * 15.0) * dt
+		_recoil += _recoil_vel * dt
+	rotation.x = _recoil
+	_fov_push = lerpf(_fov_push, 0.0, 1.0 - exp(-delta * 7.0))
 	_fov_kick = lerpf(_fov_kick, 0.0, 1.0 - exp(-delta * 10.0))
 	_apply_fov()
 
 
 func _apply_fov() -> void:
-	fov = Settings.fov + _fov_kick + sprint * 7.0
+	fov = Settings.fov + _fov_kick + _fov_push + sprint * 7.0
 
 
 ## Aterrizar: la cámara se hunde y rebota, más cuanto más fuerte la caída.

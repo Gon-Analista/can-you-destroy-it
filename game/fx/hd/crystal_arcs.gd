@@ -7,7 +7,7 @@ extends MeshInstance3D
 ## mientras hay rayos vivos.
 
 const SHADER: Shader = preload("res://fx/hd/hd_arc.gdshader")
-const MAX_BOLTS: int = 40
+const MAX_BOLTS: int = 96
 const SEGMENTS: int = 9
 
 var _points: Array[PackedVector3Array] = []

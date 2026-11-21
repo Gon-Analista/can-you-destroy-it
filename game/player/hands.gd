@@ -175,11 +175,13 @@ func begin_combine(visual: SpellVisualDef = null) -> void:
 
 
 ## Se lanza el hechizo combinado: el orbe sale volando (lo sustituye el proyectil), las dos
-## manos empujan y se separan.
-func release_combine() -> void:
+## manos empujan y se separan. `strength` (0..2, ver `CastBurst`): cuanto más cargado, más
+## fuerte el empujón y el fogonazo en las manos.
+func release_combine(strength: float = 0.0) -> void:
 	_combining = false
+	_stage_glow = maxf(_stage_glow, clampf(0.4 + strength * 0.5, 0.0, 1.0))
 	for side: int in 2:
-		_kick_vel[side] = 18.0
+		_kick_vel[side] = 18.0 + 16.0 * clampf(strength, 0.0, 2.0)
 		_flame_spent[side] = true
 		if side < _flames.size():
 			_flames[side].visible = false

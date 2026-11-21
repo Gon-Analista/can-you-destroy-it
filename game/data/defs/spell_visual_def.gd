@@ -107,3 +107,8 @@ extends Resource
 ## Bola de Fuego: en vuelo, en vez del orbe de la mano, una esfera de fuego que hierve con corona,
 ## lenguas hacia atrás, cola de bocanadas y luz sobre el cristal (ver `FireballFlight`).
 @export var fireball_flight: bool = false
+## Terremoto: en vuelo, un peñasco de piedra que rueda por el suelo dando botes, con polvo y
+## gravilla (ver `BoulderRoll`), en vez de la piedrecita del orbe.
+@export var boulder: bool = false
+## Cuánto brillan las vetas del peñasco (0 piedra fría con vetas doradas, 1 al rojo).
+@export_range(0.0, 1.0) var boulder_heat: float = 0.35

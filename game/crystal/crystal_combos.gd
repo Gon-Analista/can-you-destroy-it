@@ -8,6 +8,8 @@ extends Node
 const STEAM_RECIPE: SpellRecipe = preload("res://data/spells/recipe_steam.tres")
 const TEMPER_RECIPE: SpellRecipe = preload("res://data/spells/recipe_temper.tres")
 const STEAM_SFX: AudioStream = preload("res://audio/sfx/sfx_steam_burst_01.ogg")
+## Halo del Juicio del Trueno (violeta eléctrico, tapa algo el fondo claro).
+const HALO := Color(0.3, 0.15, 0.9)
 
 var _crystal: MotherCrystal
 var _arcs: CrystalArcs
@@ -119,20 +121,47 @@ func chain(hit: SpellHit, count: int) -> void:
 		_fx.play(p, normal, hit.tier, false, 0.7)
 
 
-## Juicio del Trueno: el rayo baja del cielo al blanco (varias hebras), con destello.
-func sky_bolt(from: Vector3, to: Vector3, col: Color) -> void:
-	# Tres descargas seguidas (como un rayo de verdad): se lee la columna y no sólo el destello.
-	for k: int in 3:
-		var delay: float = [0.0, 0.08, 0.2][k]
+## Juicio del Trueno: el rayo baja del cielo al blanco (varias hebras), con destello. `power`
+## (`SpellHit.fx_scale`, 1 sin cargar, ~2 cargado a tope a nivel alto): más gordo, más descargas
+## y más hebras que convergen desde el cielo, rayos que se abren por el cristal al tocarlo, una
+## columna que se queda encendida y más sacudida.
+func sky_bolt(from: Vector3, to: Vector3, col: Color, power: float = 1.0) -> void:
+	var p: float = clampf(power, 1.0, 2.5)
+	# Descargas seguidas (como un rayo de verdad): se lee la columna y no sólo el destello.
+	var strikes: int = 3 + roundi((p - 1.0) * 3.0)
+	var strands: int = 1 + roundi((p - 1.0) * 2.0)
+	var spread: float = 1.5 + 2.5 * (p - 1.0)
+	for k: int in strikes:
+		var delay: float = 0.0 if k == 0 else 0.06 + 0.07 * float(k - 1) + _rng.randf() * 0.03
+		var fade: float = 1.0 - float(k) / float(strikes)
 		get_tree().create_timer(delay).timeout.connect(
 			func() -> void:
-				_arcs.bolt_between(from, to, 0.7 - k * 0.15, col * 1.6, 0.35)
-				_arcs.bolt_between(from + Vector3(1.5, 0, -1.0), to, 0.3, col * 1.2, 0.25)
-				_crystal.flash(0.3 - k * 0.08)
+				var w: float = (0.45 + 0.4 * fade) * (0.7 + 0.5 * p)
+				# Halo violeta ancho detrás del núcleo: sobre el cristal claro (y con su destello)
+				# un rayo sólo blanco no se leía.
+				if k < 2:
+					_arcs.bolt_between(from, to, w * 2.6, HALO * (0.8 + 0.2 * p), 0.3, 0.3, false)
+				_arcs.bolt_between(from, to, w, col * 1.6, 0.35)
+				for s: int in strands:
+					var off := Vector3(_rng.randf_range(-1, 1), 0.0, _rng.randf_range(-1, 1))
+					_arcs.bolt_between(from + off * spread, to, w * 0.45, col * 1.2, 0.25)
+				if k < 2:
+					_crystal.flash(0.25 - float(k) * 0.1)
+		)
+	if p > 1.3:
+		# Cargado: al tocar, la descarga se abre en rayos por el cristal y queda una columna
+		# encendida un instante (se lee como el golpe enorme que es).
+		get_tree().create_timer(0.02).timeout.connect(
+			func() -> void:
+				var up: Vector3 = (from - to).normalized()
+				_arcs.strike(to, up, 0.6 * p, col * 1.4)
+				_arcs.bolt_between(from, to, 0.9 * p, HALO, 0.7, 0.2, false)
+				_arcs.bolt_between(from, to, 0.35 * p, col * 2.0, 0.7, 0.25, false)
 		)
 	var cam: Camera3D = get_viewport().get_camera_3d()
 	if cam is CameraRig:
-		(cam as CameraRig).add_trauma(0.55)
+		(cam as CameraRig).add_trauma(minf(0.55 * (0.7 + 0.35 * p), 1.0))
+		(cam as CameraRig).punch_fov(-1.5 * p)
 
 
 ## Resonancia Arcana: el cristal entero vibra. Una onda de golpes resonantes se abre por la
