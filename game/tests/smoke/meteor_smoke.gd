@@ -23,13 +23,17 @@ func _initialize() -> void:
 		var el_t: float = atan2(target.y - cam.y, flat_t)
 		_check(el_o > el_t + 0.3, "se ve venir desde lo alto")
 	var meteor_def: Resource = load("res://data/spells/vfx_meteor.tres")
-	_check(bool(meteor_def.get(&"meteor")), "vfx_meteor lleva el aspecto de meteoro")
-	_check(not bool(load("res://data/spells/vfx_fireball.tres").get(&"meteor")), "y la Bola no")
+	_check(VariantCast.to_bool(meteor_def.get(&"meteor")), "vfx_meteor lleva el aspecto de meteoro")
+	_check(
+		not VariantCast.to_bool(load("res://data/spells/vfx_fireball.tres").get(&"meteor")),
+		"y la Bola no"
+	)
 	var shader: Shader = load("res://fx/hd/hd_fire.gdshader")
 	_check(shader.code.contains("border_mask"), "el fuego se funde antes del borde del quad")
 	var cam3d := Camera3D.new()
 	root.add_child(cam3d)
-	var rock: Node3D = load("res://spells/vfx/meteor_rock.gd").new()
+	var rock_script: GDScript = load("res://spells/vfx/meteor_rock.gd")
+	var rock: Node3D = rock_script.new()
 	root.add_child(rock)
 	await process_frame
 	rock.call(&"launch", Vector3(0, 70, 20), Vector3(0, 0, 0), 1.0, true)

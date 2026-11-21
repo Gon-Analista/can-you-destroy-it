@@ -15,33 +15,50 @@ func _initialize() -> void:
 	var caster_script: Script = load("res://player/spell_caster.gd")
 	var elements: Array = caster_script.get(&"ELEMENTS")
 	var arcane: Resource = elements[4]
-	_check(arcane.get(&"id") == &"arcane", "el Arcano es el elemento 4")
-	_check(arcane.get(&"power_stat") == &"arcane_tier", "su Potencia es arcane_tier")
-	_check(arcane.get(&"unlock_upgrade") == &"awaken_arcane", "se despierta con awaken_arcane")
+	_check(VariantCast.to_bool(arcane.get(&"id") == &"arcane"), "el Arcano es el elemento 4")
+	_check(
+		VariantCast.to_bool(arcane.get(&"power_stat") == &"arcane_tier"),
+		"su Potencia es arcane_tier"
+	)
+	_check(
+		VariantCast.to_bool(arcane.get(&"unlock_upgrade") == &"awaken_arcane"),
+		"se despierta con awaken_arcane"
+	)
 	arcane.call(&"ensure_levels")
 	var tiers: Array = arcane.get(&"tiers")
 	_check(tiers.size() == 10, "llega a nivel 10")
 	var echoes: Array[int] = []
 	for t: Resource in tiers:
-		echoes.append(int(t.get(&"echoes")))
+		echoes.append(VariantCast.to_int(t.get(&"echoes")))
 	_check(echoes == [1, 1, 2, 2, 2, 3, 3, 3, 4, 4], "ecos por nivel %s" % str(echoes))
-	var ghosts: RefCounted = load("res://spells/spell_ghost.gd").new()
+	var ghost_script: GDScript = load("res://spells/spell_ghost.gd")
+	var ghosts: RefCounted = ghost_script.new()
 	var ghost: Resource = ghosts.call(&"tier", tiers[0])
-	_check(ghost != null and ghost != tiers[0], "hay versión fantasma")
-	_check(ghosts.call(&"tier", tiers[0]) == ghost, "la versión fantasma se guarda")
-	_check(ghost.get(&"visual") != tiers[0].get(&"visual"), "el fantasma tiene otro aspecto")
-	_check(int(ghost.get(&"echoes")) == 0, "un eco no deja ecos")
+	_check(VariantCast.to_bool(ghost != null and ghost != tiers[0]), "hay versión fantasma")
+	_check(
+		VariantCast.to_bool(ghosts.call(&"tier", tiers[0]) == ghost),
+		"la versión fantasma se guarda"
+	)
+	var first: Resource = tiers[0]
+	_check(
+		VariantCast.to_bool(ghost.get(&"visual") != first.get(&"visual")),
+		"el fantasma tiene otro aspecto"
+	)
+	_check(VariantCast.to_int(ghost.get(&"echoes")) == 0, "un eco no deja ecos")
 	var ups: Dictionary[StringName, Resource] = {}
 	for u: Resource in gs.get(&"UPGRADES"):
 		ups[u.get(&"id")] = u
 	_check(ups.has(&"awaken_arcane") and ups.has(&"arcane_power"), "mejoras del Arcano")
 	if ups.has(&"arcane_power"):
 		var power: Resource = ups[&"arcane_power"]
-		_check((power.get(&"costs") as PackedInt32Array).size() == 9, "Potencia: 9 niveles")
-		_check((power.get(&"level_names") as PackedStringArray).size() == 10, "10 nombres")
-		_check(power.get(&"element") == &"arcane", "en la página del Arcano")
+		var costs: PackedInt32Array = power.get(&"costs")
+		var level_names: PackedStringArray = power.get(&"level_names")
+		_check(costs.size() == 9, "Potencia: 9 niveles")
+		_check(level_names.size() == 10, "10 nombres")
+		_check(VariantCast.to_bool(power.get(&"element") == &"arcane"), "en la página del Arcano")
 		var wake: Resource = ups[&"awaken_arcane"]
-		_check((wake.get(&"prerequisites") as Array).has(&"awaken_earth"), "pide la Tierra")
+		var prerequisites: Array = wake.get(&"prerequisites")
+		_check(prerequisites.has(&"awaken_earth"), "pide la Tierra")
 	await _scene_checks(gs)
 	print("arcane_smoke: ", "OK" if _ok else "FALLO")
 	quit(0 if _ok else 1)
@@ -53,7 +70,7 @@ func _scene_checks(gs: Node) -> void:
 		await process_frame
 	var main: Node = current_scene
 	var menu: Node = main.get_node(^"HUDLayer/Hud/GameMenu")
-	if bool(menu.call(&"is_open")):
+	if VariantCast.to_bool(menu.call(&"is_open")):
 		menu.call(&"_close")
 	var player: Node3D = main.get_node(^"WorldView/WorldViewport/Player")
 	var caster: Node = player.call(&"get_caster")
@@ -70,9 +87,9 @@ func _scene_checks(gs: Node) -> void:
 		&"spell_impacted",
 		func(hit: RefCounted) -> void:
 			impacts[0] += 1
-			if bool(hit.get(&"echo")):
+			if VariantCast.to_bool(hit.get(&"echo")):
 				impacts[1] += 1
-			if bool(hit.get(&"resonant")):
+			if VariantCast.to_bool(hit.get(&"resonant")):
 				impacts[2] += 1
 	)
 	var hands: Array = caster.get(&"hand_element")
@@ -87,14 +104,18 @@ func _scene_checks(gs: Node) -> void:
 	# 2. Resonancia Arcana: el golpe siguiente es resonante y no se puede repetir enseguida.
 	_ready_hands(caster)
 	await process_frame
-	_check(bool(caster.call(&"try_begin_combine")), "Resonancia: se juntan las manos")
+	_check(
+		VariantCast.to_bool(caster.call(&"try_begin_combine")), "Resonancia: se juntan las manos"
+	)
 	await create_timer(1.4).timeout
 	caster.call(&"try_release_combine")
 	await create_timer(0.3).timeout
-	_check(float(caster.get(&"_resonance_left")) > 0.0, "Resonancia activa")
+	_check(VariantCast.to_float(caster.get(&"_resonance_left")) > 0.0, "Resonancia activa")
 	_ready_hands(caster)
 	await process_frame
-	_check(not bool(caster.call(&"try_begin_combine")), "la Resonancia no se encadena")
+	_check(
+		not VariantCast.to_bool(caster.call(&"try_begin_combine")), "la Resonancia no se encadena"
+	)
 	var res_before: int = impacts[2]
 	_ready_hands(caster)
 	caster.call(&"try_cast", 1)
@@ -117,15 +138,20 @@ func _scene_checks(gs: Node) -> void:
 	hands[1] = 3
 	_ready_hands(caster)
 	await process_frame
-	_check(bool(caster.call(&"try_begin_combine")), "Gravedad: se juntan las manos")
+	_check(VariantCast.to_bool(caster.call(&"try_begin_combine")), "Gravedad: se juntan las manos")
 	await create_timer(1.0).timeout
 	caster.call(&"try_release_combine")
 	await create_timer(0.5).timeout
-	_check(int(pool.call(&"orbiting_count")) >= 10, "los fragmentos giran hacia el pozo")
+	_check(
+		VariantCast.to_int(pool.call(&"orbiting_count")) >= 10, "los fragmentos giran hacia el pozo"
+	)
 	await create_timer(3.2).timeout
-	_check(int(pool.call(&"orbiting_count")) == 0, "el pozo se cierra")
+	_check(VariantCast.to_int(pool.call(&"orbiting_count")) == 0, "el pozo se cierra")
 	_check(collected[0] >= 10, "la Gravedad se traga todo (%d)" % collected[0])
-	_check(int(pool.call(&"nearest", player.global_position, 500.0)) == -1, "no queda nada suelto")
+	_check(
+		VariantCast.to_int(pool.call(&"nearest", player.global_position, 500.0)) == -1,
+		"no queda nada suelto"
+	)
 	var found: Array = prog.get(&"discovered_recipes")
 	_check(found.has(&"gravity") and found.has(&"resonance"), "se descubren")
 

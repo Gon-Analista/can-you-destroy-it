@@ -61,7 +61,7 @@ func _run() -> void:
 		for i: int in 60:
 			await process_frame
 			tail_seen = tail_seen or tail.emitting
-			if float(p.get(&"_t")) > 0.75:
+			if VariantCast.to_float(p.get(&"_t")) > 0.75:
 				break
 		_check(tail_seen, "nivel %d: suelta su cola de bocanadas lejos de la mano" % level)
 		var flow: Vector2 = p.get(&"_flow")
@@ -71,7 +71,10 @@ func _run() -> void:
 			if not p.get(&"active"):
 				break
 			await create_timer(0.1).timeout
-		_check(not p.get(&"active") and not ball.visible, "nivel %d: llega y se apaga" % level)
+		_check(
+			VariantCast.to_bool(not p.get(&"active") and not ball.visible),
+			"nivel %d: llega y se apaga" % level
+		)
 	_check(scales[1] > scales[0] * 1.2, "a nivel 10 es más grande (%s)" % [scales])
 	# La luz sobre el cristal se enciende al acercarse y se apaga al llegar (no se queda pegada).
 	var real: SpellHit = _hit(fireball, 5, to)
@@ -79,7 +82,7 @@ func _run() -> void:
 	p.call(&"launch", from, to, real, null)
 	var lit: float = 0.0
 	for i: int in 400:
-		if not p.get(&"active") or float(p.get(&"_t")) >= 1.0:
+		if not p.get(&"active") or VariantCast.to_float(p.get(&"_t")) >= 1.0:
 			break
 		lit = maxf(lit, FireGlow.strength())
 		await create_timer(0.01).timeout

@@ -35,11 +35,12 @@ func _initialize() -> void:
 	await _wait(4.0)
 	var main: Node = current_scene
 	var menu: Node = main.get_node(^"HUDLayer/Hud/GameMenu")
-	if bool(menu.call(&"is_open")):
+	if VariantCast.to_bool(menu.call(&"is_open")):
 		menu.call(&"_close")
 	var player: Node3D = main.get_node(PLAYER_PATH)
 	_caster = player.call(&"get_caster")
-	_runes = (_caster.get(&"_delivery") as Node).get(&"runes")
+	var delivery: Node = _caster.get(&"_delivery")
+	_runes = delivery.get(&"runes")
 	_herd = main.get_node(HERD_PATH)
 	root.get_node(^"Events").connect(
 		&"spell_impacted", func(h: RefCounted) -> void: _hits.append(h)
@@ -97,15 +98,15 @@ func _check_table(player: Node3D) -> void:
 	_check(d > 6.0 and d < 12.0, "junto al Santuario, sin pisar su atril (%.1f m)" % d)
 	player.global_position = table.global_position + table.global_basis.z * 1.8 + Vector3.UP * 0.2
 	await _wait(0.3)
-	_check(bool(table.call(&"player_in_range")), "el jugador llega a la mesa")
-	_check(not bool(table.call(&"is_unlocked")), "sellada al principio")
+	_check(VariantCast.to_bool(table.call(&"player_in_range")), "el jugador llega a la mesa")
+	_check(not VariantCast.to_bool(table.call(&"is_unlocked")), "sellada al principio")
 	var sealed: String = TranslationServer.translate(
 		"MESA DE RUNAS: SELLADA HASTA EL PILÓN AL %d %%"
 	)
-	_check(String(table.call(&"prompt")) == sealed % 10, "el aviso dice que está sellada")
+	_check(str(table.call(&"prompt")) == sealed % 10, "el aviso dice que está sellada")
 	_set_pylon(0.12)
 	await _wait(0.8)
-	_check(bool(table.call(&"is_unlocked")), "al pasar el 10 % la mesa despierta")
+	_check(VariantCast.to_bool(table.call(&"is_unlocked")), "al pasar el 10 % la mesa despierta")
 
 
 func _check_screen(main: Node) -> void:
@@ -113,31 +114,33 @@ func _check_screen(main: Node) -> void:
 	var prog: Progression = _prog as Progression
 	root.get_node(^"Events").emit_signal(&"rune_table_requested")
 	await _wait(0.4)
-	_check(bool(screen.get(&"is_open")), "F abre la pantalla de la mesa")
+	_check(VariantCast.to_bool(screen.get(&"is_open")), "F abre la pantalla de la mesa")
 	prog.mana = 0
-	_check(not bool(screen.call(&"buy", 0)), "sin maná no se aprende")
+	_check(not VariantCast.to_bool(screen.call(&"buy", 0)), "sin maná no se aprende")
 	prog.mana = 1_000_000
-	_check(bool(screen.call(&"buy", 0)), "se aprende el Multidisparo")
+	_check(VariantCast.to_bool(screen.call(&"buy", 0)), "se aprende el Multidisparo")
 	_check(RuneBook.is_inscribed(prog, &"rune_multishot"), "y se inscribe solo en la ranura libre")
-	_check(bool(screen.call(&"buy", 0)), "se sube de nivel")
+	_check(VariantCast.to_bool(screen.call(&"buy", 0)), "se sube de nivel")
 	_check(prog.get_level(&"rune_multishot") == 2, "a nivel 2")
-	_check(bool(screen.call(&"buy", 1)), "se aprende el Rebote")
+	_check(VariantCast.to_bool(screen.call(&"buy", 1)), "se aprende el Rebote")
 	_check(not RuneBook.is_inscribed(prog, &"rune_bounce"), "sin ranura libre no se inscribe")
-	_check(not bool(screen.call(&"toggle", 1)), "ni a mano: sólo hay una ranura")
-	_check(not bool(screen.call(&"buy_slot")), "la segunda ranura pide el Pilón al 25 %")
+	_check(not VariantCast.to_bool(screen.call(&"toggle", 1)), "ni a mano: sólo hay una ranura")
+	_check(
+		not VariantCast.to_bool(screen.call(&"buy_slot")), "la segunda ranura pide el Pilón al 25 %"
+	)
 	_set_pylon(0.3)
-	_check(bool(screen.call(&"buy_slot")), "se compra la segunda ranura")
+	_check(VariantCast.to_bool(screen.call(&"buy_slot")), "se compra la segunda ranura")
 	_check(RuneBook.slot_count(prog) == 2, "dos ranuras")
-	_check(bool(screen.call(&"toggle", 1)), "ahora sí se inscribe el Rebote")
+	_check(VariantCast.to_bool(screen.call(&"toggle", 1)), "ahora sí se inscribe el Rebote")
 	_check(RuneBook.used_slots(prog) == 2, "dos runas activas")
-	_check(bool(screen.call(&"buy", 2)), "se aprende la Perforación")
-	_check(not bool(screen.call(&"toggle", 2)), "una tercera no cabe")
-	_check(bool(screen.call(&"toggle", 0)), "se borra el Multidisparo")
+	_check(VariantCast.to_bool(screen.call(&"buy", 2)), "se aprende la Perforación")
+	_check(not VariantCast.to_bool(screen.call(&"toggle", 2)), "una tercera no cabe")
+	_check(VariantCast.to_bool(screen.call(&"toggle", 0)), "se borra el Multidisparo")
 	_check(not RuneBook.is_inscribed(prog, &"rune_multishot"), "ya no está inscrito")
 	_check(prog.get_level(&"rune_multishot") == 2, "pero se queda aprendido")
 	screen.call(&"close")
 	await _wait(0.5)
-	_check(not bool(screen.get(&"is_open")), "se cierra")
+	_check(not VariantCast.to_bool(screen.get(&"is_open")), "se cierra")
 	# Para los lanzamientos: todas aprendidas a nivel 2 y tres ranuras.
 	for def: RuneDef in RuneBook.RUNES:
 		prog.upgrade_levels[def.id] = 2
@@ -167,7 +170,7 @@ func _cast_and_wait(sec: float, side: int = 0, clear_critters: bool = true) -> v
 func _count(prop: StringName) -> int:
 	var n: int = 0
 	for h: RefCounted in _hits:
-		if bool(h.get(prop)):
+		if VariantCast.to_bool(h.get(prop)):
 			n += 1
 	return n
 
@@ -181,7 +184,7 @@ func _check_multishot() -> void:
 	_caster.call(&"try_cast", 0)
 	var flying: int = 0
 	for p: Node in _runes.get(&"_multi_pool"):
-		if bool(p.get(&"active")):
+		if VariantCast.to_bool(p.get(&"active")):
 			flying += 1
 	_check(flying == 2, "Multidisparo 2: salen dos chispas de más (%d)" % flying)
 	await _wait(2.0)
@@ -195,33 +198,36 @@ func _check_bounce() -> void:
 	await _cast_and_wait(2.6)
 	var carried: bool = false
 	for h: RefCounted in _hits:
-		if int(h.get(&"rune_bounces")) == 2 and not bool(h.get(&"rune_spawn")):
+		if (
+			VariantCast.to_int(h.get(&"rune_bounces")) == 2
+			and not VariantCast.to_bool(h.get(&"rune_spawn"))
+		):
 			carried = true
 	_check(carried, "el golpe lleva sus dos rebotes")
 	var bounces: int = _count(&"rune_spawn")
 	_check(bounces >= 1, "rebota y vuelve a golpear (%d rebotes)" % bounces)
 	for h: RefCounted in _hits:
-		if bool(h.get(&"rune_spawn")):
-			_check(float(h.get(&"size")) >= 0.6, "un rebote no es un golpe flojo")
+		if VariantCast.to_bool(h.get(&"rune_spawn")):
+			_check(VariantCast.to_float(h.get(&"size")) >= 0.6, "un rebote no es un golpe flojo")
 			break
 
 
 func _check_pierce() -> void:
 	_only([&"rune_pierce"])
 	_caster.call(&"set_debug_level", 9)
-	var essence0: int = int(_prog.get(&"essence"))
+	var essence0: int = VariantCast.to_int(_prog.get(&"essence"))
 	await _cast_and_wait(1.6)
 	var main_hit: RefCounted = null
 	for h: RefCounted in _hits:
-		if float(h.get(&"rune_pierce")) > 0.0:
+		if VariantCast.to_float(h.get(&"rune_pierce")) > 0.0:
 			main_hit = h
 	_check(main_hit != null, "el golpe perfora")
 	if main_hit == null:
 		_caster.call(&"set_debug_level", 4)
 		return
-	var dmg: int = int(main_hit.get(&"damage"))
-	var lost: int = essence0 - int(_prog.get(&"essence"))
-	var want: float = float(dmg) * (1.0 + float(main_hit.get(&"rune_pierce")) * 0.7)
+	var dmg: int = VariantCast.to_int(main_hit.get(&"damage"))
+	var lost: int = essence0 - VariantCast.to_int(_prog.get(&"essence"))
+	var want: float = float(dmg) * (1.0 + VariantCast.to_float(main_hit.get(&"rune_pierce")) * 0.7)
 	_check(float(lost) >= want, "el túnel arranca más cristal (%d de %d)" % [lost, dmg])
 	_caster.call(&"set_debug_level", 4)
 
@@ -233,7 +239,7 @@ func _check_echo() -> void:
 	def.values = PackedFloat32Array([0, 100, 100, 100])
 	await _cast_and_wait(2.0)
 	_check(_count(&"echo") >= 1, "con eco seguro sale la copia fantasma y golpea")
-	var spells: int = int(_prog.get(&"spells_cast"))
+	var spells: int = VariantCast.to_int(_prog.get(&"spells_cast"))
 	_check(spells > 0, "se cuentan los hechizos")
 	def.values = values
 
@@ -241,15 +247,16 @@ func _check_echo() -> void:
 func _check_harvest() -> void:
 	_only([])
 	var plain: int = await _plain_cast()
-	var shard: Resource = (load(POOL_SCRIPT).get(&"TYPES") as Array)[2]
-	var value0: int = int(_gs.call(&"shard_value", shard))
+	var shard_types: Array = load(POOL_SCRIPT).get(&"TYPES")
+	var shard: Resource = shard_types[2]
+	var value0: int = VariantCast.to_int(_gs.call(&"shard_value", shard))
 	_only([&"rune_harvest"])
 	var reaped: int = await _plain_cast()
 	var def: RuneDef = RuneBook.def_of(&"rune_harvest")
 	var want: int = maxi(1, roundi(float(plain) * def.damage_at(2)))
 	_check(plain > 0 and reaped == want, "Cosecha: menos daño (%d -> %d)" % [plain, reaped])
-	var value1: int = int(_gs.call(&"shard_value", shard))
-	var want_v: int = maxi(1, roundi(float(shard.get(&"value")) * def.value_at(2)))
+	var value1: int = VariantCast.to_int(_gs.call(&"shard_value", shard))
+	var want_v: int = maxi(1, roundi(VariantCast.to_float(shard.get(&"value")) * def.value_at(2)))
 	_check(
 		value1 == want_v and value1 > value0,
 		"y más maná por fragmento (%d -> %d)" % [value0, value1]
@@ -269,8 +276,11 @@ func _plain_cast() -> int:
 ## Daño del primer golpe no resonante que no sale de una runa (-1 si no hay).
 func _plain_damage() -> int:
 	for h: RefCounted in _hits:
-		if not bool(h.get(&"resonant")) and not bool(h.get(&"rune_spawn")):
-			return int(h.get(&"damage"))
+		if (
+			not VariantCast.to_bool(h.get(&"resonant"))
+			and not VariantCast.to_bool(h.get(&"rune_spawn"))
+		):
+			return VariantCast.to_int(h.get(&"damage"))
 	return -1
 
 
@@ -279,7 +289,8 @@ func _plain_damage() -> int:
 func _check_critters(player: Node3D) -> void:
 	_herd.call(&"debug_pop", 0, true)
 	await _wait(1.2)
-	var def: Resource = (_herd.get(&"config") as Resource).get(&"species")[0]
+	var config: Resource = _herd.get(&"config")
+	var def: Resource = config.get(&"species")[0]
 	var cam: Camera3D = _caster.get(&"camera")
 	var head: Node3D = player.get_node(^"Head")
 	head.rotation.x = deg_to_rad(-16.0)
@@ -289,16 +300,16 @@ func _check_critters(player: Node3D) -> void:
 	var up: Vector3 = cam.global_basis.y
 	var ground: Vector3 = _caster.call(&"_aim")["position"]
 	var dist: float = cam.global_position.distance_to(ground)
-	var fan: float = deg_to_rad(float(load(CASTER_SCRIPT).get(&"FAN_DEG")))
+	var fan: float = deg_to_rad(VariantCast.to_float(load(CASTER_SCRIPT).get(&"FAN_DEG")))
 	for s: float in [-1.0, 1.0]:
 		var dir: Vector3 = fwd.rotated(up, fan * s)
 		var at: Vector3 = cam.global_position + dir * dist
 		_herd.call(&"_spawn_at", def, at, false, cam.global_position)
 	await physics_frame
 	_only([&"rune_multishot"])
-	var popped0: int = int(_prog.get(&"critters_popped"))
+	var popped0: int = VariantCast.to_int(_prog.get(&"critters_popped"))
 	await _cast_and_wait(1.5, 0, false)
-	var popped: int = int(_prog.get(&"critters_popped")) - popped0
+	var popped: int = VariantCast.to_int(_prog.get(&"critters_popped")) - popped0
 	_check(popped >= 1, "las chispas de más revientan bichos (%d)" % popped)
 	# Rebote hacia un bicho junto al golpe en el cristal.
 	_herd.call(&"debug_pop", 0, true)
@@ -309,25 +320,30 @@ func _check_critters(player: Node3D) -> void:
 	var aim: Dictionary = _caster.call(&"_aim")
 	var flat: Vector3 = aim["normal"]
 	flat.y = 0.0
-	var spot: Vector3 = (aim["position"] as Vector3) + flat.normalized() * 3.0
+	var aim_at: Vector3 = aim["position"]
+	var spot: Vector3 = aim_at + flat.normalized() * 3.0
 	var c: Node3D = _herd.call(&"_spawn_at", def, spot, false, cam.global_position)
 	await physics_frame
-	var reach: float = float(load(CASTER_SCRIPT).get(&"BOUNCE_CRITTER_RADIUS"))
-	var near: bool = (
-		c != null and (c.call(&"center") as Vector3).distance_to(aim["position"]) < reach
-	)
+	var reach: float = VariantCast.to_float(load(CASTER_SCRIPT).get(&"BOUNCE_CRITTER_RADIUS"))
+	var near: bool = false
+	if c != null:
+		var center: Vector3 = c.call(&"center")
+		near = center.distance_to(aim_at) < reach
 	_check(near, "hay un bicho junto al golpe")
 	_only([&"rune_bounce"])
-	popped0 = int(_prog.get(&"critters_popped"))
+	popped0 = VariantCast.to_int(_prog.get(&"critters_popped"))
 	await _cast_and_wait(2.0, 0, false)
-	_check(int(_prog.get(&"critters_popped")) > popped0, "el rebote salta al bicho y lo revienta")
+	_check(
+		VariantCast.to_int(_prog.get(&"critters_popped")) > popped0,
+		"el rebote salta al bicho y lo revienta"
+	)
 	head.rotation.x = deg_to_rad(4.0)
 
 
 ## Esconde los bichos al momento (sin reventarlos: no cuentan) para que no se lleven el golpe.
 func _hide_critters() -> void:
 	for c: Node in _herd.call(&"critters"):
-		if bool(c.call(&"is_alive")):
+		if VariantCast.to_bool(c.call(&"is_alive")):
 			c.call(&"hide_now")
 
 

@@ -36,7 +36,7 @@ func _process(_delta: float) -> bool:
 	_check(rows > 100, "hay textos (%d)" % rows)
 	settings.call("set_locale", "en")
 	_check(TranslationServer.translate("NUEVA PARTIDA") == "NEW GAME", "tr en inglés")
-	_check(String(settings.call("language_name", "en")) == "ENGLISH", "nombre del inglés")
+	_check(str(settings.call("language_name", "en")) == "ENGLISH", "nombre del inglés")
 	settings.call("set_locale", "es")
 	_check(TranslationServer.translate("NUEVA PARTIDA") == "NUEVA PARTIDA", "tr en español")
 	settings.set("locale", "")

@@ -42,21 +42,24 @@ func _check_persistence() -> void:
 	var b: Node = script.new()
 	b.set(&"path", TEST_PATH)
 	b.call(&"load_settings")
-	_check(is_equal_approx(float(b.get(&"fov")), 97.0), "FOV guardado")
-	_check(not bool(b.get(&"vsync")), "VSync guardado")
-	_check(int(b.get(&"fps_limit")) == 144, "límite de FPS guardado")
-	_check(bool(b.get(&"show_fps")), "mostrar FPS guardado")
-	_check(bool(b.get(&"invert_y")), "invertir Y guardado")
-	_check(bool(b.get(&"reduce_flashes")), "reducir destellos guardado")
-	_check(not bool(b.get(&"hold_to_charge")), "mantener para cargar guardado")
-	_check(not bool(b.get(&"damage_numbers")), "números de daño guardados")
-	_check(is_equal_approx(float(b.get(&"screen_shake")), 0.25), "sacudida guardada")
-	_check(is_equal_approx(float(b.get(&"mouse_sensitivity")), 1.7), "sensibilidad guardada")
-	_check(bool(b.get(&"menu_hint_seen")), "ayuda del menú vista guardada")
+	_check(is_equal_approx(VariantCast.to_float(b.get(&"fov")), 97.0), "FOV guardado")
+	_check(not VariantCast.to_bool(b.get(&"vsync")), "VSync guardado")
+	_check(VariantCast.to_int(b.get(&"fps_limit")) == 144, "límite de FPS guardado")
+	_check(VariantCast.to_bool(b.get(&"show_fps")), "mostrar FPS guardado")
+	_check(VariantCast.to_bool(b.get(&"invert_y")), "invertir Y guardado")
+	_check(VariantCast.to_bool(b.get(&"reduce_flashes")), "reducir destellos guardado")
+	_check(not VariantCast.to_bool(b.get(&"hold_to_charge")), "mantener para cargar guardado")
+	_check(not VariantCast.to_bool(b.get(&"damage_numbers")), "números de daño guardados")
+	_check(is_equal_approx(VariantCast.to_float(b.get(&"screen_shake")), 0.25), "sacudida guardada")
+	_check(
+		is_equal_approx(VariantCast.to_float(b.get(&"mouse_sensitivity")), 1.7),
+		"sensibilidad guardada"
+	)
+	_check(VariantCast.to_bool(b.get(&"menu_hint_seen")), "ayuda del menú vista guardada")
 	var vb: Dictionary = b.get(&"bus_volumes")
-	_check(is_equal_approx(float(vb["Music"]), 0.35), "volumen de música guardado")
-	_check(is_equal_approx(float(vb["UI"]), 0.5), "volumen de interfaz guardado")
-	_check(float(b.call(&"flash_scale")) < 1.0, "reducir destellos los baja")
+	_check(is_equal_approx(VariantCast.to_float(vb["Music"]), 0.35), "volumen de música guardado")
+	_check(is_equal_approx(VariantCast.to_float(vb["UI"]), 0.5), "volumen de interfaz guardado")
+	_check(VariantCast.to_float(b.call(&"flash_scale")) < 1.0, "reducir destellos los baja")
 	# Un FOV fuera de rango en el archivo se recorta.
 	var cfg := ConfigFile.new()
 	cfg.load(TEST_PATH)
@@ -64,14 +67,30 @@ func _check_persistence() -> void:
 	cfg.save(TEST_PATH)
 	b.call(&"load_settings")
 	_check(
-		float(b.get(&"fov")) <= float(script.get_script_constant_map()["FOV_MAX"]), "FOV acotado"
+		(
+			VariantCast.to_float(b.get(&"fov"))
+			<= VariantCast.to_float(script.get_script_constant_map()["FOV_MAX"])
+		),
+		"FOV acotado"
 	)
 	b.call(&"restore_defaults")
-	_check(is_equal_approx(float(b.get(&"fov")), 70.0), "restaurar: FOV de serie")
-	_check(bool(b.get(&"vsync")) and int(b.get(&"fps_limit")) == 0, "restaurar: vídeo de serie")
-	_check(not bool(b.get(&"invert_y")) and bool(b.get(&"hold_to_charge")), "restaurar: controles")
+	_check(is_equal_approx(VariantCast.to_float(b.get(&"fov")), 70.0), "restaurar: FOV de serie")
 	_check(
-		not bool(b.get(&"reduce_flashes")) and bool(b.get(&"damage_numbers")),
+		VariantCast.to_bool(b.get(&"vsync")) and VariantCast.to_int(b.get(&"fps_limit")) == 0,
+		"restaurar: vídeo de serie"
+	)
+	_check(
+		(
+			not VariantCast.to_bool(b.get(&"invert_y"))
+			and VariantCast.to_bool(b.get(&"hold_to_charge"))
+		),
+		"restaurar: controles"
+	)
+	_check(
+		(
+			not VariantCast.to_bool(b.get(&"reduce_flashes"))
+			and VariantCast.to_bool(b.get(&"damage_numbers"))
+		),
 		"restaurar: accesibilidad"
 	)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_PATH))
@@ -104,10 +123,13 @@ func _check_live_fov() -> void:
 	paused = false
 	settings.set(&"fov", fov0)
 	var options: Node = current_scene.find_child("Options", true, false)
-	_check(options != null and options.get(&"_pages").size() == 4, "opciones en 4 pestañas")
+	var pages: Array = []
+	if options != null:
+		pages = options.get(&"_pages")
+	_check(options != null and pages.size() == 4, "opciones en 4 pestañas")
 	options.call(&"select_tab", 2)
-	var pages: Array = options.get(&"_pages")
-	_check(pages[2].visible and not pages[0].visible, "cambia de pestaña")
+	pages = options.get(&"_pages")
+	_check(VariantCast.to_bool(pages[2].visible and not pages[0].visible), "cambia de pestaña")
 
 
 func _check(cond: bool, what: String) -> void:

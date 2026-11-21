@@ -35,8 +35,14 @@ func _run() -> void:
 	var cap: int = gs.call(&"bag_capacity")
 	_check(cap == 5, "al empezar caben 5")
 	for k: int in cap:
-		_check(gs.call(&"collect_shard", splinter, Vector3.ZERO), "cabe el %d" % (k + 1))
-	_check(not gs.call(&"collect_shard", splinter, Vector3.ZERO), "el siguiente no cabe")
+		_check(
+			VariantCast.to_bool(gs.call(&"collect_shard", splinter, Vector3.ZERO)),
+			"cabe el %d" % (k + 1)
+		)
+	_check(
+		not VariantCast.to_bool(gs.call(&"collect_shard", splinter, Vector3.ZERO)),
+		"el siguiente no cabe"
+	)
 	_check(full_events[0] == 1, "avisa de bolsa llena")
 
 	# Junto a la trituradora, mantener F echa los cristales a la tolva; la palanca los tritura
@@ -62,11 +68,13 @@ func _run() -> void:
 			)
 		await create_timer(1.8).timeout
 	_check(prog.bag_count() == 0, "mantener F vacía la bolsa en la tolva")
-	_check(int(crusher.call(&"hopper_count")) == cap, "los cristales caen en la tolva")
+	_check(
+		VariantCast.to_int(crusher.call(&"hopper_count")) == cap, "los cristales caen en la tolva"
+	)
 	_check(prog.mana == 0, "en la tolva todavía no dan maná")
-	_check(crusher.call(&"pull_lever"), "la palanca arranca la trituradora")
+	_check(VariantCast.to_bool(crusher.call(&"pull_lever")), "la palanca arranca la trituradora")
 	await create_timer(3.0).timeout
-	_check(int(crusher.call(&"hopper_count")) == 0, "la trituradora vacía la tolva")
+	_check(VariantCast.to_int(crusher.call(&"hopper_count")) == 0, "la trituradora vacía la tolva")
 	_check(
 		prog.mana == cap and prog.pylon_progress == cap,
 		"cada astilla triturada da 1 de maná y de Pilón"
@@ -82,14 +90,15 @@ func _run() -> void:
 	prog.deliver(100)
 	var power: UpgradeNode = load("res://data/upgrades/spark_power.tres")
 	var caster: Node = player.call(&"get_caster")
-	_check(int(caster.get(&"tier_index")) == 0, "se empieza con la Chispa")
-	_check(gs.call(&"buy_upgrade", power), "se compra la Potencia")
+	_check(VariantCast.to_int(caster.get(&"tier_index")) == 0, "se empieza con la Chispa")
+	_check(VariantCast.to_bool(gs.call(&"buy_upgrade", power)), "se compra la Potencia")
 	await process_frame
-	_check(int(caster.get(&"tier_index")) == 1, "la Potencia sube el nivel de la Chispa")
+	_check(
+		VariantCast.to_int(caster.get(&"tier_index")) == 1, "la Potencia sube el nivel de la Chispa"
+	)
 
 	# El Grimorio sólo inscribe junto al atril.
 	var grimoire: Node = main.get_node(^"HUDLayer/Hud/Grimoire")
-	var bag: UpgradeNode = load("res://data/upgrades/bag.tres")
 	events.emit_signal(&"grimoire_requested", false)
 	grimoire.set(&"_selected", 0)
 	grimoire.call(&"try_buy")
@@ -97,7 +106,7 @@ func _run() -> void:
 	grimoire.set(&"_at_sanctum", true)
 	grimoire.call(&"try_buy")
 	_check(prog.get_level(&"bag") == 1, "junto al atril se inscribe")
-	_check(gs.call(&"bag_capacity") == 15, "la bolsa sube a 15")
+	_check(VariantCast.to_bool(gs.call(&"bag_capacity") == 15), "la bolsa sube a 15")
 	var power_cost: int = power.cost_for_level(0)
 	_check(power_cost == 5, "la primera mejora (Potencia) cuesta 5 (GDD 8.1 y tutorial)")
 
@@ -116,7 +125,8 @@ func _run() -> void:
 	_check(absf(player.global_position.y - y0) < 0.2, "y vuelve al suelo")
 
 	gs.set(&"progression", Progression.new(1_000_000))
-	(gs.get(&"progression") as Progression).load_dict(state_before)
+	var restored: Progression = gs.get(&"progression")
+	restored.load_dict(state_before)
 	root.get_node(^"SaveSystem").call(&"save_game")
 	print("loop_smoke: %s" % ("OK" if _failures == 0 else "%d fallos" % _failures))
 	quit(1 if _failures > 0 else 0)

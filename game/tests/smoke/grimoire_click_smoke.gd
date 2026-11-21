@@ -14,7 +14,8 @@ func _initialize() -> void:
 func _run() -> void:
 	await process_frame
 	var gs: Node = root.get_node(^"GameState")
-	var state_before: Dictionary = (gs.get(&"progression") as Progression).to_dict()
+	var old_prog: Progression = gs.get(&"progression")
+	var state_before: Dictionary = old_prog.to_dict()
 	gs.set(&"progression", Progression.new(1_000_000))
 	var prog: Progression = gs.get(&"progression")
 	var main: Node = (load("res://main/main.tscn") as PackedScene).instantiate()
@@ -30,14 +31,17 @@ func _run() -> void:
 	# De coordenadas del juego (640x360) a las de la ventana.
 	var scale: Vector2 = Vector2(root.size) / root.get_visible_rect().size
 	g.call(&"select", 0)
-	_click((g.call(&"_button_rect") as Rect2).get_center() * scale)
+	var button: Rect2 = g.call(&"_button_rect")
+	_click(button.get_center() * scale)
 	await process_frame
 	_check(prog.get_level(&"bag") == 1, "clic en INSCRIBIR compra")
-	_click((g.call(&"_tab_rect", 1) as Rect2).get_center() * scale)
+	var tab: Rect2 = g.call(&"_tab_rect", 1)
+	_click(tab.get_center() * scale)
 	await process_frame
-	_check(int(g.get(&"_page")) == 1, "clic en una pestaña cambia de elemento")
+	_check(VariantCast.to_int(g.get(&"_page")) == 1, "clic en una pestaña cambia de elemento")
 	gs.set(&"progression", Progression.new(1_000_000))
-	(gs.get(&"progression") as Progression).load_dict(state_before)
+	var restored: Progression = gs.get(&"progression")
+	restored.load_dict(state_before)
 	root.get_node(^"SaveSystem").call(&"save_game")
 	print("grimoire_click_smoke: %s" % ("OK" if _failures == 0 else "%d fallos" % _failures))
 	quit(1 if _failures > 0 else 0)

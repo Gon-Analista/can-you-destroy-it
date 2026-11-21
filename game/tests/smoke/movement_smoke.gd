@@ -21,7 +21,7 @@ func _initialize() -> void:
 	for i: int in 240:
 		await process_frame
 	var menu: Node = main.get_node(^"HUDLayer/Hud/GameMenu")
-	if bool(menu.call(&"is_open")):
+	if VariantCast.to_bool(menu.call(&"is_open")):
 		menu.call(&"_close")
 	await process_frame
 	var start := Vector3(0.0, 0.3, 66.0)
@@ -38,27 +38,31 @@ func _initialize() -> void:
 	root.get_node(^"Events").emit_signal(&"upgrade_bought", &"levitation", 2)
 	await physics_frame
 	_check(
-		float(player.get(&"levitation_max")) > 2.5,
-		"levitación nivel 2 (%.1f s)" % float(player.get(&"levitation_max"))
+		VariantCast.to_float(player.get(&"levitation_max")) > 2.5,
+		"levitación nivel 2 (%.1f s)" % VariantCast.to_float(player.get(&"levitation_max"))
 	)
 	var peak3: float = await _jump_test(player, start, 2, 4.0)
 	_check(peak3 > peak2 + 3.0, "levitando se sigue subiendo (%.2f m)" % peak3)
-	_check(float(player.call(&"fuel_ratio")) < 0.6, "y se gasta la carga")
+	_check(VariantCast.to_float(player.call(&"fuel_ratio")) < 0.6, "y se gasta la carga")
 	for i: int in 160:
 		await physics_frame
-	_check(float(player.call(&"fuel_ratio")) > 0.99, "en el suelo se recarga")
+	_check(VariantCast.to_float(player.call(&"fuel_ratio")) > 0.99, "en el suelo se recarga")
 	# Impulso del cristal: un golpe al cristal en el aire devuelve carga.
 	levels[&"crystal_impulse"] = 2
 	player.global_position = start + Vector3(0.0, 20.0, 0.0)
 	player.set(&"levitation_fuel", 0.5)
 	await physics_frame
 	var hit := SpellHit.new()
-	hit.tier = (load("res://data/elements/spark.tres").get(&"tiers") as Array)[0]
+	var spark_tiers: Array = load("res://data/elements/spark.tres").get(&"tiers")
+	hit.tier = spark_tiers[0]
 	hit.position = player.global_position + Vector3(0, 0, -10)
 	hit.normal = Vector3.BACK
 	hit.damage = 1
 	root.get_node(^"Events").emit_signal(&"spell_impacted", hit)
-	_check(float(player.get(&"levitation_fuel")) > 0.9, "un golpe en el aire recarga levitación")
+	_check(
+		VariantCast.to_float(player.get(&"levitation_fuel")) > 0.9,
+		"un golpe en el aire recarga levitación"
+	)
 	for i: int in 400:
 		await physics_frame
 		if player.is_on_floor():
