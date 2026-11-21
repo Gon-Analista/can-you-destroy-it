@@ -48,8 +48,8 @@ const ARC_SFX: Array[AudioStream] = [
 const ARC_COLORS: Array[Color] = [
 	Color(0.25, 0.75, 2.0), Color(1.2, 0.3, 1.9), Color(0.4, 0.5, 2.0)
 ]
-## Partida guardada del volumen excavado (ver SaveSystem).
-const STATE_PATH: String = "user://crystal_volume.bin"
+## Partida guardada del volumen excavado (ver SaveSystem y CrystalPrebuild).
+const STATE_PATH: String = CrystalPrebuild.STATE_PATH
 ## Colores de las Venas Resonantes por elemento (Chispa, Escarcha, Rayo, Tierra, Arcano).
 const VEIN_COLORS: PackedColorArray = [
 	Color(1.0, 0.55, 0.2),
@@ -140,9 +140,9 @@ func _ready() -> void:
 	add_to_group(&"mother_crystal")
 	_rng.randomize()
 	_streak = StreakTracker.new(GameState.BALANCE.streak_window_sec)
-	volume = CrystalVolume.new()
-	volume.load_baked()
-	var resumed: bool = _load_state()
+	# La rejilla y las mallas ya vienen hechas de la pantalla de carga (CrystalPrebuild).
+	var pre: Dictionary = CrystalPrebuild.take()
+	volume = pre[&"volume"]
 	_material = ShaderMaterial.new()
 	_material.shader = CRYSTAL_SHADER
 	_setup_material()
@@ -156,7 +156,8 @@ func _ready() -> void:
 	_chunks.name = "Chunks"
 	add_child(_chunks)
 	_chunks.setup(volume, _material, _body)
-	_chunks.build_all(_chunks.all_chunks() if resumed else volume.surface_chunks)
+	var meshes: Dictionary[int, Array] = pre[&"meshes"]
+	_chunks.apply_all(meshes)
 	_shards = ShardPool.new()
 	_shards.name = "Shards"
 	add_child(_shards)
@@ -239,10 +240,12 @@ func _setup_material() -> void:
 	for k: int in keys.size():
 		var cols := PackedColorArray()
 		for layer: CrystalLayerDef in GameState.LAYERS:
-			cols.append(layer.get(keys[k]) as Color)
+			var col: Color = layer.get(keys[k])
+			cols.append(col)
 		_material.set_shader_parameter(params[k], cols)
 	for key: String in ["col_highlight", "col_light", "col_mid", "col_dark", "col_core"]:
-		_material.set_shader_parameter(key, GameState.LAYERS[0].get(key) as Color)
+		var first: Color = GameState.LAYERS[0].get(key)
+		_material.set_shader_parameter(key, first)
 	_material.set_shader_parameter("layer_depth", volume.layer_min_depth)
 	_material.set_shader_parameter("layer_shade", LAYER_SHADE)
 	_material.set_shader_parameter("layer_glow", LAYER_GLOW)
@@ -258,23 +261,14 @@ func _setup_material() -> void:
 	var gs := PackedVector4Array()
 	for g: Dictionary in volume.geodes:
 		var c: Vector3 = g["center"]
-		gs.append(Vector4(c.x, c.y, c.z, float(g["radius"])))
+		var radius: float = g["radius"]
+		gs.append(Vector4(c.x, c.y, c.z, radius))
 	while gs.size() < 32:
 		gs.append(Vector4.ZERO)
 	_material.set_shader_parameter("geodes", gs)
 
 
 ## Retoma el cristal excavado de la partida guardada (si la hay y no es una partida nueva).
-func _load_state() -> bool:
-	var prog: Progression = GameState.progression
-	if not SaveSystem.enabled or prog.essence >= prog.total_essence:
-		return false
-	if not FileAccess.file_exists(STATE_PATH):
-		return false
-	var bytes: PackedByteArray = FileAccess.get_file_as_bytes(STATE_PATH)
-	return volume.load_state(bytes)
-
-
 ## Lo llama SaveSystem: guarda la rejilla sólo si ha cambiado (y la borra en partida nueva).
 func save_state() -> void:
 	var prog: Progression = GameState.progression
@@ -584,7 +578,8 @@ func apply_carve(r: Dictionary, p: Vector3, radius: float, credit: float = -1.0)
 	var removed: float = r["essence"]
 	if credit >= 0.0 and removed > 0.0:
 		removed = credit
-	_chunks.mark_dirty(r["chunks"])
+	var touched: Array = r["chunks"]
+	_chunks.mark_dirty(touched)
 	_volume_dirty = true
 	_essence_acc += removed
 	var whole: int = floori(_essence_acc)

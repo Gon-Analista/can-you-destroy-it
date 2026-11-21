@@ -187,7 +187,9 @@ en el Grimorio del Santuario mejoras que cambian los hechizos. Lo que hay:
 - **Elementos por mano** (Q / E): Chispa y Escarcha (`data/elements/`); combinaciones Bola de Fuego y Choque
   Térmico (`data/spells/recipe_*.tres`); efecto de cada elemento en el cristal (`MotherCrystal._apply_element`).
 - **Movimiento**: correr (Shift), saltar (Espacio), pasos y aterrizaje. **Día y noche** (`world/day_night.gd`) con
-  paisaje sonoro (`tools/sfx_ambience.py`). **Pantalla de carga** que precalienta efectos (`Main._warm_up`).
+  paisaje sonoro (`tools/sfx_ambience.py`). **Arranque**: título ligero (`title/`, sin mundo 3D) que carga el
+  juego en otro hilo (`SceneFlow`); **pantalla de carga** con barra, etapas y consejos (`LoadingCover`) mientras se
+  talla el cristal en hilos (`CrystalPrebuild`) y se precalientan efectos (`Main._warm_up`).
 
 - **Contenido del GDD ya dentro** (detalle en `CHANGELOG.md`): los cinco elementos (Chispa, Escarcha, Rayo,
   Tierra, Arcano) con sus combinaciones (17 en el Libro: parejas y triples), familiares recolectores y
@@ -298,6 +300,7 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-18 | Rangos por progreso (`WizardRanks`, `data/ranks/*.tres`), una capa de música por rango; Leyenda al romper el Núcleo. Cifras del Espejo y de la pantalla final en un solo sitio (`Progression.stats`; `time_played`, `spells_cast` y `shards_collected` son propiedades sobre él; los ecos del Arcano no cuentan como hechizos). | GDD 8 y 11.4; dos ramas contaban lo mismo por separado. |
 | 2026-11-19 | Runas como `RuneDef` (hereda `UpgradeNode`): se compran por `GameState.buy_upgrade` y se inscriben en `Progression.inscribed_runes`; reglas en `RuneBook`, efectos en `RuneCaster` (un gancho en `SpellDelivery.launch` y otro en `spell_impacted`). Enteras en hechizos de una mano, a `combo_scale` en combinados FRONT/LANCE; los golpes de runa van `minor` y no rompen facetas. | GDD 4.3 y 5.3; GameState, Progression y SpellCaster ya estaban en 20 métodos públicos. La Cosecha suave cierra un hueco de 227 s del simulador. |
 | 2026-11-19 | Nodos hito: Lanzamiento continuo (`AutoCast`, mantener 0,28 s, nunca más rápido que la recarga), Vórtice (`ManaVortex` + `ShardPool.vortex_pull`, sin Lágrimas ni fragmentos de familiares) y Rompefacetas (`FacetBreaker`: el cráter se queda la base y la losa la resonancia + 1,5 veces la base, con tope en `core_floor`). | GDD 7: un hito por rama que cambie la forma de jugar. |
+| 2026-11-21 | Arranque en dos escenas: `title/title_screen.tscn` (escena principal, fondo pintado, sin 3D) y `main/main.tscn`, que se carga en otro hilo desde el título; `SceneFlow` lleva de una a otra con `LoadingCover` en su propia CanvasLayer; el cristal se talla en hilos antes de montar (`CrystalPrebuild`); la pausa gana MENÚ PRINCIPAL; `--autoplay` sigue yendo directo al juego. | El equipo veía tirones y cuelgues al arrancar: el valle entero se montaba (~2,5 s bloqueado) antes de enseñar nada y el título era el juego ya cargado. Ahora el título sale en ~0,3 s y lo que bloquea al montar baja a ~0,9 s (medido en este servidor sin GPU) tapado por la barra. |
 
 ## 10. Preguntas abiertas
 

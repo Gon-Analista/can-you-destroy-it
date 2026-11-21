@@ -2,6 +2,32 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-21 · Arranque nuevo: título ligero, pantalla de carga con barra y menos tirones
+
+**Qué hay nuevo** (pedido del equipo: "lagea un montón al iniciar… falta una pantalla de carga… y un menú que
+cargue menos cosas")
+
+- **Título propio** (`title/title_screen.gd`, escena principal): ya no es el juego cargado detrás de un menú. Fondo
+  pintado del valle al atardecer (`title/title_backdrop.png`, una captura del propio juego) con motas de maná que
+  suben y destellos en el cristal, el logo de siempre y CONTINUAR / NUEVA PARTIDA / OPCIONES / SALIR. NUEVA PARTIDA
+  con partida guardada pide confirmación ("¿EMPEZAR DE CERO?"). Sale en ~0,3 s.
+- **Carga en segundo plano** (`title/scene_flow.gd`): mientras se ve el título, `main.tscn` se carga en otro hilo.
+- **Pantalla de carga** (`ui/loading_cover.gd`): cielo de estrellas, barra de progreso con brillo, la etapa
+  ("CARGANDO EL VALLE", "TALLANDO EL CRISTAL", "DESPERTANDO EL VALLE", "ENCENDIENDO EL PILÓN"…) y consejos que
+  cambian. Entra fundiéndose desde el título, sigue viva durante el precalentado de efectos y se va sola.
+- **Menos bloqueo al entrar** (medido en este servidor, sin GPU): el valle se montaba bloqueando ~2,5 s antes de
+  enseñar nada; ahora el título sale al instante y el tirón al montar baja a ~0,9 s, tapado por la barra.
+  - Las formas de colisión de los fragmentos se hacían con simplificación: ~1 s para 24 piezas pequeñas. Ahora 3 ms.
+  - La rejilla y las mallas del cristal se tallan en los hilos durante la pantalla de carga (`CrystalPrebuild`)
+    en vez de esperar a que terminen dentro del `_ready` del cristal.
+- **Pausa**: nuevo botón MENÚ PRINCIPAL (guarda y vuelve al título, callando el valle). "Nueva partida" desde el
+  menú de depuración o la pantalla final pasa también por la pantalla de carga.
+- Al entrar desde el título el ratón vuelve a la mira y el tema del título se funde con la música del valle.
+- `--autoplay` sigue yendo directo al juego; `--title-play` pulsa JUGAR solo (capturas de la carga); `--backdrop`
+  quita HUD y manos; `--warp` respeta la altura del suelo.
+- Prueba nueva: `boot_smoke` (título → carga → juego → pausa → título → otra partida).
+- `tools/gd_warnings.py`: lista los avisos de GDScript del Depurador del editor (vía su LSP).
+
 ## 2026-11-19 · Mesa de Runas y los tres nodos hito del Grimorio
 
 **Qué hay nuevo**

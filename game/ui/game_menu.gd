@@ -1,12 +1,12 @@
 class_name GameMenu
 extends Control
-## Menú del juego: pantalla de título (sobre el valle vivo, al arrancar) y pausa (Esc).
-## Título: CONTINUAR / NUEVA PARTIDA / OPCIONES / SALIR. Pausa: REANUDAR / OPCIONES / GUARDAR Y
-## SALIR. Las opciones (en pestañas: vídeo, audio, controles y accesibilidad) son un
-## `OptionsMenu`. Todo a píxel entero con las fuentes del HUD. El tema y el marco del panel los
-## comparte el menú de depuración (`make_theme`, `draw_panel`).
+## Menú de pausa del juego (Esc): REANUDAR / OPCIONES / MENÚ PRINCIPAL / GUARDAR Y SALIR. La
+## pantalla de título es otra escena (`TitleScreen`). Las opciones (en pestañas: vídeo, audio,
+## controles y accesibilidad) son un `OptionsMenu`. Todo a píxel entero con las fuentes del HUD.
+## El tema y el marco del panel los comparten el título y el menú de depuración (`make_theme`,
+## `draw_panel`).
 
-enum Mode { HIDDEN, TITLE, PAUSE }
+enum Mode { HIDDEN, PAUSE }
 
 const TITLE_MUSIC: AudioStream = preload("res://audio/music/music_title.ogg")
 const TICK_SFX: AudioStream = preload("res://audio/sfx/sfx_ui_tick_01.ogg")
@@ -35,14 +35,10 @@ const GRABBER: PackedStringArray = [
 	".######.",
 ]
 
-## Al volver a cargar la escena tras "Nueva partida", no se enseña otra vez el título.
-static var skip_title_once: bool = false
-
 var mode: Mode = Mode.HIDDEN
 
 var _main_box: VBoxContainer
 var _options_box: OptionsMenu
-var _logo: TitleLogo
 var _theme: Theme
 
 
@@ -52,9 +48,6 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_theme = make_theme()
 	theme = _theme
-	_logo = TitleLogo.new()
-	_logo.name = "TitleLogo"
-	add_child(_logo)
 	_main_box = VBoxContainer.new()
 	_main_box.position = Vector2(240, 150)
 	_main_box.size = Vector2(160, 120)
@@ -70,20 +63,10 @@ func _ready() -> void:
 	visible = false
 
 
-## Pantalla de título (al arrancar el juego).
-func show_title() -> void:
-	mode = Mode.TITLE
-	AudioDirector.play_theme(TITLE_MUSIC)
-	_open()
-
-
-## Modo demo (capturas): "title", "pause" u "options" (las opciones desde la pausa);
+## Modo demo (capturas): "pause" u "options" (las opciones desde la pausa);
 ## "options2" abre la pestaña 2 (0 vídeo, 1 audio, 2 controles, 3 accesibilidad) y
 ## "options-tour" las recorre todas, una cada 0,5 s.
 func demo_open(which: String) -> void:
-	if which == "title":
-		show_title()
-		return
 	mode = Mode.PAUSE
 	_open()
 	if which == "options-tour":
@@ -102,19 +85,16 @@ func _open() -> void:
 	_rebuild_main()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	Events.menu_opened.emit()
-	if mode == Mode.PAUSE:
-		get_tree().paused = true
-		# Ya sabe dónde está el menú: el HUD deja de enseñar "ESC: MENÚ".
-		# En modo demo (no se guarda la partida) tampoco se tocan las opciones del jugador.
-		if not Settings.menu_hint_seen:
-			Settings.menu_hint_seen = true
-			if SaveSystem.enabled:
-				Settings.save_settings()
+	get_tree().paused = true
+	# Ya sabe dónde está el menú: el HUD deja de enseñar "ESC: MENÚ".
+	# En modo demo (no se guarda la partida) tampoco se tocan las opciones del jugador.
+	if not Settings.menu_hint_seen:
+		Settings.menu_hint_seen = true
+		if SaveSystem.enabled:
+			Settings.save_settings()
 
 
 func _close() -> void:
-	if mode == Mode.TITLE:
-		AudioDirector.stop_theme()
 	visible = false
 	mode = Mode.HIDDEN
 	get_tree().paused = false
@@ -154,24 +134,14 @@ func _can_pause() -> bool:
 func _rebuild_main() -> void:
 	for c: Node in _main_box.get_children():
 		c.queue_free()
-	_logo.visible = mode == Mode.TITLE
-	if mode == Mode.TITLE:
-		var has_save: bool = (
-			GameState.progression.pylon_progress > 0
-			or GameState.total_upgrade_levels() > 0
-			or GameState.progression.essence < GameState.progression.total_essence
-		)
-		if has_save:
-			_button("CONTINUAR", _close, true)
-		_button("NUEVA PARTIDA", new_game, not has_save)
-	else:
-		var pause: Label = _label("PAUSA", UiFonts.TITLE, UiFonts.HEAD, C_GOLD_LIGHT)
-		pause.custom_minimum_size = Vector2(160, 20)
-		remove_child(pause)
-		_main_box.add_child(pause)
-		_button("REANUDAR", _close, true)
+	var pause: Label = _label("PAUSA", UiFonts.TITLE, UiFonts.HEAD, C_GOLD_LIGHT)
+	pause.custom_minimum_size = Vector2(160, 20)
+	remove_child(pause)
+	_main_box.add_child(pause)
+	_button("REANUDAR", _close, true)
 	_button("OPCIONES", _show_options)
-	_button(tr("GUARDAR Y SALIR") if mode == Mode.PAUSE else tr("SALIR"), _quit)
+	_button("MENÚ PRINCIPAL", _to_title)
+	_button("GUARDAR Y SALIR", _quit)
 	await get_tree().process_frame
 	if _main_box.get_child_count() > 0:
 		for c: Node in _main_box.get_children():
@@ -198,14 +168,22 @@ func _button(text: String, action: Callable, primary: bool = false) -> Button:
 	return b
 
 
-## Empieza de cero (la usa también el menú de depuración).
+## Empieza de cero (la usan el menú de depuración y la pantalla final): guarda la partida vacía y
+## vuelve a montar el juego con la pantalla de carga.
 func new_game() -> void:
 	GameState.reset()
 	SaveSystem.save_game()
-	skip_title_once = true
-	get_tree().paused = false
 	Events.menu_closed.emit()
-	get_tree().reload_current_scene()
+	SceneFlow.to_game(get_tree())
+
+
+## Guarda y vuelve a la pantalla de título.
+func _to_title() -> void:
+	SaveSystem.save_game()
+	visible = false
+	mode = Mode.HIDDEN
+	Events.menu_closed.emit()
+	SceneFlow.to_title(get_tree())
 
 
 func _quit() -> void:
@@ -216,7 +194,6 @@ func _quit() -> void:
 func _show_options() -> void:
 	_main_box.visible = false
 	_options_box.visible = true
-	_logo.visible = false
 	_options_box.focus_first()
 
 
@@ -230,7 +207,6 @@ func _show_main() -> void:
 ## Rehace los textos de los menús con el idioma nuevo y avisa al resto (HUD, Grimorio...).
 func _relocalize() -> void:
 	_rebuild_main()
-	_logo.relocalize()
 	Events.locale_changed.emit()
 
 
@@ -241,15 +217,7 @@ func _process(_delta: float) -> void:
 func _draw() -> void:
 	if not visible:
 		return
-	if mode == Mode.TITLE:
-		# Velo suave arriba y abajo para que el título se lea sobre el valle.
-		for y: int in range(0, 160, 2):
-			var a: float = 0.6 * pow(1.0 - y / 160.0, 1.5)
-			draw_rect(Rect2(0, y, 640, 2), Color(C_BG, a))
-		for y: int in range(290, 360, 2):
-			draw_rect(Rect2(0, y, 640, 2), Color(C_BG, 0.5 * pow((y - 290) / 70.0, 1.5)))
-	else:
-		draw_rect(Rect2(Vector2.ZERO, size), Color(C_BG, 0.7))
+	draw_rect(Rect2(Vector2.ZERO, size), Color(C_BG, 0.7))
 	# Marco del panel.
 	var box: Control = _options_box if _options_box.visible else _main_box
 	var r := Rect2(box.position - Vector2(12, 10), box.size + Vector2(24, 20))

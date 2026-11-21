@@ -64,6 +64,7 @@ Tecnologías ya previstas (validar la versión al integrarlas):
 | Música | `tools/music_synth.py` (valle por capas) y `tools/music_title.py` (vals del título) | Mismos instrumentos sintetizados; bucles sin costura. |
 | Cristal destructible | `tools/crystal_volume.py` (numpy + scipy) -> `game/crystal/data/crystal_volume.bin`; en el juego `CrystalVolume` + `CrystalChunks` | La forma, las capas, las geodas y las densidades se cambian en el script y se vuelve a hornear. |
 | Textos e idiomas | `tools/extract_strings.py` -> `game/localization/strings.csv` | Conserva las traducciones; prueba: `localization_smoke.gd`. |
+| Avisos de GDScript | `tools/gd_warnings.py [--summary] [filtros]` | Los del Depurador del editor (vía su LSP); deben ser 0. |
 | Estelas de hechizos | `spells/vfx/spell_trail.gd` (`ImmediateMesh` orientada a cámara + `spell_trail.gdshader`) | Píxeles sólidos con bandas; se estrecha cerca de la cámara. |
 | Fuentes | Fusion Pixel (Ark Pixel) 10 px normal y negrita y 12 px negrita, OFL, por `ui/ui_fonts.gd` (`UiFonts.BODY/BOLD/TITLE`); Pixelify Sans sólo en el logotipo | Importadas sin antialiasing, hinting ni subpíxel; 1 píxel de fuente = 1 píxel del juego. `tools/make_ui_fonts.py` las prepara. |
 | Sprites pixel art (manos, efectos) | **Sprite AI** (MCP `sprite-ai` en `.mcp.json`, o `tools/sprite_ai/sai.py`) | No hay artista: es la fuente de arte 2D. Ver sección 15 y `docs/sprite_ai.md`. |
@@ -222,7 +223,10 @@ sonido y HUD) y la de racha y golpe resonante (GDD 10.4). Si falta una capa, no 
 godot --path game --write-movie /tmp/captura/f.png --fixed-fps 60 --quit-after 180 -- --autoplay --tier=1
 ```
 
-  El modo demo se salta el tutorial; `--tutorial` lo deja activo para grabarlo.
+  El modo demo se salta el tutorial; `--tutorial` lo deja activo para grabarlo. La escena principal es el título
+  (`title/title_screen.tscn`); con `--autoplay` pasa directo al juego, así que los comandos de captura no cambian.
+  `--title-play` (sin `--autoplay`) pulsa JUGAR solo para grabar la pantalla de carga; `--backdrop` quita HUD y
+  manos (así se hizo `title/title_backdrop.png`: `--warp=-14,118 --yaw=8 --pitch=8 --time=0.70`).
 
 - Comparado lado a lado con la referencia de estilo.
 
@@ -254,6 +258,13 @@ godot --path game --write-movie /tmp/captura/f.png --fixed-fps 60 --quit-after 1
 - Shaders sencillos: el look pixel art no necesita efectos caros. Medir cualquier post-proceso nuevo.
 - Iluminación global costosa (SDFGI, VoxelGI) **desactivada** salvo que se mida y se justifique.
 - Audio con polifonía limitada por sonido (un "tink" no puede sonar 300 veces en el mismo frame).
+- **Arranque**: el título no monta el mundo 3D; `SceneFlow` carga `main.tscn` en otro hilo mientras se ve y la
+  pantalla de carga (`LoadingCover`, persistente bajo la raíz) cubre la entrada. Lo pesado del `_ready` va a hilos
+  antes de montar la escena (`CrystalPrebuild`: rejilla y mallas del cristal). Nada de trabajo de segundos en un
+  `_ready`: medirlo (tiempo entre señales `ready`) y llevarlo a la carga o a un hilo. Ojo con
+  `create_convex_shape(…, simplify = true)`: costaba ~1 s con 24 piezas.
+- **Cero avisos de GDScript** en el panel Depurador del editor: `python3 tools/gd_warnings.py` los lista (vía el LSP
+  del editor) y debe acabar en "TOTAL 0".
 
 ### 6.3 Medir siempre
 
@@ -332,7 +343,9 @@ godot --headless --path game --script res://tests/smoke/progression_smoke.gd
   `tests/smoke/crystal_volume_smoke.gd`, que el volumen del cristal reparte el 1.000.000, se excava, respeta el
   Núcleo, se malla y se guarda;
   `tests/smoke/runes_smoke.gd`, la Mesa de Runas (sellada, ranuras, inscribir y borrar) y el efecto real de cada runa;
-  `tests/smoke/milestones_smoke.gd`, el Lanzamiento continuo, el Vórtice y el Rompefacetas (con el tope del Núcleo).
+  `tests/smoke/milestones_smoke.gd`, el Lanzamiento continuo, el Vórtice y el Rompefacetas (con el tope del Núcleo);
+  `tests/smoke/boot_smoke.gd`, el arranque: título sin mundo 3D, carga en otro hilo, pantalla de carga que avanza y se
+  va, MENÚ PRINCIPAL desde la pausa y otra partida seguida.
 - Ojo en los tests `--script`: los autoloads no existen al compilar el script, así que no se pueden nombrar
   (`Events`, `GameState`) ni usar como tipo una clase cuyo script los use (`SpellCaster`, `Player`): se buscan con
   `root.get_node(^"Events")` y se llama a los métodos por nombre.

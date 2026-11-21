@@ -17,7 +17,6 @@ var _occluder_material: ShaderMaterial
 var _shapes: Dictionary[int, CollisionShape3D] = {}
 var _running: Dictionary[int, bool] = {}
 var _again: Dictionary[int, bool] = {}
-var _mutex := Mutex.new()
 
 
 func setup(p_volume: CrystalVolume, p_material: Material, p_body: StaticBody3D) -> void:
@@ -29,32 +28,11 @@ func setup(p_volume: CrystalVolume, p_material: Material, p_body: StaticBody3D) 
 	_occluder_material.render_priority = Material.RENDER_PRIORITY_MIN
 
 
-## Malla inicial: todos los trozos con superficie a la vez, repartidos entre los hilos, y espera
-## a que terminen (se llama tras la pantalla de carga).
-func build_all(chunk_ids: PackedInt32Array) -> void:
-	var results: Dictionary[int, Array] = {}
-	var field: PackedFloat32Array = volume.sdf
-	var v: CrystalVolume = volume
-	var job := func(i: int) -> void:
-		var ci: int = chunk_ids[i]
-		var arrays: Array = CrystalVolume.mesh_chunk(
-			field, v.depth, v.size, v.cell, v.origin, v.chunk, v.chunk_coords(ci)
-		)
-		_mutex.lock()
-		results[ci] = arrays
-		_mutex.unlock()
-	var task: int = WorkerThreadPool.add_group_task(job, chunk_ids.size(), -1, true, "crystal")
-	WorkerThreadPool.wait_for_group_task_completion(task)
-	for ci: int in results:
-		_apply(ci, results[ci])
-
-
-## Todos los trozos que tengan algo (al cargar una partida con el cristal ya excavado).
-func all_chunks() -> PackedInt32Array:
-	var out := PackedInt32Array()
-	for i: int in volume.chunks.x * volume.chunks.y * volume.chunks.z:
-		out.append(i)
-	return out
+## Malla inicial: aplica las mallas que dejó hechas `CrystalPrebuild` (índice de trozo ->
+## arrays de la malla).
+func apply_all(meshes: Dictionary[int, Array]) -> void:
+	for ci: int in meshes:
+		_apply(ci, meshes[ci])
 
 
 func mark_dirty(chunk_ids: Array) -> void:
@@ -128,7 +106,8 @@ func _apply(ci: int, arrays: Array) -> void:
 	_occluders[ci].mesh = mesh
 	var shape := ConcavePolygonShape3D.new()
 	shape.backface_collision = true
-	shape.set_faces(arrays[Mesh.ARRAY_VERTEX])
+	var faces: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	shape.set_faces(faces)
 	_shapes[ci].shape = shape
 
 
@@ -137,5 +116,6 @@ func triangle_count() -> int:
 	var n: int = 0
 	for ci: int in _meshes:
 		var m: ArrayMesh = _meshes[ci].mesh
+		@warning_ignore("integer_division")
 		n += m.surface_get_array_len(0) / 3
 	return n
