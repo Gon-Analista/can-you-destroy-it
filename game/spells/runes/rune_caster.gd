@@ -254,7 +254,32 @@ func _bounce_target(hit: SpellHit) -> Dictionary:
 		var from: Vector3 = hit.position + off + n * 2.5
 		var q := PhysicsRayQueryParameters3D.create(from, from - n * 6.0, 1 << 1)
 		var r: Dictionary = space.intersect_ray(q)
-		if not r.is_empty() and _yields(crystal, r["position"], r["normal"]):
+		if r.is_empty():
+			continue
+		# Ni bajo tierra (la cara de abajo del cristal) ni en una cara que mire al otro lado: el
+		# rebote no llegaría.
+		var at: Vector3 = r["position"]
+		var rn: Vector3 = r["normal"]
+		if at.y < Valley.ground_height(at.x, at.z) + 0.3 or rn.dot(n) < 0.2:
+			continue
+		if _yields(crystal, at, rn):
+			return r
+	# Cerca de la base o en caras que miran abajo los rayos se pierden: otro punto de la cara
+	# visible, buscado desde un lado del impacto y por encima del suelo hacia el eje del cristal.
+	var out: Vector3 = Vector3(n.x, 0.0, n.z).normalized() if absf(n.y) < 0.95 else Vector3.BACK
+	for attempt: int in 6:
+		var a: float = _rng.randf_range(-1.0, 1.0) * 0.6
+		var reach: float = _rng.randf_range(BOUNCE_REACH.x, BOUNCE_REACH.y)
+		var probe: Vector3 = hit.position + out.rotated(Vector3.UP, a) * 4.0
+		probe += out.cross(Vector3.UP) * reach * signf(a)
+		probe.y = maxf(hit.position.y + _rng.randf_range(0.0, 3.0), 0.0)
+		probe.y = maxf(probe.y, Valley.ground_height(probe.x, probe.z) + 1.5)
+		var r: Dictionary = crystal.surface_toward(probe)
+		if r.is_empty():
+			continue
+		var at: Vector3 = r["position"]
+		if at.distance_to(hit.position) > 1.5 and _yields(crystal, at, r["normal"]):
+			r["collider"] = crystal.get_node(^"Body")
 			return r
 	return {}
 

@@ -153,7 +153,9 @@ func _initialize() -> void:
 	_check(float(storm.call(&"lock_left")) <= 0.0, "pasado el cierre, se puede lanzar otra")
 	# El Libro enseña las triples en su página.
 	book.call(&"open")
-	book.call(&"open_page", SpellBook.TRIPLES_PAGE)
+	# SpellBook usa autoloads: no se puede nombrar aquí (ver dev_guidelines); su constante, por mapa.
+	var consts: Dictionary = (book.get_script() as Script).get_script_constant_map()
+	book.call(&"open_page", consts["TRIPLES_PAGE"])
 	await process_frame
 	var listed: Array = book.call(&"_list")
 	_check(listed.size() == 5, "el Libro tiene 5 triples")
@@ -355,7 +357,11 @@ func _check_disabled(gs: Node) -> void:
 	_check(not bool(view.call(&"is_shown")), "el báculo no sale en pantalla")
 	_check(int(_caster.get(&"staff").get(&"element_index")) < 0, "R no enciende ninguna gema")
 	var book: Node = main.get_node(BOOK_PATH)
-	_check(int(book.call(&"_tab_count")) == 1, "el Libro sólo tiene PAREJAS")
+	var book_consts: Dictionary = (book.get_script() as Script).get_script_constant_map()
+	_check(
+		int(book.call(&"_tab_count")) == int(book_consts["TRIPLES_PAGE"]),
+		"el Libro no enseña la página de TRIPLES"
+	)
 	print("staff_smoke: ", "OK" if _ok else "FALLO")
 	quit(0 if _ok else 1)
 

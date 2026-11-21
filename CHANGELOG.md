@@ -27,6 +27,11 @@ cargue menos cosas")
   quita HUD y manos; `--warp` respeta la altura del suelo.
 - Prueba nueva: `boot_smoke` (título → carga → juego → pausa → título → otra partida).
 - `tools/gd_warnings.py`: lista los avisos de GDScript del Depurador del editor (vía su LSP).
+- **Rebote** (runa): con el cristal más grande, un golpe cerca de la base buscaba el siguiente punto desde bajo
+  tierra y rebotaba contra la cara de abajo del cristal; ahora descarta puntos bajo el suelo y caras que miran al
+  otro lado, y si los rayos fallan busca otra cara visible hacia el eje del cristal.
+- Pruebas que venían rotas de `main`: `staff_smoke` (nombraba `SpellBook` y no contaba la pestaña VIENTO) y
+  `runes_smoke` (el rebote de arriba).
 ## 2026-11-20 · Paleta azulada, niebla lejana y luciérnagas
 
 **Qué hay nuevo**
