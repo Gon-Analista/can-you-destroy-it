@@ -1,6 +1,7 @@
 class_name Tutorial
 extends Control
 ## Tutorial del principio, muy rápido y con humor (pedido del equipo):
+## 0. Al salir de la casucha: acércate al cristal por el camino (que se vea lo enorme que es).
 ## 1. Un clic: tu magia es una chispita que ni araña el cristal ("clink"). Vale cualquier mano.
 ## 2. El otro clic: la otra mano, igual de lamentable.
 ## 3. Los dos clics a la vez: juntas los hechizos. Sigue siendo malo, pero hace 1 de daño y
@@ -13,7 +14,7 @@ extends Control
 ## (señales de Events). Empieza al abrir la puerta de la casucha y se guarda
 ## (`Progression.tutorial_step`).
 
-enum Step { DOOR, CAST_LEFT, CAST_RIGHT, COMBINE, PICKUP, CRUSH, EARN, BUY, DONE }
+enum Step { DOOR, APPROACH, CAST_LEFT, CAST_RIGHT, COMBINE, PICKUP, CRUSH, EARN, BUY, DONE }
 
 const OK_SFX: AudioStream = preload("res://audio/sfx/sfx_spark_ready_01.ogg")
 const C_TEXT := Color("#f2f6ff")
@@ -33,6 +34,8 @@ const MANA_ICON: PackedStringArray = [
 const BOOK_ICON: PackedStringArray = [
 	"........", "##.##...", "#+#+#...", "#+#+#...", "#+#+#...", "#+#+#...", "#####...", "........"
 ]
+## Se da por llegado al cristal a esta distancia de su eje (m), por el camino desde la casucha.
+const APPROACH_RADIUS: float = WorldLayout.CRYSTAL_FOOTPRINT + 14.0
 ## Panel centrado arriba; el ancho se ajusta al texto (`_box`).
 const BOX_Y := 46.0
 const BOX_H := 38.0
@@ -40,6 +43,7 @@ const TEXT_X := 36.0
 ## Fase de la guía de objetivos para cada paso (en el orden de `Step`).
 const GUIDE_PHASES: Array[int] = [
 	Guidance.Phase.DOOR,
+	Guidance.Phase.CAST,
 	Guidance.Phase.CAST,
 	Guidance.Phase.CAST,
 	Guidance.Phase.CAST,
@@ -97,9 +101,9 @@ func _watch_door() -> void:
 		return
 	var hut: ApprenticeHut = get_tree().get_first_node_in_group(&"apprentice_hut") as ApprenticeHut
 	if hut == null or hut.is_open:
-		_set_step(Step.CAST_LEFT)
+		_set_step(Step.APPROACH)
 	else:
-		hut.door_opened.connect(func() -> void: _set_step(Step.CAST_LEFT))
+		hut.door_opened.connect(func() -> void: _set_step(Step.APPROACH))
 
 
 func is_active() -> bool:
@@ -121,7 +125,7 @@ func skip() -> void:
 
 ## Modo demo (capturas): salta al paso `s` (con `--tutorial --tutorial-step=N`).
 func jump_to(s: int) -> void:
-	_set_step(clampi(s, Step.CAST_LEFT, Step.DONE))
+	_set_step(clampi(s, Step.APPROACH, Step.DONE))
 
 
 ## Partidas que ya han empezado no ven el tutorial.
@@ -172,6 +176,9 @@ func _reach(s: int) -> void:
 
 ## El primer clic vale con cualquier mano; el segundo, con la otra.
 func _on_cast(_tier: SpellTier, side: int) -> void:
+	if step == Step.APPROACH:
+		# Quien lanza antes de llegar ya ha encontrado el cristal: se sigue con los clics.
+		_set_step(Step.CAST_LEFT)
 	if side == SpellCaster.BOTH_HANDS:
 		return
 	if step == Step.CAST_LEFT:
@@ -222,6 +229,7 @@ func _first_cost() -> int:
 
 func _refresh() -> void:
 	var titles: Dictionary[int, String] = {
+		Step.APPROACH: tr("ACÉRCATE AL CRISTAL"),
 		Step.CAST_LEFT: tr("CLIC IZQUIERDO: LANZA TU MAGIA"),
 		Step.CAST_RIGHT:
 		(
@@ -240,6 +248,7 @@ func _refresh() -> void:
 		Step.BUY: tr("VE AL SANTUARIO"),
 	}
 	var subs: Dictionary[int, String] = {
+		Step.APPROACH: tr("Sigue el camino. De cerca es aún más grande."),
 		Step.CAST_LEFT: tr("Tu mano izquierda guarda una chispa. Más o menos."),
 		Step.CAST_RIGHT: tr("A lo mejor ésta tiene más ganas."),
 		Step.COMBINE: tr("Mantén para cargar y suelta. Juntas son menos tímidas."),
@@ -280,6 +289,16 @@ func _process(delta: float) -> void:
 	if _done_t > 0.0:
 		_done_t -= delta
 	visible = step != Step.DOOR and (step != Step.DONE or _done_t > 0.0)
+	if step == Step.APPROACH:
+		var player: Node3D = get_tree().get_first_node_in_group(&"player") as Node3D
+		if (
+			player
+			and (
+				Vector2(player.global_position.x, player.global_position.z).length()
+				< APPROACH_RADIUS
+			)
+		):
+			_reach(Step.APPROACH)
 	queue_redraw()
 
 
@@ -301,7 +320,7 @@ func _draw() -> void:
 			_mouse(icon_at, blink and _first_side == 1, blink and _first_side == 0)
 		Step.COMBINE:
 			_mouse(icon_at, blink, blink)
-		Step.PICKUP, Step.CRUSH:
+		Step.APPROACH, Step.PICKUP, Step.CRUSH:
 			_icon(SHARD_ICON, icon_at + Vector2(1, 4 - (1 if blink else 0)), C_CYAN)
 		Step.EARN:
 			_icon(MANA_ICON, icon_at + Vector2(1, 4 - (1 if blink else 0)), C_PINK)

@@ -9,6 +9,11 @@ extends RefCounted
 ## Aquí sólo el estado y las reglas (sin nodos): qué elemento lleva, si se tiene y qué triple
 ## forman tres elementos. Lo usan SpellCaster, el Libro de Combinaciones y los tests.
 
+## Apagado por ahora (pedido del equipo: confundía). Sin báculo no hay mejoras del báculo en el
+## Grimorio, ni vitrina, ni tecla R, ni triples en el Libro: sólo la magia de las manos. Todo el
+## código sigue aquí; para volver a encenderlo basta con `true` (y devolver las tres mejoras a
+## `GameState.UPGRADES` y la página a `Grimoire.PAGES`).
+const ENABLED: bool = false
 ## Todas las combinaciones triples, en el orden del Libro de Combinaciones.
 const TRIPLES: Array[SpellRecipe] = [
 	preload("res://data/spells/recipe_elemental_storm.tres"),
@@ -28,9 +33,15 @@ const FIRST_ELEMENT: StringName = &"bolt"
 var element_index: int = -1
 
 
-## Si el mago ya tiene el báculo (la mejora "Báculo").
+## Si el mago ya tiene el báculo (la mejora "Báculo"). Apagado, nunca (aunque una partida
+## guardada lo tuviera comprado).
 static func owned() -> bool:
-	return GameState.progression.get_level(UNLOCK_UPGRADE) > 0
+	return ENABLED and GameState.progression.get_level(UNLOCK_UPGRADE) > 0
+
+
+## Las triples que existen en el juego (ninguna con el báculo apagado).
+static func triples() -> Array[SpellRecipe]:
+	return TRIPLES if ENABLED else ([] as Array[SpellRecipe])
 
 
 ## Triple que forman tres elementos (en cualquier orden), o null.

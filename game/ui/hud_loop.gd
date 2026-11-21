@@ -41,7 +41,11 @@ var intro: bool = false:
 			_pylon_pct.visible = not v
 		if _guide:
 			_guide.suppressed = v
+		if stations:
+			stations.suppressed = v
 		queue_redraw()
+## Nombres de las estaciones del valle (ver StationLabels).
+var stations: StationLabels
 var _camera: Camera3D
 var _pylon_title: Label
 var _pylon_pct: Label
@@ -97,6 +101,11 @@ func _ready() -> void:
 	_guide.suppressed = intro
 	add_child(_guide)
 	move_child(_guide, 0)
+	stations = StationLabels.new()
+	stations.name = "Stations"
+	stations.suppressed = intro
+	add_child(stations)
+	move_child(stations, 0)
 	_tears = TearCounter.new()
 	_tears.name = "Tears"
 	add_child(_tears)
@@ -134,6 +143,7 @@ func _on_first_collect(_type: ShardType, _count: int, _at: Vector3) -> void:
 func bind(camera: Camera3D) -> void:
 	_camera = camera
 	_guide.bind(camera)
+	stations.camera = camera
 	_tears.bind(camera)
 
 
@@ -283,7 +293,7 @@ func _update_hand_tags() -> void:
 
 
 ## Aviso de la tecla junto a la mira: trituradora, puerta de la casucha, atril del Santuario,
-## Espejo del Archimago o Mesa de Runas.
+## Espejo del Archimago, Mesa de Runas o Vitrina del Báculo.
 ## Entero mientras no se sabe; luego sólo la tecla pequeña y, al final, nada.
 func _update_prompt() -> void:
 	_prompt.visible = false
@@ -312,6 +322,9 @@ func _update_prompt() -> void:
 	var runes: RuneTable = get_tree().get_first_node_in_group(&"rune_table") as RuneTable
 	if runes and runes.player_in_range():
 		_show_prompt(runes.prompt(), runes.prompt_icon())
+	var vitrine: StaffVitrine = get_tree().get_first_node_in_group(&"staff_vitrine") as StaffVitrine
+	if vitrine and vitrine.player_in_range():
+		_show_prompt(vitrine.prompt(), vitrine.prompt_icon())
 
 
 func _show_prompt(text: String, icon: bool) -> void:

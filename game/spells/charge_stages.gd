@@ -37,6 +37,22 @@ static func count_for_level(level: int, table: PackedInt32Array) -> int:
 	return clampi(table[clampi(level, 1, table.size()) - 1], 0, MAX_STAGES)
 
 
+## Premio de la carga completa de un combinado de nivel `level` (`BalanceConfig.
+## full_charge_bonus_by_level`) para un hechizo con `payoff` (`SpellRecipe.charge_payoff`: 1 = se
+## carga, 0 = de toque).
+static func full_bonus(level: int, table: PackedFloat32Array, payoff: float) -> float:
+	if table.is_empty() or level < 1:
+		return 1.0
+	var full: float = table[clampi(level, 1, table.size()) - 1]
+	return maxf(1.0, 1.0 + (full - 1.0) * clampf(payoff, 0.0, 1.0))
+
+
+## Multiplicador de daño por la carga para el daño (`k` ya cuantizada, 0..1): el premio completo
+## se reparte geométricamente entre las etapas (cada círculo que encaja multiplica lo mismo).
+static func bonus(k: float, full: float) -> float:
+	return pow(maxf(full, 1.0), clampf(k, 0.0, 1.0))
+
+
 ## Etapa completada con la carga `k` (0..1) si hay `n` etapas.
 static func stage_at(k: float, n: int) -> int:
 	if n <= 0:

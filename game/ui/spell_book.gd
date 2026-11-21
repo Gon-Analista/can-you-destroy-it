@@ -3,7 +3,8 @@ extends Control
 ## Libro de Combinaciones (tecla B): todas las combinaciones y reacciones del juego. Las que ya
 ## has descubierto, con su nombre, cómo se lanzan y qué hacen; las que no, como "???" con un
 ## acertijo de pista; y las que piden un elemento que aún no has despertado (o el báculo), con
-## candado. Dos marcapáginas arriba: PAREJAS (las manos) y TRIPLES (las manos y el báculo).
+## candado. Dos marcapáginas arriba: PAREJAS (las manos) y TRIPLES (las manos y el báculo; sólo
+## con el báculo encendido, ver `StaffCombos.ENABLED`).
 ## Mismo aspecto que el Grimorio (los dos libros son hermanos).
 
 const OPEN_SFX: AudioStream = preload("res://audio/sfx/sfx_book_open_01.ogg")
@@ -13,17 +14,18 @@ const BOOK := Rect2(70, 34, 500, 292)
 const LEFT := Rect2(80, 42, 236, 276)
 const RIGHT := Rect2(324, 42, 236, 276)
 const LIST_Y: float = 90.0
-## Alto de cada fila de la lista: las 17 entradas caben en la página (90 + 17 x 13 < 318).
+## Alto de cada fila: las 17 entradas de PAREJAS caben en la página (90 + 17 x 13 < 318).
 const ROW_H: float = 13.0
-## Marcapáginas: las parejas (y reacciones) y las triples del báculo.
+## Marcapáginas: las parejas (y reacciones), las del Viento y las triples del báculo.
 # i18n
-const TABS: PackedStringArray = ["PAREJAS", "TRIPLES"]
+const TABS: PackedStringArray = ["PAREJAS", "VIENTO", "TRIPLES"]
+const TRIPLES_PAGE: int = 2
 ## Estrechos: a la derecha asoma la Esencia del HUD y no la deben pisar.
 const TAB_W: float = 72.0
 const TAB_H: float = 16.0
 ## Página del Grimorio (y su icono) de cada elemento.
 const ELEMENT_PAGE: Dictionary[StringName, int] = {
-	&"spark": 1, &"frost": 2, &"bolt": 3, &"earth": 4, &"arcane": 5
+	&"spark": 1, &"frost": 2, &"bolt": 3, &"wind": 4, &"earth": 5, &"arcane": 6
 }
 ## Cómo se lanza, según SpellRecipe.Delivery.
 # i18n
@@ -100,7 +102,7 @@ func _ready() -> void:
 		Rect2(LEFT.position + Vector2(0, 28), Vector2(LEFT.size.x, UiFonts.LINE)),
 		1
 	)
-	for i: int in TABS.size():
+	for i: int in _tab_count():
 		var tr_rect: Rect2 = _tab_rect(i)
 		_tab_labels.append(
 			_label(
@@ -202,12 +204,24 @@ func _element_name(id: StringName) -> String:
 
 ## Las recetas de la página abierta.
 func _list() -> Array[SpellRecipe]:
-	return StaffCombos.TRIPLES if _page == 1 else SpellCaster.RECIPES
+	if _page == TRIPLES_PAGE:
+		return StaffCombos.triples()
+	var wind: bool = _page == 1
+	var out: Array[SpellRecipe] = []
+	for r: SpellRecipe in SpellCaster.RECIPES:
+		if r.elements.has(&"wind") == wind:
+			out.append(r)
+	return out
 
 
-## Abre una página del libro (0 parejas, 1 triples).
+## Marcapáginas que se ven: sin báculo, sin TRIPLES.
+func _tab_count() -> int:
+	return TABS.size() if StaffCombos.ENABLED else TRIPLES_PAGE
+
+
+## Abre una página del libro (0 parejas, 1 viento, 2 triples).
 func open_page(page: int) -> void:
-	page = clampi(page, 0, TABS.size() - 1)
+	page = clampi(page, 0, _tab_count() - 1)
 	if page == _page:
 		return
 	_page = page
@@ -225,7 +239,7 @@ func _refresh() -> void:
 	var found: int = 0
 	for i: int in _rows.size():
 		_rows[i].visible = i < list.size()
-	for i: int in TABS.size():
+	for i: int in _tab_count():
 		_tab_labels[i].text = tr(TABS[i])
 		_tab_labels[i].add_theme_color_override(
 			&"font_color", C_GOLD_LIGHT if i == _page else C_LOCKED.lightened(0.45)
@@ -323,7 +337,7 @@ func _gui_input(event: InputEvent) -> void:
 		return
 	var local: Vector2 = pos - _ofs()
 	if event is InputEventMouseButton:
-		for t: int in TABS.size():
+		for t: int in _tab_count():
 			if _tab_rect(t).has_point(local):
 				open_page(t)
 	if local.x > LEFT.position.x and local.x < LEFT.end.x:
@@ -387,7 +401,7 @@ func _draw() -> void:
 	]:
 		draw_rect(Rect2(corner, Vector2(8, 8)), C_GOLD)
 	# Marcapáginas: cintas que asoman por arriba del libro (la abierta, más alta y dorada).
-	for t: int in TABS.size():
+	for t: int in _tab_count():
 		var tab: Rect2 = _tab_rect(t)
 		var open_tab: bool = t == _page
 		if not open_tab:

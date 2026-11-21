@@ -97,41 +97,40 @@ func _in_game() -> void:
 	for i: int in 240:
 		await process_frame
 	var game_menu: Node = current_scene.get_node(^"HUDLayer/Hud/GameMenu")
-	if VariantCast.to_bool(game_menu.call(&"is_open")):
+	if bool(game_menu.call(&"is_open")):
 		game_menu.call(&"_close")
 	await process_frame
 	var prog: Progression = gs.get(&"progression")
 	_check(prog.rank == 0, "partida nueva en Aprendiz")
-	_check(
-		VariantCast.to_int(audio.call(&"get_music_layers")) == 1, "una capa de música con Aprendiz"
-	)
+	_check(int(audio.call(&"get_music_layers")) == 1, "una capa de música con Aprendiz")
 	# Se despierta la Escarcha de verdad (comprada en el Grimorio).
 	var frost: UpgradeNode = load("res://data/upgrades/awaken_frost.tres")
 	prog.mana = frost.cost_for_level(0) + 100
-	_check(VariantCast.to_bool(gs.call(&"buy_upgrade", frost)), "se compra la Escarcha")
+	_check(bool(gs.call(&"buy_upgrade", frost)), "se compra la Escarcha")
 	await process_frame
 	_check(prog.rank == 1, "sube a Iniciado (%d)" % prog.rank)
 	_check(
 		_rank_events.size() == 1 and _rank_events[0] == Vector2i(1, 0), "la subida se emite una vez"
 	)
 	var ceremony: Node = current_scene.get_node(HUD).get(&"rank_ceremony")
-	_check(VariantCast.to_bool(ceremony.call(&"is_playing")), "ceremonia en marcha")
-	_check(VariantCast.to_int(audio.call(&"get_music_layers")) == 2, "la música suma su capa (2)")
+	_check(bool(ceremony.call(&"is_playing")), "ceremonia en marcha")
+	_check(int(audio.call(&"get_music_layers")) == 2, "la música suma su capa (2)")
 	var style: Node = current_scene.get_node(PLAYER_PATH).find_child("RankStyle", true, false)
 	var mat: ShaderMaterial = style.get(&"_mat")
-	var gem_color: Color = mat.get_shader_parameter("gem_color")
-	_check(gem_color.is_equal_approx(WizardRanks.RANKS[1].hand_gem), "la gema de las manos cambia")
-	var badge: Node = current_scene.get_node(HUD).find_child("RankBadge", true, false)
 	_check(
-		VariantCast.to_int(badge.get(&"_rank")) == 0,
-		"el escudo del HUD espera a que se cierre la franja"
+		(mat.get_shader_parameter("gem_color") as Color).is_equal_approx(
+			WizardRanks.RANKS[1].hand_gem
+		),
+		"la gema de las manos cambia"
 	)
+	var badge: Node = current_scene.get_node(HUD).find_child("RankBadge", true, false)
+	_check(int(badge.get(&"_rank")) == 0, "el escudo del HUD espera a que se cierre la franja")
 	for i: int in 900:
 		await process_frame
-		if not VariantCast.to_bool(ceremony.call(&"is_playing")):
+		if not bool(ceremony.call(&"is_playing")):
 			break
-	_check(not VariantCast.to_bool(ceremony.call(&"is_playing")), "la ceremonia termina")
-	_check(VariantCast.to_int(badge.get(&"_rank")) == 1, "el HUD enseña el rango")
+	_check(not bool(ceremony.call(&"is_playing")), "la ceremonia termina")
+	_check(int(badge.get(&"_rank")) == 1, "el HUD enseña el rango")
 	# Más comprobaciones y entregas sin pasar el siguiente: no se repite.
 	for i: int in 5:
 		gs.call(&"_check_rank")
@@ -144,7 +143,7 @@ func _in_game() -> void:
 	gs.call(&"deliver", need)
 	await process_frame
 	_check(prog.rank == 2 and _rank_events.size() == 2, "Pilón -> Hechicero, una vez")
-	_check(VariantCast.to_int(audio.call(&"get_music_layers")) == 3, "tres capas con Hechicero")
+	_check(int(audio.call(&"get_music_layers")) == 3, "tres capas con Hechicero")
 	# Cifras del Espejo.
 	var spells0: int = prog.stats.tally(&"spells_cast")
 	prog.spells_cast += 1  # lo suma el SpellCaster en cada lanzamiento
@@ -190,27 +189,23 @@ func _in_game() -> void:
 	player.global_position = mirror.global_position + mirror.global_basis.z * 2.0 + Vector3.UP * 0.2
 	await physics_frame
 	await process_frame
-	_check(VariantCast.to_bool(mirror.call(&"player_in_range")), "el jugador está junto al espejo")
-	_check(str(mirror.call(&"prompt")) != "", "aviso [F] junto al espejo")
+	_check(bool(mirror.call(&"player_in_range")), "el jugador está junto al espejo")
+	_check(String(mirror.call(&"prompt")) != "", "aviso [F] junto al espejo")
 	# La guía no lleva al espejo: con una mejora sin ver, junto al espejo, apunta al Santuario.
 	fresh.critters_popped = 9
 	fresh.mana = 1_000_000
 	fresh.seen_upgrades.clear()
 	var hud: Node = current_scene.get_node(HUD)
 	hud.call(&"set_intro", false)
-	var tutorial: Node = hud.get(&"tutorial")
-	tutorial.call(&"skip")
+	(hud.get(&"tutorial") as Node).call(&"skip")
 	gs.call(&"emit_all")
 	var guide: Node = current_scene.get_node(HUD).find_child("Guide", true, false)
 	for i: int in 30:
 		await process_frame
 	var aim: Vector3 = guide.get(&"target")
 	_check(
-		VariantCast.to_int(guide.get(&"kind")) == Guidance.Kind.SANCTUM,
-		(
-			"con mejoras sin ver, la guía lleva al Santuario (%d)"
-			% VariantCast.to_int(guide.get(&"kind"))
-		)
+		int(guide.get(&"kind")) == Guidance.Kind.SANCTUM,
+		"con mejoras sin ver, la guía lleva al Santuario (%d)" % int(guide.get(&"kind"))
 	)
 	_check(
 		not aim.is_finite() or aim.distance_to(mirror.global_position) > 4.0,
@@ -223,41 +218,39 @@ func _in_game() -> void:
 	ev.pressed = true
 	root.push_input(ev)
 	await process_frame
-	if not VariantCast.to_bool(screen.get(&"is_open")):
+	if not bool(screen.get(&"is_open")):
 		# Sin ventana (headless) el ratón no se captura: se abre como lo haría F.
 		events.emit_signal(&"mirror_requested")
 	await process_frame
-	_check(VariantCast.to_bool(screen.get(&"is_open")), "F abre las estadísticas del espejo")
+	_check(bool(screen.get(&"is_open")), "F abre las estadísticas del espejo")
 	for i: int in 50:
 		await process_frame
-	var vals := PackedStringArray()
-	for l: Label in screen.get(&"_vals"):
-		vals.append(l.text)
-	_check(vals[6] == "x14", "el espejo enseña la mejor racha")
-	_check(vals[1].ends_with("/ 22"), "combinaciones x / total (parejas y triples)")
-	_check(vals[10] == "9", "el espejo enseña los bichos reventados")
-	_check(vals[0].contains("min"), "tiempo jugado en el espejo")
+	var vals: Array = screen.get(&"_vals")
+	_check(String((vals[6] as Label).text) == "x14", "el espejo enseña la mejor racha")
+	# 28 con el báculo (23 parejas y reacciones + 5 triples); sin él, sólo las parejas.
+	var staff_on: bool = bool((load("res://spells/staff_combos.gd") as Script).get(&"ENABLED"))
+	var total: int = 28 if staff_on else 23
+	_check(
+		String((vals[1] as Label).text).ends_with("/ %d" % total),
+		"combinaciones x / total (parejas y, con báculo, triples)"
+	)
+	_check(String((vals[10] as Label).text) == "9", "el espejo enseña los bichos reventados")
+	_check(String((vals[0] as Label).text).contains("min"), "tiempo jugado en el espejo")
 	# Con el espejo abierto, B no abre el Libro de Hechizos encima y Esc lo cierra (no la pausa).
 	var book: Node = current_scene.get_node(HUD).get_node(^"SpellBook")
 	_push_action(&"open_spellbook")
 	await process_frame
-	_check(
-		not VariantCast.to_bool(book.get(&"is_open")),
-		"el Libro de Hechizos no se abre encima del espejo"
-	)
+	_check(not bool(book.get(&"is_open")), "el Libro de Hechizos no se abre encima del espejo")
 	_push_action(&"ui_cancel")
 	await process_frame
-	_check(
-		not VariantCast.to_bool(game_menu.call(&"is_open")),
-		"Esc cierra el espejo y no abre la pausa"
-	)
-	_check(VariantCast.to_bool(screen.get(&"_closing")), "Esc cierra el espejo")
+	_check(not bool(game_menu.call(&"is_open")), "Esc cierra el espejo y no abre la pausa")
+	_check(bool(screen.get(&"_closing")), "Esc cierra el espejo")
 	screen.call(&"close")
 	for i: int in 600:
 		await process_frame
-		if not VariantCast.to_bool(screen.get(&"is_open")):
+		if not bool(screen.get(&"is_open")):
 			break
-	_check(not VariantCast.to_bool(screen.get(&"is_open")), "se cierra")
+	_check(not bool(screen.get(&"is_open")), "se cierra")
 	_check(fresh.seen_upgrades.is_empty(), "mirar el espejo no da las mejoras por vistas")
 	# El Libro de Hechizos tampoco las da por vistas; el Grimorio, sí.
 	book.call(&"open")
@@ -265,7 +258,7 @@ func _in_game() -> void:
 	book.call(&"close")
 	for i: int in 600:
 		await process_frame
-		if not VariantCast.to_bool(book.get(&"is_open")):
+		if not bool(book.get(&"is_open")):
 			break
 	_check(fresh.seen_upgrades.is_empty(), "el Libro de Hechizos no da las mejoras por vistas")
 	events.emit_signal(&"grimoire_requested", true)

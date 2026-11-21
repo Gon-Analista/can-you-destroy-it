@@ -49,6 +49,22 @@ func muffle_music(on: bool, fade_sec: float = 2.0) -> void:
 	)
 
 
+## Calla el valle (música por capas y ambiente) y quita el amortiguado: al volver al título.
+func stop_world() -> void:
+	if _music_tween:
+		_music_tween.kill()
+	if _music:
+		_music.stop()
+	_music_stream = null
+	_music_layers = 0
+	if _ambience:
+		_ambience.stop()
+	if _muffle_tween:
+		_muffle_tween.kill()
+	if _muffle:
+		_muffle.cutoff_hz = 20000.0
+
+
 ## Reproduce un sonido. Usar AudioStreamRandomizer para variar tono y sample.
 ## `pitch` desplaza el tono (p. ej. un hechizo más grave cuanto más nivel tiene).
 func play_sfx(stream: AudioStream, volume_db: float = 0.0, pitch: float = 1.0) -> void:

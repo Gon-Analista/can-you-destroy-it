@@ -131,7 +131,7 @@ func _refresh() -> void:
 		_req.text = requirement_text(nd)
 	var found: int = 0
 	var all: Array[SpellRecipe] = SpellCaster.RECIPES.duplicate()
-	all.append_array(StaffCombos.TRIPLES)  # parejas y triples del báculo, como el HUD
+	all.append_array(StaffCombos.triples())  # parejas y triples del báculo, como el HUD
 	for r: SpellRecipe in all:
 		if prog.discovered_recipes.has(r.id):
 			found += 1

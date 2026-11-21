@@ -210,6 +210,11 @@ func bind(camera: Camera3D, caster: SpellCaster) -> void:
 	_rune_halo.hands = caster.hands if caster else null
 
 
+## Las estaciones del valle cuyo nombre se enseña al acercarse (ver StationLabels).
+func bind_world(world: Node) -> void:
+	_loop.stations.bind_world(world)
+
+
 ## (Opciones enseña las mismas frases, sueltas, en su pestaña de controles.)
 func _controls_text() -> String:
 	return (
@@ -438,7 +443,7 @@ func _on_recipe_discovered(recipe: SpellRecipe) -> void:
 	_discovery_name.visible = true
 	_discovery_time = DISCOVERY_SEC
 	var found: int = GameState.progression.discovered_recipes.size()
-	var total: int = SpellCaster.RECIPES.size() + StaffCombos.TRIPLES.size()
+	var total: int = SpellCaster.RECIPES.size() + StaffCombos.triples().size()
 	var triple: bool = recipe.is_triple()
 	_discovery_title.text = (
 		(tr("¡COMBINACIÓN TRIPLE!") if triple else tr("¡COMBINACIÓN NUEVA!"))
@@ -477,12 +482,11 @@ func _process(delta: float) -> void:
 		and not menu.is_open()
 	)
 	_crosshair.visible = captured and not menu.is_open()
-	var title: bool = menu.mode == GameMenu.Mode.TITLE
-	var hide_top: bool = title or _loop.intro or mirror_screen.is_open or rune_screen.is_open
+	var hide_top: bool = _loop.intro or mirror_screen.is_open or rune_screen.is_open
 	_essence.visible = not hide_top
 	_essence_title.visible = not hide_top
 	_rank_badge.visible = not _loop.intro
-	_update_menu_hint(captured and not title and not menu.is_open(), delta)
+	_update_menu_hint(captured and not menu.is_open(), delta)
 	if _caster:
 		_crosshair.charge = _caster.charge_ratio()
 	# Esencia: el número baja rodando y el texto da un golpe de escala y color.
@@ -515,7 +519,7 @@ func _process(delta: float) -> void:
 	_update_discovery(delta)
 	_update_floaters(delta)
 	# FPS (Opciones o menú de depuración): el texto sólo se rehace cuando cambia el número.
-	_fps.visible = Settings.show_fps and not title
+	_fps.visible = Settings.show_fps
 	if _fps.visible:
 		var fps: int = roundi(Engine.get_frames_per_second())
 		if fps != _shown_fps:

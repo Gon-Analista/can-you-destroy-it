@@ -1,7 +1,8 @@
 extends SceneTree
-## El Meteoro cae del cielo y no "desde abajo": su origen está alto, por delante del mago (no
-## encima ni detrás de él) y a un lado; la roca se monta, cae, estalla y vuelve al pool. Y el
-## fuego HD no se sale de su quad (la máscara del borde está en el shader).
+## El Meteoro cae del cielo a plomo: su origen está justo encima del blanco, alto (no de lado ni
+## "desde abajo"), y si encima del blanco hay algo, aterriza en lo primero que toca. La roca se
+## monta, cae, estalla y vuelve al pool. Y el fuego HD no se sale de su quad (la máscara del
+## borde está en el shader).
 ## godot --headless --path game --script res://tests/smoke/meteor_smoke.gd
 
 var _ok: bool = true
@@ -9,19 +10,15 @@ var _ok: bool = true
 
 func _initialize() -> void:
 	var sky_path: GDScript = load("res://spells/sky_path.gd")
-	var cam := Vector3(0, 1.6, 60)
 	var target := Vector3(0, 8, 30)
-	for side: float in [1.0, -1.0]:
-		var o: Vector3 = sky_path.call(&"origin", null, cam, target, Vector3.BACK, 70.0, side)
-		_check(is_equal_approx(o.y - target.y, 70.0), "nace 70 m por encima del blanco")
-		var fwd := Vector3(0, 0, -1)
-		_check((o - cam).dot(fwd) > 5.0, "por delante del mago, no encima ni detrás (%s)" % o)
-		_check(signf((o - target).x) == side, "entra por el lado pedido (%s)" % side)
-		# Visto desde el mago, empieza más arriba que el blanco: cae de arriba abajo.
-		var el_o: float = atan2(o.y - cam.y, Vector2(o.x - cam.x, o.z - cam.z).length())
-		var flat_t: float = Vector2(target.x - cam.x, target.z - cam.z).length()
-		var el_t: float = atan2(target.y - cam.y, flat_t)
-		_check(el_o > el_t + 0.3, "se ve venir desde lo alto")
+	var o: Vector3 = sky_path.call(&"origin", target, 70.0)
+	_check(is_equal_approx(o.y - target.y, 70.0), "nace 70 m por encima del blanco")
+	_check(
+		is_zero_approx(Vector2(o.x - target.x, o.z - target.z).length()),
+		"a plomo: justo encima, no de lado"
+	)
+	var land: Dictionary = sky_path.call(&"landing", null, target, Vector3.BACK, 70.0)
+	_check(land["position"] == target, "sin mundo, aterriza en el blanco")
 	var meteor_def: Resource = load("res://data/spells/vfx_meteor.tres")
 	_check(VariantCast.to_bool(meteor_def.get(&"meteor")), "vfx_meteor lleva el aspecto de meteoro")
 	_check(

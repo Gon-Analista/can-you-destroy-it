@@ -1,9 +1,9 @@
 extends SceneTree
-## Tutorial del principio: la chispita de cada mano no hace nada ("clink"), juntar las manos
-## hace 1 de daño y suelta un pedacito, se recoge, se tritura, con 5 de maná se compra la
-## primera mejora y entonces la magia hace daño de verdad (2 con las manos juntas).
-## Además: ningún paso repite cómo se pulsa F (lo enseña el aviso de la mira, que se retira
-## cuando ya se sabe) y la guía de objetivos apunta adonde toca en cada paso.
+## Tutorial del principio: se sale de la casucha y se llega al cristal; la chispita de cada mano no
+## hace nada ("clink"), juntar las manos hace 1 de daño y suelta un pedacito, se recoge, se tritura,
+## con 5 de maná se compra la primera mejora y entonces la magia hace daño de verdad (2 con las
+## manos juntas). Además: ningún paso repite cómo se pulsa F (lo enseña el aviso de la mira, que se
+## retira cuando ya se sabe) y la guía de objetivos apunta adonde toca en cada paso.
 ## godot --headless --path game --script res://tests/smoke/tutorial_smoke.gd
 
 var _ok: bool = true
@@ -23,39 +23,32 @@ func _initialize() -> void:
 		await process_frame
 	var main: Node = current_scene
 	var menu: Node = main.get_node(^"HUDLayer/Hud/GameMenu")
-	if VariantCast.to_bool(menu.call(&"is_open")):
+	if bool(menu.call(&"is_open")):
 		menu.call(&"_close")
 	var hud: Node = main.get_node(^"HUDLayer/Hud")
 	var tut: Node = main.get_node(^"HUDLayer/Hud/Tutorial")
 	var guide: Node = main.get_node(^"HUDLayer/Hud/Loop/Guide")
 	var player: Node3D = main.get_node(^"WorldView/WorldViewport/Player")
 	var caster: Node = player.call(&"get_caster")
-	_check(VariantCast.to_int(tut.get(&"step")) == 0, "empieza esperando la puerta")
-	_check(
-		VariantCast.to_int(guide.get(&"wanted")) == Guidance.Kind.NONE,
-		"dentro de la casucha no hay guía"
-	)
+	_check(int(tut.get(&"step")) == 0, "empieza esperando la puerta")
+	_check(int(guide.get(&"wanted")) == Guidance.Kind.NONE, "dentro de la casucha no hay guía")
 	var hut: Node = root.find_child("ApprenticeHut", true, false)
 	hut.call(&"open_door")
 	await create_timer(2.2).timeout
-	_check(
-		VariantCast.to_int(tut.get(&"step")) == 1,
-		"al abrir la puerta: primer clic (%d)" % VariantCast.to_int(tut.get(&"step"))
-	)
-	_check(
-		VariantCast.to_int(guide.get(&"wanted")) == Guidance.Kind.CRYSTAL,
-		"la guía señala el cristal"
-	)
+	_check(int(tut.get(&"step")) == 1, "al abrir la puerta: acércate (%d)" % int(tut.get(&"step")))
+	_check(int(guide.get(&"wanted")) == Guidance.Kind.CRYSTAL, "la guía señala el cristal")
 	player.global_position = Vector3(0.0, 0.3, 62.0)
 	player.rotation.y = 0.0
 	(player.get_node(^"Head") as Node3D).rotation.x = deg_to_rad(6.0)
 	await physics_frame
-	var e0: int = VariantCast.to_int(prog.get(&"essence"))
+	await create_timer(0.3).timeout
+	_check(int(tut.get(&"step")) == 2, "junto al cristal: primer clic (%d)" % int(tut.get(&"step")))
+	var e0: int = int(prog.get(&"essence"))
 	# Vale empezar por cualquier mano: el segundo paso pide la otra.
 	caster.call(&"_cast_single", 1)
 	await create_timer(2.5).timeout
-	_check(VariantCast.to_int(tut.get(&"step")) == 2, "primer clic hecho (con la derecha)")
-	_check(VariantCast.to_int(prog.get(&"essence")) == e0, "la chispita no hace daño")
+	_check(int(tut.get(&"step")) == 3, "primer clic hecho (con la derecha)")
+	_check(int(prog.get(&"essence")) == e0, "la chispita no hace daño")
 	_check(
 		_text(tut, &"_title") == tut.tr("CLIC IZQUIERDO: TU OTRA MANO"),
 		"pide la otra mano (la izquierda)"
@@ -63,33 +56,28 @@ func _initialize() -> void:
 	caster.set(&"_cooldown", PackedFloat32Array([0.0, 0.0]))
 	caster.call(&"_cast_single", 1)
 	await create_timer(0.6).timeout
-	_check(VariantCast.to_int(tut.get(&"step")) == 2, "la misma mano otra vez no cuenta")
+	_check(int(tut.get(&"step")) == 3, "la misma mano otra vez no cuenta")
 	caster.set(&"_cooldown", PackedFloat32Array([0.0, 0.0]))
 	caster.call(&"_cast_single", 0)
 	await create_timer(2.5).timeout
-	_check(VariantCast.to_int(tut.get(&"step")) == 3, "la otra mano hecha")
-	_check(VariantCast.to_int(prog.get(&"essence")) == e0, "la otra tampoco")
+	_check(int(tut.get(&"step")) == 4, "la otra mano hecha")
+	_check(int(prog.get(&"essence")) == e0, "la otra tampoco")
 	caster.set(&"_cooldown", PackedFloat32Array([0.0, 0.0]))
 	caster.call(&"try_begin_combine")
 	await create_timer(0.8).timeout
 	caster.call(&"try_release_combine")
 	await create_timer(3.0).timeout
+	_check(int(tut.get(&"step")) == 5, "juntar las manos (%d)" % int(tut.get(&"step")))
 	_check(
-		VariantCast.to_int(tut.get(&"step")) == 4,
-		"juntar las manos (%d)" % VariantCast.to_int(tut.get(&"step"))
-	)
-	_check(
-		VariantCast.to_int(prog.get(&"essence")) == e0 - 1,
-		"juntas hacen 1 de daño (%d)" % (e0 - VariantCast.to_int(prog.get(&"essence")))
+		int(prog.get(&"essence")) == e0 - 1,
+		"juntas hacen 1 de daño (%d)" % (e0 - int(prog.get(&"essence")))
 	)
 	_check_no_f(tut, "recoger")
 	await create_timer(0.5).timeout
-	_check(
-		VariantCast.to_int(guide.get(&"wanted")) == Guidance.Kind.SHARD, "la guía lleva al pedacito"
-	)
+	_check(int(guide.get(&"wanted")) == Guidance.Kind.SHARD, "la guía lleva al pedacito")
 	# El aviso de la mira: entero la primera vez, luego la tecla sola y al final nada.
 	var pool: Node = root.find_child("Shards", true, false)
-	var idx: int = VariantCast.to_int(pool.call(&"nearest", player.global_position, 80.0))
+	var idx: int = int(pool.call(&"nearest", player.global_position, 80.0))
 	_check(idx >= 0, "cayó un pedacito")
 	var stype: Resource = pool.call(&"type_of", maxi(idx, 0))
 	var label: Label = hud.get(&"_pickup_prompt")
@@ -99,63 +87,46 @@ func _initialize() -> void:
 	var learned: Dictionary = prog.get(&"learned")
 	learned[&"pickup"] = 5
 	ev.emit_signal(&"shard_targeted", stype)
-	_check(
-		not label.visible and VariantCast.to_bool(key.get(&"shown")),
-		"ya sabido: sólo la tecla pequeña"
-	)
+	_check(not label.visible and bool(key.get(&"shown")), "ya sabido: sólo la tecla pequeña")
 	learned[&"pickup"] = 40
 	ev.emit_signal(&"shard_targeted", stype)
-	_check(
-		not label.visible and not VariantCast.to_bool(key.get(&"shown")), "costumbre: ningún aviso"
-	)
+	_check(not label.visible and not bool(key.get(&"shown")), "costumbre: ningún aviso")
 	learned[&"pickup"] = 0
 	ev.emit_signal(&"shard_targeted", null)
 	# Recoger el pedacito.
 	if idx >= 0:
 		player.call(&"_collect", idx)
 	await process_frame
-	_check(VariantCast.to_int(tut.get(&"step")) == 5, "recogido: a la trituradora")
+	_check(int(tut.get(&"step")) == 6, "recogido: a la trituradora")
 	_check_no_f(tut, "trituradora")
 	await create_timer(0.5).timeout
-	_check(
-		VariantCast.to_int(guide.get(&"wanted")) == Guidance.Kind.CRUSHER,
-		"la guía lleva a la trituradora"
-	)
+	_check(int(guide.get(&"wanted")) == Guidance.Kind.CRUSHER, "la guía lleva a la trituradora")
 	# Triturar (equivale a entregar).
-	while VariantCast.to_int(prog.call(&"bag_count")) > 0:
+	while int(prog.call(&"bag_count")) > 0:
 		gs.call(&"take_for_delivery")
 	gs.call(&"deliver", 1)
 	await process_frame
-	_check(VariantCast.to_int(tut.get(&"step")) == 6, "triturado: juntar maná")
+	_check(int(tut.get(&"step")) == 7, "triturado: juntar maná")
 	gs.call(&"deliver", 4)
 	await process_frame
-	_check(VariantCast.to_int(tut.get(&"step")) == 7, "con 5 de maná: al Santuario")
+	_check(int(tut.get(&"step")) == 8, "con 5 de maná: al Santuario")
 	_check_no_f(tut, "santuario")
 	await create_timer(0.5).timeout
-	_check(
-		VariantCast.to_int(guide.get(&"wanted")) == Guidance.Kind.SANCTUM,
-		"la guía lleva al Santuario"
-	)
+	_check(int(guide.get(&"wanted")) == Guidance.Kind.SANCTUM, "la guía lleva al Santuario")
 	var power: Resource = load("res://data/upgrades/spark_power.tres")
-	_check(VariantCast.to_int(power.call(&"cost_for_level", 0)) == 5, "la primera mejora cuesta 5")
-	_check(VariantCast.to_bool(gs.call(&"buy_upgrade", power)), "se compra")
+	_check(int(power.call(&"cost_for_level", 0)) == 5, "la primera mejora cuesta 5")
+	_check(bool(gs.call(&"buy_upgrade", power)), "se compra")
 	await process_frame
-	_check(VariantCast.to_int(tut.get(&"step")) == 8, "tutorial terminado")
+	_check(int(tut.get(&"step")) == 9, "tutorial terminado")
 	var tier: Resource = caster.call(&"tier_for", 0)
-	_check(VariantCast.to_int(tier.get(&"damage")) == 2, "ahora la chispa hace 2")
+	_check(int(tier.get(&"damage")) == 2, "ahora la chispa hace 2")
 	var recipe: Resource = caster.call(&"recipe_for_hands")
-	_check(
-		VariantCast.to_int(recipe.call(&"damage_for", 2, 2, 1.0)) > 4,
-		"y juntas, mucho más que por separado"
-	)
+	_check(int(recipe.call(&"damage_for", 2, 2, 1.0)) > 4, "y juntas, mucho más que por separado")
 	# Mejora nueva: guía al Santuario hasta que se ve en el Grimorio; luego deja de insistir.
 	gs.call(&"deliver", 400)
 	await create_timer(0.3).timeout
-	_check(VariantCast.to_bool(guide.call(&"has_new_upgrade")), "hay una mejora nueva que pagar")
-	_check(
-		VariantCast.to_int(guide.get(&"wanted")) == Guidance.Kind.SANCTUM,
-		"y la guía lleva al Santuario"
-	)
+	_check(bool(guide.call(&"has_new_upgrade")), "hay una mejora nueva que pagar")
+	_check(int(guide.get(&"wanted")) == Guidance.Kind.SANCTUM, "y la guía lleva al Santuario")
 	# Se abre el Grimorio de verdad (el Libro de Hechizos y el Espejo emiten la misma señal y no
 	# cuentan como verlo).
 	var grimoire: Node = hud.get_node(^"Grimoire")
@@ -163,21 +134,13 @@ func _initialize() -> void:
 	await process_frame
 	grimoire.call(&"close")
 	await create_timer(0.6).timeout
-	_check(
-		not VariantCast.to_bool(guide.call(&"has_new_upgrade")),
-		"vista en el Grimorio: ya no es nueva"
-	)
-	_check(
-		VariantCast.to_int(guide.get(&"wanted")) != Guidance.Kind.SANCTUM,
-		"y la guía deja de insistir"
-	)
+	_check(not bool(guide.call(&"has_new_upgrade")), "vista en el Grimorio: ya no es nueva")
+	_check(int(guide.get(&"wanted")) != Guidance.Kind.SANCTUM, "y la guía deja de insistir")
 	# Lo visto se guarda: tras guardar y cargar no vuelve a insistir.
 	var saved: Dictionary = prog.call(&"to_dict")
 	prog.call(&"load_dict", saved)
-	ev.emit_signal(&"mana_changed", VariantCast.to_int(prog.get(&"mana")))
-	_check(
-		not VariantCast.to_bool(guide.call(&"has_new_upgrade")), "lo visto en el Grimorio se guarda"
-	)
+	ev.emit_signal(&"mana_changed", int(prog.get(&"mana")))
+	_check(not bool(guide.call(&"has_new_upgrade")), "lo visto en el Grimorio se guarda")
 	print("tutorial_smoke: ", "OK" if _ok else "FALLO")
 	quit(0 if _ok else 1)
 
@@ -253,8 +216,7 @@ func _check_no_f(tut: Node, what: String) -> void:
 
 
 func _text(n: Node, prop: StringName) -> String:
-	var label: Label = n.get(prop)
-	return label.text
+	return (n.get(prop) as Label).text
 
 
 func _check(cond: bool, what: String) -> void:

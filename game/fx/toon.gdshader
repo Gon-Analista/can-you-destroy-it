@@ -10,6 +10,17 @@ uniform float rim = 0.0;
 uniform vec4 rim_color : source_color = vec4(1.0, 0.96, 0.85, 1.0);
 // Luz propia (0 = nada): las criaturas mágicas (familiares) conservan su color en la sombra.
 uniform float self_light = 0.0;
+// Plantas (hierba, flores): de lejos se encogen hasta desaparecer (0 = nunca). A esa distancia
+// una mata ocupa uno o dos píxeles y el contorno la convertía en un palito negro.
+uniform float shrink_far = 0.0;
+
+void vertex() {
+	if (shrink_far > 0.0) {
+		vec3 origin = (MODEL_MATRIX * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+		float d = distance(origin, CAMERA_POSITION_WORLD);
+		VERTEX *= 1.0 - smoothstep(shrink_far * 0.4, shrink_far, d);
+	}
+}
 
 void fragment() {
 	vec3 c = albedo.rgb;

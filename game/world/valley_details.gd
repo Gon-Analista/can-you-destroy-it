@@ -6,9 +6,13 @@ extends Node3D
 ## tocones y faroles en los caminos; y motas mágicas flotando alrededor del cristal.
 
 const TOON_SHADER: Shader = preload("res://fx/toon.gdshader")
+const TERRAIN_SHADER: Shader = preload("res://world/terrain.gdshader")
 const SHARD_SHADER: Shader = preload("res://crystal/shard.gdshader")
+## A partir de ~40% de esta distancia (m) la hierba y las flores se encogen; a ella ya no están.
+const PLANT_FADE_M: float = 40.0
+## Lado de los trozos de hierba y flores (ver ChunkedMultiMesh).
+const PLANT_CELL_M: float = 24.0
 const C_DIRT := Color("#b98d5a")
-const C_DIRT_DARK := Color("#9c7247")
 const C_STONE := Color("#bdb3bf")
 const C_STONE_DARK := Color("#968aa3")
 const C_ROCK := Color("#8b92c9")
@@ -30,6 +34,10 @@ const FLOWER_COLORS: Array[Color] = [
 @export var flower_count: int = 900
 
 var _toon: ShaderMaterial
+## Toon con textura pixel art (caminos, rocas, tocones; ver terrain.gdshader).
+var _terrain: ShaderMaterial
+## Toon de las plantas: igual, pero se encogen de lejos (ver `PLANT_FADE_M`).
+var _plant: ShaderMaterial
 var _rng := RandomNumberGenerator.new()
 ## Tramos de camino (pares de puntos) para no plantar hierba encima.
 var _paths: Array[PackedVector2Array] = []
@@ -43,6 +51,11 @@ func _ready() -> void:
 	_toon = ShaderMaterial.new()
 	_toon.shader = TOON_SHADER
 	_toon.set_shader_parameter("rim", 0.2)
+	_plant = _toon.duplicate() as ShaderMaterial
+	_plant.set_shader_parameter("shrink_far", PLANT_FADE_M)
+	_terrain = ShaderMaterial.new()
+	_terrain.shader = TERRAIN_SHADER
+	_terrain.set_shader_parameter("rim", 0.2)
 	_build_paths()
 	_build_rocks_and_props()
 	_build_crystal_outcrops()
@@ -99,10 +112,12 @@ func _free(x: float, z: float, margin: float) -> bool:
 	var nest := Vector2(WorldLayout.FAMILIAR_NEST.x, WorldLayout.FAMILIAR_NEST.z)
 	var mirror := Vector2(WorldLayout.ARCHMAGE_MIRROR.x, WorldLayout.ARCHMAGE_MIRROR.z)
 	var runes := Vector2(WorldLayout.RUNE_TABLE.x, WorldLayout.RUNE_TABLE.z)
+	var vitrine := Vector2(WorldLayout.STAFF_VITRINE.x, WorldLayout.STAFF_VITRINE.z)
 	return (
 		p.distance_to(nest) >= 2.2 + margin
 		and p.distance_to(mirror) >= 1.6 + margin
 		and p.distance_to(runes) >= 2.0 + margin
+		and p.distance_to(vitrine) >= 1.8 + margin
 		and not _near_path(x, z, 1.6 + margin)
 	)
 
@@ -127,13 +142,13 @@ func _build_paths() -> void:
 	var d := MeshInstance3D.new()
 	d.name = "Paths"
 	d.mesh = MeshKit.commit(dirt)
-	d.material_override = _toon
+	d.material_override = _terrain
 	d.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(d)
 	var s := MeshInstance3D.new()
 	s.name = "Stones"
 	s.mesh = MeshKit.commit(stones)
-	s.material_override = _toon
+	s.material_override = _terrain
 	add_child(s)
 
 
@@ -155,7 +170,8 @@ func _add_path(dirt: SurfaceTool, stones: SurfaceTool, a: Vector3, b: Vector3) -
 		l.y = _ground(l.x, l.z) + 0.04
 		r.y = _ground(r.x, r.z) + 0.04
 		if i > 0:
-			var col: Color = C_DIRT if i % 3 else C_DIRT_DARK
+			# Un solo color: las vetas y los guijarros los dibuja el shader.
+			var col: Color = MeshKit.tag(C_DIRT, MeshKit.PAT_DIRT)
 			MeshKit.add_quad(dirt, prev_l, l, r, prev_r, col, c + Vector3.DOWN * 3.0)
 		prev_l = l
 		prev_r = r
@@ -170,11 +186,11 @@ func _add_path(dirt: SurfaceTool, stones: SurfaceTool, a: Vector3, b: Vector3) -
 				_rng.randf_range(0.2, 0.32),
 				0.06,
 				0.0,
-				6,
+				10,
 				C_STONE_DARK,
-				C_STONE,
+				MeshKit.tag(C_STONE, MeshKit.PAT_ROCK),
 				_rng,
-				0.15
+				0.12
 			)
 
 
@@ -191,7 +207,14 @@ func _add_patch(dirt: SurfaceTool, center: Vector3, radius: float) -> void:
 	var c: Vector3 = center
 	c.y = _ground(c.x, c.z) + 0.035
 	for i: int in sides:
-		MeshKit.add_tri(dirt, c, ring[i], ring[(i + 1) % sides], C_DIRT, c + Vector3.DOWN * 3.0)
+		MeshKit.add_tri(
+			dirt,
+			c,
+			ring[i],
+			ring[(i + 1) % sides],
+			MeshKit.tag(C_DIRT, MeshKit.PAT_DIRT),
+			c + Vector3.DOWN * 3.0
+		)
 
 
 func _build_rocks_and_props() -> void:
@@ -209,19 +232,23 @@ func _build_rocks_and_props() -> void:
 				continue
 			p.y = _ground(p.x, p.z) - 0.2
 			var size: float = _rng.randf_range(0.4, 1.4) * (1.5 if k == 0 else 1.0)
-			MeshKit.add_prism(
+			# Canto rodado: bola aplastada y abollada, con estratos y grietas del shader.
+			var rock: Color = MeshKit.tag(C_ROCK, MeshKit.PAT_ROCK)
+			var rock_dark: Color = MeshKit.tag(C_ROCK_DARK, MeshKit.PAT_ROCK)
+			MeshKit.add_blob(
 				st,
-				p,
-				Vector3(_rng.randf_range(-0.3, 0.3), 1.0, _rng.randf_range(-0.3, 0.3)),
+				p + Vector3.UP * size * 0.25,
 				size,
-				size * _rng.randf_range(0.5, 0.9),
-				size * 0.5,
-				_rng.randi_range(5, 7),
-				C_ROCK_DARK,
-				C_ROCK,
+				Vector3(
+					_rng.randf_range(0.9, 1.25),
+					_rng.randf_range(0.55, 0.8),
+					_rng.randf_range(0.8, 1.1)
+				),
+				6,
+				10,
+				[rock, rock, rock_dark],
 				_rng,
-				0.25,
-				0.7
+				0.16
 			)
 	# Setas rojas en corros cerca del bosque.
 	for g: int in 12:
@@ -236,18 +263,18 @@ func _build_rocks_and_props() -> void:
 				continue
 			p.y = _ground(p.x, p.z)
 			var h: float = _rng.randf_range(0.15, 0.35)
-			MeshKit.add_prism(st, p, Vector3.UP, 0.05, h, 0.0, 5, C_MUSH_STEM, C_MUSH_STEM, _rng)
-			MeshKit.add_prism(
+			MeshKit.add_prism(st, p, Vector3.UP, 0.05, h, 0.0, 6, C_MUSH_STEM, C_MUSH_STEM, _rng)
+			# Sombrero en cúpula (antes era un cono de punta).
+			MeshKit.add_blob(
 				st,
-				p + Vector3.UP * h,
-				Vector3.UP,
-				h * 0.6,
-				0.04,
-				h * 0.35,
-				6,
-				C_MUSH_CAP,
-				C_MUSH_CAP,
-				_rng
+				p + Vector3.UP * h * 0.95,
+				h * 0.55,
+				Vector3(1.0, 0.7, 1.0),
+				5,
+				9,
+				[C_MUSH_CAP, C_MUSH_CAP, C_MUSH_CAP, C_MUSH_STEM],
+				_rng,
+				0.05
 			)
 	# Tocones y troncos caídos en el linde del bosque.
 	for g: int in 7:
@@ -258,7 +285,19 @@ func _build_rocks_and_props() -> void:
 			continue
 		p.y = _ground(p.x, p.z) - 0.05
 		if g % 2 == 0:
-			MeshKit.add_prism(st, p, Vector3.UP, 0.45, 0.5, 0.0, 7, C_WOOD_DARK, C_WOOD, _rng, 0.1)
+			MeshKit.add_prism(
+				st,
+				p,
+				Vector3.UP,
+				0.45,
+				0.5,
+				0.0,
+				10,
+				MeshKit.tag(C_WOOD_DARK, MeshKit.PAT_BARK),
+				C_WOOD,
+				_rng,
+				0.06
+			)
 		else:
 			var axis := Vector3(cos(ang + 1.3), 0.0, sin(ang + 1.3))
 			MeshKit.add_prism(
@@ -268,11 +307,11 @@ func _build_rocks_and_props() -> void:
 				0.32,
 				3.2,
 				0.0,
-				7,
-				C_WOOD_DARK,
+				10,
+				MeshKit.tag(C_WOOD_DARK, MeshKit.PAT_BARK),
 				C_WOOD,
 				_rng,
-				0.08
+				0.05
 			)
 	# Faroles a lo largo de los caminos (de piedra, con la luz pintada: sin coste de luces).
 	var lamp_mat := StandardMaterial3D.new()
@@ -281,6 +320,8 @@ func _build_rocks_and_props() -> void:
 	lamp_mat.vertex_color_use_as_albedo = true
 	lamp_mat.albedo_color = Color(1.5, 1.3, 0.9)
 	var glow: SurfaceTool = MeshKit.begin()
+	# Los postes van aparte y sin sombra: con el sol bajo dejaban rayas larguísimas por el valle.
+	var posts: SurfaceTool = MeshKit.begin()
 	for seg: PackedVector2Array in _paths:
 		var a := Vector3(seg[0].x, 0, seg[0].y)
 		var b := Vector3(seg[1].x, 0, seg[1].y)
@@ -296,9 +337,9 @@ func _build_rocks_and_props() -> void:
 				d += 6.5
 				k += 1
 				continue
-			MeshKit.add_prism(st, p, Vector3.UP, 0.12, 1.5, 0.0, 4, C_STONE_DARK, C_STONE, _rng)
+			MeshKit.add_prism(posts, p, Vector3.UP, 0.12, 1.5, 0.0, 4, C_STONE_DARK, C_STONE, _rng)
 			MeshKit.add_prism(
-				st,
+				posts,
 				p + Vector3.UP * 1.95,
 				Vector3.UP,
 				0.22,
@@ -325,12 +366,19 @@ func _build_rocks_and_props() -> void:
 	var props := MeshInstance3D.new()
 	props.name = "Props"
 	props.mesh = MeshKit.commit(st)
-	props.material_override = _toon
+	props.material_override = _terrain
 	add_child(props)
+	var lamp_posts := MeshInstance3D.new()
+	lamp_posts.name = "LampPosts"
+	lamp_posts.mesh = MeshKit.commit(posts)
+	lamp_posts.material_override = _toon
+	lamp_posts.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(lamp_posts)
 	var lamps := MeshInstance3D.new()
 	lamps.name = "LanternGlow"
 	lamps.mesh = MeshKit.commit(glow)
 	lamps.material_override = lamp_mat
+	lamps.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(lamps)
 
 
@@ -368,11 +416,8 @@ func _build_crystal_outcrops() -> void:
 func _build_grass() -> void:
 	var colors: Array[Color] = [C_GRASS_DARK, C_GRASS, C_GRASS_LIGHT]
 	for c: int in colors.size():
-		var mm := MultiMesh.new()
-		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.mesh = _tuft_mesh(colors[c], colors[mini(c + 1, colors.size() - 1)])
+		var mesh: ArrayMesh = _tuft_mesh(colors[c], colors[mini(c + 1, colors.size() - 1)])
 		var xforms: Array[Transform3D] = []
-		@warning_ignore("integer_division")
 		var target: int = grass_count / colors.size()
 		var attempts: int = 0
 		while xforms.size() < target and attempts < target * 6:
@@ -385,41 +430,53 @@ func _build_grass() -> void:
 			if not _free(x, z, 0.0):
 				continue
 			var s: float = _rng.randf_range(0.7, 1.4)
-			var rot := Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3(s, s, s))
-			xforms.append(Transform3D(rot, Vector3(x, _ground(x, z) - 0.02, z)))
-		mm.instance_count = xforms.size()
-		for i: int in xforms.size():
-			mm.set_instance_transform(i, xforms[i])
-		var mmi := MultiMeshInstance3D.new()
-		mmi.name = "Grass%d" % c
-		mmi.multimesh = mm
-		mmi.material_override = _toon
-		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		add_child(mmi)
+			var basis := Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3(s, s, s))
+			xforms.append(Transform3D(basis, Vector3(x, _ground(x, z) - 0.02, z)))
+		# Por trozos y cortados a la distancia en que el shader ya las ha encogido a cero.
+		ChunkedMultiMesh.build(
+			self,
+			"Grass%d" % c,
+			mesh,
+			xforms,
+			[],
+			_plant,
+			PLANT_CELL_M,
+			GeometryInstance3D.SHADOW_CASTING_SETTING_OFF,
+			PLANT_FADE_M
+		)
 
 
-## Mata de hierba: cinco hojas finas, con las dos caras (se ve desde cualquier lado).
+## Mata de hierba: seis hojas anchas, cortas y de punta roma que se abren hacia fuera, con
+## las dos caras (se ve desde cualquier lado). Antes eran espadas finas y se veían pinchos.
 func _tuft_mesh(col: Color, tip_col: Color) -> ArrayMesh:
 	var st: SurfaceTool = MeshKit.begin()
-	for k: int in 5:
-		var a: float = TAU * float(k) / 5.0 + _rng.randf_range(-0.3, 0.3)
+	for k: int in 6:
+		var a: float = TAU * float(k) / 6.0 + _rng.randf_range(-0.3, 0.3)
 		var d := Vector3(cos(a), 0.0, sin(a))
-		var side := Vector3(-d.z, 0.0, d.x) * 0.05
-		var base: Vector3 = d * 0.06
-		var tip: Vector3 = d * 0.2 + Vector3.UP * _rng.randf_range(0.28, 0.5)
+		var side := Vector3(-d.z, 0.0, d.x)
+		var h: float = _rng.randf_range(0.2, 0.34)
+		var base: Vector3 = d * 0.05
+		var mid: Vector3 = d * 0.11 + Vector3.UP * h * 0.6
+		var tip: Vector3 = d * 0.19 + Vector3.UP * h
 		var c: Color = col if k % 2 else tip_col
-		MeshKit.add_tri(st, base - side, base + side, tip, c, base - d)
-		MeshKit.add_tri(st, base - side, base + side, tip, c, base + d)
+		var pts: Array[Vector3] = [
+			base - side * 0.06,
+			base + side * 0.06,
+			mid + side * 0.055,
+			tip + side * 0.025,
+			tip - side * 0.025,
+			mid - side * 0.055,
+		]
+		for inside: Vector3 in [base - d, base + d]:
+			MeshKit.add_quad(st, pts[0], pts[1], pts[2], pts[5], c, inside)
+			MeshKit.add_quad(st, pts[5], pts[2], pts[3], pts[4], c, inside)
 	return MeshKit.commit(st)
 
 
 func _build_flowers() -> void:
 	for c: int in FLOWER_COLORS.size():
-		var mm := MultiMesh.new()
-		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.mesh = _flower_mesh(FLOWER_COLORS[c])
+		var mesh: ArrayMesh = _flower_mesh(FLOWER_COLORS[c])
 		var xforms: Array[Transform3D] = []
-		@warning_ignore("integer_division")
 		var target: int = flower_count / FLOWER_COLORS.size()
 		var attempts: int = 0
 		while xforms.size() < target and attempts < target * 8:
@@ -435,17 +492,20 @@ func _build_flowers() -> void:
 				if not _free(x, z, 0.0):
 					continue
 				var s: float = _rng.randf_range(0.8, 1.3)
-				var rot := Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3(s, s, s))
-				xforms.append(Transform3D(rot, Vector3(x, _ground(x, z), z)))
-		mm.instance_count = xforms.size()
-		for i: int in xforms.size():
-			mm.set_instance_transform(i, xforms[i])
-		var mmi := MultiMeshInstance3D.new()
-		mmi.name = "Flowers%d" % c
-		mmi.multimesh = mm
-		mmi.material_override = _toon
-		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		add_child(mmi)
+				var basis := Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3(s, s, s))
+				xforms.append(Transform3D(basis, Vector3(x, _ground(x, z), z)))
+		# Por trozos y cortados a la distancia en que el shader ya las ha encogido a cero.
+		ChunkedMultiMesh.build(
+			self,
+			"Flowers%d" % c,
+			mesh,
+			xforms,
+			[],
+			_plant,
+			PLANT_CELL_M,
+			GeometryInstance3D.SHADOW_CASTING_SETTING_OFF,
+			PLANT_FADE_M
+		)
 
 
 ## Flor: tallo y corola de cinco pétalos con el centro dorado.

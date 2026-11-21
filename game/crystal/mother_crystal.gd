@@ -48,8 +48,8 @@ const ARC_SFX: Array[AudioStream] = [
 const ARC_COLORS: Array[Color] = [
 	Color(0.25, 0.75, 2.0), Color(1.2, 0.3, 1.9), Color(0.4, 0.5, 2.0)
 ]
-## Partida guardada del volumen excavado (ver SaveSystem).
-const STATE_PATH: String = "user://crystal_volume.bin"
+## Partida guardada del volumen excavado (ver SaveSystem y CrystalPrebuild).
+const STATE_PATH: String = CrystalPrebuild.STATE_PATH
 ## Colores de las Venas Resonantes por elemento (Chispa, Escarcha, Rayo, Tierra, Arcano).
 const VEIN_COLORS: PackedColorArray = [
 	Color(1.0, 0.55, 0.2),
@@ -87,6 +87,9 @@ var _tears: CoreTears
 ## El final: el Núcleo expuesto al 99 % (ver CoreReveal).
 var _reveal: CoreReveal
 var _facets := FacetBreaker.new()  # Rompefacetas (nodo hito): losas enteras en los resonantes
+var _aftershocks := CrystalAftershocks.new()  # golpes enormes: el resto del cráter, en réplicas
+## Aspecto del golpe que está excavando (las réplicas estallan con él).
+var _dig_tier: SpellTier
 var _shards: ShardPool
 var _fx: ImpactFx
 var _hd_fx: HdImpact
@@ -140,9 +143,9 @@ func _ready() -> void:
 	add_to_group(&"mother_crystal")
 	_rng.randomize()
 	_streak = StreakTracker.new(GameState.BALANCE.streak_window_sec)
-	volume = CrystalVolume.new()
-	volume.load_baked()
-	var resumed: bool = _load_state()
+	# La rejilla y las mallas ya vienen hechas de la pantalla de carga (CrystalPrebuild).
+	var pre: Dictionary = CrystalPrebuild.take()
+	volume = pre[&"volume"]
 	_material = ShaderMaterial.new()
 	_material.shader = CRYSTAL_SHADER
 	_setup_material()
@@ -156,7 +159,8 @@ func _ready() -> void:
 	_chunks.name = "Chunks"
 	add_child(_chunks)
 	_chunks.setup(volume, _material, _body)
-	_chunks.build_all(_chunks.all_chunks() if resumed else volume.surface_chunks)
+	var meshes: Dictionary[int, Array] = pre[&"meshes"]
+	_chunks.apply_all(meshes)
 	_shards = ShardPool.new()
 	_shards.name = "Shards"
 	add_child(_shards)
@@ -202,6 +206,9 @@ func _ready() -> void:
 	add_child(_geodes)
 	_geodes.setup(self, _arcs, _shards, _hd_fx)
 	_facets.setup(self, _arcs, _shards, _hd_fx)
+	_aftershocks.name = "Aftershocks"
+	add_child(_aftershocks)
+	_aftershocks.setup(self)
 	_burn_fire = CrystalBurn.new()
 	_burn_fire.name = "Burn"
 	_burn_fire.burned.connect(_on_burn_tick)
@@ -239,10 +246,12 @@ func _setup_material() -> void:
 	for k: int in keys.size():
 		var cols := PackedColorArray()
 		for layer: CrystalLayerDef in GameState.LAYERS:
-			cols.append(layer.get(keys[k]) as Color)
+			var col: Color = layer.get(keys[k])
+			cols.append(col)
 		_material.set_shader_parameter(params[k], cols)
 	for key: String in ["col_highlight", "col_light", "col_mid", "col_dark", "col_core"]:
-		_material.set_shader_parameter(key, GameState.LAYERS[0].get(key) as Color)
+		var first: Color = GameState.LAYERS[0].get(key)
+		_material.set_shader_parameter(key, first)
 	_material.set_shader_parameter("layer_depth", volume.layer_min_depth)
 	_material.set_shader_parameter("layer_shade", LAYER_SHADE)
 	_material.set_shader_parameter("layer_glow", LAYER_GLOW)
@@ -258,23 +267,14 @@ func _setup_material() -> void:
 	var gs := PackedVector4Array()
 	for g: Dictionary in volume.geodes:
 		var c: Vector3 = g["center"]
-		gs.append(Vector4(c.x, c.y, c.z, float(g["radius"])))
+		var radius: float = g["radius"]
+		gs.append(Vector4(c.x, c.y, c.z, radius))
 	while gs.size() < 32:
 		gs.append(Vector4.ZERO)
 	_material.set_shader_parameter("geodes", gs)
 
 
 ## Retoma el cristal excavado de la partida guardada (si la hay y no es una partida nueva).
-func _load_state() -> bool:
-	var prog: Progression = GameState.progression
-	if not SaveSystem.enabled or prog.essence >= prog.total_essence:
-		return false
-	if not FileAccess.file_exists(STATE_PATH):
-		return false
-	var bytes: PackedByteArray = FileAccess.get_file_as_bytes(STATE_PATH)
-	return volume.load_state(bytes)
-
-
 ## Lo llama SaveSystem: guarda la rejilla sólo si ha cambiado (y la borra en partida nueva).
 func save_state() -> void:
 	var prog: Progression = GameState.progression
@@ -360,6 +360,7 @@ func receive_hit(hit: SpellHit) -> void:
 	_veins.apply(hit)
 	_tears.apply(hit)
 	_facets.prepare(hit)
+	_dig_tier = hit.tier
 	var removed: float = _dig(
 		hit.position, hit.normal, float(hit.damage), hit.recipe != null, hit.size
 	)
@@ -368,7 +369,7 @@ func receive_hit(hit: SpellHit) -> void:
 		return
 	hit.layer = _hit_layer
 	var tier: SpellTier = hit.tier
-
+	var fx_size: float = hit.size * hit.fx_scale  # lo que se ve (los cargados a tope, más)
 	_hits[_hit_index] = Vector4(hit.position.x, hit.position.y, hit.position.z, _now)
 	# 1: resonante; 2: fuego (destello naranja en vez de blanco azulado).
 	var fire: bool = (
@@ -380,7 +381,7 @@ func receive_hit(hit: SpellHit) -> void:
 		hit.position.x,
 		hit.position.y,
 		hit.position.z,
-		tier.crack_radius * (1.6 if hit.resonant else 1.0) * hit.size * _rng.randf_range(0.85, 1.15)
+		tier.crack_radius * (1.6 if hit.resonant else 1.0) * fx_size * _rng.randf_range(0.85, 1.15)
 	)
 	_crack_index = (_crack_index + 1) % MAX_CRACKS
 	var weak: bool = hit.size < 0.6
@@ -422,17 +423,17 @@ func receive_hit(hit: SpellHit) -> void:
 		_shards.spawn_worth(
 			hit.position, hit.normal, float(hit.damage) * (1.0 + 0.25 * bonus), power, _hit_layer
 		)
-	_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.size)
+	_fx.play(hit.position, hit.normal, tier, hit.resonant, fx_size)
 	_crystal_reacts(hit)
 	_facets.try_break(hit)
 	_veins.react(hit)
 	_tears.react(hit)
 	if hit.resonant or hit.recipe != null or _now - _last_hd >= 0.12:
 		_last_hd = _now
-		_hd_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.recipe != null, hit.size)
+		_hd_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.recipe != null, fx_size)
 	if hit.recipe and hit.recipe.delivery == SpellRecipe.Delivery.SKY:
 		# Lo que cae del cielo estalla dos veces: el golpe y la onda que se abre.
-		_hd_fx.play(hit.position, hit.normal, tier, false, true, hit.size * 2.0)
+		_hd_fx.play(hit.position, hit.normal, tier, false, true, fx_size * 2.0)
 		_arcs.storm(hit.position - Vector3.UP * 2.0, 18.0, 6.0, hit.recipe.circle_color * 1.2)
 		_global_flash = maxf(_global_flash, 0.25)
 	_play_tink(hit)
@@ -557,7 +558,10 @@ func _dig(at: Vector3, normal: Vector3, damage: float, combo: bool, size: float 
 	# centro un poco dentro (la malla queda unos centímetros por fuera en lo cóncavo).
 	var vol: float = damage / volume.layer_density[layer]
 	# Los hechizos más grandes (mejora de Tamaño) abren cráteres más anchos.
-	var radius: float = clampf(pow(vol / 0.3, 1.0 / 3.0) * sqrt(size), 0.85, 14.0)
+	var wanted: float = pow(vol / 0.3, 1.0 / 3.0) * sqrt(size)
+	var radius: float = clampf(wanted, 0.85, CrystalAftershocks.MAX_RADIUS)
+	# Más grande que el tope: el resto se lo llevan réplicas alrededor (ver CrystalAftershocks).
+	_aftershocks.queue(at, normal, wanted, _dig_tier)
 	var center: Vector3 = p - n * radius * 0.25
 	var amount: float = radius * 0.2
 	# Ajuste en seco: la esencia sale de las celdas que dejan de estar llenas, así que hay que
@@ -584,7 +588,8 @@ func apply_carve(r: Dictionary, p: Vector3, radius: float, credit: float = -1.0)
 	var removed: float = r["essence"]
 	if credit >= 0.0 and removed > 0.0:
 		removed = credit
-	_chunks.mark_dirty(r["chunks"])
+	var touched: Array = r["chunks"]
+	_chunks.mark_dirty(touched)
 	_volume_dirty = true
 	_essence_acc += removed
 	var whole: int = floori(_essence_acc)
@@ -625,6 +630,18 @@ func magnet_pulse(at: Vector3, pulled: int) -> void:
 ## Resonancia Arcana: todo el cristal vibra (ver CrystalCombos.resonance_pulse).
 func resonance_pulse(hit: SpellHit) -> void:
 	_combos.resonance_pulse(hit)
+
+
+## Réplica de un golpe enorme (ver CrystalAftershocks): cráter de `radius` m en `at` (global) sin
+## volver a contar la esencia, con el estallido de `tier`, polvo, un temblor y un crujido.
+func aftershock(at: Vector3, normal: Vector3, radius: float, tier: SpellTier) -> void:
+	_dig_local(to_local(at), radius, radius * 0.22, _allowed_mask(true), 0.0)
+	if tier:
+		_fx.play(at, normal, tier, false, radius * 0.25)
+		_hd_fx.play(at, normal, tier, false, true, radius * 0.18)
+	_shudder = minf(1.0, _shudder + 0.25)
+	_break_player.global_position = at
+	_break_player.play()
 
 
 ## Para CrystalCombos: arranca cristal en `at` como un golpe (ver `_dig`).

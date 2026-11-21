@@ -103,3 +103,4 @@ echo_damage = 0.45
 resonant_bonus = 0.06
 damage_growth = 1.093
 cooldown_growth = 0.97
+apex_damage_mult = 70.0

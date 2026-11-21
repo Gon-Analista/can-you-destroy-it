@@ -69,11 +69,21 @@ func _ready() -> void:
 	_world.add_child(_day_night)
 	var env: Environment = (_world.get_node(^"WorldEnvironment") as WorldEnvironment).environment
 	_day_night.setup(_sun, env)
+	# Luciérnagas sobre la hierba cuando cae la noche.
+	var fireflies := Fireflies.new()
+	fireflies.name = "Fireflies"
+	_world.add_child(fireflies)
 	# El valle cambia con los hitos del Pilón (faroles, estandartes; las auroras van en el cielo).
 	var milestones := ValleyMilestones.new()
 	milestones.name = "ValleyMilestones"
 	_world.add_child(milestones)
+	# Nubes 3D que rodean la punta del cristal y dan escala al cielo.
+	var clouds := CrystalClouds.new()
+	clouds.name = "CrystalClouds"
+	_world.add_child(clouds)
 	_hud.bind(_player.get_camera(), _player.get_caster())
+	# Diferido: el Santuario crea el Espejo y la Mesa de Runas después de colocarse.
+	_hud.bind_world.call_deferred(_world)
 	_ending = EndingDirector.new()
 	_ending.name = "EndingDirector"
 	_ending.setup(self, _world, _player, _hud, _day_night)
@@ -89,9 +99,6 @@ func _ready() -> void:
 	GameState.emit_all()
 	if OS.is_debug_build():
 		_setup_autoplay()
-	# La música del título suena ya durante la pantalla de carga.
-	if _shows_title():
-		AudioDirector.play_theme(GameMenu.TITLE_MUSIC)
 	_warm_up()
 
 
@@ -147,7 +154,7 @@ func _setup_autoplay() -> void:
 			GameState.emit_all()
 		elif a.begins_with("--hands="):
 			# --hands=0,4: elemento de cada mano (índices de SpellCaster.ELEMENTS: 0 Chispa,
-			# 1 Escarcha, 2 Rayo, 3 Tierra, 4 Arcano); despierta la Escarcha y los de las manos.
+			# 1 Escarcha, 2 Rayo, 3 Tierra, 4 Arcano, 5 Viento); despierta la Escarcha y los de las manos.
 			GameState.progression.upgrade_levels[&"awaken_frost"] = 1
 			var hs: PackedStringArray = a.get_slice("=", 1).split(",")
 			var caster: SpellCaster = _player.get_caster()
@@ -211,7 +218,7 @@ func _setup_autoplay() -> void:
 				func() -> void: Input.action_release(&"jump")
 			)
 		elif a.begins_with("--spell-level="):
-			# --spell-level=N: todos los hechizos a nivel N (1..10), con sus efectos.
+			# --spell-level=N: todos los hechizos a nivel N (1..11), con sus efectos.
 			_player.get_caster().set_debug_level(int(a.get_slice("=", 1)))
 		elif a.begins_with("--discover="):
 			# --discover=fireball,meteor: combinaciones ya descubiertas (Libro de Combinaciones).
@@ -227,9 +234,9 @@ func _setup_autoplay() -> void:
 					book.open_page(page)
 			)
 		elif a.begins_with("--menu="):
-			# --menu=title|pause|options[N]: abre ese menú (options2: la pestaña 2, Controles,
-			# para capturas de la interfaz). Espera a
-			# que acabe la pantalla de carga: la pausa pararía el precalentado.
+			# --menu=pause|options[N]: abre ese menú (options2: la pestaña 2, Controles, para
+			# capturas de la interfaz). Espera a que acabe la pantalla de carga: la pausa pararía el
+			# precalentado. El título es su propia escena (se abre sin --autoplay de escena).
 			get_tree().create_timer(3.2).timeout.connect(
 				_hud.menu.demo_open.bind(a.get_slice("=", 1))
 			)
@@ -266,7 +273,7 @@ func _setup_autoplay() -> void:
 			# --milestone=s: a los s segundos se entrega justo lo que falta para la siguiente marca.
 			get_tree().create_timer(float(a.get_slice("=", 1))).timeout.connect(_demo_next_mark)
 		elif a.begins_with("--tutorial-step="):
-			# --tutorial-step=N (con --tutorial): empieza en ese paso (4 recoger, 5 triturar...).
+			# --tutorial-step=N (con --tutorial): empieza en ese paso (5 recoger, 6 triturar...).
 			get_tree().create_timer(0.4).timeout.connect(
 				_hud.tutorial.jump_to.bind(int(a.get_slice("=", 1)))
 			)
@@ -340,11 +347,30 @@ func _setup_autoplay() -> void:
 			var at: Vector3 = WorldLayout.RUNE_TABLE + front * 3.2
 			at.y = Valley.ground_height(at.x, at.z) + 0.2
 			debug_teleport.call_deferred(at, WorldLayout.RUNE_TABLE + Vector3.UP * 1.2)
+		elif a == "--at-staff-vitrine":
+			# --at-staff-vitrine: el mago delante de la Vitrina del Báculo, mirándola.
+			var front: Vector3 = Vector3.BACK.rotated(
+				Vector3.UP, deg_to_rad(WorldLayout.STAFF_VITRINE_YAW_DEG)
+			)
+			var at: Vector3 = WorldLayout.STAFF_VITRINE + front * 3.4
+			at.y = Valley.ground_height(at.x, at.z) + 0.2
+			debug_teleport.call_deferred(at, WorldLayout.STAFF_VITRINE + Vector3.UP * 1.6)
 		elif a.begins_with("--rune-unseal"):
 			# --rune-unseal[=s]: a los s segundos (3,4) el Pilón llega al 10 % y la mesa despierta.
 			var at_s: float = float(a.get_slice("=", 1)) if a.contains("=") else 3.4
 			get_tree().create_timer(at_s).timeout.connect(
 				debug_set_pylon.bind(RuneBook.BALANCE.rune_table_pylon)
+			)
+		elif a == "--backdrop":
+			# --backdrop: sin HUD ni manos, para capturar el fondo del título.
+			_hud.visible = false
+			(_player.get_node(^"Hands") as CanvasLayer).visible = false
+			get_tree().create_timer(1.0).timeout.connect(
+				func() -> void:
+					var hands: Node = _player.get_node(^"Hands")
+					hands.process_mode = Node.PROCESS_MODE_DISABLED
+					for f: Node3D in hands.get(&"_flames"):
+						f.visible = false
 			)
 		elif a == "--stats":
 			# --stats: cifras de una partida avanzada para el Espejo (capturas).
@@ -353,11 +379,16 @@ func _setup_autoplay() -> void:
 			for k: StringName in DEMO_STATS:
 				st.counts[k] = DEMO_STATS[k]
 			GameState.progression.critters_popped = 37
+		elif a.begins_with("--palette="):
+			# --palette=actual|suave|pastel: otra paleta del valle (por defecto, azulada).
+			_day_night.set_palette(StringName(a.get_slice("=", 1)))
 		elif a.begins_with("--time="):
 			_day_night.time_of_day = float(a.get_slice("=", 1))
 		elif a.begins_with("--warp="):
 			var xz: PackedStringArray = a.get_slice("=", 1).split(",")
-			_player.global_position = Vector3(float(xz[0]), 0.2, float(xz[1]))
+			var wx: float = float(xz[0])
+			var wz: float = float(xz[1])
+			_player.global_position = Vector3(wx, Valley.ground_height(wx, wz) + 0.2, wz)
 	# Nodos hito: --autofire, --vortex, --facet-crit, --facet-hit=D (ver MilestoneDemo).
 	MilestoneDemo.setup(self, args, _player)
 	if args.has("--grimoire"):
@@ -536,9 +567,14 @@ func _unhandled_input(event: InputEvent) -> void:
 ## primera entrega...). Por detrás de la pantalla de carga, la cámara mira al cristal, al
 ## Pilón y al Santuario y dispara una vez cada efecto, sin tocar la partida.
 func _warm_up() -> void:
-	var cover := LoadingCover.new()
-	cover.name = "LoadingCover"
-	_hud.add_child(cover)
+	# Llegando del título (SceneFlow) la pantalla de carga ya está puesta y sigue su barra; abierta
+	# la escena directamente (editor, pruebas, modo demo), se pone aquí.
+	var from_flow: bool = LoadingCover.current != null
+	var cover: LoadingCover = LoadingCover.open(get_tree())
+	var base: float = SceneFlow.MOUNT_AT if from_flow else 0.0
+	var step := func(k: float, stage: String = "") -> void:
+		cover.set_progress(lerpf(base, 1.0, k), stage)
+	step.call(0.05, "PREPARANDO LA MAGIA")
 	var cam: Camera3D = _player.get_camera()
 	var saved: Transform3D = cam.transform
 	var crystal: MotherCrystal = _world.get_node(^"MotherCrystal")
@@ -563,35 +599,32 @@ func _warm_up() -> void:
 	crystal.warm_up(front, Vector3.BACK, tiers[tiers.size() - 1], caster.current_recipe().tier)
 	_critters.warm_up(cam.global_position.lerp(front, 0.2))
 	_ending.warm_up(front + Vector3.BACK * 6.0)
+	step.call(0.3)
 	await _frames(24)
+	step.call(0.5)
 	_aim(cam, front)
 	await _frames(12)
 	# 2) El Pilón: fragmentos que vuelan a la boca y la salpicadura.
 	_aim(cam, pylon.mouth_position())
 	pylon.warm_up()
+	step.call(0.6, "ENCENDIENDO EL PILÓN")
 	await _frames(24)
+	step.call(0.78)
 	_flock.warm_up(pylon.mouth_position() + Vector3(1.5, 1.0, 0.0))
 	await _frames(12)
 	# 3) El Santuario: el destello de objeto nuevo.
 	_aim(cam, sanctum.marker_position())
 	sanctum.warm_up()
+	step.call(0.9, "ABRIENDO EL SANTUARIO")
 	await _frames(10)
 	cam.transform = saved
 	await _frames(2)
-	if _shows_title():
-		_hud.menu.show_title()
-	GameMenu.skip_title_once = false
 	cover.finish()
-
-
-## El título sólo sale en el juego de verdad (no en el modo demo ni en los tests) y no al volver
-## de "Nueva partida".
-func _shows_title() -> bool:
-	return (
-		get_tree().current_scene == self
-		and not OS.get_cmdline_user_args().has("--autoplay")
-		and not GameMenu.skip_title_once
-	)
+	# El tema del título, que sonaba durante la carga, deja paso a la música del valle, y el
+	# ratón (suelto en el título) vuelve a la mira.
+	AudioDirector.stop_theme(2.0)
+	if from_flow and not _hud.menu.is_open():
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
 func _aim(cam: Camera3D, target: Vector3) -> void:
@@ -679,7 +712,9 @@ func _demo_tear_drop() -> void:
 	var r: Dictionary = _player.get_world_3d().direct_space_state.intersect_ray(q)
 	var tears: CoreTears = get_tree().get_first_node_in_group(&"core_tears") as CoreTears
 	if not r.is_empty() and tears:
-		tears.drop(r["position"], r["normal"])
+		var at: Vector3 = r["position"]
+		var normal: Vector3 = r["normal"]
+		tears.drop(at, normal)
 
 
 ## Demo (`--heart-close`): el mago dentro del túnel de `--layer=3`, mirando al fondo.
@@ -721,11 +756,11 @@ func debug_next_layer() -> int:
 	return idx
 
 
-## Pone al mago en `at` (sin velocidad) mirando hacia `look_at`.
-func debug_teleport(at: Vector3, look_at: Vector3) -> void:
+## Pone al mago en `at` (sin velocidad) mirando hacia `target`.
+func debug_teleport(at: Vector3, target: Vector3) -> void:
 	_player.global_position = at
 	_player.velocity = Vector3.ZERO
-	var to: Vector3 = look_at - (at + Vector3.UP * 1.6)
+	var to: Vector3 = target - (at + Vector3.UP * 1.6)
 	_player.rotation.y = atan2(-to.x, -to.z)
 	(_player.get_node(^"Head") as Node3D).rotation.x = atan2(to.y, Vector2(to.x, to.z).length())
 
@@ -775,7 +810,8 @@ func debug_runes(levels: Dictionary) -> void:
 		var def: RuneDef = RuneBook.def_of(StringName(str(id)))
 		if def == null:
 			continue
-		prog.upgrade_levels[def.id] = clampi(int(levels[id]), 1, def.get_max_level())
+		var level: int = type_convert(levels[id], TYPE_INT)
+		prog.upgrade_levels[def.id] = clampi(level, 1, def.get_max_level())
 		RuneBook.inscribe(prog, def.id)
 	Events.runes_changed.emit()
 

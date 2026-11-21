@@ -24,6 +24,7 @@ const ELEMENTS: Array[ElementDef] = [
 	preload("res://data/elements/bolt.tres"),
 	preload("res://data/elements/earth.tres"),
 	preload("res://data/elements/arcane.tres"),
+	preload("res://data/elements/wind.tres"),
 ]
 ## Todas las combinaciones (una por pareja de elementos) y las reacciones (no se lanzan; se
 ## descubren en el cristal). El Libro de Combinaciones las enseña en este orden.
@@ -43,6 +44,12 @@ const RECIPES: Array[SpellRecipe] = [
 	preload("res://data/spells/recipe_echo_thunder.tres"),
 	preload("res://data/spells/recipe_gravity.tres"),
 	preload("res://data/spells/recipe_resonance.tres"),
+	preload("res://data/spells/recipe_tornado.tres"),
+	preload("res://data/spells/recipe_firestorm.tres"),
+	preload("res://data/spells/recipe_blizzard.tres"),
+	preload("res://data/spells/recipe_tempest.tres"),
+	preload("res://data/spells/recipe_sandstorm.tres"),
+	preload("res://data/spells/recipe_echo_wind.tres"),
 	preload("res://data/spells/recipe_steam.tres"),
 	preload("res://data/spells/recipe_temper.tres"),
 ]
@@ -86,7 +93,7 @@ const WHEEL_STEP_MS: int = 140
 var tier_index: int = 0
 ## Elemento de cada mano (índice en ELEMENTS). [izquierda, derecha]
 var hand_element: Array[int] = [0, 0]
-## Demo/depuración: fuerza el nivel de los combinados (1..10); -1 = el comprado.
+## Demo/depuración: fuerza el nivel de los combinados (1..11); -1 = el comprado.
 var debug_recipe_level: int = -1
 ## Depuración (modo dios): las manos recargan al instante.
 var debug_no_cooldown: bool = false
@@ -213,7 +220,7 @@ func _element_tier(el: ElementDef) -> SpellTier:
 	return el.tiers[clampi(idx, 0, el.tiers.size() - 1)]
 
 
-## Demo y menú de depuración: todos los hechizos a nivel `level` (1..10) sin comprar nada;
+## Demo y menú de depuración: todos los hechizos a nivel `level` (1..11) sin comprar nada;
 ## 0 vuelve a los niveles comprados. Con `celebrate`, las manos lo celebran.
 func set_debug_level(level: int, celebrate: bool = false) -> void:
 	_debug_tier = level - 1
@@ -221,12 +228,12 @@ func set_debug_level(level: int, celebrate: bool = false) -> void:
 	_refresh_hands(celebrate)
 
 
-## Nivel (1..10) del hechizo de una mano.
+## Nivel (1..11) del hechizo de una mano.
 func level_of(side: int) -> int:
 	return element_of(side).tiers.find(tier_for(side)) + 1
 
 
-## Nivel (1..10) de un combinado: 1 + niveles comprados de su Potencia.
+## Nivel (1..11) de un combinado: 1 + niveles comprados de su Potencia.
 func recipe_level(recipe: SpellRecipe) -> int:
 	if debug_recipe_level > 0:
 		return debug_recipe_level
@@ -412,6 +419,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## R o la rueda del ratón: cambia el elemento de la gema del báculo. Devuelve si era eso.
 func _staff_input(event: InputEvent) -> bool:
+	if not StaffCombos.ENABLED:
+		return false
 	if event.is_action_pressed(&"cycle_staff"):
 		_cycle_staff(1)
 		return true
@@ -682,17 +691,15 @@ func _update_combine(delta: float) -> void:
 		(camera as CameraRig).add_trauma(delta * 0.35 * k)
 	var lvl: int = charge_level(r)
 	if sky:
-		# Hechizos del cielo: los círculos se abren siempre, encima del blanco y mirando hacia
-		# abajo (uno más por nivel desde el 6). Con la carga, el cielo retumba.
+		# Hechizos del cielo: los círculos se abren siempre, apilados en horizontal en la columna
+		# por la que caerá a plomo (uno más por nivel desde el 6). Con la carga, el cielo retumba.
 		var aim: Dictionary = _aim()
-		var aim_at: Vector3 = aim["position"]
-		var aim_normal: Vector3 = aim["normal"]
+		var land: Dictionary = _delivery.sky_landing(r, aim["position"], aim["normal"])
 		_circles.charging_sky(
 			k,
 			r.sky_circles + maxi(0, lvl - ElementDef.ASCENDED_LEVEL + 1),
-			aim_at,
-			aim_normal,
-			_delivery.sky_origin(r, aim_at, aim_normal),
+			land["position"],
+			r.sky_height,
 			r.circle_color,
 			r.circle_hot,
 			_stages.count
@@ -710,13 +717,11 @@ func _update_combine(delta: float) -> void:
 		var arcane_n: int = (
 			3 if r.is_triple() else (maxi(r.echo_count, 2) if _is_arcane_recipe(r) else 0)
 		)
-		var hand: Vector3 = _hand_origin(BOTH_HANDS)
-		var aim_at: Vector3 = _aim()["position"]
 		_circles.charging(
 			k,
 			maxi(maxi(_stages.count, lvl - ElementDef.ASCENDED_LEVEL + 1), arcane_n),
-			hand,
-			aim_at,
+			_hand_origin(BOTH_HANDS),
+			_aim()["position"],
 			r.circle_color,
 			r.circle_hot,
 			_stages.count
@@ -761,7 +766,16 @@ func _launch_combine() -> void:
 	)
 	var gem: ElementDef = staff.element(ELEMENTS)
 	var gem_damage: int = _element_tier(gem).damage if gem and recipe.is_triple() else 0
-	var damage: int = recipe.damage_for(tier_for(0).damage, tier_for(1).damage, power, gem_damage)
+	# Premio de la carga: cada etapa completada multiplica (los combinados de toque, casi nada).
+	var full_bonus: float = ChargeStages.full_bonus(
+		charge_level(recipe), GameState.BALANCE.full_charge_bonus_by_level, recipe.charge_payoff
+	)
+	var bonus: float = ChargeStages.bonus(power, full_bonus)
+	# Lo que se ve crece con el premio (x6 de daño: el estallido, casi el doble de grande).
+	hit.fx_scale = 1.0 + log(bonus) / log(2.0) * 0.3
+	var damage: int = recipe.damage_for(
+		tier_for(0).damage, tier_for(1).damage, power, gem_damage, bonus
+	)
 	var power_stat: StringName = (
 		recipe.power_stat if recipe.power_stat != &"" else effect.power_stat
 	)
@@ -845,5 +859,5 @@ func _randomizer(streams: Array[AudioStream], pitch: float) -> AudioStreamRandom
 ## Pantalla de carga: un proyectil de cada aspecto (ver SpellDelivery.warm_up).
 func warm_up(target: Vector3) -> void:
 	var all: Array[SpellRecipe] = RECIPES.duplicate()
-	all.append_array(StaffCombos.TRIPLES)
+	all.append_array(StaffCombos.triples())
 	_delivery.warm_up(target, ELEMENTS, all)

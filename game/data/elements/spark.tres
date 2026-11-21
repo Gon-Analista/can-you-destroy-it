@@ -146,3 +146,4 @@ power_stat = &"spark_tier"
 size_stat = &"spark_size"
 damage_growth = 1.052
 cooldown_growth = 0.95
+apex_damage_mult = 70.0

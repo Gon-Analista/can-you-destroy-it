@@ -348,6 +348,16 @@ const PAGE_ICONS: Array[PackedStringArray] = [
 		".##....."
 	],
 	[
+		"....##..",
+		".......#",
+		"######.#",
+		"......#.",
+		"#######.",
+		"........",
+		"..#####+",
+		"......#."
+	],
+	[
 		"........",
 		"..####..",
 		".##++##.",
@@ -368,16 +378,6 @@ const PAGE_ICONS: Array[PackedStringArray] = [
 		"........"
 	],
 	[
-		".#..#...",
-		".#++#...",
-		"..##....",
-		"..#.....",
-		"...#....",
-		"...#....",
-		"....#...",
-		"....#..."
-	],
-	[
 		"...#....",
 		"...#....",
 		"..###...",
@@ -387,6 +387,8 @@ const PAGE_ICONS: Array[PackedStringArray] = [
 		".######.",
 		"..####.."
 	],
+	# Báculo (su página está apagada, ver StaffCombos.ENABLED).
+	[".#..#...", ".#++#...", "..##....", "..#.....", "...#....", "...#....", "....#...", "....#..."]
 ]
 ## Lágrima del Núcleo (coste de la página del Núcleo).
 const TEAR_ICON: PackedStringArray = [

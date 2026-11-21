@@ -112,6 +112,8 @@ FRONT, SKY, RAIN, LANCE, BEAM, GROUND, MAGNET, GRAVITY, RESONANCE, STORM, NOVA =
 HAIL_PER_VOLLEY = 2  # elemental_storm.gd: bolas de granizo de cada ráfaga
 STORM_PARTNERS = 8  # combinaciones que se prueban junto a la Tormenta
 STAFF_UPGRADE = "staff"  # StaffCombos.UNLOCK_UPGRADE
+# StaffCombos.ENABLED: el báculo (y sus triples y mejoras) puede estar apagado.
+STAFF_ENABLED = "const ENABLED: bool = true" in (ROOT / "spells" / "staff_combos.gd").read_text()
 ZERO = (0.0, 0.0, 0.0, 0.0)
 # RuneDef.Kind
 MULTISHOT, BOUNCE, PIERCE, ECHO, HARVEST = range(5)
@@ -195,17 +197,28 @@ def gd_round(x: float) -> int:
     return int(math.floor(x + 0.5)) if x >= 0 else -int(math.floor(-x + 0.5))
 
 
+MAX_LEVEL, APEX_LEVEL = 11, 11  # ElementDef.MAX_LEVEL y APEX_LEVEL
+
+
 def ensure_levels(
-    tiers: list[Tier], max_level: int = 10, growth: float = 1.38, cd_growth: float = 0.92
+    tiers: list[Tier],
+    max_level: int = MAX_LEVEL,
+    growth: float = 1.38,
+    cd_growth: float = 0.92,
+    late: float = 1.0,
+    apex: float = 1.0,
 ) -> list[Tier]:
-    """Copia de ElementDef.ensure_levels (los niveles que faltan hasta el 10)."""
+    """Copia de ElementDef.ensure_levels (los niveles que faltan hasta el 11): los niveles 9 y 10
+    crecen además x`late` y el 11 (Ascensión) x`apex`."""
     while len(tiers) < max_level and tiers:
         prev = tiers[-1]
         n = len(tiers)
-        echoes = prev.echoes + (1 if prev.echoes > 0 and n + 1 in (6, 9) else 0)
+        level = n + 1
+        g = growth * (late if 9 <= level < APEX_LEVEL else apex if level == APEX_LEVEL else 1.0)
+        echoes = prev.echoes + (1 if prev.echoes > 0 and level in (6, 9, APEX_LEVEL) else 0)
         tiers.append(
             Tier(
-                max(prev.damage + 1, gd_round(prev.damage * growth)),
+                max(prev.damage + 1, gd_round(prev.damage * g)),
                 max(0.1, prev.cooldown * cd_growth),
                 prev.shards_min + (1 if n % 2 == 0 else 0),
                 prev.shards_max + 1,
@@ -257,6 +270,11 @@ class Recipe:
     buff_lockout: float = 0.0
     storm_sec: float = 0.0  # Tormenta Elemental: segundos de descargas y cada cuánto
     storm_interval: float = 0.5
+    # Carga (SpellRecipe): potencia sin cargar, premio de la carga completa (ChargeStages.bonus) y
+    # la Potencia que da su nivel (vacía: la media de los niveles de las manos).
+    min_power: float = 0.5
+    payoff: float = 1.0
+    power_upgrade: str = ""
 
 
 @dataclass
@@ -268,6 +286,7 @@ class Upgrade:
     prereq: list[str]
     currency: int = 0  # UpgradeNode.Currency: 0 maná, 1 Lágrimas del Núcleo
     reveal: float = 0.0  # UpgradeNode.reveal_destroyed_ratio
+    apex: float = 0.0  # UpgradeNode.apex_destroyed_ratio: el último nivel espera al cristal así de destruido
     # Runas (RuneDef): tipo (-1 = no es runa), daño por nivel y peso en los combinados.
     rune: int = -1
     rune_damage: list = field(default_factory=list)
@@ -290,6 +309,8 @@ def load():
             [tier_from(subs[i]) for i in order],
             growth=float(main.get("damage_growth", 1.38)),
             cd_growth=float(main.get("cooldown_growth", 0.92)),
+            late=float(main.get("late_growth", 1.0)),
+            apex=float(main.get("apex_damage_mult", 1.0)),
         )
         elements[main["id"]] = Element(
             main["id"],
@@ -308,6 +329,8 @@ def load():
         main, subs = parse_tres(p)
         if main.get("is_reaction", "false") == "true" or not main.get("elements"):
             continue
+        if len(main["elements"]) >= 3 and not STAFF_ENABLED:
+            continue  # sin báculo no hay triples
         t = main.get("tier")
         tier = tier_from(subs[t[1]]) if isinstance(t, tuple) and t[1] in subs else Tier()
         recipes[main["id"]] = Recipe(
@@ -340,6 +363,9 @@ def load():
             float(main.get("buff_lockout_sec", 0.0)),
             float(main.get("storm_sec", 0.0)),
             float(main.get("storm_interval", 0.5)),
+            float(main.get("min_power", 0.5)),
+            float(main.get("charge_payoff", 1.0)),
+            main.get("power_upgrade", ""),
         )
     # Eco de X (spell_caster.gd _launch_combine, spell_echoes.gd echo_recipe): el daño sale de la
     # receta del eco, la potencia y el tamaño también salvo que no los tenga (entonces los de X), y
@@ -361,6 +387,8 @@ def load():
     upgrades: dict[str, Upgrade] = {}
     for p in sorted((DATA / "upgrades").glob("*.tres")):
         main, _ = parse_tres(p)
+        if main["id"].startswith(STAFF_UPGRADE) and not STAFF_ENABLED:
+            continue  # el Báculo está apagado (StaffCombos.ENABLED)
         upgrades[main["id"]] = Upgrade(
             main["id"],
             [int(c) for c in main.get("costs", [])],
@@ -369,6 +397,7 @@ def load():
             main.get("prerequisites", []),
             int(main.get("currency", 0)),
             float(main.get("reveal_destroyed_ratio", 0.0)),
+            float(main.get("apex_destroyed_ratio", 0.0)),
         )
     for p in sorted((DATA / "runes").glob("*.tres")) if (DATA / "runes").exists() else []:
         main, _ = parse_tres(p)
@@ -634,8 +663,12 @@ class Game:
         return not el.unlock or s.levels.get(el.unlock, 0) > 0
 
     def tier(self, s: State, el: Element) -> Tier:
+        return el.tiers[self.level_of(s, el) - 1]
+
+    def level_of(self, s: State, el: Element) -> int:
+        """Nivel (1..11) del elemento según su Potencia."""
         idx = int(round(self.stat(s, el.power_stat, 0.0)))
-        return el.tiers[max(0, min(idx, len(el.tiers) - 1))]
+        return max(0, min(idx, len(el.tiers) - 1)) + 1
 
     def piece_for(self, per_piece: float) -> int:
         """Índice del tipo más grande cuyo valor cabe en `per_piece`."""
@@ -839,16 +872,37 @@ class Game:
             return m
         return m * float(self.balance.get("facet_heart_scale", 0.4)) if combo else 0.0
 
-    def _combo_damage(self, s: State, r: Recipe):
-        """(daño sin resonancia, tamaño, enfriamiento del ciclo) de una combinación cargada. Las
-        triples suman el daño del elemento de la gema (SpellRecipe.damage_for)."""
+    def recipe_level(self, s: State, r: Recipe) -> int:
+        """SpellCaster.charge_level: 1 + Potencia de la receta o la media de las manos."""
+        if r.power_upgrade:
+            return 1 + s.levels.get(r.power_upgrade, 0)
+        lv = [self.level_of(s, self.elements[x]) for x in r.elements[:2]]
+        return int((lv[0] + lv[1]) * 0.5)
+
+    def charge_bonus(self, s: State, r: Recipe) -> float:
+        """ChargeStages.full_bonus: premio de soltar con la carga completa."""
+        table = self.balance.get("full_charge_bonus_by_level") or [1.0]
+        lv = self.recipe_level(s, r)
+        full = float(table[max(1, min(lv, len(table))) - 1])
+        return max(1.0, 1.0 + (full - 1.0) * max(0.0, min(1.0, r.payoff)))
+
+    def _combo_damage(self, s: State, r: Recipe, tap: bool = False):
+        """(daño sin resonancia, tamaño, enfriamiento del ciclo) de una combinación cargada (o de
+        toque, `tap`: sin carga, a `min_power` y sin premio). Las triples suman el daño del
+        elemento de la gema (SpellRecipe.damage_for)."""
         els = [self.elements[x] for x in r.elements]
         t0, t1 = self.tier(s, els[0]), self.tier(s, els[1])
         gem = self.tier(s, els[2]).damage if len(els) == 3 else 0
         if t0.damage <= 0 and t1.damage <= 0:
             dmg, size = 1, 0.45  # tutorial: juntar sin daño hace 1
         else:
-            dmg = max(1, round((t0.damage + t1.damage + gem) * r.mult * P["charge"]))
+            if tap:
+                power = r.min_power
+            else:
+                # El jugador normal suelta algo antes (P["charge"]): pierde parte del premio.
+                k = P["charge"]
+                power = (r.min_power + (1.0 - r.min_power) * k) * self.charge_bonus(s, r) ** k
+            dmg = max(1, round((t0.damage + t1.damage + gem) * r.mult * power))
             if r.power_stat:
                 dmg = round(dmg * self.stat(s, r.power_stat, 1.0))
             size = self.stat(s, r.size_stat, 1.0) if r.size_stat else 1.0
@@ -860,12 +914,19 @@ class Game:
         return dmg, size, max(r.cooldown * cdm, t0.cooldown * cdm)
 
     def cast_yield(
-        self, s: State, r: Recipe, res_p: float, zone: tuple[str, float] | None = None, temper: bool = False
+        self,
+        s: State,
+        r: Recipe,
+        res_p: float,
+        zone: tuple[str, float] | None = None,
+        temper: bool = False,
+        tap: bool = False,
     ):
         """(rendimiento medio de un lanzamiento, ciclo en s). `zone`: zona en la que cae
-        ("frost", x) o ("shatter", x); `temper`: cae sobre una quemadura al rojo."""
-        dmg, size, cd = self._combo_damage(s, r)
-        charge = self.charge_sec(s, r)
+        ("frost", x) o ("shatter", x); `temper`: cae sobre una quemadura al rojo; `tap`: de
+        toque, sin cargar (el ciclo es sólo la recarga)."""
+        dmg, size, cd = self._combo_damage(s, r, tap)
+        charge = 0.0 if tap else self.charge_sec(s, r)
         if size < 0.6:
             res_p = 0.0  # las dos chispitas del tutorial nunca resuenan
         elif r.delivery == RESONANCE:
@@ -1088,6 +1149,12 @@ class Game:
                 y, cycle = self.cast_yield(s, r, res_p, ("shatter", r.shatter_mult))
             alone[r.id] = (y, cycle)
             add(r.id, y, acc / cycle, True, r.id)
+            if r.payoff < 0.5:
+                # De toque (charge_payoff bajo): juntar y soltar en el acto.
+                ty, tcycle = self.cast_yield(s, r, res_p, tap=True)
+                if r.shatter_mult > 1.0 and tcycle < r.shatter_sec:
+                    ty, tcycle = self.cast_yield(s, r, res_p, ("shatter", r.shatter_mult), tap=True)
+                add(f"{r.id}(toque)", ty, acc / tcycle, True, r.id)
         spark = self.elements.get("spark")
         spark_ok = spark is not None and self.awake(s, spark) and self.single_yield(s, spark, res_p) != ZERO
         for x in combos:
@@ -1290,6 +1357,9 @@ class Game:
             return False
         if u.reveal > 0 and 1.0 - s.essence / self.total < u.reveal - 1e-9:
             return False
+        lv = s.levels.get(u.id, 0)
+        if u.apex > 0 and lv == len(u.costs) - 1 and 1.0 - s.essence / self.total < u.apex - 1e-9:
+            return False  # Progression.purchase_block: &"apex"
         for pr in u.prereq:
             if pr.startswith("pylon:"):
                 # Progression._has_requirement: el Pilón (progreso real) hasta esa marca.

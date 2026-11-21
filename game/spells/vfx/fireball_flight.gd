@@ -162,7 +162,7 @@ func set_tail(on: bool, from: Vector3) -> void:
 func glow_crystal(target: Vector3) -> void:
 	var d: float = global_position.distance_to(target)
 	var k: float = 1.0 - smoothstep(2.0, GLOW_FROM, d)
-	# Unos 12 m de radio a nivel 1 (el cristal mide 108 m): con menos, la mancha naranja quedaba
+	# Unos 12 m de radio a nivel 1 (el cristal mide ~135 m): con menos, la mancha naranja quedaba
 	# escondida detrás de la propia bola y no se veía.
 	var radius: float = _base * lerpf(28.0, 40.0, _level)
 	FireGlow.put(self, global_position, radius, _color, k * lerpf(0.85, 1.0, _level))

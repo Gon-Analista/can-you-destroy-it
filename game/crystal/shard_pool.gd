@@ -125,7 +125,9 @@ func _ready() -> void:
 		for v: int in MESH_VARIANTS:
 			var m: ArrayMesh = CrystalClusterBuilder.build_shard_mesh(ALL_TYPES[t], 40 + t * 10 + v)
 			meshes.append(m)
-			shapes.append(m.create_convex_shape(true, true) as ConvexPolygonShape3D)
+			# Sin simplificar: la envolvente de una pieza tan pequeña ya es mínima, y simplificarla
+			# costaba casi un segundo al arrancar (24 formas).
+			shapes.append(m.create_convex_shape(true, false) as ConvexPolygonShape3D)
 		_type_meshes.append(meshes)
 		_type_shapes.append(shapes)
 	for i: int in pool_size:

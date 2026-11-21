@@ -33,12 +33,15 @@ OUT = ROOT / "game" / "crystal" / "data" / "crystal_volume.bin"
 
 H = 0.8  # tamaño de la celda (m)
 CHUNK = 16  # celdas por lado de cada trozo de malla
-# Escala de la forma de abajo (diseñada a 1): con 1,7 la punta principal mide ~107 m.
-S = 1.7
+# Escala de la forma de abajo (diseñada a 1): con 2,125 la punta principal mide ~135 m (antes 1,7 y
+# ~107 m; pedido del equipo: un cristal un 25 % más grande en todo).
+S = 2.125
+# Lo demás que mide en metros (capas, Núcleo, geodas) crece igual, para que nada cambie de proporción.
+K = S / 1.7
 # El cristal se apoya en el suelo: nada por debajo de FLOOR (no se podría excavar).
 FLOOR = -0.4
-LO = np.array([-62.0, FLOOR - 1.2, -62.0])
-HI = np.array([62.0, 112.0, 62.0])
+LO = np.array([-78.0, FLOOR - 1.2, -78.0])
+HI = np.array([78.0, 140.0, 78.0])
 
 # Puntas: base (x, y, z), eje, radio (al vértice del hexágono), largo hasta el hombro, punta, giro.
 SPIRES = [
@@ -67,19 +70,19 @@ BASE = ((0.0, -4.0, 0.0), (0.0, 1.0, 0.0), 21.0, 4.5, 6.5, 0.26)
 # Capas (GDD 6): profundidad mínima bajo la superficie original (m) y parte de la esencia.
 LAYERS = [
     ("crust", 0.0, 0.10),
-    ("geode_mantle", 2.2, 0.35),
-    ("resonant_veins", 6.0, 0.35),
-    ("crystal_heart", 10.5, 0.19),
+    ("geode_mantle", 2.2 * K, 0.35),
+    ("resonant_veins", 6.0 * K, 0.35),
+    ("crystal_heart", 10.5 * K, 0.19),
     ("core", None, 0.01),
 ]
 # El Núcleo: esfera violeta en la base del cristal.
-CORE_CENTER = np.array([0.0, 7.5, 0.0])
-CORE_RADIUS = 5.5
+CORE_CENTER = np.array([0.0, 7.5 * K, 0.0])
+CORE_RADIUS = 5.5 * K
 TOTAL_ESSENCE = 1_000_000
 OUTSIDE_CLAMP = 3 * H
 GEODE_COUNT = 40
-GEODE_RADIUS = (1.6, 2.6)
-GEODE_SPACING = 11.0
+GEODE_RADIUS = (1.6 * K, 2.6 * K)
+GEODE_SPACING = 11.0 * K
 
 
 def basis(axis, twist):
