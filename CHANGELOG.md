@@ -29,7 +29,8 @@ tierra es una piedrecita aburrida")
 **Cómo se probó**: Godot 4.7 con lavapipe, capturas antes/después de la Bola de Fuego, Terremoto, Tornado, Meteoro y
 Trueno a nivel 11 con carga completa (`docs/capturas/cargados_*.gif` y `cargados_antes_despues.png`). Tests de humo: `meteor_smoke`,
 `fireball_flight_smoke`, `combos_smoke`, `charge_stages_smoke`, `spell_levels_smoke`, `combine_input_smoke`,
-`progression_smoke`, `hit_stop_smoke` y `movement_smoke` en verde; `gdlint` limpio.
+`progression_smoke`, `hit_stop_smoke`, `movement_smoke`, `staff_smoke`, `runes_smoke`, `arcane_smoke` y
+`localization_smoke` en verde; `gdlint` limpio.
 
 ## 2026-11-21 · Golpear el Núcleo ya no falla y los golpes enormes dan muchos menos tirones
 
