@@ -2,6 +2,26 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-22 · Icono, pantalla de arranque y metadatos propios
+
+**Qué hay nuevo** (pedido del equipo: "logo, icono, etc. para el juego, que no se vea por defecto en Godot")
+
+- **Icono** (`game/branding/icon.png` y `icon.ico`): el Cristal Madre (tres puntas de hielo con el corazón violeta)
+  y la chispa rosa del aprendiz, en una baldosa de cielo nocturno. 32 px de pixel art ampliados por enteros. Es el
+  icono de la ventana, del editor, del `.exe` de Windows (16 a 256 px) y de Linux; sustituye al robot de Godot.
+- **Pantalla de arranque** (`game/branding/splash.png`): el logo del título ("CAN YOU / DESTROY IT" + "?" de
+  cristal, con Pixelify Sans) bajo el cristal, sobre el cielo de estrellas de la pantalla de carga. Sin filtro.
+- **Metadatos del `.exe`**: nombre y descripción "Can you destroy it?", versión 0.1.0 (también `config/version`).
+- Todo sale de `tools/make_branding.py` (Pillow; la fuente del juego se lee con fontTools): se retoca y se regenera.
+
+![Icono](game/branding/icon.png)
+![Pantalla de arranque](game/branding/splash.png)
+
+**Cómo se probó**: exportación release de Windows y Linux sin errores; el `.exe` muestra el icono nuevo y sus
+metadatos (nombre, descripción, versión 0.1.0) y arranca limpio.
+
+**Pendiente**: compañía y copyright en los metadatos de Windows (no hay nombre de estudio todavía).
+
 ## 2026-11-22 · Presets de exportación para Windows y Linux
 
 - `game/export_presets.cfg` (antes ignorado por `game/.gitignore`, ahora versionado): **Windows Desktop** y
