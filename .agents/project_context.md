@@ -109,6 +109,7 @@ Todos estos números viven en recursos de datos (`.tres`), nunca hardcodeados (v
 | `AGENTS.md`, `.agents/` | Instrucciones para agentes. |
 | `game/` | Proyecto Godot 4.7 (abrir `game/project.godot`). |
 | `.mcp.json` | Servidor MCP de Godot para agentes (ver dev guidelines, sección 14). |
+| `game/export_presets.cfg` | Presets de exportación Windows y Linux (x86_64, PCK dentro del ejecutable, sin `tests/`, con `crystal/data/*.bin`). Salida en `build/` (ignorada). |
 
 **Prototipo M1b jugable: el bucle completo** (`game/main/main.tscn`). Golpeas el cristal, recoges los
 fragmentos con F (la bolsa empieza en 1), los llevas al Pilón (se vacía solo al acercarte), ganas maná y compras
@@ -319,6 +320,7 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-21 | El remallado del cristal va en tareas de prioridad baja del WorkerThreadPool y los trozos rehechos se aplican con un presupuesto de 3 ms por fotograma (`CrystalChunks`). | Con prioridad alta, un golpe enorme ocupaba todos los núcleos y el render se quedaba sin CPU (tirones de 100-200 ms en Iris Xe). |
 | 2026-11-21 | El terreno quita su trama de 1 texel donde un texel mide menos de 2-4 píxeles (`terrain_calm` = 1) y el entorno del mundo usa tonemapping AgX con contraste de ajuste x0,94. | La hierba hacía moiré y parpadeaba al moverse y el cielo quemaba: cansaba la vista. SMAA y supermuestreo 2x se probaron y descartaron. |
 | 2026-11-21 | Soltar un combinado tiene peso: lo que sale de las manos vuela más rápido cuanto más cargado (`SpellHit.speed_mult`: x1,6-3,4 los de frente, x1,2-2,2 las lanzas, x1,3-2,2 el Terremoto); el golpe de poder en las manos (`CastBurst`: fogonazo, ondas en cono, chispas) con retroceso de cámara (`CameraRig.recoil`) y empujón al mago (`Player.knockback`, sólo lo que sale hacia delante); lo que se ve en vuelo crece con `fx_scale` (`SparkProjectile.charged_scale`, hasta ~x1,9 a nivel 11 a tope). Meteoro más grande (roca de 3,4 m), Trueno con más descargas, hebras y columna según la carga (`CrystalCombos.sky_bolt(power)`), Terremoto y Erupción como peñasco que rueda (`BoulderRoll`, `SpellVisualDef.boulder`). | Pedido del equipo: "los hechizos cargados no se ven tan poderosos como lo que destruyen" (Bola de Fuego lenta, la tierra una piedrecita). Sólo cambia lo que se ve y lo que tarda en llegar: el daño y el balance, igual. |
+| 2026-11-22 | `export_presets.cfg` se versiona (antes estaba en `game/.gitignore`): Windows Desktop y Linux x86_64 con el PCK dentro del ejecutable, `crystal/data/*.bin` como archivo no recurso y sin `tests/`. | El servicio de builds lee los presets de `main`; un ejecutable por plataforma es lo más fácil de repartir. |
 
 ## 10. Preguntas abiertas
 
