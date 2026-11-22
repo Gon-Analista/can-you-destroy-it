@@ -39,7 +39,7 @@ def colors(seq):
 
 def clone_visual(base, name, core, sparkle, ribbons, overrides):
     """Copia data/spells/<base>.tres con otra rampa del núcleo, destellos y cintas."""
-    text = (SPELLS / f"{base}.tres").read_text()
+    text = (SPELLS / f"{base}.tres").read_text(encoding="utf-8")
     lines = text.split("\n")
     out = []
     gradient = 0
@@ -66,7 +66,7 @@ def clone_visual(base, name, core, sparkle, ribbons, overrides):
     while out and out[-1] == "":
         out.pop()
     out += [f"{key} = {val}" for key, val in overrides.items() if key not in present] + [""]
-    (SPELLS / f"{name}.tres").write_text("\n".join(out))
+    (SPELLS / f"{name}.tres").write_text("\n".join(out), encoding="utf-8")
 
 
 VISUALS = {
@@ -99,7 +99,7 @@ VISUALS = {
     "vfx_meteor": ("vfx_fireball", [(2.4, 1.8, 1.0), (1.7, 0.8, 0.2), (1.1, 0.38, 0.06), (0.8, 0.2, 0.05), (0.42, 0.1, 0.05)],
                    [(1.3, 0.8, 0.35), (1.1, 0.5, 0.15), (0.8, 0.35, 0.12), (0.5, 0.22, 0.1)],
                    [(1, 0.6, 0.25), (0.8, 0.35, 0.12), (1, 0.85, 0.4), (0.55, 0.28, 0.15)],
-                   {"seed": "79", "meteor": "true", "fireball_flight": "false"}),
+                   {"seed": "79", "meteor": "true", "meteor_scale": "1.6", "fireball_flight": "false"}),
     "vfx_stalactite": ("vfx_frost_2", [(1.9, 2.1, 2.6), (0.8, 1.2, 2.0), (0.45, 0.6, 1.5), (0.25, 0.3, 1.0), (0.1, 0.1, 0.5)],
                        [(2.0, 2.1, 2.5), (1.0, 1.1, 1.6), (0.8, 0.8, 1.5), (0.6, 0.6, 1.4)],
                        [(0.85, 0.9, 1), (0.6, 0.7, 1), (0.9, 0.8, 1), (1, 1, 1)],
@@ -261,7 +261,7 @@ def write_resource(path, script_class, script_path, sub_blocks, res_lines, ext_p
     for b in sub_blocks:
         text += [b, ""]
     text += ["[resource]", 'script = ExtResource("main")'] + res_lines + [""]
-    path.write_text("\n".join(text))
+    path.write_text("\n".join(text), encoding="utf-8")
 
 
 def sfx(name):
@@ -405,7 +405,7 @@ RECIPES = [
          # Sin sonido de impacto en la receta: el estruendo lo pone MeteorRock (uno solo, no dos).
          impact=[], loop="amb_sky_charge_loop",
          tier=dict(damage=10, speed=60.0, wobble=0.0, shards_min=4, shards_max=6, shard_scale=1.4, impact_particles=90,
-                   light_energy=4.0, crack_radius=3.0, shake=0.6, orb_scale=36.0, trail_width=7.0, trail_length=0.7,
+                   light_energy=4.0, crack_radius=3.0, shake=0.6, orb_scale=58.0, trail_width=11.0, trail_length=0.7,
                    trail_smoke=1.0, core=(1, 0.9, 0.6), glow=(1, 0.4, 0.1), tint=(1, 0.6, 0.25),
                    ramp=[(2.4, 1.8, 1.0), (1.7, 0.8, 0.2), (1.0, 0.35, 0.06), (0.45, 0.14, 0.05), (0.18, 0.06, 0.04)])),
     dict(id="stalactites", name="Lluvia de Estalactitas", elements=["earth", "frost"], delivery=2,

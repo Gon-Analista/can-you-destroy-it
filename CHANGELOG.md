@@ -2,6 +2,17 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-22 · Meteoro más grande
+
+- **El Meteoro es 1,6 veces más grande** (pedido del equipo): la roca, su fuego y la cola en vuelo, y al caer la onda de
+  choque, el destello, el cráter encendido y el polvo. Nuevo `SpellVisualDef.meteor_scale` (1,6 en
+  `vfx_meteor.tres`); el fuego y la estela de la receta suben en proporción (`orb_scale` 36 → 58,
+  `trail_width` 7 → 11). Sólo es aspecto: el daño, el área y el cráter que excava no cambian.
+- `tools/gen_spells.py` lee y escribe en UTF-8: en Windows escribía con la codificación del sistema y rompía las
+  tildes de las 20 recetas generadas ("círculos" → "c�rculos").
+- Probado: `meteor_smoke`, `combos_smoke` y `spell_levels_smoke` en verde, y un Meteoro grabado en modo demo
+  (`--autoplay --hands=0,3 --combo --hold=1.6`).
+
 ## 2026-11-22 · Icono, pantalla de arranque y metadatos propios
 
 **Qué hay nuevo** (pedido del equipo: "logo, icono, etc. para el juego, que no se vea por defecto en Godot")

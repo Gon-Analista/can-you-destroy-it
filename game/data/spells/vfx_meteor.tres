@@ -59,3 +59,4 @@ converge_amount = 60
 spark_amount = 140
 fireball_flight = false
 meteor = true
+meteor_scale = 1.6

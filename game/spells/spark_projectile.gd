@@ -110,7 +110,7 @@ func launch(from: Vector3, to: Vector3, p_hit: SpellHit, collider: Object) -> vo
 		_arc = 0.0
 		_wobble = 0.0
 		prepare_combo()
-		_meteor.launch(from, to, p_hit.size * _vis, p_hit.warmup)
+		_meteor.launch(from, to, p_hit.size * _vis * tier.visual.meteor_scale, p_hit.warmup)
 	elif _meteor:
 		_meteor.stop()
 	if _rolls:
