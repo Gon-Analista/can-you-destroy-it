@@ -5,7 +5,7 @@ Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev
 ## 2026-11-22 · Presets de exportación para Windows y Linux
 
 - `game/export_presets.cfg` (antes ignorado por `game/.gitignore`, ahora versionado): **Windows Desktop** y
-  **Linux**, x86_64, con el PCK dentro del ejecutable (un solo archivo por plataforma). Incluyen
+  **Linux**, x86_64, con el `.pck` al lado del ejecutable (Embed PCK desactivado: el servicio de builds lo exige). Incluyen
   `crystal/data/*.bin` (el volumen del cristal no es un recurso de Godot; sin él no carga) y dejan fuera `tests/`.
 - Salida en `build/windows/CanYouDestroyIt.exe` y `build/linux/CanYouDestroyIt.x86_64`; `build/` queda ignorada.
 - Probado: las dos exportaciones en release salen sin errores (~120 MB y ~86 MB) y llevan el `.bin`, las traducciones
