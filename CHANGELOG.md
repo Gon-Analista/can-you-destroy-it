@@ -2,6 +2,20 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-26 · Música del valle nueva
+
+- **La música del valle se ha rehecho** (pedido del equipo: "me aburre un poco"). Antes era un bucle de 46 s con el
+  mismo acompañamiento todo el rato; ahora es una pieza de 2 min 20 s a 96 BPM con forma de canción: intro,
+  estribillo pegadizo (A - E/G# - F#m7 - Dmaj7) y su respuesta, una parte de aventura en F#m con corcheas que
+  empujan, una subida "mágica" al II lidio, un puente soñado a medio tiempo (flauta y Dm6 agridulce) que vuelve con
+  un redoble, el estribillo en grande (platillo, campanas a la octava, arpegio brillante) y una coda que empalma.
+- Sigue en La mayor y en las mismas 5 capas por rango; cada capa cambia de patrón según la sección, así que incluso
+  con sólo la primera (Aprendiz: pad, bajo, caja de música y una kalimba nueva) hay variación. Pequeño desvío
+  humano de tiempo y fuerza en cada nota.
+- Sin cambios de código en el juego: los OGG se llaman igual y duran lo mismo entre sí. `tools/music_title.py` (el
+  vals del título) suena idéntico.
+- Vista previa con las capas entrando: `docs/audio/musica_valle_capas_preview.ogg`.
+
 ## 2026-11-22 · Meteoro más grande
 
 - **El Meteoro es 1,6 veces más grande** (pedido del equipo): la roca, su fuego y la cola en vuelo, y al caer la onda de

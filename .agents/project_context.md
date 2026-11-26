@@ -147,7 +147,8 @@ en el Grimorio del Santuario mejoras que cambian los hechizos. Lo que hay:
 - **HUD** (`ui/`): Esencia con número rodante, mira con anillo de carga y marcador de impacto, racha, avisos,
   números flotantes, Pilón, FPS, guía de objetivos (`ObjectiveGuide`), menú de depuración (Alt+F1, `DebugMenu`) y
   opciones por pestañas (`OptionsMenu`, con FOV). Fuente Fusion Pixel 10/12 px (`UiFonts`).
-- **Música** (`audio/music/`): tema del valle en La mayor, 84 BPM, en 5 capas sincronizadas (una por rango) con
+- **Música** (`audio/music/`): tema del valle en La mayor, 96 BPM, 56 compases (2 min 20 s) con forma de canción
+  (intro, estribillo, aventura en F#m, puente, clímax, coda), en 5 capas sincronizadas (una por rango) con
   `AudioDirector.play_music` / `set_music_layers`. En debug, la tecla M suma capas.
 - **Audio** (`audio/sfx/`): 20 OGG sintetizados (tink ×4, fragmentos, chispa, campanitas, acorde resonante,
   ambiente del valle y zumbido del cristal en bucle).
@@ -323,6 +324,7 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-21 | Soltar un combinado tiene peso: lo que sale de las manos vuela más rápido cuanto más cargado (`SpellHit.speed_mult`: x1,6-3,4 los de frente, x1,2-2,2 las lanzas, x1,3-2,2 el Terremoto); el golpe de poder en las manos (`CastBurst`: fogonazo, ondas en cono, chispas) con retroceso de cámara (`CameraRig.recoil`) y empujón al mago (`Player.knockback`, sólo lo que sale hacia delante); lo que se ve en vuelo crece con `fx_scale` (`SparkProjectile.charged_scale`, hasta ~x1,9 a nivel 11 a tope). Meteoro más grande (roca de 3,4 m), Trueno con más descargas, hebras y columna según la carga (`CrystalCombos.sky_bolt(power)`), Terremoto y Erupción como peñasco que rueda (`BoulderRoll`, `SpellVisualDef.boulder`). | Pedido del equipo: "los hechizos cargados no se ven tan poderosos como lo que destruyen" (Bola de Fuego lenta, la tierra una piedrecita). Sólo cambia lo que se ve y lo que tarda en llegar: el daño y el balance, igual. |
 | 2026-11-22 | `export_presets.cfg` se versiona (antes estaba en `game/.gitignore`): Windows Desktop y Linux x86_64 con el `.pck` junto al ejecutable (Embed PCK desactivado), `crystal/data/*.bin` como archivo no recurso y sin `tests/`. | El servicio de builds (Parzel) lee los presets de `main` y reparte el `.pck` al lado del ejecutable: con Embed PCK no acepta el preset. |
 | 2026-11-22 | Imagen propia en vez de la de Godot: icono del Cristal Madre (ventana, editor, `.exe` y Linux), pantalla de arranque con el logo del título, versión 0.1.0 y nombre del juego en los metadatos del `.exe`. Dibujados por código (`tools/make_branding.py`) con la paleta y la fuente del juego. | Pedido del equipo: que el juego no parezca un proyecto de Godot por defecto. Sprite AI no conecta; por código se retoca y se regenera. |
+| 2026-11-26 | Música del valle rehecha (`tools/music_synth.py`): de un bucle de 16 compases a 84 BPM (46 s) a una pieza de 56 compases a 96 BPM (2 min 20 s) en 8 secciones con estribillo, cambios de energía y redobles entre secciones; kalimba en la capa 1, batería completa en la 3, cuerdas en la 4 y arpegio brillante en la 5. Mismas 5 capas y misma tonalidad. | Pedido del equipo: la música aburría (un bucle corto y siempre igual). Sigue en La mayor para que el "tink" no desafine; no cambia el código del juego. |
 
 ## 10. Preguntas abiertas
 
