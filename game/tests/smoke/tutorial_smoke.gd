@@ -132,9 +132,9 @@ func _initialize() -> void:
 	gs.call(&"deliver", 1)
 	await process_frame
 	_check(VariantCast.to_int(tut.get(&"step")) == 7, "triturado: juntar maná")
-	gs.call(&"deliver", 4)
+	gs.call(&"deliver", 2)
 	await process_frame
-	_check(VariantCast.to_int(tut.get(&"step")) == 8, "con 5 de maná: al Santuario")
+	_check(VariantCast.to_int(tut.get(&"step")) == 8, "con 3 de maná: al Santuario")
 	_check_no_f(tut, "santuario")
 	await create_timer(0.5).timeout
 	_check(
@@ -142,7 +142,7 @@ func _initialize() -> void:
 		"la guía lleva al Santuario"
 	)
 	var power: Resource = load("res://data/upgrades/spark_power.tres")
-	_check(VariantCast.to_int(power.call(&"cost_for_level", 0)) == 5, "la primera mejora cuesta 5")
+	_check(VariantCast.to_int(power.call(&"cost_for_level", 0)) == 3, "la primera mejora cuesta 3")
 	_check(VariantCast.to_bool(gs.call(&"buy_upgrade", power)), "se compra")
 	await process_frame
 	_check(VariantCast.to_int(tut.get(&"step")) == 9, "tutorial terminado")

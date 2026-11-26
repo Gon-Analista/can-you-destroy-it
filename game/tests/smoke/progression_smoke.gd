@@ -49,7 +49,7 @@ func _init() -> void:
 	_check(bag.purchase_block(bag_node) == &"mana", "sin maná no se puede")
 	bag.deliver(15)
 	_check(bag.buy_upgrade(bag_node) and bag.stat_of(bag_node) == 15.0, "la bolsa sube a 15")
-	_check(bag_node.cost_for_level(1) == 45, "el coste sale del .tres")
+	_check(bag_node.cost_for_level(1) == 35, "el coste sale del .tres")
 	var tk: UpgradeNode = load("res://data/upgrades/telekinesis.tres")
 	var fresh := Progression.new(1000)
 	fresh.deliver(100)
