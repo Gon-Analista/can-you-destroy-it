@@ -30,8 +30,15 @@ los seis elementos y dos combinados (Lanza de Hielo, Tempestad). Tests de humo e
 `meteor`, `spell_levels`, `critters`, `arcane`, `fireball_flight`, `boot`, `staff` y `runes`. `gdlint` y
 `gdformat` limpios.
 
-**Pendiente**: en el juego, lo que más tapa los hechizos son las motas de luz azules de fondo y el fogonazo blanco
-al soltar un combinado (lava toda la pantalla); conviene bajarlos.
+**Que los hechizos se vean** (pedido del equipo al revisar las capturas):
+
+- **Restos del precalentado**: al quitar la pantalla de carga quedaban flotando delante del cristal, unos 8 s, las
+  chispas, motas y humo con los que la carga compila los efectos (manchas de luz azul y violeta por toda la
+  pantalla). `Main._clear_warm_particles` las borra antes de quitar la carga; lo que emite siempre sigue igual.
+- **Fogonazo al soltar un combinado**: el orbe entre las manos destellaba entero pegado a la cámara
+  (`WizardHands.COMBO_RELEASE_FLASH` 0,3) y la luz del golpe de poder bajó de 6 a 2,5 por fuerza (`CastBurst`).
+
+![Lanza de Hielo antes y ahora](docs/capturas/lanza_hielo_antes_ahora.png)
 
 ## 2026-11-26 · Cada elemento golpea a su manera
 

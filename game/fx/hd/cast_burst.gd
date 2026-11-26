@@ -113,7 +113,7 @@ func _animate() -> void:
 	_flash.visible = fk < 1.0
 	_flash.scale = Vector3.ONE * lerpf(0.3, 0.6, sqrt(fk)) * (0.4 + 0.2 * s)
 	_flash_mat.set_shader_parameter(
-		"intensity", (1.0 - fk) * (1.0 - fk) * (0.2 + 0.15 * s) * HdFx.flash_scale
+		"intensity", (1.0 - fk) * (1.0 - fk) * (0.14 + 0.1 * s) * HdFx.flash_scale
 	)
 	for i: int in _rings.size():
 		var k: float = clampf((_t - RING_STAGGER * float(i)) / RING_SEC, 0.0, 1.0)
@@ -122,7 +122,8 @@ func _animate() -> void:
 		_rings[i].visible = on and k > 0.0 and k < 1.0
 		_rings[i].scale = Vector3.ONE * RING_SIZE[i] * lerpf(0.7, 1.25, s / 2.0)
 		_ring_mats[i].set_shader_parameter("progress", k)
-	_light.light_energy = 6.0 * s * (1.0 - fk) * HdFx.flash_scale
+	# Moderada: con 6 por fuerza, a tope, la luz pegada a las manos ponía la escena en blanco.
+	_light.light_energy = 2.5 * s * (1.0 - fk) * HdFx.flash_scale
 	_light.visible = fk < 1.0
 
 
