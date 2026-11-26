@@ -57,9 +57,16 @@ func recoil(amount: float) -> void:
 func _on_impact(hit: SpellHit) -> void:
 	if not hit.by_player:
 		return
-	add_trauma(hit.tier.shake * (3.0 if hit.resonant else 1.0))
+	# Cada elemento se siente distinto (`ImpactStyle`): la roca sacude, el rayo da un tirón seco
+	# hacia dentro, el viento y el arcano empujan el campo de visión hacia fuera.
+	var pf: ImpactStyle.Profile = ImpactStyle.profile(ImpactStyle.of(hit))
+	add_trauma(hit.tier.shake * (3.0 if hit.resonant else 1.0) * pf.trauma)
 	if hit.resonant:
 		_fov_kick = -4.0
+	elif not hit.minor:
+		var kick: float = pf.fov * clampf(hit.tier.crack_radius / 1.6, 0.4, 1.5)
+		kick *= Settings.screen_shake
+		_fov_kick = minf(_fov_kick, kick) if kick < 0.0 else maxf(_fov_kick, kick)
 
 
 func _on_cast(_tier: SpellTier, _side: int) -> void:

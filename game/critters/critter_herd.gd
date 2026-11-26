@@ -520,7 +520,15 @@ func _play_impact(hit: SpellHit) -> void:
 	if hit.tier:
 		_fx.play(hit.position, n, hit.tier, hit.resonant, maxf(hit.size, 0.6))
 		if hit.recipe or hit.tier.damage >= 3:
-			_hd.play(hit.position, n, hit.tier, hit.resonant, hit.recipe != null, hit.size)
+			_hd.play(
+				hit.position,
+				n,
+				hit.tier,
+				hit.resonant,
+				hit.recipe != null,
+				hit.size,
+				ImpactStyle.of(hit)
+			)
 	if hit.recipe and not hit.recipe.impact_sfx.is_empty():
 		var s: AudioStream = hit.recipe.impact_sfx[_rng.randi() % hit.recipe.impact_sfx.size()]
 		AudioDirector.play_sfx(s, -5.0, _rng.randf_range(0.95, 1.08))

@@ -2,6 +2,43 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-26 · Cada elemento golpea a su manera
+
+**Qué hay nuevo** (pedido del equipo: "necesitamos que los hechizos tengan más personalidad y sean más impactantes")
+
+Antes los seis elementos estallaban igual contra el cristal: la misma llamarada, la misma onda y el mismo humo gris;
+sólo cambiaba el color. Ahora cada uno tiene su firma (`fx/hd/impact_style.gd`, `ImpactStyle`), en lo que se ve, lo
+que se siente y lo que se oye:
+
+| Elemento | Se ve | Se siente | Suena |
+|---|---|---|---|
+| Chispa (fuego) | Llamarada, brasas que suben y humo (como antes) | Sacudida normal, zoom corto | "Fuuumf" y chisporroteo |
+| Escarcha (hielo) | Cristal tallado que se abre de golpe, destello en copo de 6 rayos, esquirlas que caen pesadas, nieve y escarcha blanca que se arrastra | Zoom seco y el congelado más largo de los de una mano | Cristal que revienta en esquirlas |
+| Rayo | Fogonazo que **parpadea dos veces** como un relámpago, 12 rayos, chispas rectas y muy rápidas, sin humo | Sacudida fuerte y tirón de zoom hacia dentro | Chasquido, zumbido que parpadea con la luz y trueno corto |
+| Tierra (roca) | Canto que se agrieta, polvo marrón pegado al suelo y gravilla que cae | La sacudida más fuerte y un congelado pesado | Golpe sordo y gravilla |
+| Arcano | Remolino que **se traga sus propias chispas** y dos ondas (la segunda es su eco) | El campo de visión se abre (como un tirón mágico) | "Vuuum", campana y su eco |
+| Viento | Dos ondas grandes y rápidas, medialunas y motas en torbellino, sin humo | Empuja el campo de visión hacia fuera; sin congelado (no frena la cadencia) | Ráfaga que baja de tono con silbido |
+
+- **Los combinados heredan la firma de su forma** (`SpellVisualDef.style`): el Juicio del Trueno parpadea, el
+  Terremoto levanta polvo, el Tornado y la Ventisca abren ondas de viento, el Meteoro sigue siendo fuego.
+- **Sonido**: 18 sonidos nuevos (`sfx_hit_<estilo>_01..03`, `tools/sfx_impacts.py`, semillas fijas) que suenan bajo
+  el "tink" en los golpes de una mano. Del susurro del nivel 1 al golpe que retumba: más fuerte y más grave cuanto
+  mayor el nivel (`HdImpact.play_hit`). Los combinados conservan su estruendo propio.
+- **Sensación**: la sacudida y el golpe de campo de visión de cada impacto llevan el multiplicador del elemento
+  (`CameraRig._on_impact`; todo pasa por `Settings.screen_shake`). El congelado (hit-stop) de los golpes de una mano
+  va por elemento y empieza en daño 3 (antes 5 y siempre 0,025 s): de 0 (Viento) a 0,05 s (Tierra).
+- También en los bichos del valle.
+- Sólo cambia lo que se ve, se oye y se siente: el daño y el balance, igual.
+- Laboratorio para verlo: `godot --path game res://tests/vfx_gallery/impact_lab.tscn` (`-- --before` enseña el
+  estallido de antes en los seis).
+
+![Antes y ahora](docs/capturas/impactos_por_elemento.gif)
+
+**Cómo se probó**: Godot 4.7 con lavapipe, laboratorio de impactos y partidas en modo demo con cada pareja de
+elementos a nivel 6 antes y después (`docs/capturas/impactos_por_elemento.*`). Tests de humo: `hit_stop_smoke`, `combos_smoke`, `meteor_smoke`, `spell_levels_smoke`, `critters_smoke`,
+`arcane_smoke`, `fireball_flight_smoke`, `boot_smoke` y `settings_smoke` en verde. `gdlint` y `gdformat`
+limpios; 0 avisos de GDScript (`tools/gd_warnings.py`).
+
 ## 2026-11-22 · Meteoro más grande
 
 - **El Meteoro es 1,6 veces más grande** (pedido del equipo): la roca, su fuego y la cola en vuelo, y al caer la onda de

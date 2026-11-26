@@ -430,7 +430,7 @@ func receive_hit(hit: SpellHit) -> void:
 	_tears.react(hit)
 	if hit.resonant or hit.recipe != null or _now - _last_hd >= 0.12:
 		_last_hd = _now
-		_hd_fx.play(hit.position, hit.normal, tier, hit.resonant, hit.recipe != null, fx_size)
+		_hd_fx.play_hit(hit, tier, fx_size)
 	if hit.recipe and hit.recipe.delivery == SpellRecipe.Delivery.SKY:
 		# Lo que cae del cielo estalla dos veces: el golpe y la onda que se abre.
 		_hd_fx.play(hit.position, hit.normal, tier, false, true, fx_size * 2.0)
@@ -449,8 +449,8 @@ func receive_hit(hit: SpellHit) -> void:
 	elif hit.recipe:
 		HitStop.trigger(get_tree(), 0.06)
 		_global_flash = maxf(_global_flash, 0.3)
-	elif tier.damage >= 5:
-		HitStop.trigger(get_tree(), 0.025)
+	elif tier.damage >= 3:
+		HitStop.trigger(get_tree(), ImpactStyle.stop_sec(hit))
 	if hit.by_player and balance.streak_milestones.has(hit.streak):
 		_accent_player.stream = STREAK_SFX
 		_accent_player.volume_db = -5.0
