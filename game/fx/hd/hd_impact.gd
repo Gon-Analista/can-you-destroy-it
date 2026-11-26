@@ -9,6 +9,8 @@ extends Node3D
 ## Capa grave de cada estilo, en el orden de `ImpactStyle` (`tools/sfx_impacts.py`).
 const BODY_SFX: Array[String] = ["fire", "arcane", "ice", "bolt", "rock", "wind"]
 
+const STAR_SHADER: Shader = preload("res://fx/hd/hd_hitspark.gdshader")
+
 ## Vida máxima de un impacto (s): lo que tarda en apagarse lo más lento (nieve, motas arcanas).
 const LIFETIME: float = 2.2
 
@@ -24,6 +26,9 @@ var _ring_mi: Array[MeshInstance3D] = []
 ## Segunda onda (eco del Arcano, doble ráfaga del Viento).
 var _ring2: Array[ShaderMaterial] = []
 var _ring2_mi: Array[MeshInstance3D] = []
+## Chispa de golpe: estrella de puntas con contorno oscuro (`hd_hitspark.gdshader`).
+var _star: Array[ShaderMaterial] = []
+var _star_mi: Array[MeshInstance3D] = []
 var _sparks: Array[GPUParticles3D] = []
 var _embers: Array[GPUParticles3D] = []
 var _smoke: Array[GPUParticles3D] = []
@@ -60,6 +65,9 @@ func _ready() -> void:
 		slot.add_child(ring)
 		var ring2: MeshInstance3D = _make_ring()
 		slot.add_child(ring2)
+		var star: MeshInstance3D = HdFx.quad(STAR_SHADER, 1.0, 9)
+		star.visible = false
+		slot.add_child(star)
 		var sparks: GPUParticles3D = HdFx.sparks(
 			60, 9.0, 0.05, PackedColorArray([Color(2, 1.8, 1.2), Color(1, 0.5, 0.2)])
 		)
@@ -89,6 +97,8 @@ func _ready() -> void:
 		_ring_mi.append(ring)
 		_ring2.append(ring2.material_override as ShaderMaterial)
 		_ring2_mi.append(ring2)
+		_star.append(star.material_override as ShaderMaterial)
+		_star_mi.append(star)
 		_prof.append(ImpactStyle.profile(ImpactStyle.FIRE))
 		_sparks.append(sparks)
 		_embers.append(embers)
@@ -179,6 +189,7 @@ func play(
 	# Tiñe más que suma: sobre el cristal claro, sumar luz lo lavaba todo a blanco.
 	_flash[i].set_shader_parameter("cover", 0.8)
 	_flash[i].set_shader_parameter("seed", randf() * 10.0)
+	_set_star(_star[i], pf, glow, tier.color_core)
 	for rm: ShaderMaterial in [_ring[i], _ring2[i]]:
 		rm.set_shader_parameter("color", glow)
 		rm.set_shader_parameter("seed", randf() * 10.0)
@@ -297,6 +308,23 @@ func _animate(i: int) -> void:
 		_set_ring(_ring2_mi[i], _ring2[i], (t - d2) / ring_t, s * 3.1 * pf.ring)
 	else:
 		_ring2_mi[i].visible = false
+	var sk: float = t / pf.star_t
+	_star_mi[i].visible = sk < 1.0
+	if sk < 1.0:
+		_star[i].set_shader_parameter("progress", sk)
+		_star_mi[i].scale = Vector3.ONE * s * 1.5 * pf.star_size
+
+
+func _set_star(m: ShaderMaterial, pf: ImpactStyle.Profile, glow: Color, core: Color) -> void:
+	m.set_shader_parameter("color", glow * 1.4)
+	m.set_shader_parameter("hot", core * 1.8)
+	# Contorno del mismo tono muy oscuro: recorta la estrella sobre el cristal claro.
+	m.set_shader_parameter("ink", Color(glow.r * 0.12, glow.g * 0.1, glow.b * 0.18))
+	m.set_shader_parameter("points", pf.star_pts)
+	m.set_shader_parameter("sharp", pf.star_sharp)
+	m.set_shader_parameter("twist", pf.star_twist)
+	m.set_shader_parameter("jag", pf.star_jag)
+	m.set_shader_parameter("seed", randf() * TAU)
 
 
 func _set_ring(mi: MeshInstance3D, m: ShaderMaterial, k: float, size: float) -> void:

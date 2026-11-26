@@ -35,10 +35,19 @@ const ELEMENT_STYLE: Dictionary[StringName, int] = {
 ## - spark_speed / spark_grav / spark_life / spark_pull / spark_swirl: chispas (rapidez, gravedad,
 ##   vida, tirón hacia el centro y giro en remolino).
 ## - ember: cantidad de motas; ember_grav: gravedad (> 0 suben, < 0 caen); ember_life; ember_swirl.
+## - star_pts / star_sharp / star_twist / star_jag / star_size / star_t: chispa de golpe
+##   (`hd_hitspark.gdshader`): puntas, lo finas que son, curva en remolino, quiebro de rayo,
+##   tamaño y duración.
 ## - trauma / fov: sacudida (x la de siempre) y golpe de campo de visión (grados; > 0 se abre).
 ## - stop: congelado del tiempo en golpes de una mano (s); el de los combinados no cambia.
 const PROFILES: Array[Dictionary] = [
 	{  # FIRE
+		"star_pts": 7.0,
+		"star_sharp": 5.0,
+		"star_twist": 0.0,
+		"star_jag": 0.0,
+		"star_size": 1.10,
+		"star_t": 0.26,
 		"snap": 3.0,
 		"dur": 0.55,
 		"fire_k": 1.0,
@@ -69,6 +78,12 @@ const PROFILES: Array[Dictionary] = [
 		"stop": 0.02,
 	},
 	{  # ARCANE
+		"star_pts": 8.0,
+		"star_sharp": 6.0,
+		"star_twist": 2.5,
+		"star_jag": 0.0,
+		"star_size": 1.20,
+		"star_t": 0.34,
 		"snap": 3.0,
 		"dur": 0.7,
 		"fire_k": 1.1,
@@ -99,6 +114,12 @@ const PROFILES: Array[Dictionary] = [
 		"stop": 0.025,
 	},
 	{  # ICE
+		"star_pts": 6.0,
+		"star_sharp": 10.0,
+		"star_twist": 0.0,
+		"star_jag": 0.0,
+		"star_size": 1.25,
+		"star_t": 0.28,
 		"snap": 7.0,
 		"dur": 0.5,
 		"fire_k": 1.15,
@@ -129,6 +150,12 @@ const PROFILES: Array[Dictionary] = [
 		"stop": 0.045,
 	},
 	{  # BOLT
+		"star_pts": 5.0,
+		"star_sharp": 14.0,
+		"star_twist": 0.0,
+		"star_jag": 2.5,
+		"star_size": 1.50,
+		"star_t": 0.20,
 		"snap": 6.0,
 		"dur": 0.3,
 		"fire_k": 0.9,
@@ -159,6 +186,12 @@ const PROFILES: Array[Dictionary] = [
 		"stop": 0.035,
 	},
 	{  # ROCK
+		"star_pts": 6.0,
+		"star_sharp": 1.8,
+		"star_twist": 0.0,
+		"star_jag": 0.0,
+		"star_size": 0.95,
+		"star_t": 0.22,
 		"snap": 4.0,
 		"dur": 0.6,
 		"fire_k": 1.25,
@@ -189,6 +222,12 @@ const PROFILES: Array[Dictionary] = [
 		"stop": 0.05,
 	},
 	{  # WIND
+		"star_pts": 3.0,
+		"star_sharp": 5.0,
+		"star_twist": 4.5,
+		"star_jag": 0.0,
+		"star_size": 1.30,
+		"star_t": 0.30,
 		"snap": 3.0,
 		"dur": 0.42,
 		"fire_k": 1.2,
@@ -223,6 +262,12 @@ const PROFILES: Array[Dictionary] = [
 
 ## Valores de un estilo (los de `PROFILES`, tipados).
 class Profile:
+	var star_pts: float
+	var star_sharp: float
+	var star_twist: float
+	var star_jag: float
+	var star_size: float
+	var star_t: float
 	var snap: float
 	var dur: float
 	var fire_k: float

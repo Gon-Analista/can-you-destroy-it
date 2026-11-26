@@ -4,7 +4,7 @@ extends Node3D
 ## manera (forma, chispas, humo, ondas) y no sólo con otro color.
 ##
 ## godot --path game res://tests/vfx_gallery/impact_lab.tscn --write-movie /tmp/i/f.png
-##   --fixed-fps 30 --quit-after 60 [-- --level=N]
+##   --fixed-fps 30 --quit-after 60 [-- --level=N] [--flight]
 
 const NAMES: PackedStringArray = ["CHISPA", "ESCARCHA", "RAYO", "TIERRA", "ARCANO", "VIENTO"]
 const STEP: float = 8.5
@@ -13,10 +13,15 @@ const EVERY: float = 1.8
 var _impact: HdImpact
 var _level: int = 5
 var _t: float = 0.0
+## --flight: cada golpe llega volando (orbe, estela, motas y estrella del elemento).
+var _flight: bool = false
+var _shots: Array[SparkProjectile] = []
 
 
 func _ready() -> void:
 	for a: String in OS.get_cmdline_user_args():
+		if a == "--flight":
+			_flight = true
 		if a.begins_with("--level="):
 			_level = int(a.get_slice("=", 1))
 	var env := Environment.new()
@@ -58,6 +63,12 @@ func _ready() -> void:
 	for el: ElementDef in SpellCaster.ELEMENTS:
 		el.ensure_levels()
 	_t = EVERY - 0.2
+	if _flight:
+		for i: int in NAMES.size():
+			var p := SparkProjectile.new()
+			add_child(p)
+			p.arrived.connect(_on_arrived)
+			_shots.append(p)
 
 
 func _process(delta: float) -> void:
@@ -68,7 +79,22 @@ func _process(delta: float) -> void:
 	for i: int in NAMES.size():
 		var el: ElementDef = SpellCaster.ELEMENTS[_index(i)]
 		var tier: SpellTier = el.tiers[mini(_level, el.tiers.size()) - 1]
-		_impact.play(_pos(i), Vector3.BACK, tier, false, false, 1.0, _style(i))
+		if _flight:
+			var hit := SpellHit.new()
+			hit.tier = tier
+			hit.element = el.id
+			hit.element_def = el
+			hit.level = _level
+			hit.position = _pos(i)
+			hit.normal = Vector3.BACK
+			_shots[i].launch(Vector3(_pos(i).x * 0.3, -7.0, 13.0), _pos(i), hit, null)
+		else:
+			_impact.play(_pos(i), Vector3.BACK, tier, false, false, 1.0, _style(i))
+
+
+func _on_arrived(p: SparkProjectile) -> void:
+	var h: SpellHit = p.hit
+	_impact.play(h.position, h.normal, h.tier, false, false, 1.0, ImpactStyle.of(h))
 
 
 ## Rejilla de 3 x 2.

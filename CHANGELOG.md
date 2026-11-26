@@ -2,6 +2,37 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-26 · Hechizos más espectaculares, ninguno atrás
+
+**Qué hay nuevo** (pedido del equipo: "hacé más espectaculares estética y gráficamente los hechizos, que ninguno se
+quede atrás")
+
+En el juego los golpes se fundían en blanco contra el cristal claro y en vuelo casi todos se veían como una bola de
+luz. Dos capas nuevas para todos los hechizos (los seis elementos y los combinados que vuelan como orbe), cada una
+con la forma de su elemento (`ImpactStyle`):
+
+- **Chispa de golpe** (`fx/hd/hd_hitspark.gdshader`, en `HdImpact`): una estrella de puntas en cuña, al blanco en
+  el centro y con **contorno oscuro** que la recorta sobre el cristal y el cielo. Nace de golpe, estira y afila las
+  puntas y se apaga en ~0,25 s, como los golpes de anime. Fuego: 7 puntas desiguales; Escarcha: copo de 6 agujas;
+  Rayo: 5 puntas quebradas en zigzag; Tierra: 6 puntas gordas; Arcano: 8 puntas curvas en remolino; Viento: 3
+  aspas curvas. Crece con el nivel, la carga y los golpes resonantes como el resto del impacto.
+- **Vuelo con identidad** (`SparkProjectile._style_flight`): alrededor del orbe gira la estrella de su elemento
+  (titila y se enciende al alejarse de las manos para no tapar la vista), y la estela suelta lo suyo en vez de
+  brasas de fuego para todos: la Escarcha nieve que cae, el Rayo chispas cortas y rápidas, la Tierra gravilla, el
+  Arcano motas que flotan y se arremolinan y el Viento motas en torbellino.
+- Meteoro, Bola de Fuego y Terremoto (peñasco) conservan su vuelo propio; reciben la chispa de golpe al llegar.
+- Laboratorio: `impact_lab.tscn -- --flight` lanza los seis desde abajo para ver vuelo e impacto.
+
+![Vuelo e impacto de los seis](docs/capturas/hechizos_espectaculares.gif)
+
+**Cómo se probó**: Godot 4.7 con lavapipe, laboratorio con vuelo (`--flight`) y partidas demo antes/ahora con
+los seis elementos y dos combinados (Lanza de Hielo, Tempestad). Tests de humo en verde: `hit_stop`, `combos`,
+`meteor`, `spell_levels`, `critters`, `arcane`, `fireball_flight`, `boot`, `staff` y `runes`. `gdlint` y
+`gdformat` limpios.
+
+**Pendiente**: en el juego, lo que más tapa los hechizos son las motas de luz azules de fondo y el fogonazo blanco
+al soltar un combinado (lava toda la pantalla); conviene bajarlos.
+
 ## 2026-11-26 · Cada elemento golpea a su manera
 
 **Qué hay nuevo** (pedido del equipo: "necesitamos que los hechizos tengan más personalidad y sean más impactantes")

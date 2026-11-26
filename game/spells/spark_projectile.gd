@@ -19,6 +19,7 @@ const EMBERS_FROM: float = 5.0
 const TAIL_FROM: float = 6.0
 ## Hacia arriba en pantalla (en el shader del fuego la `y` crece hacia abajo).
 const UP_2D := Vector2(0.0, -1.0)
+const STAR_SHADER: Shader = preload("res://fx/hd/hd_hitspark.gdshader")
 
 ## Carga del orbe en vuelo (la que tenía en la mano al soltarlo).
 var orb_charge: float = 1.0
@@ -38,6 +39,12 @@ var _smoke: GPUParticles3D
 var _roar: AudioStreamPlayer3D
 var _prev_screen := Vector2.ZERO
 var _flow := Vector2(0.0, -1.0)
+## Estrella del elemento alrededor del orbe en vuelo (`hd_hitspark.gdshader`): recorta su forma
+## con contorno oscuro sobre el cristal y el cielo claros y gira a su manera.
+var _star: MeshInstance3D
+var _star_mat: ShaderMaterial
+var _star_spin: float = 0.0
+var _star_seed: float = 0.0
 var _light: OmniLight3D
 var _from: Vector3
 var _to: Vector3
@@ -73,6 +80,10 @@ func _ready() -> void:
 	_trail.hd = true
 	add_child(_trail)
 	_build_embers()
+	_star = HdFx.quad(STAR_SHADER, 1.0, 4)
+	_star.name = "Star"
+	_star_mat = _star.material_override as ShaderMaterial
+	add_child(_star)
 	_light = OmniLight3D.new()
 	_light.omni_range = 5.0
 	_light.shadow_enabled = false
@@ -159,6 +170,7 @@ func launch(from: Vector3, to: Vector3, p_hit: SpellHit, collider: Object) -> vo
 	_sparks.amount_ratio = clampf(tier.orb_scale / 10.0, 0.3, 1.0) * lv
 	_size_embers(_ball_size() * _orb_scale * FireballFlight.BODY_SCALE if _ball_on else 0.0)
 	_smoke.amount_ratio = clampf(tier.trail_smoke, 0.01, 1.0)
+	_style_flight(ImpactStyle.profile(ImpactStyle.of(p_hit)), tier)
 	_prev_screen = Vector2.ZERO
 	# La Bola de Fuego sale de las manos hacia la mira (hacia arriba): sus lenguas, hacia abajo.
 	_flow = Vector2.DOWN if _ball_on else UP_2D
@@ -228,7 +240,9 @@ func _process(delta: float) -> void:
 		if not hit.warmup:
 			_fireball.glow_crystal(_to)
 	_update_flow(delta)
+	_spin_star(delta)
 	if k >= 1.0:
+		_star.visible = false
 		_light.visible = false
 		_trail.stop()
 		_embers.emitting = false
@@ -339,6 +353,8 @@ func _face_camera() -> void:
 			_fireball.set_view_scale(s, _orb_scale * _grow)
 		else:
 			_orb.global_basis = cam.global_basis.scaled(Vector3.ONE * s)
+			if _star.visible:
+				_star.scale = Vector3.ONE * s * _orb_def.core_radius * 4.2
 
 
 ## Diámetro del cuerpo de la Bola de Fuego en la mano (m): el del orbe que había entre las
@@ -402,9 +418,56 @@ func _build_embers() -> void:
 	add_child(_roar)
 
 
+## La estela de cada elemento (`ImpactStyle`): el fuego suelta brasas que suben, el hielo nieve
+## que cae, el rayo chispas rápidas y cortas, la roca gravilla, el arcano motas que flotan y el
+## viento motas en remolino. Y su estrella alrededor del orbe.
+func _style_flight(pf: ImpactStyle.Profile, tier: SpellTier) -> void:
+	_ember_mat.gravity = Vector3(0.0, pf.ember_grav, 0.0)
+	_ember_mat.tangential_accel_min = pf.ember_swirl * 0.5
+	_ember_mat.tangential_accel_max = pf.ember_swirl
+	var spm: ParticleProcessMaterial = _sparks.process_material
+	spm.gravity = Vector3(0.0, pf.spark_grav * 0.35, 0.0)
+	spm.tangential_accel_max = pf.spark_swirl * 0.3
+	spm.radial_accel_min = pf.spark_pull * 0.2
+	spm.radial_accel_max = pf.spark_pull * 0.2
+	_sparks.lifetime = 0.35 * clampf(pf.spark_life / 0.7, 0.5, 1.4)
+	var star_on: bool = _orb != null and _orb.visible and not _falls and not _ball_on
+	_star.visible = star_on
+	if not star_on:
+		return
+	var glow: Color = tier.color_glow
+	_star_mat.set_shader_parameter("color", glow * 1.4)
+	_star_mat.set_shader_parameter("hot", tier.color_core * 1.8)
+	_star_mat.set_shader_parameter("ink", Color(glow.r * 0.12, glow.g * 0.1, glow.b * 0.18))
+	_star_mat.set_shader_parameter("points", pf.star_pts)
+	_star_mat.set_shader_parameter("sharp", pf.star_sharp * 1.4)
+	_star_mat.set_shader_parameter("twist", pf.star_twist)
+	_star_mat.set_shader_parameter("jag", pf.star_jag)
+	_star_mat.set_shader_parameter("intensity", 1.6)
+	_star_mat.set_shader_parameter("opacity", 0.0)
+	_star_seed = randf() * TAU
+	# Gira despacio; el arcano y el viento, en remolino; el rayo tiembla.
+	_star_spin = 1.2 + absf(pf.star_twist) * 1.6
+	_star.scale = Vector3.ONE * 0.001
+
+
+func _spin_star(delta: float) -> void:
+	if not _star.visible:
+		return
+	_star_seed += delta * _star_spin
+	var away: float = smoothstep(1.5, 5.0, _from.distance_to(global_position))
+	# Titila: las puntas laten (sin pasar nunca de "crecida", 0,3 de su animación).
+	var beat: float = 0.24 + 0.06 * sin(_star_seed * 9.0 + _wobble_phase)
+	_star_mat.set_shader_parameter("seed", _star_seed)
+	_star_mat.set_shader_parameter("progress", beat)
+	_star_mat.set_shader_parameter("opacity", away * 0.85)
+
+
 func _deactivate() -> void:
 	active = false
 	visible = false
+	if _star:
+		_star.visible = false
 	_embers.emitting = false
 	_sparks.emitting = false
 	_smoke.emitting = false
