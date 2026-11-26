@@ -365,7 +365,8 @@ func try_buy() -> void:
 		return
 	if not GameState.buy_upgrade(node):
 		return
-	AudioDirector.play_sfx(BUY_SFX, -1.0)
+	# Suave y con una pizca de variación: se oye muchas veces seguidas.
+	AudioDirector.play_sfx(BUY_SFX, -5.0, randf_range(0.97, 1.03))
 	if node.pays_with_tears():
 		AudioDirector.play_sfx(TEAR_BUY_SFX, -2.0)
 	_flash_t[_selected] = 1.0

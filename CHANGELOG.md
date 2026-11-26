@@ -20,6 +20,10 @@ haya que clickear para saber qué hace cada mejora, con iconos" y "la palanca pa
   basta con **F o un clic** (el clic no lanza hechizo). Sin mirarla, tocar F sigue tirando de ella, pero la pulsación
   corta pasa de 0,2 s a 0,3 s, y con la bolsa vacía cualquier pulsación tira en el acto. El pomo es algo más grande.
 
+- **Sonido de comprar mejoras más suave** ("es muy molesto"): de un arpegio de 8 campanas brillantes con ruido
+  de destellos y 4 s de cola a tres notas de caja de música (La, Do#, Mi) con un colchón cálido, sin agudos y de
+  ~1 s (`tools/sfx_loop.py`, `upgrade_buy`). Suena 4 dB más bajo en el Grimorio y con una pizca de variación de tono.
+
 | Antes | Ahora |
 |---|---|
 | ![Antes](docs/capturas/grimorio_antes_estrellas.png) | ![Ahora](docs/capturas/grimorio_medallones_ficha.png) |
