@@ -345,6 +345,8 @@ godot --headless --path game --script res://tests/smoke/progression_smoke.gd
   `tests/smoke/ranks_smoke.gd`, los rangos (umbrales, ceremonia una vez, capas de música, cifras, Espejo);
   `tests/smoke/critters_smoke.gd`, los bichos: zonas de aparición, tope, reventón por el camino real de la mira,
   que no roban golpes al cristal, el coscorrón sin daño, el Rayo encadenado y la opción sin sangre;
+  `tests/smoke/stations_smoke.gd`, el suelo del Santuario (se sube andando, no se atraviesa) y la palanca de la
+  Trituradora (se elige mirándola con margen, F o clic);
   `tests/smoke/debug_menu_smoke.gd`, que "comprar todo" del menú de depuración lo deja todo al máximo;
   `tests/smoke/settings_smoke.gd`, que las opciones nuevas (FOV, VSync, FPS, invertir Y...) se guardan y se
   aplican, también en pausa;

@@ -4,7 +4,8 @@ extends Node3D
 ## 1. Tolva: mantén F a su lado y los cristales de la bolsa salen de tus manos uno a uno, cada
 ##    vez más deprisa, y se amontonan dentro (se ven tras el cristal de la tolva). Cada uno
 ##    tintinea al caer, con un tono que sube.
-## 2. Palanca: F (o con la bolsa vacía, F en cualquier punto junto a la máquina) tira de ella.
+## 2. Palanca: mirándola (con margen) basta con F o un clic; si no, tocar F tira de ella (y con
+##    la bolsa vacía, cualquier pulsación de F junto a la máquina).
 ## 3. Trituración: la máquina arranca (motor, engranajes y rodillos que giran, vibración), cada
 ##    cristal cruje entre los rodillos con polvo y chispas, su maná viaja brillando por la
 ##    tubería y entra en el Pilón. Acelera mientras tritura y termina con un resoplido de vapor.
@@ -43,7 +44,9 @@ const C_WOOD := Color("#7a4e33")
 const C_RED := Color("#c8423a")
 const PILE_MAX: int = 36
 ## Pulsación más corta que esto = tocar (palanca); más larga = mantener (echar cristales).
-const TAP_SEC: float = 0.2
+const TAP_SEC: float = 0.3
+## Cono (grados) dentro del cual se considera que el jugador mira la palanca.
+const LEVER_AIM_DEG: float = 24.0
 const BEADS: int = 10
 const HOPPER_TOP: float = 2.15
 const HOPPER_BOTTOM: float = 1.45
@@ -94,6 +97,10 @@ var _body: Node3D
 var _rollers: Array[Node3D] = []
 var _gears: Array[Node3D] = []
 var _lever: Node3D
+var _lever_arm: MeshInstance3D
+var _lever_glow: StandardMaterial3D
+var _lever_hot: bool = false
+var _hot_t: float = 0.0
 var _pile: MultiMeshInstance3D
 var _window_light: OmniLight3D
 var _pipe_glow: StandardMaterial3D
@@ -157,6 +164,8 @@ func prompt() -> String:
 	var lever: int = _mode(&"lever", GUIDE.lever_learn, GUIDE.lever_forget)
 	if _state != 0:
 		return tr("TRITURANDO...  %d") % _hopper.size() if lever == Guidance.Prompt.FULL else ""
+	if _lever_hot and not _hopper.is_empty():
+		return tr("[F] O CLIC: PALANCA (%d)") % _hopper.size()
 	var bag: int = GameState.progression.bag_count()
 	var parts: PackedStringArray = []
 	if bag > 0 and feed == Guidance.Prompt.FULL:
@@ -201,6 +210,35 @@ func marker_position() -> Vector3:
 ## Punta de la palanca (los familiares tiran de ella).
 func lever_tip() -> Vector3:
 	return _lever.global_position + _lever.global_basis.y * 0.75
+
+
+## True si el jugador está junto a la máquina y mira hacia la palanca (dentro de un cono
+## generoso y más hacia ella que hacia la tolva): entonces F o un clic tiran de ella.
+func lever_targeted() -> bool:
+	if _state != 0 or not player_in_range():
+		return false
+	var cam: Camera3D = get_viewport().get_camera_3d()
+	if cam == null:
+		return false
+	var from: Vector3 = cam.global_position
+	var fwd: Vector3 = -cam.global_basis.z
+	var to_lever: Vector3 = (_lever.global_position + _lever.global_basis.y * 0.4) - from
+	var to_hopper: Vector3 = hopper_mouth() + Vector3.DOWN * 0.4 - from
+	var a_lever: float = rad_to_deg(fwd.angle_to(to_lever))
+	return a_lever <= LEVER_AIM_DEG and a_lever < rad_to_deg(fwd.angle_to(to_hopper))
+
+
+## Clic mirando la palanca: se tira de ella en vez de lanzar el hechizo.
+func _input(event: InputEvent) -> void:
+	if not (event.is_action_pressed(&"cast_left") or event.is_action_pressed(&"cast_right")):
+		return
+	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not demo_input:
+		return
+	if _hopper.is_empty() or not lever_targeted():
+		return
+	get_viewport().set_input_as_handled()
+	if pull_lever():
+		GameState.progression.learn(&"lever")
 
 
 ## Cristales en la tolva más los que aún vuelan hacia ella.
@@ -250,6 +288,7 @@ func pull_lever() -> bool:
 func _process(delta: float) -> void:
 	_clink_gap = maxf(0.0, _clink_gap - delta)
 	_crunch_gap = maxf(0.0, _crunch_gap - delta)
+	_update_lever_hot(delta)
 	_update_input(delta)
 	_update_machine(delta)
 	_update_beads(delta)
@@ -275,6 +314,15 @@ func _update_input(delta: float) -> void:
 		_press_t = 0.0
 		_feed_timer = 0.0
 		_fed_this_press = false
+		# Mirando la palanca, o sin nada que echar: tira en el acto, sin medir la pulsación.
+		if (
+			not _hopper.is_empty()
+			and (_lever_hot or GameState.progression.bag_count() == 0)
+			and pull_lever()
+		):
+			GameState.progression.learn(&"lever")
+			_press_t = -1.0
+			return
 	if _press_t < 0.0:
 		return
 	if pressed:
@@ -297,14 +345,24 @@ func _update_input(delta: float) -> void:
 					_toss_hands()
 					_fed_this_press = true
 	else:
-		# Tocar F (soltar enseguida): tirar de la palanca.
-		if _press_t < TAP_SEC:
+		# Tocar F (soltar enseguida), o mantener sin haber echado nada: tirar de la palanca.
+		if _press_t < TAP_SEC or not _fed_this_press:
 			if pull_lever():
 				GameState.progression.learn(&"lever")
 		elif _fed_this_press:
 			GameState.progression.learn(&"feed")
 		_press_t = -1.0
 		_hold_t = 0.0
+
+
+## La palanca se ilumina (y su pomo late) mientras se puede tirar de ella mirándola.
+func _update_lever_hot(delta: float) -> void:
+	var hot: bool = not _hopper.is_empty() and _incoming == 0 and lever_targeted()
+	_lever_hot = hot
+	_hot_t = _hot_t + delta if hot else 0.0
+	_lever_arm.material_overlay = _lever_glow if hot else null
+	var pulse: float = 1.0 + (0.15 if hot and fmod(_hot_t, 0.5) < 0.25 else 0.0)
+	_lever_arm.scale = Vector3.ONE * pulse
 
 
 func _toss_hands() -> void:
@@ -616,8 +674,15 @@ func _build_lever() -> void:
 	_body.add_child(_lever)
 	var lst: SurfaceTool = MeshKit.begin()
 	MeshKit.add_prism(lst, Vector3.ZERO, Vector3.UP, 0.04, 0.75, 0.0, 6, C_WOOD, C_WOOD, rng)
-	MeshKit.add_prism(lst, Vector3.UP * 0.72, Vector3.UP, 0.09, 0.12, 0.08, 8, C_RED, C_RED, rng)
-	_mesh("Arm", lst, _lever)
+	MeshKit.add_prism(lst, Vector3.UP * 0.72, Vector3.UP, 0.12, 0.15, 0.1, 8, C_RED, C_RED, rng)
+	_lever_arm = _mesh("Arm", lst, _lever)
+	# Resalte al mirarla: un velo dorado sólido por encima del toon.
+	_lever_glow = StandardMaterial3D.new()
+	_lever_glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_lever_glow.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_lever_glow.albedo_color = Color(1.4, 1.15, 0.5, 0.55)
+	_lever_glow.grow = true
+	_lever_glow.grow_amount = 0.02
 
 
 func _build_pipe() -> void:
