@@ -147,7 +147,8 @@ en el Grimorio del Santuario mejoras que cambian los hechizos. Lo que hay:
 - **HUD** (`ui/`): Esencia con número rodante, mira con anillo de carga y marcador de impacto, racha, avisos,
   números flotantes, Pilón, FPS, guía de objetivos (`ObjectiveGuide`), menú de depuración (Alt+F1, `DebugMenu`) y
   opciones por pestañas (`OptionsMenu`, con FOV). Fuente Fusion Pixel 10/12 px (`UiFonts`).
-- **Música** (`audio/music/`): tema del valle en La mayor, 84 BPM, en 5 capas sincronizadas (una por rango) con
+- **Música** (`audio/music/`): tema del valle en La mayor, 96 BPM, 56 compases (2 min 20 s) con forma de canción
+  (intro, estribillo, aventura en F#m, puente, clímax, coda), en 5 capas sincronizadas (una por rango) con
   `AudioDirector.play_music` / `set_music_layers`. En debug, la tecla M suma capas.
 - **Audio** (`audio/sfx/`): 20 OGG sintetizados (tink ×4, fragmentos, chispa, campanitas, acorde resonante,
   ambiente del valle y zumbido del cristal en bucle).
@@ -328,6 +329,7 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-26 | Chispa de golpe (`hd_hitspark.gdshader`) con contorno oscuro en cada impacto y estrella del elemento en vuelo; la estela en vuelo usa las motas y chispas de `ImpactStyle`. | Pedido del equipo: hechizos más espectaculares sin que ninguno quede atrás; sobre el cristal claro todo se fundía en blanco y en vuelo todos eran una bola de luz. |
 | 2026-11-26 | Grimorio con medallones (icono por mejora, estado en el marco, pips de nivel) y ficha flotante al pasar el ratón; la palanca de la Trituradora se elige mirándola con margen (24°) y se tira con F o clic (el clic no lanza hechizo); pulsación corta de 0,2 a 0,3 s; el suelo del Santuario y el atril tienen colisión. | Pedido del equipo: se atravesaba el suelo del Santuario, había que hacer clic en cada estrella para saber qué hacía y la palanca costaba de accionar. |
 | 2026-11-26 | Inicio más rápido: bajan los costes de las ~20 primeras mejoras (Potencia de la Chispa 3/8/30/70/150, Bolsa 10/35/250, Telequinesis 12/30/100/280, Despertar la Escarcha 100 y el Rayo 1.200, Envío directo 400, primer familiar 300, Doble salto 60 y los primeros niveles de Escarcha, Bola de Fuego, Choque Térmico, Canalización, Resonancia, Levitación y tamaños); de los ~1.000 maná en adelante, igual. Simulador, jugador normal: primera mejora 67 → 47 s, maná/s a los 5 min 2 → 7, Escarcha 5:56 → 4:24, Rayo ~22 → 13:43 min; partida 139 → 135 min (eficiente 106 → 100), Pilón lleno con el cristal al 100 % y ningún hueco > 180 s. | Pedido del equipo: "la progresión inicial se siente algo lenta". Subir el daño de la Chispa o bajar el umbral del Fragmento también acelera el inicio, pero acortan toda la partida (~126-129 min) y descuadran el Pilón con el cristal; los costes sólo tocan el arranque. |
+| 2026-11-26 | Música del valle rehecha (`tools/music_synth.py`): de un bucle de 16 compases a 84 BPM (46 s) a una pieza de 56 compases a 96 BPM (2 min 20 s) en 8 secciones con estribillo, cambios de energía y redobles entre secciones; kalimba en la capa 1, batería completa en la 3, cuerdas en la 4 y arpegio brillante en la 5. Mismas 5 capas y misma tonalidad. | Pedido del equipo: la música aburría (un bucle corto y siempre igual). Sigue en La mayor para que el "tink" no desafine; no cambia el código del juego. |
 
 ## 10. Preguntas abiertas
 
