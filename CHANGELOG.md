@@ -113,6 +113,22 @@ pie a su altura, el atril frena; la palanca se elige mirando cerca, un clic trit
 **Pendiente**: el texto "NECESITA: ..." del botón de la página derecha se sale cuando hay dos requisitos largos
 (ya pasaba antes).
 
+## 2026-11-26 · Arranque más rápido
+
+- **Los primeros 15 minutos van más deprisa** (pedido del equipo: "la progresión inicial se siente algo lenta"). Bajan
+  los costes de las ~20 primeras mejoras; de los ~1.000 maná en adelante todo sigue igual:
+  - Potencia de la Chispa 5/8/50/110/220 → **3**/8/**30/70/150** (la primera del tutorial cuesta 3).
+  - Bolsa 15/45/330 → 10/35/250; Telequinesis 20/35/150/400 → 12/30/100/280; Engranajes 32/230 → 20/180.
+  - Despertar la Escarcha 150 → 100 y el Rayo 2.600 → 1.200; Envío directo 700 → 400; primer familiar 500 → 300;
+    Doble salto 100 → 60; Levitación 370 → 250.
+  - Primeros niveles de Potencia de Escarcha (30/70/140/300), Bola de Fuego (20/35/60/100/180) y Choque Térmico
+    (150/300), Canalización (35/160), Resonancia (25/200) y los tamaños de Chispa, Escarcha, Bola de Fuego y Choque
+    Térmico.
+- Simulador (`tools/balance_sim.py`), jugador normal antes → ahora: primera mejora 67 → 47 s; maná/s a los 5 min
+  2 → 7; Escarcha a los 5:56 → 4:24; Rayo hacia el minuto 22 → 13:43. La partida pasa de 139 a 135 min (eficiente
+  106 → 100), el Pilón se llena con el cristal y ningún hueco pasa de 3 min.
+- Tests actualizados a los nuevos costes (`tutorial_smoke`, `loop_smoke`, `progression_smoke`).
+
 ## 2026-11-22 · Meteoro más grande
 
 - **El Meteoro es 1,6 veces más grande** (pedido del equipo): la roca, su fuego y la cola en vuelo, y al caer la onda de
