@@ -8,7 +8,48 @@ extends RefCounted
 const SIZE_ICON: PackedStringArray = [
 	"....####", "...#++##", "..#++###", ".#.#####", "#.#.####", ".#..###.", "#.#.....", ".#......"
 ]
+## Potencia de un elemento: doble flecha hacia arriba (se tiñe del color de su constelación).
+const POWER_ICON: PackedStringArray = [
+	"...#....", "..###...", ".##+##..", "##...##.", "...#....", "..###...", ".##+##..", "##...##."
+]
 const ICONS: Dictionary[StringName, PackedStringArray] = {
+	&"frost_power": POWER_ICON,
+	&"bolt_power": POWER_ICON,
+	&"wind_power": POWER_ICON,
+	&"earth_power": POWER_ICON,
+	&"thermal_power":
+	[
+		"########",
+		"#..#...#",
+		"#.#+#..#",
+		"##...#.#",
+		"#.#...##",
+		"#..#+#.#",
+		"#...#..#",
+		"########"
+	],
+	&"gears":
+	[
+		"..#..#..",
+		".######.",
+		"##....##",
+		".#.++.#.",
+		".#.++.#.",
+		"##....##",
+		".######.",
+		"..#..#.."
+	],
+	&"direct_send":
+	[
+		"....#...",
+		"....##..",
+		"#.#####.",
+		"..#++###",
+		"#.#####.",
+		"....##..",
+		"....#...",
+		"........"
+	],
 	&"spark_size": SIZE_ICON,
 	&"fireball_size": SIZE_ICON,
 	&"frost_size": SIZE_ICON,
@@ -400,3 +441,17 @@ const LOCK_ICON: PackedStringArray = [
 const MANA_ICON: PackedStringArray = [
 	"...#....", "..###...", "..###...", ".##+##..", ".#+####.", ".#+####.", "..####..", "........"
 ]
+
+## Mejoras de despertar: el símbolo del elemento que despiertan (el de su pestaña).
+const AWAKEN_PAGE: Dictionary[StringName, int] = {
+	&"awaken_frost": 2, &"awaken_bolt": 3, &"awaken_wind": 4, &"awaken_earth": 5
+}
+
+
+## El icono de una mejora: el suyo, el del elemento que despierta o, si no tiene, la Resonancia.
+static func icon_for(node: UpgradeNode) -> PackedStringArray:
+	if ICONS.has(node.id):
+		return ICONS[node.id]
+	if AWAKEN_PAGE.has(node.id):
+		return PAGE_ICONS[AWAKEN_PAGE[node.id]]
+	return ICONS[&"resonance"]

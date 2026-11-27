@@ -23,6 +23,9 @@ const C_CYAN := Color("#a5dae5")
 const C_RED := Color("#c8423a")
 const PILLARS: int = 6
 const RADIUS: float = 3.0
+## Altura del suelo del templete (los dos escalones) y hasta dónde llega la rampa invisible.
+const FLOOR_TOP: float = 0.45
+const FLOOR_RAMP_OUT: float = 1.4
 ## Orden en que aparecen los objetos al comprar (uno por nivel comprado).
 const PROPS: Array[StringName] = [
 	&"candles",
@@ -210,11 +213,19 @@ func _build_temple() -> void:
 	)
 	MeshKit.add_prism(st, Vector3.UP * 6.75, Vector3.UP, 0.14, 0.5, 0.35, 6, C_GOLD, C_GOLD, _rng)
 	add_child(_mesh("Temple", st))
-	# Colisión: las columnas (el jugador entra en el templete).
+	# Colisión: el suelo de dos escalones, el atril y las columnas (el jugador entra en el templete).
 	var sb := StaticBody3D.new()
 	sb.name = "Collision"
 	sb.collision_layer = 1
 	sb.collision_mask = 0
+	sb.add_child(_floor_collision())
+	var lectern := BoxShape3D.new()
+	lectern.size = Vector3(0.6, 1.0, 0.5)
+	var lectern_col := CollisionShape3D.new()
+	lectern_col.name = "Lectern"
+	lectern_col.shape = lectern
+	lectern_col.position = Vector3.UP * (FLOOR_TOP + 0.5)
+	sb.add_child(lectern_col)
 	for i: int in PILLARS:
 		var a: float = TAU * (float(i) + 0.5) / float(PILLARS)
 		var shape := CylinderShape3D.new()
@@ -225,6 +236,27 @@ func _build_temple() -> void:
 		col.position = Vector3(cos(a), 0.0, sin(a)) * RADIUS + Vector3.UP * 2.0
 		sb.add_child(col)
 	add_child(sb)
+
+
+## El suelo del templete como un tronco de cono: rampa suave por fuera (se sube andando, sin
+## tropezar con los escalones) y plano arriba, a la altura del segundo escalón. Empieza un palmo
+## por debajo del terreno para que no quede rendija si el suelo ondula.
+func _floor_collision() -> CollisionShape3D:
+	var pts := PackedVector3Array()
+	var sides: int = 16
+	var bottom_r: float = RADIUS + FLOOR_RAMP_OUT
+	for i: int in sides:
+		var a: float = TAU * float(i) / float(sides)
+		var dir := Vector3(cos(a), 0.0, sin(a))
+		pts.append(dir * bottom_r + Vector3.UP * -0.3)
+		pts.append(dir * bottom_r)
+		pts.append(dir * (RADIUS + 0.2) + Vector3.UP * FLOOR_TOP)
+	var shape := ConvexPolygonShape3D.new()
+	shape.points = pts
+	var col := CollisionShape3D.new()
+	col.name = "Floor"
+	col.shape = shape
+	return col
 
 
 func _build_lectern() -> void:

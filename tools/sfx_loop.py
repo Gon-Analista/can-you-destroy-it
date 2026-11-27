@@ -69,23 +69,26 @@ def bag_full(seed: int) -> np.ndarray:
 
 
 def upgrade_buy(seed: int) -> np.ndarray:
-    """Comprar una mejora: acorde mágico (La add9) en arpa que sube + coro de campanas y brillo."""
+    """Comprar una mejora: tres notas suaves de caja de música (La, Do#, Mi) sobre un colchón cálido.
+
+    Corto (~1 s) y sin agudos chillones: se oye muchas veces seguidas al comprar varias mejoras.
+    Antes era un arpegio de 8 campanas brillantes con ruido de destellos y 4 s de cola (pedido del
+    equipo: "el sonido al mejorar hechizos es muy molesto").
+    """
     rng = np.random.default_rng(seed)
-    t = t_axis(2.6)
+    t = t_axis(1.1)
     x = np.zeros_like(t)
-    for i, n in enumerate([-12, -5, 0, 4, 7, 11, 12, 16]):
-        s = int(i * 0.045 * SR)
+    for i, n in enumerate([0, 4, 7]):
+        s = int(i * 0.07 * SR)
         tt = t[: len(t) - s]
-        x[s:] += bell(tt, note(n), [1.0, 2.0, 3.0, 4.0], [1.0, 0.4, 0.15, 0.06],
-                      [1.4, 0.8, 0.4, 0.2], rng, 0.003) * (0.9 ** i) * 0.6
+        x[s:] += bell(tt, note(n), [1.0, 2.0, 3.0], [1.0, 0.18, 0.04],
+                      [0.55, 0.25, 0.12], rng, 0.002) * (0.85 ** i) * 0.5
     pad = np.zeros_like(t)
-    for n in [-24, -17, -12, -8]:
-        pad += np.sin(2 * np.pi * note(n) * t) * 0.15
-    pad *= np.minimum(t / 0.3, 1.0) * np.exp(-t / 0.9)
-    sparkle = bandpass(rng.standard_normal(len(t)), 7000, 15000) * np.exp(-t / 0.6) * 0.05
-    whoosh = bandpass(rng.standard_normal(len(t)), 300, 2500, 2) * np.exp(-((t - 0.15) / 0.12) ** 2) * 0.25
-    x = x + pad + sparkle + whoosh
-    return normalize(fade(reverb(x, rng, 1.6, 0.32), 0.002, 0.3), -2)
+    for n in [-12, -8, -5]:
+        pad += np.sin(2 * np.pi * note(n) * t) * 0.08
+    pad *= np.minimum(t / 0.05, 1.0) * np.exp(-t / 0.35)
+    x = lowpass(x + pad, 3200)
+    return normalize(fade(reverb(x, rng, 0.6, 0.15, 4000), 0.004, 0.25), -6)
 
 
 def book_open(seed: int, closing: bool = False) -> np.ndarray:

@@ -172,8 +172,9 @@ en el Grimorio del Santuario mejoras que cambian los hechizos. Lo que hay:
   bolsa, los fragmentos vuelan de la mano con estela y cada gota sube una nota de la pentatónica.
 - **Santuario** (`sanctum/`): templete con atril y el Grimorio flotando sobre un orbe arcano; aparece un objeto nuevo
   por cada nivel comprado (velas, estantería, bola de cristal, pociones, estandarte, runas, telescopio...).
-- **Grimorio de Constelaciones** (`ui/grimoire.gd`): libro a pantalla, mejoras como estrellas y página que se escribe
-  sola; inscribir sólo junto al atril (F), consultar en cualquier sitio (Tab).
+- **Grimorio de Constelaciones** (`ui/grimoire.gd`): libro a pantalla, mejoras como medallones con icono y pips de
+  nivel, ficha flotante al pasar el ratón (`ui/grimoire_tooltip.gd`) y página que se escribe sola; inscribir sólo
+  junto al atril (F), consultar en cualquier sitio (Tab).
 - **5 mejoras** (`data/upgrades/`): Bolsa de aprendiz (1/5/20/100), Potencia (nivel de la Chispa), Canalización
   (recarga), Resonancia (% de golpes resonantes) y Telequinesis (atrae fragmentos). Costes y valores por nivel en el `.tres`.
 - **HUD del bucle** (`ui/hud_loop.gd`): barra del Pilón con marcas, maná rodante, bolsa en casillas, avisos encadenados
@@ -184,7 +185,7 @@ en el Grimorio del Santuario mejoras que cambian los hechizos. Lo que hay:
 - **Título y pausa** (`ui/game_menu.gd`) con opciones. **Capas del cristal** por profundidad y **geodas** dentro
   (`crystal/geode.gd`, `data/crystal/`). Demo: `--layer=N` (túnel hasta la capa N), `--geode` (túnel hasta una
   geoda), `--dig=N` (N golpes de 30 donde se apunta).
-- **Trituradora** (`pylon/crystal_crusher.gd`): tolva (mantener F), palanca (tocar F) y rodillos; el maná llega al
+- **Trituradora** (`pylon/crystal_crusher.gd`): tolva (mantener F), palanca (tocar F, o F / clic mirándola) y rodillos; el maná llega al
   Pilón por la tubería. **Reacción del cristal** (`fx/hd/crystal_arcs.gd`): rayos, destellos y resquebrajos.
 - **Elementos por mano** (Q / E): Chispa y Escarcha (`data/elements/`); combinaciones Bola de Fuego y Choque
   Térmico (`data/spells/recipe_*.tres`); efecto de cada elemento en el cristal (`MotherCrystal._apply_element`).
@@ -325,6 +326,7 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-22 | Imagen propia en vez de la de Godot: icono del Cristal Madre (ventana, editor, `.exe` y Linux), pantalla de arranque con el logo del título, versión 0.1.0 y nombre del juego en los metadatos del `.exe`. Dibujados por código (`tools/make_branding.py`) con la paleta y la fuente del juego. | Pedido del equipo: que el juego no parezca un proyecto de Godot por defecto. Sprite AI no conecta; por código se retoca y se regenera. |
 | 2026-11-26 | Firma de impacto por elemento (`ImpactStyle`): forma del estallido, chispas, humo/polvo/escarcha, ondas, destello, sacudida, campo de visión, hit-stop y capa grave de sonido. Los de una mano van por su elemento; los combinados, por `SpellVisualDef.style`. Tabla en código (una fila por estilo) en vez de un recurso por hechizo. | Pedido del equipo: más personalidad e impacto. Todos estallaban igual y sólo cambiaba el color; seis filas cubren los 6 elementos y las ~30 combinaciones sin tocar sus `.tres`. |
 | 2026-11-26 | Chispa de golpe (`hd_hitspark.gdshader`) con contorno oscuro en cada impacto y estrella del elemento en vuelo; la estela en vuelo usa las motas y chispas de `ImpactStyle`. | Pedido del equipo: hechizos más espectaculares sin que ninguno quede atrás; sobre el cristal claro todo se fundía en blanco y en vuelo todos eran una bola de luz. |
+| 2026-11-26 | Grimorio con medallones (icono por mejora, estado en el marco, pips de nivel) y ficha flotante al pasar el ratón; la palanca de la Trituradora se elige mirándola con margen (24°) y se tira con F o clic (el clic no lanza hechizo); pulsación corta de 0,2 a 0,3 s; el suelo del Santuario y el atril tienen colisión. | Pedido del equipo: se atravesaba el suelo del Santuario, había que hacer clic en cada estrella para saber qué hacía y la palanca costaba de accionar. |
 
 ## 10. Preguntas abiertas
 

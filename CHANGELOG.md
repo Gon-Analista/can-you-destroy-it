@@ -77,6 +77,42 @@ elementos a nivel 6 antes y después (`docs/capturas/impactos_por_elemento.*`). 
 `arcane_smoke`, `fireball_flight_smoke`, `boot_smoke` y `settings_smoke` en verde. `gdlint` y `gdformat`
 limpios; 0 avisos de GDScript (`tools/gd_warnings.py`).
 
+## 2026-11-26 · Suelo del Santuario, Grimorio con iconos y palanca fácil
+
+**Qué cambia** (pedido del equipo: "el sitio de la mesa de mejora no tiene hitbox abajo y la atravieso", "que no
+haya que clickear para saber qué hace cada mejora, con iconos" y "la palanca para entregar más fácil de clickear")
+
+- **Santuario con suelo sólido**: los dos escalones del templete no tenían colisión y el jugador se hundía en ellos
+  hasta el suelo del valle. Ahora el suelo es un tronco de cono (`Sanctum._floor_collision`): rampa suave por fuera
+  (se sube andando, sin saltar) y plano a la altura del segundo escalón. El atril también es sólido.
+- **Grimorio con medallones**: cada mejora es un medallón con **su icono** (nuevos: Potencia de Escarcha, Rayo,
+  Viento y Tierra, Choque profundo, Engranajes, Envío directo; los "Despertar" usan el símbolo de su elemento) en el
+  color de su constelación. El marco dice el estado (dorado latiendo con gota de maná: se puede comprar; cian:
+  completa; violeta: con niveles; apagado con candado: le falta algo) y debajo van los **pips de nivel**.
+- **Ficha al pasar el ratón** (`ui/grimoire_tooltip.gd`): junto al medallón, sin hacer clic, sale qué hace (primera
+  frase de la descripción), AHORA y SIGUIENTE, y el coste o lo que falta ("NECESITA: ...").
+- **Palanca de la Trituradora**: mirándola con margen (cono de 24°, `CrystalCrusher.lever_targeted`) se ilumina y
+  basta con **F o un clic** (el clic no lanza hechizo). Sin mirarla, tocar F sigue tirando de ella, pero la pulsación
+  corta pasa de 0,2 s a 0,3 s, y con la bolsa vacía cualquier pulsación tira en el acto. El pomo es algo más grande.
+
+- **Sonido de comprar mejoras más suave** ("es muy molesto"): de un arpegio de 8 campanas brillantes con ruido
+  de destellos y 4 s de cola a tres notas de caja de música (La, Do#, Mi) con un colchón cálido, sin agudos y de
+  ~1 s (`tools/sfx_loop.py`, `upgrade_buy`). Suena 4 dB más bajo en el Grimorio y con una pizca de variación de tono.
+
+| Antes | Ahora |
+|---|---|
+| ![Antes](docs/capturas/grimorio_antes_estrellas.png) | ![Ahora](docs/capturas/grimorio_medallones_ficha.png) |
+
+![Ficha de una mejora bloqueada](docs/capturas/grimorio_ficha_bloqueada.png)
+
+**Cómo se probó**: test nuevo `tests/smoke/stations_smoke.gd` (se sube andando al suelo del Santuario y se queda de
+pie a su altura, el atril frena; la palanca se elige mirando cerca, un clic tritura, mirando la tolva no se elige);
+`grimoire_click_smoke` comprueba la ficha al pasar el ratón. En verde también `loop_smoke`, `familiars_smoke`,
+`tutorial_smoke`, `localization_smoke` y `progression_smoke`. Capturas con `tests/tools/grimoire_shots.gd`.
+
+**Pendiente**: el texto "NECESITA: ..." del botón de la página derecha se sale cuando hay dos requisitos largos
+(ya pasaba antes).
+
 ## 2026-11-22 · Meteoro más grande
 
 - **El Meteoro es 1,6 veces más grande** (pedido del equipo): la roca, su fuego y la cola en vuelo, y al caer la onda de
