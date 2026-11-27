@@ -2,6 +2,147 @@
 
 Cada push a `main` se documenta aquí, el más reciente arriba (ver `.agents/dev_guidelines.md`, sección 12).
 
+## 2026-11-26 · Hechizos más espectaculares, ninguno atrás
+
+**Qué hay nuevo** (pedido del equipo: "hacé más espectaculares estética y gráficamente los hechizos, que ninguno se
+quede atrás")
+
+En el juego los golpes se fundían en blanco contra el cristal claro y en vuelo casi todos se veían como una bola de
+luz. Dos capas nuevas para todos los hechizos (los seis elementos y los combinados que vuelan como orbe), cada una
+con la forma de su elemento (`ImpactStyle`):
+
+- **Chispa de golpe** (`fx/hd/hd_hitspark.gdshader`, en `HdImpact`): una estrella de puntas en cuña, al blanco en
+  el centro y con **contorno oscuro** que la recorta sobre el cristal y el cielo. Nace de golpe, estira y afila las
+  puntas y se apaga en ~0,25 s, como los golpes de anime. Fuego: 7 puntas desiguales; Escarcha: copo de 6 agujas;
+  Rayo: 5 puntas quebradas en zigzag; Tierra: 6 puntas gordas; Arcano: 8 puntas curvas en remolino; Viento: 3
+  aspas curvas. Crece con el nivel, la carga y los golpes resonantes como el resto del impacto.
+- **Vuelo con identidad** (`SparkProjectile._style_flight`): alrededor del orbe gira la estrella de su elemento
+  (titila y se enciende al alejarse de las manos para no tapar la vista), y la estela suelta lo suyo en vez de
+  brasas de fuego para todos: la Escarcha nieve que cae, el Rayo chispas cortas y rápidas, la Tierra gravilla, el
+  Arcano motas que flotan y se arremolinan y el Viento motas en torbellino.
+- Meteoro, Bola de Fuego y Terremoto (peñasco) conservan su vuelo propio; reciben la chispa de golpe al llegar.
+- Laboratorio: `impact_lab.tscn -- --flight` lanza los seis desde abajo para ver vuelo e impacto.
+
+![Vuelo e impacto de los seis](docs/capturas/hechizos_espectaculares.gif)
+
+**Cómo se probó**: Godot 4.7 con lavapipe, laboratorio con vuelo (`--flight`) y partidas demo antes/ahora con
+los seis elementos y dos combinados (Lanza de Hielo, Tempestad). Tests de humo en verde: `hit_stop`, `combos`,
+`meteor`, `spell_levels`, `critters`, `arcane`, `fireball_flight`, `boot`, `staff` y `runes`. `gdlint` y
+`gdformat` limpios.
+
+**Que los hechizos se vean** (pedido del equipo al revisar las capturas):
+
+- **Restos del precalentado**: al quitar la pantalla de carga quedaban flotando delante del cristal, unos 8 s, las
+  chispas, motas y humo con los que la carga compila los efectos (manchas de luz azul y violeta por toda la
+  pantalla). `Main._clear_warm_particles` las borra antes de quitar la carga; lo que emite siempre sigue igual.
+- **Fogonazo al soltar un combinado**: el orbe entre las manos destellaba entero pegado a la cámara
+  (`WizardHands.COMBO_RELEASE_FLASH` 0,3) y la luz del golpe de poder bajó de 6 a 2,5 por fuerza (`CastBurst`).
+
+![Lanza de Hielo antes y ahora](docs/capturas/lanza_hielo_antes_ahora.png)
+
+## 2026-11-26 · Cada elemento golpea a su manera
+
+**Qué hay nuevo** (pedido del equipo: "necesitamos que los hechizos tengan más personalidad y sean más impactantes")
+
+Antes los seis elementos estallaban igual contra el cristal: la misma llamarada, la misma onda y el mismo humo gris;
+sólo cambiaba el color. Ahora cada uno tiene su firma (`fx/hd/impact_style.gd`, `ImpactStyle`), en lo que se ve, lo
+que se siente y lo que se oye:
+
+| Elemento | Se ve | Se siente | Suena |
+|---|---|---|---|
+| Chispa (fuego) | Llamarada, brasas que suben y humo (como antes) | Sacudida normal, zoom corto | "Fuuumf" y chisporroteo |
+| Escarcha (hielo) | Cristal tallado que se abre de golpe, destello en copo de 6 rayos, esquirlas que caen pesadas, nieve y escarcha blanca que se arrastra | Zoom seco y el congelado más largo de los de una mano | Cristal que revienta en esquirlas |
+| Rayo | Fogonazo que **parpadea dos veces** como un relámpago, 12 rayos, chispas rectas y muy rápidas, sin humo | Sacudida fuerte y tirón de zoom hacia dentro | Chasquido, zumbido que parpadea con la luz y trueno corto |
+| Tierra (roca) | Canto que se agrieta, polvo marrón pegado al suelo y gravilla que cae | La sacudida más fuerte y un congelado pesado | Golpe sordo y gravilla |
+| Arcano | Remolino que **se traga sus propias chispas** y dos ondas (la segunda es su eco) | El campo de visión se abre (como un tirón mágico) | "Vuuum", campana y su eco |
+| Viento | Dos ondas grandes y rápidas, medialunas y motas en torbellino, sin humo | Empuja el campo de visión hacia fuera; sin congelado (no frena la cadencia) | Ráfaga que baja de tono con silbido |
+
+- **Los combinados heredan la firma de su forma** (`SpellVisualDef.style`): el Juicio del Trueno parpadea, el
+  Terremoto levanta polvo, el Tornado y la Ventisca abren ondas de viento, el Meteoro sigue siendo fuego.
+- **Sonido**: 18 sonidos nuevos (`sfx_hit_<estilo>_01..03`, `tools/sfx_impacts.py`, semillas fijas) que suenan bajo
+  el "tink" en los golpes de una mano. Del susurro del nivel 1 al golpe que retumba: más fuerte y más grave cuanto
+  mayor el nivel (`HdImpact.play_hit`). Los combinados conservan su estruendo propio.
+- **Sensación**: la sacudida y el golpe de campo de visión de cada impacto llevan el multiplicador del elemento
+  (`CameraRig._on_impact`; todo pasa por `Settings.screen_shake`). El congelado (hit-stop) de los golpes de una mano
+  va por elemento y empieza en daño 3 (antes 5 y siempre 0,025 s): de 0 (Viento) a 0,05 s (Tierra).
+- También en los bichos del valle.
+- Sólo cambia lo que se ve, se oye y se siente: el daño y el balance, igual.
+- Laboratorio para verlo: `godot --path game res://tests/vfx_gallery/impact_lab.tscn` (`-- --before` enseña el
+  estallido de antes en los seis).
+
+![Antes y ahora](docs/capturas/impactos_por_elemento.gif)
+
+**Cómo se probó**: Godot 4.7 con lavapipe, laboratorio de impactos y partidas en modo demo con cada pareja de
+elementos a nivel 6 antes y después (`docs/capturas/impactos_por_elemento.*`). Tests de humo: `hit_stop_smoke`, `combos_smoke`, `meteor_smoke`, `spell_levels_smoke`, `critters_smoke`,
+`arcane_smoke`, `fireball_flight_smoke`, `boot_smoke` y `settings_smoke` en verde. `gdlint` y `gdformat`
+limpios; 0 avisos de GDScript (`tools/gd_warnings.py`).
+
+## 2026-11-26 · Suelo del Santuario, Grimorio con iconos y palanca fácil
+
+**Qué cambia** (pedido del equipo: "el sitio de la mesa de mejora no tiene hitbox abajo y la atravieso", "que no
+haya que clickear para saber qué hace cada mejora, con iconos" y "la palanca para entregar más fácil de clickear")
+
+- **Santuario con suelo sólido**: los dos escalones del templete no tenían colisión y el jugador se hundía en ellos
+  hasta el suelo del valle. Ahora el suelo es un tronco de cono (`Sanctum._floor_collision`): rampa suave por fuera
+  (se sube andando, sin saltar) y plano a la altura del segundo escalón. El atril también es sólido.
+- **Grimorio con medallones**: cada mejora es un medallón con **su icono** (nuevos: Potencia de Escarcha, Rayo,
+  Viento y Tierra, Choque profundo, Engranajes, Envío directo; los "Despertar" usan el símbolo de su elemento) en el
+  color de su constelación. El marco dice el estado (dorado latiendo con gota de maná: se puede comprar; cian:
+  completa; violeta: con niveles; apagado con candado: le falta algo) y debajo van los **pips de nivel**.
+- **Ficha al pasar el ratón** (`ui/grimoire_tooltip.gd`): junto al medallón, sin hacer clic, sale qué hace (primera
+  frase de la descripción), AHORA y SIGUIENTE, y el coste o lo que falta ("NECESITA: ...").
+- **Palanca de la Trituradora**: mirándola con margen (cono de 24°, `CrystalCrusher.lever_targeted`) se ilumina y
+  basta con **F o un clic** (el clic no lanza hechizo). Sin mirarla, tocar F sigue tirando de ella, pero la pulsación
+  corta pasa de 0,2 s a 0,3 s, y con la bolsa vacía cualquier pulsación tira en el acto. El pomo es algo más grande.
+
+- **Sonido de comprar mejoras más suave** ("es muy molesto"): de un arpegio de 8 campanas brillantes con ruido
+  de destellos y 4 s de cola a tres notas de caja de música (La, Do#, Mi) con un colchón cálido, sin agudos y de
+  ~1 s (`tools/sfx_loop.py`, `upgrade_buy`). Suena 4 dB más bajo en el Grimorio y con una pizca de variación de tono.
+
+| Antes | Ahora |
+|---|---|
+| ![Antes](docs/capturas/grimorio_antes_estrellas.png) | ![Ahora](docs/capturas/grimorio_medallones_ficha.png) |
+
+![Ficha de una mejora bloqueada](docs/capturas/grimorio_ficha_bloqueada.png)
+
+**Cómo se probó**: test nuevo `tests/smoke/stations_smoke.gd` (se sube andando al suelo del Santuario y se queda de
+pie a su altura, el atril frena; la palanca se elige mirando cerca, un clic tritura, mirando la tolva no se elige);
+`grimoire_click_smoke` comprueba la ficha al pasar el ratón. En verde también `loop_smoke`, `familiars_smoke`,
+`tutorial_smoke`, `localization_smoke` y `progression_smoke`. Capturas con `tests/tools/grimoire_shots.gd`.
+
+**Pendiente**: el texto "NECESITA: ..." del botón de la página derecha se sale cuando hay dos requisitos largos
+(ya pasaba antes).
+
+## 2026-11-26 · Arranque más rápido
+
+- **Los primeros 15 minutos van más deprisa** (pedido del equipo: "la progresión inicial se siente algo lenta"). Bajan
+  los costes de las ~20 primeras mejoras; de los ~1.000 maná en adelante todo sigue igual:
+  - Potencia de la Chispa 5/8/50/110/220 → **3**/8/**30/70/150** (la primera del tutorial cuesta 3).
+  - Bolsa 15/45/330 → 10/35/250; Telequinesis 20/35/150/400 → 12/30/100/280; Engranajes 32/230 → 20/180.
+  - Despertar la Escarcha 150 → 100 y el Rayo 2.600 → 1.200; Envío directo 700 → 400; primer familiar 500 → 300;
+    Doble salto 100 → 60; Levitación 370 → 250.
+  - Primeros niveles de Potencia de Escarcha (30/70/140/300), Bola de Fuego (20/35/60/100/180) y Choque Térmico
+    (150/300), Canalización (35/160), Resonancia (25/200) y los tamaños de Chispa, Escarcha, Bola de Fuego y Choque
+    Térmico.
+- Simulador (`tools/balance_sim.py`), jugador normal antes → ahora: primera mejora 67 → 47 s; maná/s a los 5 min
+  2 → 7; Escarcha a los 5:56 → 4:24; Rayo hacia el minuto 22 → 13:43. La partida pasa de 139 a 135 min (eficiente
+  106 → 100), el Pilón se llena con el cristal y ningún hueco pasa de 3 min.
+- Tests actualizados a los nuevos costes (`tutorial_smoke`, `loop_smoke`, `progression_smoke`).
+
+## 2026-11-26 · Música del valle nueva
+
+- **La música del valle se ha rehecho** (pedido del equipo: "me aburre un poco"). Antes era un bucle de 46 s con el
+  mismo acompañamiento todo el rato; ahora es una pieza de 2 min 20 s a 96 BPM con forma de canción: intro,
+  estribillo pegadizo (A - E/G# - F#m7 - Dmaj7) y su respuesta, una parte de aventura en F#m con corcheas que
+  empujan, una subida "mágica" al II lidio, un puente soñado a medio tiempo (flauta y Dm6 agridulce) que vuelve con
+  un redoble, el estribillo en grande (platillo, campanas a la octava, arpegio brillante) y una coda que empalma.
+- Sigue en La mayor y en las mismas 5 capas por rango; cada capa cambia de patrón según la sección, así que incluso
+  con sólo la primera (Aprendiz: pad, bajo, caja de música y una kalimba nueva) hay variación. Pequeño desvío
+  humano de tiempo y fuerza en cada nota.
+- Sin cambios de código en el juego: los OGG se llaman igual y duran lo mismo entre sí. `tools/music_title.py` (el
+  vals del título) suena idéntico.
+- Vista previa con las capas entrando: `docs/audio/musica_valle_capas_preview.ogg`.
+
 ## 2026-11-22 · Meteoro más grande
 
 - **El Meteoro es 1,6 veces más grande** (pedido del equipo): la roca, su fuego y la cola en vuelo, y al caer la onda de

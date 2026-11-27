@@ -53,6 +53,7 @@ Tecnologías ya previstas (validar la versión al integrarlas):
 | SFX de combinaciones | `tools/sfx_combos.py` (rayo, roca, trueno, meteoro, terremoto, magnetismo, lanza, plasma, cargas) | Semillas fijas. |
 | SFX de venas y Pilón | `tools/sfx_veins.py` (campanas de vena, carga y rayo del Pilón, coro de los hitos) | Semillas fijas. |
 | SFX de la carga por etapas | `tools/sfx_charge_stages.py` (campana por escalón en pentatónica de La, acorde de máxima potencia) | Semillas fijas. |
+| SFX del cuerpo del golpe | `tools/sfx_impacts.py` (`sfx_hit_<estilo>_01..03`: fuego, arcano, hielo, rayo, roca, viento; los usa `HdImpact.play_hit`) | Semillas fijas; orden de `ImpactStyle`. |
 | SFX del meteorito | `tools/sfx_meteor.py` (destello en el cielo, silbido de caída, estruendo) | Semillas fijas. |
 | SFX de los bichos | `tools/sfx_critters.py` (boing, chillidos, splorch, bocina, coscorrón) | Semillas fijas. |
 | SFX de Lágrimas, final, báculo y rangos | `tools/sfx_tears.py`, `sfx_finale.py`, `sfx_staff.py`, `sfx_ranks.py` | Semillas fijas. |
@@ -345,6 +346,8 @@ godot --headless --path game --script res://tests/smoke/progression_smoke.gd
   `tests/smoke/ranks_smoke.gd`, los rangos (umbrales, ceremonia una vez, capas de música, cifras, Espejo);
   `tests/smoke/critters_smoke.gd`, los bichos: zonas de aparición, tope, reventón por el camino real de la mira,
   que no roban golpes al cristal, el coscorrón sin daño, el Rayo encadenado y la opción sin sangre;
+  `tests/smoke/stations_smoke.gd`, el suelo del Santuario (se sube andando, no se atraviesa) y la palanca de la
+  Trituradora (se elige mirándola con margen, F o clic);
   `tests/smoke/debug_menu_smoke.gd`, que "comprar todo" del menú de depuración lo deja todo al máximo;
   `tests/smoke/settings_smoke.gd`, que las opciones nuevas (FOV, VSync, FPS, invertir Y...) se guardan y se
   aplican, también en pausa;

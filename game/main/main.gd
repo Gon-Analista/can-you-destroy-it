@@ -618,6 +618,7 @@ func _warm_up() -> void:
 	step.call(0.9, "ABRIENDO EL SANTUARIO")
 	await _frames(10)
 	cam.transform = saved
+	_clear_warm_particles()
 	await _frames(2)
 	cover.finish()
 	# El tema del título, que sonaba durante la carga, deja paso a la música del valle, y el
@@ -625,6 +626,17 @@ func _warm_up() -> void:
 	AudioDirector.stop_theme(2.0)
 	if from_flow and not _hud.menu.is_open():
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+## Borra las chispas, motas y humo que dejó el precalentado: muchas viven 1-3 s y, al quitar la
+## pantalla de carga, quedaban flotando delante del cristal como manchas de luz que tapaban los
+## primeros hechizos. Sólo los sistemas parados (los que emiten siempre siguen igual).
+func _clear_warm_particles() -> void:
+	for n: Node in _world.find_children("*", "GPUParticles3D", true, false):
+		var p: GPUParticles3D = n
+		if not p.emitting:
+			p.restart()
+			p.emitting = false
 
 
 func _aim(cam: Camera3D, target: Vector3) -> void:

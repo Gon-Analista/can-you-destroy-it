@@ -108,7 +108,7 @@ func _run() -> void:
 	_check(prog.get_level(&"bag") == 1, "junto al atril se inscribe")
 	_check(VariantCast.to_bool(gs.call(&"bag_capacity") == 15), "la bolsa sube a 15")
 	var power_cost: int = power.cost_for_level(0)
-	_check(power_cost == 5, "la primera mejora (Potencia) cuesta 5 (GDD 8.1 y tutorial)")
+	_check(power_cost == 3, "la primera mejora (Potencia) cuesta 3 (GDD 8.1 y tutorial)")
 
 	grimoire.call(&"close")
 	# Saltar: con el jugador en el suelo, Espacio lo levanta y vuelve a caer.

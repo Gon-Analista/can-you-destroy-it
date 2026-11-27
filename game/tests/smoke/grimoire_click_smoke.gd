@@ -1,6 +1,7 @@
 extends SceneTree
 ## Regresión: el Grimorio medía 0x0 y los clics no le llegaban (no se podía comprar con el ratón).
-## Abre el Grimorio junto al atril, hace clic en INSCRIBIR y en una pestaña de elemento.
+## Abre el Grimorio junto al atril, hace clic en INSCRIBIR y en una pestaña de elemento. Pasar el
+## ratón por un medallón saca su ficha (qué hace) sin hacer clic, y se va al salir.
 ## Necesita ventana (el modo headless no reparte clics a la interfaz):
 ## xvfb-run godot --path game --script res://tests/smoke/grimoire_click_smoke.gd
 
@@ -35,6 +36,21 @@ func _run() -> void:
 	_click(button.get_center() * scale)
 	await process_frame
 	_check(prog.get_level(&"bag") == 1, "clic en INSCRIBIR compra")
+	# Ratón encima de un medallón: sale su ficha flotante; fuera de él, se va.
+	var tip: Control = g.get(&"_tooltip")
+	var first: int = (g.call(&"_page_nodes") as Array)[0]
+	var node: UpgradeNode = (gs.get(&"UPGRADES") as Array)[first]
+	var medal := Vector2(node.star_pos + Vector2i(80, 42))
+	_move(medal * scale)
+	await process_frame
+	_check(tip.visible, "pasar el ratón por un medallón saca su ficha")
+	_check(
+		tip.call(&"shown_node") != null and tip.call(&"shown_node") == node,
+		"la ficha es la de ese medallón"
+	)
+	_move(Vector2(330, 300) * scale)
+	await process_frame
+	_check(not tip.visible, "al salir del medallón la ficha se va")
 	var tab: Rect2 = g.call(&"_tab_rect", 1)
 	_click(tab.get_center() * scale)
 	await process_frame
@@ -55,6 +71,13 @@ func _click(pos: Vector2) -> void:
 		ev.position = pos
 		ev.global_position = pos
 		root.push_input(ev)
+
+
+func _move(pos: Vector2) -> void:
+	var ev := InputEventMouseMotion.new()
+	ev.position = pos
+	ev.global_position = pos
+	root.push_input(ev)
 
 
 func _check(cond: bool, label: String) -> void:

@@ -13,6 +13,9 @@ extends CanvasLayer
 ##   combinando     -> las manos se juntan y se ahuecan; las llamas se funden en el orbe central
 ##   lanzar         -> empujón hacia arriba de la mano (o de las dos) y la llama (u orbe) estalla
 
+## Destello del orbe entre las manos al soltar un combinado. Pegado a la cámara, entero, lavaba
+## toda la pantalla a blanco y no se veía salir el hechizo (el golpe de poder lo pone `CastBurst`).
+const COMBO_RELEASE_FLASH: float = 0.3
 const STRIP: Texture2D = preload("res://player/hands/hand_l_vertical_strip.png")
 const FRAMES: int = 6
 const FRAME_SIZE := Vector2(192, 192)
@@ -133,6 +136,7 @@ func attach_camera(
 	_combo_orb.name = "HandsComboOrb"
 	_combo_orb.def = combo_visual
 	_combo_orb.charge = 0.0
+	_combo_orb.release_flash_mul = COMBO_RELEASE_FLASH
 	camera.add_child(_combo_orb)
 	_combo_orb.visible = false
 	_apply_orb_visibility()
@@ -160,6 +164,7 @@ func begin_combine(visual: SpellVisualDef = null) -> void:
 		_combo_orb = SpellOrb.new()
 		_combo_orb.name = "HandsComboOrb"
 		_combo_orb.def = visual
+		_combo_orb.release_flash_mul = COMBO_RELEASE_FLASH
 		old.name = "OldComboOrb"
 		old.queue_free()
 		_camera.add_child(_combo_orb)

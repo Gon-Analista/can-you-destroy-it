@@ -61,10 +61,10 @@ Lanzar hechizo -> cae fragmento -> entregar al Pilón -> ganar maná -> mejorar 
 | Parámetro | Valor |
 |---|---|
 | Esencia total del Cristal | 1.000.000 (cabe en `int`, no hace falta BigNumber) |
-| Daño inicial de la chispa | 0 (tutorial: "deshonra de mago"); juntar las dos manos hace 1; la primera Potencia (5 maná) sube a 2 |
+| Daño inicial de la chispa | 0 (tutorial: "deshonra de mago"); juntar las dos manos hace 1; la primera Potencia (3 maná) sube a 2 |
 | Capacidad inicial | Bolsa de 5 (sube a 15, 40 y 100) |
 | Distancia Cristal -> Pilón | ≈ 10 m (≈ 4 s caminando) |
-| Primera mejora | 5 maná; con el tutorial llega hacia el minuto 1 |
+| Primera mejora | 3 maná; con el tutorial llega hacia los 45 s |
 | Coste por nivel | base x 1,15 a 1,25 según rama |
 | Regla de ritmo | algo comprable cada < 60 s en la 1.ª hora; nunca > 3 min sin mejora |
 
@@ -147,7 +147,8 @@ en el Grimorio del Santuario mejoras que cambian los hechizos. Lo que hay:
 - **HUD** (`ui/`): Esencia con número rodante, mira con anillo de carga y marcador de impacto, racha, avisos,
   números flotantes, Pilón, FPS, guía de objetivos (`ObjectiveGuide`), menú de depuración (Alt+F1, `DebugMenu`) y
   opciones por pestañas (`OptionsMenu`, con FOV). Fuente Fusion Pixel 10/12 px (`UiFonts`).
-- **Música** (`audio/music/`): tema del valle en La mayor, 84 BPM, en 5 capas sincronizadas (una por rango) con
+- **Música** (`audio/music/`): tema del valle en La mayor, 96 BPM, 56 compases (2 min 20 s) con forma de canción
+  (intro, estribillo, aventura en F#m, puente, clímax, coda), en 5 capas sincronizadas (una por rango) con
   `AudioDirector.play_music` / `set_music_layers`. En debug, la tecla M suma capas.
 - **Audio** (`audio/sfx/`): 20 OGG sintetizados (tink ×4, fragmentos, chispa, campanitas, acorde resonante,
   ambiente del valle y zumbido del cristal en bucle).
@@ -172,8 +173,9 @@ en el Grimorio del Santuario mejoras que cambian los hechizos. Lo que hay:
   bolsa, los fragmentos vuelan de la mano con estela y cada gota sube una nota de la pentatónica.
 - **Santuario** (`sanctum/`): templete con atril y el Grimorio flotando sobre un orbe arcano; aparece un objeto nuevo
   por cada nivel comprado (velas, estantería, bola de cristal, pociones, estandarte, runas, telescopio...).
-- **Grimorio de Constelaciones** (`ui/grimoire.gd`): libro a pantalla, mejoras como estrellas y página que se escribe
-  sola; inscribir sólo junto al atril (F), consultar en cualquier sitio (Tab).
+- **Grimorio de Constelaciones** (`ui/grimoire.gd`): libro a pantalla, mejoras como medallones con icono y pips de
+  nivel, ficha flotante al pasar el ratón (`ui/grimoire_tooltip.gd`) y página que se escribe sola; inscribir sólo
+  junto al atril (F), consultar en cualquier sitio (Tab).
 - **5 mejoras** (`data/upgrades/`): Bolsa de aprendiz (1/5/20/100), Potencia (nivel de la Chispa), Canalización
   (recarga), Resonancia (% de golpes resonantes) y Telequinesis (atrae fragmentos). Costes y valores por nivel en el `.tres`.
 - **HUD del bucle** (`ui/hud_loop.gd`): barra del Pilón con marcas, maná rodante, bolsa en casillas, avisos encadenados
@@ -184,7 +186,7 @@ en el Grimorio del Santuario mejoras que cambian los hechizos. Lo que hay:
 - **Título y pausa** (`ui/game_menu.gd`) con opciones. **Capas del cristal** por profundidad y **geodas** dentro
   (`crystal/geode.gd`, `data/crystal/`). Demo: `--layer=N` (túnel hasta la capa N), `--geode` (túnel hasta una
   geoda), `--dig=N` (N golpes de 30 donde se apunta).
-- **Trituradora** (`pylon/crystal_crusher.gd`): tolva (mantener F), palanca (tocar F) y rodillos; el maná llega al
+- **Trituradora** (`pylon/crystal_crusher.gd`): tolva (mantener F), palanca (tocar F, o F / clic mirándola) y rodillos; el maná llega al
   Pilón por la tubería. **Reacción del cristal** (`fx/hd/crystal_arcs.gd`): rayos, destellos y resquebrajos.
 - **Elementos por mano** (Q / E): Chispa y Escarcha (`data/elements/`); combinaciones Bola de Fuego y Choque
   Térmico (`data/spells/recipe_*.tres`); efecto de cada elemento en el cristal (`MotherCrystal._apply_element`).
@@ -323,6 +325,11 @@ Añadir una línea por decisión relevante (fecha, decisión, motivo). No borrar
 | 2026-11-21 | Soltar un combinado tiene peso: lo que sale de las manos vuela más rápido cuanto más cargado (`SpellHit.speed_mult`: x1,6-3,4 los de frente, x1,2-2,2 las lanzas, x1,3-2,2 el Terremoto); el golpe de poder en las manos (`CastBurst`: fogonazo, ondas en cono, chispas) con retroceso de cámara (`CameraRig.recoil`) y empujón al mago (`Player.knockback`, sólo lo que sale hacia delante); lo que se ve en vuelo crece con `fx_scale` (`SparkProjectile.charged_scale`, hasta ~x1,9 a nivel 11 a tope). Meteoro más grande (roca de 3,4 m), Trueno con más descargas, hebras y columna según la carga (`CrystalCombos.sky_bolt(power)`), Terremoto y Erupción como peñasco que rueda (`BoulderRoll`, `SpellVisualDef.boulder`). | Pedido del equipo: "los hechizos cargados no se ven tan poderosos como lo que destruyen" (Bola de Fuego lenta, la tierra una piedrecita). Sólo cambia lo que se ve y lo que tarda en llegar: el daño y el balance, igual. |
 | 2026-11-22 | `export_presets.cfg` se versiona (antes estaba en `game/.gitignore`): Windows Desktop y Linux x86_64 con el `.pck` junto al ejecutable (Embed PCK desactivado), `crystal/data/*.bin` como archivo no recurso y sin `tests/`. | El servicio de builds (Parzel) lee los presets de `main` y reparte el `.pck` al lado del ejecutable: con Embed PCK no acepta el preset. |
 | 2026-11-22 | Imagen propia en vez de la de Godot: icono del Cristal Madre (ventana, editor, `.exe` y Linux), pantalla de arranque con el logo del título, versión 0.1.0 y nombre del juego en los metadatos del `.exe`. Dibujados por código (`tools/make_branding.py`) con la paleta y la fuente del juego. | Pedido del equipo: que el juego no parezca un proyecto de Godot por defecto. Sprite AI no conecta; por código se retoca y se regenera. |
+| 2026-11-26 | Firma de impacto por elemento (`ImpactStyle`): forma del estallido, chispas, humo/polvo/escarcha, ondas, destello, sacudida, campo de visión, hit-stop y capa grave de sonido. Los de una mano van por su elemento; los combinados, por `SpellVisualDef.style`. Tabla en código (una fila por estilo) en vez de un recurso por hechizo. | Pedido del equipo: más personalidad e impacto. Todos estallaban igual y sólo cambiaba el color; seis filas cubren los 6 elementos y las ~30 combinaciones sin tocar sus `.tres`. |
+| 2026-11-26 | Chispa de golpe (`hd_hitspark.gdshader`) con contorno oscuro en cada impacto y estrella del elemento en vuelo; la estela en vuelo usa las motas y chispas de `ImpactStyle`. | Pedido del equipo: hechizos más espectaculares sin que ninguno quede atrás; sobre el cristal claro todo se fundía en blanco y en vuelo todos eran una bola de luz. |
+| 2026-11-26 | Grimorio con medallones (icono por mejora, estado en el marco, pips de nivel) y ficha flotante al pasar el ratón; la palanca de la Trituradora se elige mirándola con margen (24°) y se tira con F o clic (el clic no lanza hechizo); pulsación corta de 0,2 a 0,3 s; el suelo del Santuario y el atril tienen colisión. | Pedido del equipo: se atravesaba el suelo del Santuario, había que hacer clic en cada estrella para saber qué hacía y la palanca costaba de accionar. |
+| 2026-11-26 | Inicio más rápido: bajan los costes de las ~20 primeras mejoras (Potencia de la Chispa 3/8/30/70/150, Bolsa 10/35/250, Telequinesis 12/30/100/280, Despertar la Escarcha 100 y el Rayo 1.200, Envío directo 400, primer familiar 300, Doble salto 60 y los primeros niveles de Escarcha, Bola de Fuego, Choque Térmico, Canalización, Resonancia, Levitación y tamaños); de los ~1.000 maná en adelante, igual. Simulador, jugador normal: primera mejora 67 → 47 s, maná/s a los 5 min 2 → 7, Escarcha 5:56 → 4:24, Rayo ~22 → 13:43 min; partida 139 → 135 min (eficiente 106 → 100), Pilón lleno con el cristal al 100 % y ningún hueco > 180 s. | Pedido del equipo: "la progresión inicial se siente algo lenta". Subir el daño de la Chispa o bajar el umbral del Fragmento también acelera el inicio, pero acortan toda la partida (~126-129 min) y descuadran el Pilón con el cristal; los costes sólo tocan el arranque. |
+| 2026-11-26 | Música del valle rehecha (`tools/music_synth.py`): de un bucle de 16 compases a 84 BPM (46 s) a una pieza de 56 compases a 96 BPM (2 min 20 s) en 8 secciones con estribillo, cambios de energía y redobles entre secciones; kalimba en la capa 1, batería completa en la 3, cuerdas en la 4 y arpegio brillante en la 5. Mismas 5 capas y misma tonalidad. | Pedido del equipo: la música aburría (un bucle corto y siempre igual). Sigue en La mayor para que el "tink" no desafine; no cambia el código del juego. |
 
 ## 10. Preguntas abiertas
 

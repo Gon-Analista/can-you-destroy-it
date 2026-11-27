@@ -6,6 +6,9 @@ extends Control
 ## la estrella elegida, que se escribe sola: qué hace, cómo está ahora y cómo quedará, el coste y
 ## el botón INSCRIBIR. Se compra sólo junto al atril del Santuario; con Tab se puede consultar en
 ## cualquier sitio.
+## Cada mejora es un medallón con su icono (dorado y latiendo si se puede comprar, cian si está
+## completa, apagado con candado si le falta algo) y sus niveles en pips debajo. Al pasar el ratón
+## por encima sale una ficha (`GrimoireTooltip`) con qué hace, ahora y siguiente, y el coste.
 ## Todo se dibuja a píxel entero con las fuentes pixel del HUD.
 
 const OPEN_SFX: AudioStream = preload("res://audio/sfx/sfx_book_open_01.ogg")
@@ -53,8 +56,11 @@ const LINE: int = UiFonts.LINE
 ## Primera línea de la descripción de la página derecha (debajo, AHORA y SIGUIENTE se colocan
 ## según las líneas que ocupe).
 const DESC_Y: int = 106
-## La estrella crece un píxel por nivel hasta este tope: más grande, sus puntas pisarían su nombre.
-const STAR_GROW_MAX: int = 4
+## Medallón de cada mejora: lado en píxeles (icono de 8x8 a x2 más el marco) y radio para el ratón.
+const MEDAL: int = 20
+const MEDAL_HIT: float = 12.0
+## El nombre va debajo del medallón y de sus pips.
+const LABEL_DY: int = 16
 
 const C_INK := Color("#2a1d4a")
 const C_INK_SOFT := Color("#6a5a86")
@@ -102,6 +108,9 @@ var _button: Label
 var _footer: Label
 var _mana: Label
 var _star_labels: Array[Label] = []
+var _tooltip: GrimoireTooltip
+## Mejora bajo el ratón (-1: ninguna): su ficha flota junto al medallón.
+var _hover: int = -1
 var _write_t: float = 1.0
 var _write_speed: float = 4.0
 var _deny_t: float = 0.0
@@ -133,7 +142,7 @@ func _ready() -> void:
 	_title = _label("", SMALL, C_GOLD_LIGHT, Rect2(80, 62, 236, LINE), 1, true)
 	for i: int in GameState.UPGRADES.size():
 		var p: Vector2i = GameState.UPGRADES[i].star_pos + LEFT_PAGE.position
-		_star_labels.append(_label("", SMALL, C_DIM, Rect2(p.x - 60, p.y + 11, 120, LINE), 1))
+		_star_labels.append(_label("", SMALL, C_DIM, Rect2(p.x - 60, p.y + LABEL_DY, 120, LINE), 1))
 	var rx: int = RIGHT_PAGE.position.x
 	var ry: int = RIGHT_PAGE.position.y
 	_page_title = _label("", UiFonts.HEAD, C_INK, Rect2(rx + 46, ry + 12, 184, 14), 0, true)
@@ -148,6 +157,9 @@ func _ready() -> void:
 	_button = _label("", SMALL, C_INK, Rect2(rx + 14, ry + 213, 208, LINE), 1, true)
 	_mana = _label("", SMALL, C_GOLD_LIGHT, Rect2(rx + 106, ry - 11, 120, LINE), 2, true)
 	_footer = _label(_footer_text(), SMALL, C_CYAN, Rect2(10, 329, 620, LINE), 1, true)
+	# La ficha flotante va la última: por encima de los nombres y de la página derecha.
+	_tooltip = GrimoireTooltip.new()
+	_content.add_child(_tooltip)
 	Events.grimoire_requested.connect(open)
 	Events.grimoire_page_requested.connect(open_at)
 	Events.mana_changed.connect(func(_m: int) -> void: _refresh())
@@ -202,12 +214,14 @@ func close() -> void:
 	if not is_open or _closing:
 		return
 	_closing = true
+	_set_hover(-1)
 	AudioDirector.play_sfx(CLOSE_SFX, -6.0)
 
 
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		var hover: int = _star_at((event as InputEventMouseMotion).position)
+		_set_hover(hover)
 		if hover >= 0 and hover != _selected:
 			select(hover)
 	elif event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
@@ -258,6 +272,7 @@ func open_page(page: int) -> void:
 	if page == _page:
 		return
 	_page = page
+	_set_hover(-1)
 	var nodes: Array[int] = _page_nodes()
 	if not nodes.is_empty():
 		_selected = nodes[0]
@@ -265,6 +280,27 @@ func open_page(page: int) -> void:
 	_write_speed = 4.0
 	AudioDirector.play_sfx(OPEN_SFX, -10.0, 1.25)
 	_refresh()
+
+
+## Ficha flotante de la mejora `i` bajo el ratón (-1 la quita).
+func _set_hover(i: int) -> void:
+	_hover = i
+	if i < 0 or _page_locked():
+		_hover = -1
+		_tooltip.hide_tip()
+		return
+	_show_tooltip()
+
+
+func _show_tooltip() -> void:
+	var node: UpgradeNode = GameState.UPGRADES[_hover]
+	var center := Vector2(node.star_pos + LEFT_PAGE.position)
+	_tooltip.show_for(node, center, Color(str(PAGES[_page][2])))
+
+
+## Mejora bajo el ratón (para pruebas y capturas).
+func hovered() -> int:
+	return _hover
 
 
 ## Índices (en GameState.UPGRADES) de las estrellas de la página abierta.
@@ -329,7 +365,8 @@ func try_buy() -> void:
 		return
 	if not GameState.buy_upgrade(node):
 		return
-	AudioDirector.play_sfx(BUY_SFX, -1.0)
+	# Suave y con una pizca de variación: se oye muchas veces seguidas.
+	AudioDirector.play_sfx(BUY_SFX, -5.0, randf_range(0.97, 1.03))
 	if node.pays_with_tears():
 		AudioDirector.play_sfx(TEAR_BUY_SFX, -2.0)
 	_flash_t[_selected] = 1.0
@@ -391,6 +428,8 @@ func _ofs() -> Vector2:
 func _refresh() -> void:
 	if not is_open:
 		return
+	if _hover >= 0:
+		_show_tooltip()
 	var prog: Progression = GameState.progression
 	var page: Array = PAGES[_page]
 	_title.text = tr(PAGE_TITLES[_page])
@@ -401,7 +440,8 @@ func _refresh() -> void:
 		var label: Label = _star_labels[i]
 		label.visible = n.element == page[0] and prog.is_revealed(n) and not _page_locked()
 		var block: StringName = prog.purchase_block(n)
-		label.text = tr(n.display_name).to_upper() if block != &"locked" else "?"
+		# Con candado sólo el icono: el nombre sale en la ficha al pasar el ratón.
+		label.text = tr(n.display_name).to_upper() if block != &"locked" else ""
 		var c: Color = C_DIM
 		if block == &"max":
 			c = C_CYAN
@@ -488,6 +528,11 @@ func _place_star_label(label: Label, node: UpgradeNode) -> void:
 	var hi: float = LEFT_PAGE.end.x - 4.0 - w
 	label.size.x = w
 	label.position.x = roundf(clampf(cx - w * 0.5, lo, hi))
+	# Al pie de la página no cabe debajo: el nombre va encima del medallón.
+	var below: int = node.star_pos.y + LABEL_DY
+	if below + LINE > LEFT_PAGE.size.y - 2:
+		below = node.star_pos.y - MEDAL / 2 - LINE - 1
+	label.position.y = LEFT_PAGE.position.y + below
 
 
 ## La descripción ocupa las líneas que necesite; AHORA y SIGUIENTE van justo debajo.
@@ -519,7 +564,10 @@ func _prereq_names(node: UpgradeNode) -> String:
 func _star_at(p: Vector2) -> int:
 	var local: Vector2 = p - _ofs()
 	for i: int in _page_nodes():
-		if local.distance_to(Vector2(GameState.UPGRADES[i].star_pos + LEFT_PAGE.position)) < 14.0:
+		var d: Vector2 = (
+			(local - Vector2(GameState.UPGRADES[i].star_pos + LEFT_PAGE.position)).abs()
+		)
+		if d.x <= MEDAL_HIT and d.y <= MEDAL_HIT + 3.0:
 			return i
 	return -1
 
@@ -638,43 +686,73 @@ func _has_nodes(page: int) -> bool:
 	return false
 
 
+## Medallón de una mejora: marco del color de su estado, icono del color de la constelación y
+## pips de nivel debajo.
 func _draw_star(i: int, c: Vector2) -> void:
 	var node: UpgradeNode = GameState.UPGRADES[i]
 	var prog: Progression = GameState.progression
 	var level: int = prog.get_level(node.id)
+	var max_level: int = node.get_max_level()
 	var block: StringName = prog.purchase_block(node)
-	var col: Color = C_DIM
+	var accent := Color(str(PAGES[_page][2]))
+	var frame: Color = C_DIM
+	var icon_col: Color = accent.darkened(0.35)
+	var plate: Color = C_SKY_DEEP
 	if block == &"max":
-		col = C_CYAN
+		frame = C_CYAN
+		icon_col = accent
 	elif block == &"":
-		col = C_GOLD_LIGHT if fmod(_t, 0.8) < 0.5 else C_GOLD
+		frame = C_GOLD_LIGHT if fmod(_t, 0.8) < 0.5 else C_GOLD
+		icon_col = accent.lightened(0.15)
+		plate = C_COVER
 	elif block == &"locked":
-		col = C_LOCKED
+		frame = C_LOCKED
+		icon_col = C_LOCKED
 	elif level > 0:
-		col = Color("#c79bff")
-	var r: int = 2 + mini(level, STAR_GROW_MAX)
+		frame = Color("#c79bff")
 	var flash: float = _flash_t[i]
+	var half: int = MEDAL / 2
+	var box := Rect2(c - Vector2(half, half), Vector2(MEDAL, MEDAL))
 	if flash > 0.0:
-		col = col.lerp(Color.WHITE, flash)
-		r += roundi(flash * 4.0)
-	# Estrella de 4 puntas: cruz larga + rombo central.
-	draw_rect(Rect2(c.x - r * 2, c.y, r * 4 + 1, 1), col)
-	draw_rect(Rect2(c.x, c.y - r * 2, 1, r * 4 + 1), col)
-	for k: int in range(-r, r + 1):
-		var w: int = r - absi(k)
-		draw_rect(Rect2(c.x - w, c.y + k, w * 2 + 1, 1), col)
-	draw_rect(Rect2(c.x, c.y, 1, 1), Color.WHITE)
+		frame = frame.lerp(Color.WHITE, flash)
+		box = box.grow(roundi(flash * 3.0))
+	draw_rect(box.grow(1), C_SHADOW)
+	draw_rect(box, frame)
+	draw_rect(box.grow(-1), plate)
+	if i == _hover:
+		draw_rect(box.grow(-1), Color(frame, 0.25))
+	_draw_icon(GrimoireIcons.icon_for(node), c - Vector2(8, 8), 2, icon_col)
+	if block == &"locked":
+		# Le falta algo: candado pequeño en la esquina (el icono sigue diciendo qué es).
+		var lock_at: Vector2 = box.position + Vector2(box.size.x - 5, box.size.y - 5)
+		draw_rect(Rect2(lock_at - Vector2(1, 1), Vector2(9, 8)), C_SHADOW)
+		_draw_icon(GrimoireIcons.LOCK_ICON, lock_at, 1, C_DIM)
+	# Se puede comprar: una gota de maná (o Lágrima) pequeña en la esquina.
+	if block == &"":
+		var drop: PackedStringArray = (
+			GrimoireIcons.TEAR_ICON if node.pays_with_tears() else GrimoireIcons.MANA_ICON
+		)
+		var corner: Vector2 = box.position + Vector2(box.size.x - 5, -3)
+		draw_rect(Rect2(corner - Vector2(1, 1), Vector2(9, 9)), C_SHADOW)
+		_draw_icon(drop, corner, 1, C_TEAR if node.pays_with_tears() else C_PINK)
+	# Pips de nivel bajo el medallón (2x2 con 1 px de hueco).
+	if max_level > 1:
+		var pw: int = max_level * 3 - 1
+		var px0: float = c.x - floorf(pw * 0.5)
+		for k: int in max_level:
+			var pip := Rect2(px0 + k * 3, c.y + half + 2, 2, 2)
+			draw_rect(pip, C_PINK if k < level else C_LOCKED)
 	if node.id == GameState.GRAND_CONVERGENCE and level == 0:
 		# El hito final: cinco rayos de los colores de los elementos que giran y laten.
 		for k: int in 5:
 			var a: float = floor(_t * 6.0) * TAU / 48.0 + TAU * float(k) / 5.0
-			var ray: float = r * 3.0 + 3.0 + fmod(_t * 2.0, 1.0) * 4.0
-			for j: int in range(r * 2 + 2, roundi(ray), 2):
+			var ray: float = half + 10.0 + fmod(_t * 2.0, 1.0) * 4.0
+			for j: int in range(half + 4, roundi(ray), 2):
 				var p := (c + Vector2(cos(a), sin(a)) * float(j)).round()
 				draw_rect(Rect2(p, Vector2(1, 1)), Color(str(PAGES[k + 1][2])))
-	# Anillo giratorio de la estrella elegida (8 puntos que avanzan a 8 fps).
+	# Anillo giratorio del medallón elegido (8 puntos que avanzan a 8 fps).
 	if i == _selected:
-		var rr: float = r * 2.0 + 6.0
+		var rr: float = half + 6.0
 		var rot: float = floor(_t * 8.0) * TAU / 32.0
 		for k: int in 8:
 			var a: float = rot + TAU * float(k) / 8.0
@@ -684,7 +762,7 @@ func _draw_star(i: int, c: Vector2) -> void:
 				draw_rect(dot, C_GOLD_LIGHT)
 	# Destello expansivo al inscribir.
 	if flash > 0.0:
-		var rr2: float = (1.0 - flash) * 28.0 + 6.0
+		var rr2: float = (1.0 - flash) * 28.0 + half
 		for k: int in 16:
 			var a: float = TAU * float(k) / 16.0
 			draw_rect(
@@ -735,10 +813,7 @@ func _draw_right_page(o: Vector2) -> void:
 	var icon_at: Vector2 = page.position + Vector2(10, 8)
 	draw_rect(Rect2(icon_at - Vector2(2, 2), Vector2(32, 32)), C_GOLD)
 	draw_rect(Rect2(icon_at, Vector2(28, 28)), C_SKY)
-	var icon: PackedStringArray = GrimoireIcons.ICONS.get(
-		node.id, GrimoireIcons.ICONS[&"resonance"]
-	)
-	_draw_icon(icon, icon_at + Vector2(2, 2), 3, C_GOLD_LIGHT)
+	_draw_icon(GrimoireIcons.icon_for(node), icon_at + Vector2(2, 2), 3, C_GOLD_LIGHT)
 	# Pips de nivel.
 	for k: int in max_level:
 		var p: Vector2 = page.position + Vector2(46 + k * 9, 44)
